@@ -895,11 +895,11 @@ body::after {
 
 /* ── Add-task quick form ───────────────────────────────── */
 .task-add-form {
-  display: none; flex-direction: column; gap: 8px;
+  display: flex; flex-direction: column; gap: 8px;
   padding: 10px 14px 12px;
   background: var(--elevated); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
-.task-add-form.open { display: flex; }
 
 .task-add-input {
   background: var(--surface); border: 1px solid var(--border);
@@ -1034,38 +1034,39 @@ body::after {
 
 #orb-backdrop.visible { display: block; }
 
-/* Orb center overlay (visible when expanded) */
+/* Orb info strip — positioned BELOW the circle, not overlaying it */
 #orb-time-display {
   position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
+  top: calc(50% + min(39vw, 39vh) + 18px);
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
   z-index: 502;
-  pointer-events: none;
+  pointer-events: auto;
   display: none;
+  background: rgba(10,9,8,0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(201,162,39,0.18);
+  border-radius: 16px;
+  padding: 10px 20px 12px;
+  min-width: 240px;
+  max-width: min(340px, 90vw);
 }
 
 #orb-time-display.visible { display: block; }
 
 .orb-time-clock {
-  font-family: var(--font-display);
-  font-size: clamp(26px, 4.5vw, 54px);
-  font-weight: 300;
-  color: var(--gold);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(201,162,39,0.55);
+  letter-spacing: 0.12em;
   display: block;
   line-height: 1;
 }
 
-.orb-cosmodex-label {
-  font-family: var(--font-mono);
-  font-size: clamp(8px, 1vw, 11px);
-  letter-spacing: 0.28em;
-  color: rgba(201,162,39,0.45);
-  text-transform: uppercase;
-  margin-top: 6px;
-  display: block;
-}
+.orb-cosmodex-label { display: none; }
 
 .orb-next-label {
   font-family: var(--font-mono);
@@ -1073,21 +1074,19 @@ body::after {
   letter-spacing: 0.14em;
   color: var(--muted);
   text-transform: uppercase;
-  margin-top: 16px;
+  margin-top: 6px;
   display: block;
 }
 
 .orb-next-event {
   font-family: var(--font-body);
-  font-size: clamp(12px, 1.6vw, 17px);
+  font-size: 13px;
   font-weight: 400;
   color: var(--cream);
   margin-top: 3px;
   display: block;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.4;
 }
 
 .orb-next-event em {
@@ -1100,7 +1099,7 @@ body::after {
   display: flex;
   gap: 10px;
   justify-content: center;
-  margin-top: 18px;
+  margin-top: 10px;
 }
 
 .orb-gadget-btn {
@@ -1581,6 +1580,9 @@ body::after {
 
 .drawer-item-icon { font-size: 20px; }
 
+/* Hide mobile shortcut bar globally */
+#mobile-nav, #mob-fab, #mob-more-drawer { display: none !important; }
+
 /* ═══════════════════════════════════════════════════════════
    RESPONSIVE — MOBILE (≤720px)
    ═══════════════════════════════════════════════════════════ */
@@ -1589,10 +1591,7 @@ body::after {
 
   #left-nav { display: none; }
 
-  #app-shell { height: calc(100dvh - var(--mobile-nav-h)); }
-
-  #mobile-nav { display: flex; }
-  #mob-fab    { display: flex; }
+  #app-shell { height: 100dvh; }
 
   #panel-tasks { display: none; }
   #panel-tasks.mob-active {
@@ -1973,14 +1972,9 @@ body::after {
 
     <!-- Tasks Panel -->
     <div id="panel-tasks">
-      <div class="tasks-toolbar">
-        <span class="tasks-title">Tasks</span>
-        <button class="tasks-add-btn" id="task-add-btn" title="New task (N)">+</button>
-      </div>
-
-      <!-- Quick-add form (toggle with + button) -->
+      <!-- Always-visible quick-add form -->
       <div class="task-add-form" id="task-add-form">
-        <input class="task-add-input" id="task-add-input" type="text" placeholder="Task title…" autocomplete="off" />
+        <input class="task-add-input" id="task-add-input" type="text" placeholder="Add a task…" autocomplete="off" />
         <div class="task-add-meta">
           <select class="task-priority-select" id="task-add-priority">
             <option value="low">Low</option>
@@ -1997,7 +1991,6 @@ body::after {
           </select>
           <input class="task-add-date" id="task-add-date" type="date" />
           <button class="task-add-confirm" id="task-add-confirm">Add</button>
-          <button class="task-add-cancel" id="task-add-cancel">✕</button>
         </div>
       </div>
 
@@ -2015,14 +2008,6 @@ body::after {
 <div id="orb-backdrop"></div>
 <div id="cosmodex-orb" title="Open Cosmodex dial">
   <canvas id="cosmodex-canvas"></canvas>
-  <!-- Analog clock hands SVG (expanded only) -->
-  <svg id="orb-clock-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"
-       style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none">
-    <line id="orb-hand-h" x1="50" y1="50" x2="50" y2="35" stroke="rgba(201,162,39,0.55)" stroke-width="2.5" stroke-linecap="round"/>
-    <line id="orb-hand-m" x1="50" y1="50" x2="50" y2="28" stroke="rgba(232,224,208,0.45)" stroke-width="1.5" stroke-linecap="round"/>
-    <line id="orb-hand-s" x1="50" y1="50" x2="50" y2="25" stroke="rgba(224,85,80,0.75)" stroke-width="0.8" stroke-linecap="round"/>
-    <circle cx="50" cy="50" r="1.8" fill="rgba(201,162,39,0.7)"/>
-  </svg>
 </div>
 <button id="orb-close">✕</button>
 <div id="orb-time-display">
@@ -2559,11 +2544,13 @@ function initData() {
   onSnapshot(query(collection(db, 'tasks'), orderBy('createdAt', 'asc')), snap => {
     TASKS = snap.docs.map(d => ({ id: d.id, subtasks: [], ...d.data() }));
     renderTasks(); renderCalendar(); updateNavCounts();
+    drawCosmodex(); // immediate orb sync on task change
   });
 
   onSnapshot(query(collection(db, 'calEvents'), orderBy('date', 'asc')), snap => {
     CAL_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTasks(); renderCalendar();
+    drawCosmodex(); // immediate orb sync on calendar change
   });
 
   onSnapshot(collection(db, 'holidays'), snap => {
@@ -3321,24 +3308,11 @@ function initCalDropZones() {
 
 /* ── Add-task form ────────────────────────────────────── */
 function initAddTaskForm() {
-  const form    = document.getElementById('task-add-form');
   const input   = document.getElementById('task-add-input');
-  const addBtn  = document.getElementById('task-add-btn');
   const confirm = document.getElementById('task-add-confirm');
-  const cancel  = document.getElementById('task-add-cancel');
 
-  addBtn.addEventListener('click', () => {
-    form.classList.toggle('open');
-    if (form.classList.contains('open')) input.focus();
-  });
-  document.getElementById('mob-add-task')?.addEventListener('click', () => {
-    form.classList.add('open'); input.focus();
-  });
-  cancel.addEventListener('click', () => {
-    form.classList.remove('open'); input.value = '';
-  });
   async function submit() {
-    const title    = input.value.trim();
+    const title = input.value.trim();
     if (!title) return;
     const priority = document.getElementById('task-add-priority').value;
     const dueDate  = document.getElementById('task-add-date').value;
@@ -3346,12 +3320,11 @@ function initAddTaskForm() {
     await addTask(title, priority, dueDate, category);
     input.value = '';
     document.getElementById('task-add-date').value = '';
-    form.classList.remove('open');
+    input.focus();
   }
   confirm.addEventListener('click', submit);
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') submit();
-    if (e.key === 'Escape') cancel.click();
   });
 }
 
@@ -3584,21 +3557,23 @@ function drawCosmodex() {
         cy + labelDist * Math.sin(boundA));
     }
 
-    // Event title labels outside ring (expanded only)
-    if (expanded && hasEv && evs[0].title) {
-      const midA = ((h + 0.5) / 24) * TWO_PI - Math.PI / 2;
-      const lDist = eventR + 26;
+    // Event title labels — drawn INSIDE the petal (between baseR and eventR)
+    if (hasEv && evs[0].title && segR > baseR) {
+      const midA  = ((h + 0.5) / 24) * TWO_PI - Math.PI / 2;
+      const lDist = (baseR + eventR) / 2; // midpoint of the extended petal
       const lx = cx + lDist * Math.cos(midA);
       const ly = cy + lDist * Math.sin(midA);
+      const fontSize = expanded ? 8 : 6;
+      const maxChars = expanded ? 14 : 8;
       ctx.save();
       ctx.translate(lx, ly);
       ctx.rotate(midA + Math.PI / 2);
-      if (lx < cx) ctx.rotate(Math.PI);
-      ctx.fillStyle = 'rgba(232,224,208,0.65)';
-      ctx.font = '7px "DM Mono", monospace';
+      if (lx < cx) ctx.rotate(Math.PI); // flip right-reading for left side
+      ctx.fillStyle = 'rgba(232,224,208,0.9)';
+      ctx.font = `${fontSize}px "DM Mono", monospace`;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(evs[0].title.slice(0, 16), 0, 0);
+      ctx.fillText(evs[0].title.slice(0, maxChars), 0, 0);
       ctx.restore();
     }
   }
@@ -3633,42 +3608,19 @@ function drawCosmodex() {
   ctx.lineWidth   = 1;
   ctx.stroke();
 
-  // Mini clock in collapsed state
-  if (!expanded) {
+  // Time in center hub — always draw HH:MM on canvas
+  {
     const hh2 = String(now.getHours()).padStart(2, '0');
     const mm2 = String(now.getMinutes()).padStart(2, '0');
-    ctx.fillStyle    = 'rgba(201,162,39,0.85)';
-    ctx.font         = `bold ${Math.max(8, Math.round(innerR * 0.72))}px "DM Mono", monospace`;
+    const fontSize = expanded ? Math.round(innerR * 0.55) : Math.max(8, Math.round(innerR * 0.72));
+    ctx.fillStyle    = 'rgba(201,162,39,0.88)';
+    ctx.font         = `bold ${fontSize}px "DM Mono", monospace`;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(`${hh2}:${mm2}`, cx, cy);
   }
 
-  // Update SVG clock hands
-  const svgClock = document.getElementById('orb-clock-svg');
-  if (expanded && svgClock) {
-    svgClock.style.display = 'block';
-    const sDeg = (now.getSeconds() / 60) * 360;
-    const mDeg = ((now.getMinutes() + now.getSeconds() / 60) / 60) * 360;
-    const hDeg = ((now.getHours() % 12 + now.getMinutes() / 60) / 12) * 360;
-    function handCoords(deg, len) {
-      const r = (deg - 90) * Math.PI / 180;
-      return { x2: 50 + len * Math.cos(r), y2: 50 + len * Math.sin(r) };
-    }
-    const hh = handCoords(hDeg, 15); // short hour hand
-    const mh = handCoords(mDeg, 22); // medium minute hand
-    const sh = handCoords(sDeg, 25); // long second hand
-    const hEl = document.getElementById('orb-hand-h');
-    const mEl = document.getElementById('orb-hand-m');
-    const sEl = document.getElementById('orb-hand-s');
-    if (hEl) { hEl.setAttribute('x2', hh.x2); hEl.setAttribute('y2', hh.y2); }
-    if (mEl) { mEl.setAttribute('x2', mh.x2); mEl.setAttribute('y2', mh.y2); }
-    if (sEl) { sEl.setAttribute('x2', sh.x2); sEl.setAttribute('y2', sh.y2); }
-  } else if (svgClock) {
-    svgClock.style.display = 'none';
-  }
-
-  // Update expanded center overlay
+  // Update the info strip below orb (expanded only)
   if (expanded) {
     const hh2 = String(now.getHours()).padStart(2, '0');
     const mm2 = String(now.getMinutes()).padStart(2, '0');
@@ -3984,10 +3936,8 @@ document.getElementById('cmd-palette')?.addEventListener('click', e => {
 
 /* ── Keyboard shortcuts ────────────────────────────────── */
 document.addEventListener('keydown', e => {
-  // N — new task (when not in an input)
+  // N — focus the task input
   if (e.key === 'n' && !e.target.matches('input,textarea,select')) {
-    const form = document.getElementById('task-add-form');
-    form.classList.add('open');
     document.getElementById('task-add-input')?.focus();
     return;
   }
