@@ -2360,57 +2360,124 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
 })();
 
 /* ══════════════════════════════════════════════════════════
-   FIREBASE TASKS SYSTEM
+   HELPERS
    ══════════════════════════════════════════════════════════ */
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) { return String(s ?? '').replace(/"/g,'&quot;'); }
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDate(s) {
+  if (!s) return '';
+  const [,m,d] = s.split('-');
+  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]} ${+d}`;
+}
+function fmtTimeSched(hhmm) {
+  if (!hhmm) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2,'0')}${h < 12 ? 'am' : 'pm'}`;
+}
+function fmtHour(h) {
+  if (h === 0) return '12am'; if (h < 12) return `${h}am`;
+  if (h === 12) return '12pm'; return `${h-12}pm`;
+}
+function minutesToDuration(m) {
+  const h = Math.floor(m/60), r = m%60;
+  return h > 0 ? (r > 0 ? `${h}h ${r}m` : `${h}h`) : `${r}m`;
+}
+function addMinutes(hhmm, mins) {
+  const [h, m] = hhmm.split(':').map(Number);
+  const t = h*60 + m + mins;
+  return `${String(Math.floor(t/60)%24).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
+}
+function updateNavCounts() {
+  const today = localDateStr(new Date());
+  const todayEl = document.getElementById('nav-count-today');
+  const taskEl  = document.getElementById('nav-count-tasks');
+  if (todayEl) todayEl.textContent = TASKS.filter(t => !t.done && t.dueDate === today).length || '—';
+  if (taskEl)  taskEl.textContent  = TASKS.filter(t => !t.done).length || '—';
+}
 
-let TASKS      = [];   // [{ id, title, done, priority, dueDate, calEventId, subtasks:[] }]
-let CAL_EVENTS = [];   // [{ id, title, taskId, date, startHour, endHour, color }]
-let _dragTaskId = null;
-
-/* Wait for Firebase module to expose globals */
+/* ══════════════════════════════════════════════════════════
+   FIREBASE HELPERS
+   ══════════════════════════════════════════════════════════ */
 function waitForFirebase(fn) {
   if (window.CDX_DB && window.CDX_FB) { fn(); return; }
   setTimeout(() => waitForFirebase(fn), 120);
 }
 
-/* ── Load & live-sync from Firestore ──────────────────── */
-function initTasks() {
+/* ══════════════════════════════════════════════════════════
+   DATA INIT
+   ══════════════════════════════════════════════════════════ */
+function initData() {
   const { collection, onSnapshot, query, orderBy } = window.CDX_FB;
   const db = window.CDX_DB;
 
-  // Tasks collection
-  onSnapshot(
-    query(collection(db, 'tasks'), orderBy('createdAt', 'asc')),
-    snap => {
-      TASKS = snap.docs.map(d => ({ id: d.id, subtasks: [], ...d.data() }));
-      renderTasks();
-      updateNavCounts();
-    }
-  );
+  onSnapshot(query(collection(db, 'tasks'), orderBy('createdAt', 'asc')), snap => {
+    TASKS = snap.docs.map(d => ({ id: d.id, subtasks: [], ...d.data() }));
+    renderTasks(); renderCalendar(); updateNavCounts();
+  });
 
-  // Calendar events collection
-  onSnapshot(
-    query(collection(db, 'calEvents'), orderBy('startHour', 'asc')),
-    snap => {
-      CAL_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderCalEvents();
-    }
-  );
+  onSnapshot(query(collection(db, 'calEvents'), orderBy('date', 'asc')), snap => {
+    CAL_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderTasks(); renderCalendar();
+  });
+
+  onSnapshot(collection(db, 'holidays'), snap => {
+    HOLIDAYS = {};
+    snap.docs.forEach(d => { HOLIDAYS[d.id] = { docId: d.id, ...d.data() }; });
+    renderCalendar(); renderSettingsHolidays();
+  });
+
+  seedHolidays();
 }
 
-/* ── Render task list ─────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   HOLIDAYS
+   ══════════════════════════════════════════════════════════ */
+async function seedHolidays() {
+  const { doc, getDoc, writeBatch } = window.CDX_FB;
+  const db = window.CDX_DB;
+  const sentinel = doc(db, 'holidays', '_seeded_hk');
+  const snap = await getDoc(sentinel);
+  if (snap.exists()) return;
+  const batch = writeBatch(db);
+  HK_HOLIDAYS.forEach(h => batch.set(doc(db, 'holidays', h.date), { name: h.name, type: h.type, date: h.date }));
+  batch.set(sentinel, { seeded: true });
+  await batch.commit();
+}
+
+async function addHoliday(date, name, type) {
+  const { doc, setDoc } = window.CDX_FB;
+  if (!date || !name) return;
+  await setDoc(doc(window.CDX_DB, 'holidays', date), { name, type: type || 'personal', date });
+}
+
+async function deleteHoliday(docId) {
+  const { doc, deleteDoc } = window.CDX_FB;
+  await deleteDoc(doc(window.CDX_DB, 'holidays', docId));
+}
+
+/* ══════════════════════════════════════════════════════════
+   RENDER TASKS
+   ══════════════════════════════════════════════════════════ */
 function renderTasks() {
   const body = document.getElementById('tasks-body');
   if (!body) return;
   body.innerHTML = '';
 
-  const today = localDateStr(new Date());
-  const groups = [
-    { label: 'Overdue',  tasks: TASKS.filter(t => !t.done && t.dueDate && t.dueDate < today) },
-    { label: 'Today',    tasks: TASKS.filter(t => !t.done && t.dueDate === today) },
-    { label: 'Upcoming', tasks: TASKS.filter(t => !t.done && t.dueDate && t.dueDate > today) },
-    { label: 'No date',  tasks: TASKS.filter(t => !t.done && !t.dueDate) },
-    { label: 'Done',     tasks: TASKS.filter(t =>  t.done) },
+  const visible  = _settings.visibleCategories;
+  const filtered = TASKS.filter(t => !t.category || visible.includes(t.category));
+  const today    = localDateStr(new Date());
+  const groups   = [
+    { label: 'Overdue',  tasks: filtered.filter(t => !t.done && t.dueDate && t.dueDate < today) },
+    { label: 'Today',    tasks: filtered.filter(t => !t.done && t.dueDate === today) },
+    { label: 'Upcoming', tasks: filtered.filter(t => !t.done && t.dueDate && t.dueDate > today) },
+    { label: 'No date',  tasks: filtered.filter(t => !t.done && !t.dueDate) },
+    { label: 'Done',     tasks: filtered.filter(t =>  t.done) },
   ];
 
   let rowIdx = 0;
@@ -2420,9 +2487,7 @@ function renderTasks() {
     labelEl.className = 'tasks-group-label';
     labelEl.textContent = group.label;
     body.appendChild(labelEl);
-    group.tasks.forEach(task => {
-      body.appendChild(buildTaskRow(task, rowIdx++));
-    });
+    group.tasks.forEach(task => body.appendChild(buildTaskRow(task, rowIdx++)));
   });
 }
 
@@ -2431,14 +2496,24 @@ function buildTaskRow(task, idx) {
   wrap.className = 'task-row-wrap';
   wrap.dataset.taskId = task.id;
 
-  const hasSubs = task.subtasks && task.subtasks.length > 0;
+  const hasSubs  = task.subtasks && task.subtasks.length > 0;
+  const cat      = task.category ? CATEGORIES[task.category] : null;
+  const catBadge = cat
+    ? `<span class="task-cat-badge" style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>`
+    : '';
+
+  let schedBadge = '';
+  if (task.calEventId) {
+    const ev = CAL_EVENTS.find(e => e.id === task.calEventId);
+    const ts = ev?.startTime ? fmtTimeSched(ev.startTime) : (ev?.startHour != null ? fmtHour(ev.startHour) : '');
+    schedBadge = `<span class="task-cal-badge">◻ ${ts || 'Scheduled'}</span>`;
+  }
 
   const row = document.createElement('div');
   row.className = 'task-row';
   row.draggable = true;
   row.dataset.taskId = task.id;
   row.style.animationDelay = `${idx * 35}ms`;
-
   row.innerHTML = `
     <button class="task-expand-btn ${hasSubs ? '' : 'ghost'}" data-expand="${escAttr(task.id)}">›</button>
     <div class="task-check ${task.done ? 'done' : ''}" data-check="${escAttr(task.id)}">${task.done ? '✓' : ''}</div>
@@ -2446,25 +2521,22 @@ function buildTaskRow(task, idx) {
       <span class="task-title ${task.done ? 'done' : ''}" data-edit="${escAttr(task.id)}">${escHtml(task.title)}</span>
       <div class="task-meta">
         <div class="task-priority-dot ${task.priority || 'low'}"></div>
+        ${catBadge}
         ${task.dueDate ? `<span class="task-due ${task.dueDate < localDateStr(new Date()) && !task.done ? 'overdue' : ''}">${fmtDate(task.dueDate)}</span>` : ''}
-        ${task.calEventId ? '<span class="task-cal-badge">◻ Scheduled</span>' : ''}
+        ${schedBadge}
       </div>
     </div>
     <div class="task-actions-group">
       <button class="task-action-btn" data-add-sub="${escAttr(task.id)}" title="Add subtask">⊕</button>
       <button class="task-action-btn danger" data-del="${escAttr(task.id)}" title="Delete task">✕</button>
     </div>`;
-
   wrap.appendChild(row);
 
-  // Subtasks container
   const subWrap = document.createElement('div');
   subWrap.className = 'subtasks-wrap';
   subWrap.dataset.taskId = task.id;
-  if (hasSubs) {
-    task.subtasks.forEach(sub => subWrap.appendChild(buildSubtaskRow(task.id, sub)));
-  }
-  // Add-subtask input row
+  if (hasSubs) task.subtasks.forEach(sub => subWrap.appendChild(buildSubtaskRow(task.id, sub)));
+
   const addSubRow = document.createElement('div');
   addSubRow.className = 'subtask-add-row hidden';
   addSubRow.dataset.taskId = task.id;
@@ -2474,18 +2546,15 @@ function buildTaskRow(task, idx) {
   subWrap.appendChild(addSubRow);
   wrap.appendChild(subWrap);
 
-  // Drag events
   row.addEventListener('dragstart', e => {
-    _dragTaskId = task.id;
+    _dragTaskId = task.id; _dragSubId = null;
     row.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'copy';
     e.dataTransfer.setData('text/plain', task.id);
   });
   row.addEventListener('dragend', () => {
-    row.classList.remove('dragging');
-    _dragTaskId = null;
+    row.classList.remove('dragging'); _dragTaskId = null; _dragSubId = null;
   });
-
   return wrap;
 }
 
@@ -2493,12 +2562,31 @@ function buildSubtaskRow(parentId, sub) {
   const row = document.createElement('div');
   row.className = 'subtask-row';
   row.dataset.subId = sub.id;
+  row.draggable = true;
+
+  let schedBadge = '';
+  if (sub.calEventId) {
+    const ev = CAL_EVENTS.find(e => e.id === sub.calEventId);
+    if (ev?.startTime) schedBadge = `<span class="task-cal-badge" style="font-size:9px">◻ ${fmtTimeSched(ev.startTime)}</span>`;
+  }
+
   row.innerHTML = `
     <div class="task-check ${sub.done ? 'done' : ''}" data-subcheck="${escAttr(parentId)}" data-sub="${escAttr(sub.id)}">${sub.done ? '✓' : ''}</div>
     <span class="subtask-title ${sub.done ? 'done' : ''}">${escHtml(sub.title)}</span>
+    ${schedBadge}
     <button class="task-action-btn danger" style="opacity:0;margin-left:auto" data-delsub="${escAttr(parentId)}" data-sub="${escAttr(sub.id)}">✕</button>`;
   row.addEventListener('mouseenter', () => row.querySelector('.task-action-btn').style.opacity = '1');
   row.addEventListener('mouseleave', () => row.querySelector('.task-action-btn').style.opacity = '0');
+  row.addEventListener('dragstart', e => {
+    _dragTaskId = parentId; _dragSubId = sub.id;
+    row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('text/plain', `${parentId}:${sub.id}`);
+    e.stopPropagation();
+  });
+  row.addEventListener('dragend', () => {
+    row.classList.remove('dragging'); _dragTaskId = null; _dragSubId = null;
+  });
   return row;
 }
 
@@ -2618,11 +2706,12 @@ function cancelInlineEdit(input) {
 }
 
 /* ── Firestore CRUD ───────────────────────────────────── */
-async function addTask(title, priority = 'med', dueDate = '') {
+async function addTask(title, priority = 'med', dueDate = '', category = '') {
   const { collection, addDoc, serverTimestamp } = window.CDX_FB;
   await addDoc(collection(window.CDX_DB, 'tasks'), {
     title, done: false, priority,
     dueDate: dueDate || null,
+    category: category || null,
     calEventId: null, subtasks: [],
     createdAt: serverTimestamp()
   });
@@ -2645,6 +2734,11 @@ async function deleteTask(taskId) {
   if (task.calEventId) {
     try { await deleteDoc(doc(window.CDX_DB, 'calEvents', task.calEventId)); } catch (_) {}
   }
+  for (const sub of (task.subtasks || [])) {
+    if (sub.calEventId) {
+      try { await deleteDoc(doc(window.CDX_DB, 'calEvents', sub.calEventId)); } catch (_) {}
+    }
+  }
   await deleteDoc(doc(window.CDX_DB, 'tasks', taskId));
 }
 
@@ -2666,73 +2760,410 @@ async function toggleSubtask(taskId, subId) {
 async function deleteSubtask(taskId, subId) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
+  const sub = task.subtasks?.find(s => s.id === subId);
+  if (sub?.calEventId) {
+    const { doc, deleteDoc } = window.CDX_FB;
+    try { await deleteDoc(doc(window.CDX_DB, 'calEvents', sub.calEventId)); } catch (_) {}
+  }
   await updateTask(taskId, { subtasks: task.subtasks.filter(s => s.id !== subId) });
 }
 
-/* ── Calendar events ──────────────────────────────────── */
-function renderCalEvents() {
-  document.querySelectorAll('.cal-event').forEach(e => e.remove());
-  const today = localDateStr(new Date());
-  const container = document.getElementById('cal-hours-container');
-  if (!container) return;
-  CAL_EVENTS.filter(ev => ev.date === today).forEach(ev => {
-    const slot = container.querySelector(`[data-hour="${ev.startHour}"] .cal-hour-slot`);
-    if (!slot) return;
-    const chip = document.createElement('div');
-    chip.className = `cal-event ${ev.color || 'gold'}`;
-    chip.dataset.eventId = ev.id;
-    chip.innerHTML = `
-      <span class="cal-event-title">${escHtml(ev.title)}</span>
-      <span class="cal-event-time">${fmtHour(ev.startHour)} – ${fmtHour(ev.endHour)}</span>`;
-    slot.appendChild(chip);
-  });
-}
-
-/* ── Drag-to-calendar ─────────────────────────────────── */
-function initCalDropZones() {
-  const container = document.getElementById('cal-hours-container');
-  if (!container) return;
-
-  container.addEventListener('dragover', e => {
-    const slot = e.target.closest('.cal-hour-slot');
-    if (!slot || !_dragTaskId) return;
-    e.preventDefault();
-    document.querySelectorAll('.cal-hour-slot.drop-over').forEach(s => s.classList.remove('drop-over'));
-    slot.classList.add('drop-over');
-  });
-
-  container.addEventListener('dragleave', e => {
-    const slot = e.target.closest('.cal-hour-slot');
-    if (slot) slot.classList.remove('drop-over');
-  });
-
-  container.addEventListener('drop', async e => {
-    const slot = e.target.closest('.cal-hour-slot');
-    if (!slot || !_dragTaskId) return;
-    e.preventDefault();
-    slot.classList.remove('drop-over');
-    const row = slot.closest('.cal-hour-row');
-    const startHour = parseInt(row?.dataset.hour ?? '9');
-    await createCalEvent(_dragTaskId, startHour);
-  });
-}
-
-async function createCalEvent(taskId, startHour) {
+/* ── Schedule Modal ───────────────────────────────────── */
+function openScheduleModal(date, startTime, taskId, subId) {
+  _schedCtx = { taskId, subId, date, startTime };
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
-  const { collection, addDoc, doc, deleteDoc, serverTimestamp } = window.CDX_FB;
-  if (task.calEventId) {
-    try { await deleteDoc(doc(window.CDX_DB, 'calEvents', task.calEventId)); } catch (_) {}
+  document.getElementById('sched-title').value = subId
+    ? (task.subtasks?.find(s => s.id === subId)?.title || task.title)
+    : task.title;
+  document.getElementById('sched-date').value = date;
+  document.getElementById('sched-time').value = startTime;
+  document.getElementById('sched-duration').value = 60;
+  const subsSection = document.getElementById('sched-subtasks-section');
+  const subsList    = document.getElementById('sched-subtasks-list');
+  if (!subId && task.subtasks && task.subtasks.length > 0) {
+    subsSection.style.display = 'block';
+    subsList.innerHTML = task.subtasks.map(s => `
+      <div class="sched-subtask-item">
+        <input type="checkbox" id="sched-sub-${s.id}" value="${escAttr(s.id)}" checked />
+        <label for="sched-sub-${s.id}" style="flex:1">${escHtml(s.title)}</label>
+        <input type="time" class="sched-input" style="width:100px;font-size:11px;padding:4px 6px"
+               id="sched-sub-time-${s.id}" value="${startTime}" />
+      </div>`).join('');
+  } else {
+    subsSection.style.display = 'none';
+    subsList.innerHTML = '';
   }
-  const colorMap = { high: 'rust', med: 'gold', low: 'sage' };
-  const ref = await addDoc(collection(window.CDX_DB, 'calEvents'), {
-    title: task.title, taskId,
-    date: localDateStr(new Date()),
-    startHour, endHour: startHour + 1,
-    color: colorMap[task.priority] || 'gold',
-    createdAt: serverTimestamp()
+  document.getElementById('schedule-modal').classList.add('open');
+}
+
+async function confirmSchedule() {
+  const { collection, addDoc, doc, deleteDoc, serverTimestamp } = window.CDX_FB;
+  const db = window.CDX_DB;
+  const title     = document.getElementById('sched-title').value.trim();
+  const date      = document.getElementById('sched-date').value;
+  const startTime = document.getElementById('sched-time').value;
+  const duration  = parseInt(document.getElementById('sched-duration').value) || 60;
+  const endTime   = addMinutes(startTime, duration);
+  if (!title || !date || !startTime) return;
+
+  const { taskId, subId } = _schedCtx;
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  const color = getCatColor(task.category);
+
+  if (subId) {
+    const sub = task.subtasks?.find(s => s.id === subId);
+    if (!sub) return;
+    if (sub.calEventId) {
+      try { await deleteDoc(doc(db, 'calEvents', sub.calEventId)); } catch (_) {}
+    }
+    const ref = await addDoc(collection(db, 'calEvents'), {
+      title, taskId, subId, date, startTime, endTime, duration, color,
+      createdAt: serverTimestamp()
+    });
+    await updateTask(taskId, {
+      subtasks: task.subtasks.map(s => s.id === subId ? { ...s, calEventId: ref.id } : s)
+    });
+  } else {
+    if (task.calEventId) {
+      try { await deleteDoc(doc(db, 'calEvents', task.calEventId)); } catch (_) {}
+    }
+    const ref = await addDoc(collection(db, 'calEvents'), {
+      title, taskId, date, startTime, endTime, duration, color,
+      createdAt: serverTimestamp()
+    });
+    await updateTask(taskId, { calEventId: ref.id });
+    // Schedule checked subtasks
+    const checkedBoxes = document.querySelectorAll('#sched-subtasks-list input[type="checkbox"]:checked');
+    for (const cb of checkedBoxes) {
+      const sid = cb.value;
+      const st  = document.getElementById(`sched-sub-time-${sid}`)?.value || startTime;
+      const freshTask = TASKS.find(t => t.id === taskId);
+      const sub = freshTask?.subtasks?.find(s => s.id === sid);
+      if (!sub) continue;
+      if (sub.calEventId) {
+        try { await deleteDoc(doc(db, 'calEvents', sub.calEventId)); } catch (_) {}
+      }
+      const sref = await addDoc(collection(db, 'calEvents'), {
+        title: sub.title, taskId, subId: sid, date,
+        startTime: st, endTime: addMinutes(st, 30), duration: 30, color,
+        createdAt: serverTimestamp()
+      });
+      const latestTask = TASKS.find(t => t.id === taskId);
+      await updateTask(taskId, {
+        subtasks: (latestTask?.subtasks || []).map(s => s.id === sid ? { ...s, calEventId: sref.id } : s)
+      });
+    }
+  }
+  document.getElementById('schedule-modal').classList.remove('open');
+  _schedCtx = {};
+}
+
+function initScheduleModal() {
+  document.getElementById('sched-confirm-btn')?.addEventListener('click', confirmSchedule);
+}
+
+/* ── Calendar helpers ─────────────────────────────────── */
+function getCatColor(cat) {
+  return cat && CATEGORIES[cat] ? CATEGORIES[cat].color : '#c9a227';
+}
+
+/* ── Calendar render dispatch ─────────────────────────── */
+function renderCalendar() {
+  if (_calView === 'day')   renderDayView(_calDate);
+  if (_calView === 'week')  renderWeekView(_calDate);
+  if (_calView === 'month') renderMonthView(_calDate);
+  updateCalLabel();
+}
+
+function updateCalLabel() {
+  const el = document.getElementById('cal-date-label');
+  if (!el) return;
+  const d = _calDate;
+  if (_calView === 'day') {
+    el.textContent = d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+  } else if (_calView === 'week') {
+    const ws = weekStart(d);
+    const we = new Date(ws); we.setDate(we.getDate() + 6);
+    el.textContent = `${ws.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${we.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+  } else {
+    el.textContent = d.toLocaleDateString('en-GB', { month:'long', year:'numeric' });
+  }
+}
+
+function weekStart(d) {
+  const ws = new Date(d);
+  const dow = ws.getDay();
+  ws.setDate(ws.getDate() + (dow === 0 ? -6 : 1 - dow));
+  ws.setHours(0,0,0,0);
+  return ws;
+}
+
+/* ── Day view ─────────────────────────────────────────── */
+function renderDayView(date) {
+  const calPanel  = document.getElementById('cal-day-view');
+  const container = document.getElementById('cal-hours-container');
+  if (!container) return;
+  document.getElementById('cal-week-view')?.remove();
+  document.getElementById('cal-month-view')?.remove();
+  calPanel.style.display = '';
+
+  const dateStr   = localDateStr(date);
+  const dayEvents = CAL_EVENTS.filter(ev => ev.date === dateStr);
+
+  // Clear old event chips
+  container.querySelectorAll('.cal-event').forEach(e => e.remove());
+
+  // Build hour rows if not yet present
+  if (!container.querySelector('.cal-hour-row')) {
+    for (let h = 5; h <= 23; h++) {
+      const label = h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h-12}pm`;
+      const row = document.createElement('div');
+      row.className = 'cal-hour-row';
+      row.dataset.hour = h;
+      row.innerHTML = `<div class="cal-hour-label">${label}</div><div class="cal-hour-slot"></div>`;
+      container.appendChild(row);
+    }
+  }
+
+  dayEvents.forEach(ev => {
+    const startH = ev.startTime ? parseInt(ev.startTime.split(':')[0]) : (ev.startHour || 9);
+    const slot = container.querySelector(`[data-hour="${startH}"] .cal-hour-slot`);
+    if (!slot) return;
+    const chip = document.createElement('div');
+    chip.className = 'cal-event';
+    chip.dataset.eventId = ev.id;
+    const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
+    chip.style.cssText = `border-left-color:${color};background:${color}18`;
+    chip.innerHTML = `
+      <span class="cal-event-title">${escHtml(ev.title)}</span>
+      <span class="cal-event-time">${fmtTimeSched(ev.startTime || `${String(startH).padStart(2,'0')}:00`)}${ev.duration ? ' · ' + minutesToDuration(ev.duration) : ''}</span>`;
+    slot.appendChild(chip);
   });
-  await updateTask(taskId, { calEventId: ref.id });
+
+  // Now-line position
+  const now = new Date();
+  const mins = (now.getHours() - 5) * 60 + now.getMinutes();
+  const pct  = Math.max(0, Math.min(100, (mins / (19 * 60)) * 100));
+  const line = document.getElementById('cal-now-line');
+  if (line) line.style.top = pct + '%';
+}
+
+/* ── Week view ─────────────────────────────────────────── */
+function renderWeekView(date) {
+  const calPanel = document.getElementById('cal-day-view');
+  calPanel.style.display = 'none';
+  document.getElementById('cal-month-view')?.remove();
+
+  let weekView = document.getElementById('cal-week-view');
+  if (!weekView) {
+    weekView = document.createElement('div');
+    weekView.id = 'cal-week-view';
+    weekView.style.cssText = 'flex:1;overflow-y:auto;display:flex;flex-direction:column';
+    calPanel.parentNode.insertBefore(weekView, calPanel.nextSibling);
+  }
+
+  const ws    = weekStart(date);
+  const today = localDateStr(new Date());
+  const DAYS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  let html = `<div class="week-header-row"><div class="week-time-label" style="border-bottom:none"></div>`;
+  for (let i = 0; i < 7; i++) {
+    const d  = new Date(ws); d.setDate(d.getDate() + i);
+    const ds = localDateStr(d);
+    const isToday = ds === today;
+    const hol = HOLIDAYS[ds];
+    html += `<div class="week-day-header${isToday ? ' today' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:var(--gold)' : ''}">
+      ${DAYS[i]} ${d.getDate()}${hol ? `<br><span style="font-size:7px;color:var(--rust);display:block">${escHtml(hol.name)}</span>` : ''}
+    </div>`;
+  }
+  html += `</div><div class="week-body">`;
+
+  for (let h = 5; h <= 23; h++) {
+    const label = h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h-12}pm`;
+    html += `<div class="week-time-label">${label}</div>`;
+    for (let i = 0; i < 7; i++) {
+      const d   = new Date(ws); d.setDate(d.getDate() + i);
+      const ds  = localDateStr(d);
+      const hh  = String(h).padStart(2,'0');
+      const evs = CAL_EVENTS.filter(ev => ev.date === ds && ev.startTime?.startsWith(hh));
+      const chips = evs.map(ev => {
+        const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
+        return `<div class="week-event-chip" style="border-left-color:${color};background:${color}18">
+          <span class="chip-title">${escHtml(ev.title)}</span>
+          <span class="chip-time">${fmtTimeSched(ev.startTime)}</span>
+        </div>`;
+      }).join('');
+      html += `<div class="week-cell" data-date="${ds}" data-hour="${h}">${chips}</div>`;
+    }
+  }
+  html += `</div>`;
+  weekView.innerHTML = html;
+
+  // Click header day → switch to day view
+  weekView.querySelectorAll('.week-day-header[data-date]').forEach(el => {
+    el.addEventListener('click', () => {
+      _calDate = new Date(el.dataset.date + 'T00:00:00');
+      _calView = 'day';
+      document.querySelectorAll('.view-tab[data-view]').forEach(t => t.classList.remove('active'));
+      document.querySelector('.view-tab[data-view="day"]')?.classList.add('active');
+      renderCalendar();
+    });
+  });
+}
+
+/* ── Month view ───────────────────────────────────────── */
+function renderMonthView(date) {
+  const calPanel = document.getElementById('cal-day-view');
+  calPanel.style.display = 'none';
+  document.getElementById('cal-week-view')?.remove();
+
+  let monthView = document.getElementById('cal-month-view');
+  if (!monthView) {
+    monthView = document.createElement('div');
+    monthView.id = 'cal-month-view';
+    monthView.style.cssText = 'flex:1;overflow-y:auto;display:flex;flex-direction:column';
+    calPanel.parentNode.insertBefore(monthView, calPanel.nextSibling);
+  }
+
+  const year  = date.getFullYear();
+  const month = date.getMonth();
+  const today = localDateStr(new Date());
+  const DAYS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  let html = `<div class="month-dow-header">${DAYS.map(d => `<div class="month-dow-label">${d}</div>`).join('')}</div><div class="month-grid">`;
+
+  const firstDow   = new Date(year, month, 1).getDay();
+  const startOffset = firstDow === 0 ? 6 : firstDow - 1;
+  const lastDay    = new Date(year, month + 1, 0).getDate();
+  const prevLast   = new Date(year, month, 0).getDate();
+
+  for (let i = startOffset - 1; i >= 0; i--) {
+    html += buildMonthCell(localDateStr(new Date(year, month - 1, prevLast - i)), false);
+  }
+  for (let day = 1; day <= lastDay; day++) {
+    const ds = localDateStr(new Date(year, month, day));
+    html += buildMonthCell(ds, true);
+  }
+  const total = startOffset + lastDay;
+  const rem   = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let i = 1; i <= rem; i++) {
+    html += buildMonthCell(localDateStr(new Date(year, month + 1, i)), false);
+  }
+
+  html += `</div>`;
+  monthView.innerHTML = html;
+
+  monthView.querySelectorAll('.month-day-cell[data-date]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      _calDate = new Date(cell.dataset.date + 'T00:00:00');
+      _calView = 'day';
+      document.querySelectorAll('.view-tab[data-view]').forEach(t => t.classList.remove('active'));
+      document.querySelector('.view-tab[data-view="day"]')?.classList.add('active');
+      renderCalendar();
+    });
+  });
+}
+
+function buildMonthCell(dateStr, isCurrentMonth) {
+  const today  = localDateStr(new Date());
+  const day    = parseInt(dateStr.split('-')[2]);
+  const hol    = HOLIDAYS[dateStr];
+  const evs    = CAL_EVENTS.filter(ev => ev.date === dateStr);
+
+  const classes = ['month-day-cell',
+    !isCurrentMonth ? 'other-month' : '',
+    dateStr === today ? 'today' : '',
+    hol ? 'holiday' : ''
+  ].filter(Boolean).join(' ');
+
+  const doneTasks = TASKS.filter(t => t.done && t.dueDate === dateStr);
+  const catCounts = {};
+  doneTasks.forEach(t => { const c = t.category || 'personal'; catCounts[c] = (catCounts[c]||0) + 1; });
+  const maxCount  = Math.max(1, ...Object.values(catCounts));
+  const sparkBars = Object.entries(catCounts).map(([cat, cnt]) => {
+    const h = Math.round((cnt / maxCount) * 12) + 2;
+    return `<div class="month-spark-bar" style="height:${h}px;background:${getCatColor(cat)}"></div>`;
+  }).join('');
+  const spark = sparkBars ? `<div class="month-spark">${sparkBars}</div>` : '';
+
+  const holBadge = hol ? `<span class="month-holiday-name">${escHtml(hol.name)}</span>` : '';
+  const pills = evs.slice(0,2).map(ev => {
+    const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
+    return `<span class="month-event-pill" style="background:${color}22;color:${color}">${escHtml(ev.title)}</span>`;
+  }).join('');
+  const more = evs.length > 2 ? `<span style="font-size:8px;color:var(--muted);font-family:var(--font-mono)">+${evs.length-2} more</span>` : '';
+
+  return `<div class="${classes}" data-date="${dateStr}">
+    <span class="month-day-num">${day}</span>
+    ${holBadge}${spark}${pills}${more}
+  </div>`;
+}
+
+/* ── Calendar nav ─────────────────────────────────────── */
+function initCalNav() {
+  document.getElementById('cal-prev')?.addEventListener('click', () => {
+    if (_calView === 'day')   _calDate.setDate(_calDate.getDate() - 1);
+    else if (_calView === 'week')  _calDate.setDate(_calDate.getDate() - 7);
+    else _calDate.setMonth(_calDate.getMonth() - 1);
+    renderCalendar();
+  });
+  document.getElementById('cal-next')?.addEventListener('click', () => {
+    if (_calView === 'day')   _calDate.setDate(_calDate.getDate() + 1);
+    else if (_calView === 'week')  _calDate.setDate(_calDate.getDate() + 7);
+    else _calDate.setMonth(_calDate.getMonth() + 1);
+    renderCalendar();
+  });
+  document.getElementById('cal-today')?.addEventListener('click', () => {
+    _calDate = new Date(); renderCalendar();
+  });
+}
+
+/* ── Drag-to-calendar (modal) ─────────────────────────── */
+function initCalDropZones() {
+  // Day view
+  const dayContainer = document.getElementById('cal-hours-container');
+  if (dayContainer) {
+    dayContainer.addEventListener('dragover', e => {
+      const slot = e.target.closest('.cal-hour-slot');
+      if (!slot || !_dragTaskId) return;
+      e.preventDefault();
+      document.querySelectorAll('.cal-hour-slot.drop-over').forEach(s => s.classList.remove('drop-over'));
+      slot.classList.add('drop-over');
+    });
+    dayContainer.addEventListener('dragleave', e => {
+      e.target.closest('.cal-hour-slot')?.classList.remove('drop-over');
+    });
+    dayContainer.addEventListener('drop', e => {
+      const slot = e.target.closest('.cal-hour-slot');
+      if (!slot || !_dragTaskId) return;
+      e.preventDefault();
+      slot.classList.remove('drop-over');
+      const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
+      openScheduleModal(localDateStr(_calDate), `${String(h).padStart(2,'0')}:00`, _dragTaskId, _dragSubId);
+    });
+  }
+
+  // Week view (delegated via document)
+  document.addEventListener('dragover', e => {
+    const cell = e.target.closest('.week-cell');
+    if (!cell || !_dragTaskId) return;
+    e.preventDefault();
+    document.querySelectorAll('.week-cell.drop-over').forEach(c => c.classList.remove('drop-over'));
+    cell.classList.add('drop-over');
+  });
+  document.addEventListener('dragleave', e => {
+    e.target.closest('.week-cell')?.classList.remove('drop-over');
+  });
+  document.addEventListener('drop', e => {
+    const cell = e.target.closest('.week-cell');
+    if (!cell || !_dragTaskId) return;
+    e.preventDefault();
+    cell.classList.remove('drop-over');
+    const h = parseInt(cell.dataset.hour ?? '9');
+    openScheduleModal(cell.dataset.date, `${String(h).padStart(2,'0')}:00`, _dragTaskId, _dragSubId);
+  });
 }
 
 /* ── Add-task form ────────────────────────────────────── */
@@ -2747,23 +3178,23 @@ function initAddTaskForm() {
     form.classList.toggle('open');
     if (form.classList.contains('open')) input.focus();
   });
-
-  cancel.addEventListener('click', () => {
-    form.classList.remove('open');
-    input.value = '';
+  document.getElementById('mob-add-task')?.addEventListener('click', () => {
+    form.classList.add('open'); input.focus();
   });
-
+  cancel.addEventListener('click', () => {
+    form.classList.remove('open'); input.value = '';
+  });
   async function submit() {
-    const title = input.value.trim();
+    const title    = input.value.trim();
     if (!title) return;
     const priority = document.getElementById('task-add-priority').value;
     const dueDate  = document.getElementById('task-add-date').value;
-    await addTask(title, priority, dueDate);
+    const category = document.getElementById('task-add-category').value;
+    await addTask(title, priority, dueDate, category);
     input.value = '';
     document.getElementById('task-add-date').value = '';
     form.classList.remove('open');
   }
-
   confirm.addEventListener('click', submit);
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') submit();
@@ -2771,37 +3202,66 @@ function initAddTaskForm() {
   });
 }
 
-/* ── Helpers ──────────────────────────────────────────── */
-function escHtml(s) {
-  return String(s ?? '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function escAttr(s) { return String(s ?? '').replace(/"/g,'&quot;'); }
-function localDateStr(d) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function fmtDate(s) {
-  if (!s) return '';
-  const [,m,d] = s.split('-');
-  return `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]} ${+d}`;
-}
-function fmtHour(h) {
-  if (h === 0)  return '12am';
-  if (h < 12)  return `${h}am`;
-  if (h === 12) return '12pm';
-  return `${h-12}pm`;
-}
-function updateNavCounts() {
-  const today = localDateStr(new Date());
-  const todayEl = document.getElementById('nav-count-today');
-  const taskEl  = document.getElementById('nav-count-tasks');
-  if (todayEl) todayEl.textContent = TASKS.filter(t => !t.done && t.dueDate === today).length || '—';
-  if (taskEl)  taskEl.textContent  = TASKS.filter(t => !t.done).length || '—';
+/* ── Settings ─────────────────────────────────────────── */
+function renderSettingsCats() {
+  const grid = document.getElementById('settings-cat-filters');
+  if (!grid) return;
+  grid.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => {
+    const active = _settings.visibleCategories.includes(key);
+    return `<div class="settings-cat-pill${active ? ' active' : ''}" data-cat="${key}"
+      style="border-color:${cat.color}44;${active ? `background:${cat.color}18` : ''}">
+      <div class="cat-dot" style="background:${cat.color}"></div>${cat.label}
+    </div>`;
+  }).join('');
+  grid.querySelectorAll('.settings-cat-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const cat = pill.dataset.cat;
+      const idx = _settings.visibleCategories.indexOf(cat);
+      if (idx >= 0) _settings.visibleCategories.splice(idx, 1);
+      else _settings.visibleCategories.push(cat);
+      localStorage.setItem('cdx_v2_settings', JSON.stringify(_settings));
+      renderSettingsCats();
+      renderTasks();
+    });
+  });
 }
 
-/* initTasks / initCalDropZones / initAddTaskForm are booted
-   by the 'cdx-auth-ready' event listener above, after sign-in. */
+function renderSettingsHolidays() {
+  const list = document.getElementById('settings-holidays-list');
+  if (!list) return;
+  const entries = Object.values(HOLIDAYS).filter(h => !h.docId?.startsWith('_'));
+  if (!entries.length) {
+    list.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:4px 0">No holidays loaded yet.</div>`;
+    return;
+  }
+  list.innerHTML = entries.map(h => `
+    <div class="settings-holiday-row">
+      <span style="flex:1">${escHtml(h.name)}</span>
+      <span class="hol-type${h.type === 'public' ? ' public' : ''}">${h.type || 'personal'}</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(h.date)}</span>
+      ${h.type !== 'public' ? `<button class="task-action-btn danger" data-delhol="${escAttr(h.docId)}" title="Delete">✕</button>` : ''}
+    </div>`).join('');
+  list.querySelectorAll('[data-delhol]').forEach(btn => {
+    btn.addEventListener('click', () => deleteHoliday(btn.dataset.delhol));
+  });
+}
+
+function initSettingsPanel() {
+  document.getElementById('settings-btn')?.addEventListener('click', () => {
+    renderSettingsCats();
+    renderSettingsHolidays();
+    document.getElementById('settings-overlay').classList.add('open');
+  });
+  document.getElementById('holiday-add-btn')?.addEventListener('click', async () => {
+    const date = document.getElementById('holiday-date').value;
+    const name = document.getElementById('holiday-name').value.trim();
+    const type = document.getElementById('holiday-type').value;
+    if (!date || !name) return;
+    await addHoliday(date, name, type);
+    document.getElementById('holiday-date').value = '';
+    document.getElementById('holiday-name').value = '';
+  });
+}
 
 /* ── Orb (expand/collapse) ─────────────────────────────── */
 const orb         = document.getElementById('cosmodex-orb');
@@ -3008,7 +3468,8 @@ document.querySelectorAll('.view-tab[data-view]').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.view-tab[data-view]').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    // TODO: call buildDayView() / buildWeekView() / buildMonthView()
+    _calView = tab.dataset.view;
+    renderCalendar();
   });
 });
 
@@ -3054,9 +3515,13 @@ window.addEventListener('cdx-auth-ready', () => {
 /* ── Boot task system after auth ──────────────────────── */
 window.addEventListener('cdx-auth-ready', () => {
   waitForFirebase(() => {
-    initTasks();
+    initData();
     initCalDropZones();
     initAddTaskForm();
+    initScheduleModal();
+    initSettingsPanel();
+    initCalNav();
+    renderCalendar();
   });
 }, { once: true });
 
