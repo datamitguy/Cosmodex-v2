@@ -1095,6 +1095,105 @@ body::after {
   color: var(--gold);
 }
 
+/* Orb gadget buttons */
+.orb-gadgets {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.orb-gadget-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: rgba(201,162,39,0.08);
+  border: 1px solid rgba(201,162,39,0.2);
+  color: var(--gold);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--ease-fast);
+  font-family: inherit;
+  line-height: 1;
+}
+
+.orb-gadget-btn:hover {
+  background: rgba(201,162,39,0.18);
+  border-color: rgba(201,162,39,0.5);
+  transform: scale(1.08);
+}
+
+.orb-gadget-btn.rolling {
+  animation: orbPulse 0.3s ease-in-out infinite;
+}
+
+/* Spinning wheel overlay */
+#orb-wheel-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(10,9,8,0.75);
+  backdrop-filter: blur(6px);
+  align-items: center;
+  justify-content: center;
+}
+
+#orb-wheel-overlay.visible { display: flex; }
+
+.orb-wheel-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+
+.orb-wheel-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orb-wheel-result {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--gold);
+  min-height: 22px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.orb-wheel-spin-btn {
+  padding: 9px 32px;
+  border-radius: 10px;
+  background: rgba(201,162,39,0.12);
+  border: 1px solid rgba(201,162,39,0.35);
+  color: var(--gold);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--ease-fast);
+}
+
+.orb-wheel-spin-btn:hover:not(:disabled) {
+  background: rgba(201,162,39,0.22);
+  border-color: var(--gold);
+}
+
+.orb-wheel-spin-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* ═══════════════════════════════════════════════════════════
    OVERLAYS (shared base)
    ═══════════════════════════════════════════════════════════ */
@@ -1916,6 +2015,14 @@ body::after {
 <div id="orb-backdrop"></div>
 <div id="cosmodex-orb" title="Open Cosmodex dial">
   <canvas id="cosmodex-canvas"></canvas>
+  <!-- Analog clock hands SVG (expanded only) -->
+  <svg id="orb-clock-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"
+       style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none">
+    <line id="orb-hand-h" x1="50" y1="50" x2="50" y2="35" stroke="rgba(201,162,39,0.55)" stroke-width="2.5" stroke-linecap="round"/>
+    <line id="orb-hand-m" x1="50" y1="50" x2="50" y2="28" stroke="rgba(232,224,208,0.45)" stroke-width="1.5" stroke-linecap="round"/>
+    <line id="orb-hand-s" x1="50" y1="50" x2="50" y2="25" stroke="rgba(224,85,80,0.75)" stroke-width="0.8" stroke-linecap="round"/>
+    <circle cx="50" cy="50" r="1.8" fill="rgba(201,162,39,0.7)"/>
+  </svg>
 </div>
 <button id="orb-close">✕</button>
 <div id="orb-time-display">
@@ -1923,6 +2030,23 @@ body::after {
   <span class="orb-cosmodex-label">Cosmodex</span>
   <span class="orb-next-label">Next</span>
   <span class="orb-next-event" id="orb-next-event">—</span>
+  <!-- Gadget buttons -->
+  <div class="orb-gadgets">
+    <button class="orb-gadget-btn" id="orb-dice-btn" title="Roll the dice">⚄</button>
+    <button class="orb-gadget-btn" id="orb-wheel-btn" title="Spin the wheel">◎</button>
+  </div>
+</div>
+<!-- Spinning wheel overlay -->
+<div id="orb-wheel-overlay">
+  <div class="orb-wheel-panel">
+    <div class="orb-wheel-header">
+      <span style="font-family:var(--font-display);font-size:14px;font-weight:300;color:var(--gold);letter-spacing:0.06em">Spin the Wheel</span>
+      <button id="orb-wheel-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1">✕</button>
+    </div>
+    <canvas id="orb-wheel-canvas" width="280" height="280"></canvas>
+    <div class="orb-wheel-result" id="orb-wheel-result"></div>
+    <button class="orb-wheel-spin-btn" id="orb-wheel-spin">Spin</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════
@@ -3347,20 +3471,20 @@ function drawCosmodex() {
 
   const cx = W / 2, cy = H / 2;
   const maxR   = Math.min(W, H) / 2 * 0.93;
-  const innerR = maxR * (expanded ? 0.30 : 0.35);
-  const baseR  = maxR * (expanded ? 0.54 : 0.65);
-  const eventR = maxR * (expanded ? 0.87 : 0.91);
+  const innerR = maxR * (expanded ? 0.28 : 0.35);
+  const baseR  = maxR * (expanded ? 0.52 : 0.65);
+  const eventR = maxR * (expanded ? 0.70 : 0.72); // reduced: was 0.87/0.91
 
-  const today = localDateStr(new Date());
-  const now   = new Date();
-  const curH  = now.getHours() + now.getMinutes() / 60;
+  const today  = localDateStr(new Date());
+  const now    = new Date();
+  const curH   = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
   const TWO_PI = Math.PI * 2;
-  const GAP    = (TWO_PI / 24) * 0.055;
+  const GAP    = (TWO_PI / 24) * 0.06;
 
   // Subtle outer ring guide
   ctx.beginPath();
-  ctx.arc(cx, cy, eventR + (expanded ? 2 : 1), 0, TWO_PI);
-  ctx.strokeStyle = 'rgba(201,162,39,0.07)';
+  ctx.arc(cx, cy, eventR + (expanded ? 3 : 1), 0, TWO_PI);
+  ctx.strokeStyle = 'rgba(201,162,39,0.08)';
   ctx.lineWidth = expanded ? 1 : 0.5;
   ctx.stroke();
 
@@ -3369,14 +3493,25 @@ function drawCosmodex() {
     const a1 = ((h + 1) / 24) * TWO_PI - Math.PI / 2 - GAP;
 
     const hStr = String(h).padStart(2, '0');
-    const evs  = CAL_EVENTS.filter(ev =>
-      ev.date === today && ev.startTime?.startsWith(hStr)
-    );
+    // Match events that overlap this hour
+    const evs  = CAL_EVENTS.filter(ev => {
+      if (ev.date !== today || !ev.startTime) return false;
+      const [eh, em] = ev.startTime.split(':').map(Number);
+      const startFrac = eh + em / 60;
+      const dur = ev.duration || 60;
+      const endFrac = startFrac + dur / 60;
+      return h >= Math.floor(startFrac) && h < Math.ceil(endFrac);
+    });
     const hasEv  = evs.length > 0;
     const isCur  = Math.floor(curH) === h;
     const isPast = h < Math.floor(curH);
 
-    // Height of this segment
+    // Rest/context tints
+    const isNight = h < 5 || h >= 23;   // deep night (dim)
+    const isRest  = h >= 5 && h < 7;    // early morning (warm)
+    const isEve   = h >= 20 && h < 23;  // evening wind-down
+
+    // Petal outer radius
     const segR = hasEv ? eventR : baseR;
 
     // Fill colour
@@ -3386,11 +3521,14 @@ function drawCosmodex() {
       const c = getCatColor(t?.category);
       fill = c + (expanded ? 'cc' : 'bb');
     } else if (isCur) {
-      fill = 'rgba(201,162,39,0.42)';
+      fill = 'rgba(201,162,39,0.28)';
     } else if (isPast) {
-      fill = 'rgba(201,162,39,0.06)';
+      fill = isNight ? 'rgba(60,60,80,0.07)' : 'rgba(201,162,39,0.07)';
     } else {
-      fill = 'rgba(232,224,208,0.045)';
+      if (isNight)      fill = 'rgba(60,60,80,0.05)';
+      else if (isRest)  fill = 'rgba(180,100,40,0.09)';
+      else if (isEve)   fill = 'rgba(60,90,70,0.07)';
+      else              fill = 'rgba(232,224,208,0.04)';
     }
 
     // Draw petal segment
@@ -3401,49 +3539,97 @@ function drawCosmodex() {
     ctx.fillStyle = fill;
     ctx.fill();
 
-    // Stroke event segments
+    // Stroke for event segments
     if (hasEv) {
       const t = TASKS.find(t => t.id === evs[0].taskId);
-      ctx.strokeStyle = getCatColor(t?.category) + '44';
-      ctx.lineWidth   = 0.5;
+      ctx.strokeStyle = getCatColor(t?.category) + '55';
+      ctx.lineWidth   = 0.6;
       ctx.stroke();
     }
 
-    // Hour labels (expanded only, every 3h)
+    // Elapsed sub-fill for current hour
+    if (isCur && !hasEv) {
+      const frac = curH - Math.floor(curH);
+      const aElapsed = a0 + (a1 - a0) * frac;
+      ctx.beginPath();
+      ctx.arc(cx, cy, innerR, a0, aElapsed);
+      ctx.arc(cx, cy, baseR,  aElapsed, a0, true);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(201,162,39,0.18)';
+      ctx.fill();
+    }
+
+    // Boundary dots (expanded only)
+    if (expanded) {
+      const boundA = (h / 24) * TWO_PI - Math.PI / 2;
+      const isQuarter = h % 6 === 0;
+      const dotRad = isQuarter ? 2 : (h % 3 === 0 ? 1.4 : 0.8);
+      const dotDist = eventR + (isQuarter ? 7 : 5);
+      ctx.beginPath();
+      ctx.arc(cx + dotDist * Math.cos(boundA), cy + dotDist * Math.sin(boundA), dotRad, 0, TWO_PI);
+      ctx.fillStyle = isQuarter ? 'rgba(201,162,39,0.6)' : (h % 3 === 0 ? 'rgba(201,162,39,0.35)' : 'rgba(201,162,39,0.18)');
+      ctx.fill();
+    }
+
+    // Hour labels at exact boundary (expanded, every 3h)
     if (expanded && h % 3 === 0) {
-      const labelR = eventR + 14;
-      const midA   = ((h + 0.5) / 24) * TWO_PI - Math.PI / 2;
-      const label  = h === 0 ? '0' : String(h);
-      ctx.fillStyle = isCur
-        ? 'rgba(201,162,39,0.9)'
-        : 'rgba(138,128,112,0.55)';
-      ctx.font = '9px "DM Mono", monospace';
+      const boundA = (h / 24) * TWO_PI - Math.PI / 2; // FIXED: boundary, not midpoint
+      const labelDist = eventR + 17;
+      ctx.fillStyle = isCur ? 'rgba(201,162,39,0.95)' : 'rgba(138,128,112,0.6)';
+      ctx.font = `${h % 6 === 0 ? 10 : 8}px "DM Mono", monospace`;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(label,
-        cx + labelR * Math.cos(midA),
-        cy + labelR * Math.sin(midA));
+      ctx.fillText(String(h),
+        cx + labelDist * Math.cos(boundA),
+        cy + labelDist * Math.sin(boundA));
+    }
+
+    // Event title labels outside ring (expanded only)
+    if (expanded && hasEv && evs[0].title) {
+      const midA = ((h + 0.5) / 24) * TWO_PI - Math.PI / 2;
+      const lDist = eventR + 26;
+      const lx = cx + lDist * Math.cos(midA);
+      const ly = cy + lDist * Math.sin(midA);
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(midA + Math.PI / 2);
+      if (lx < cx) ctx.rotate(Math.PI);
+      ctx.fillStyle = 'rgba(232,224,208,0.65)';
+      ctx.font = '7px "DM Mono", monospace';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(evs[0].title.slice(0, 16), 0, 0);
+      ctx.restore();
     }
   }
 
-  // Current-time pointer line (blue)
+  // Red current-time needle
   const tAngle = (curH / 24) * TWO_PI - Math.PI / 2;
   ctx.beginPath();
   ctx.moveTo(cx + (innerR + 2) * Math.cos(tAngle),
              cy + (innerR + 2) * Math.sin(tAngle));
-  ctx.lineTo(cx + (eventR + 4) * Math.cos(tAngle),
-             cy + (eventR + 4) * Math.sin(tAngle));
-  ctx.strokeStyle = '#6b9fd4';
+  ctx.lineTo(cx + (eventR + 5) * Math.cos(tAngle),
+             cy + (eventR + 5) * Math.sin(tAngle));
+  ctx.strokeStyle = '#e05550';
   ctx.lineWidth   = expanded ? 2 : 1.5;
   ctx.lineCap     = 'round';
   ctx.stroke();
+
+  // Needle tip dot (expanded)
+  if (expanded) {
+    ctx.beginPath();
+    ctx.arc(cx + (eventR + 5) * Math.cos(tAngle),
+            cy + (eventR + 5) * Math.sin(tAngle), 2.5, 0, TWO_PI);
+    ctx.fillStyle = '#e05550';
+    ctx.fill();
+  }
 
   // Center hub
   ctx.beginPath();
   ctx.arc(cx, cy, innerR - 1, 0, TWO_PI);
   ctx.fillStyle = '#0a0908';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(201,162,39,0.22)';
+  ctx.strokeStyle = 'rgba(201,162,39,0.25)';
   ctx.lineWidth   = 1;
   ctx.stroke();
 
@@ -3451,11 +3637,35 @@ function drawCosmodex() {
   if (!expanded) {
     const hh2 = String(now.getHours()).padStart(2, '0');
     const mm2 = String(now.getMinutes()).padStart(2, '0');
-    ctx.fillStyle    = 'rgba(201,162,39,0.82)';
+    ctx.fillStyle    = 'rgba(201,162,39,0.85)';
     ctx.font         = `bold ${Math.max(8, Math.round(innerR * 0.72))}px "DM Mono", monospace`;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(`${hh2}:${mm2}`, cx, cy);
+  }
+
+  // Update SVG clock hands
+  const svgClock = document.getElementById('orb-clock-svg');
+  if (expanded && svgClock) {
+    svgClock.style.display = 'block';
+    const sDeg = (now.getSeconds() / 60) * 360;
+    const mDeg = ((now.getMinutes() + now.getSeconds() / 60) / 60) * 360;
+    const hDeg = ((now.getHours() % 12 + now.getMinutes() / 60) / 12) * 360;
+    function handCoords(deg, len) {
+      const r = (deg - 90) * Math.PI / 180;
+      return { x2: 50 + len * Math.cos(r), y2: 50 + len * Math.sin(r) };
+    }
+    const hh = handCoords(hDeg, 15); // short hour hand
+    const mh = handCoords(mDeg, 22); // medium minute hand
+    const sh = handCoords(sDeg, 25); // long second hand
+    const hEl = document.getElementById('orb-hand-h');
+    const mEl = document.getElementById('orb-hand-m');
+    const sEl = document.getElementById('orb-hand-s');
+    if (hEl) { hEl.setAttribute('x2', hh.x2); hEl.setAttribute('y2', hh.y2); }
+    if (mEl) { mEl.setAttribute('x2', mh.x2); mEl.setAttribute('y2', mh.y2); }
+    if (sEl) { sEl.setAttribute('x2', sh.x2); sEl.setAttribute('y2', sh.y2); }
+  } else if (svgClock) {
+    svgClock.style.display = 'none';
   }
 
   // Update expanded center overlay
@@ -3466,17 +3676,36 @@ function drawCosmodex() {
     const clockEl = document.getElementById('orb-clock');
     if (clockEl) clockEl.textContent = `${hh2}:${mm2}:${ss2}`;
 
-    // Next event
-    const nowStr = `${hh2}:${mm2}`;
+    // Better "Next" display
+    const nowMins = now.getHours() * 60 + now.getMinutes();
     const upcoming = CAL_EVENTS
-      .filter(ev => ev.date === today && ev.startTime && ev.startTime > nowStr)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
-    const nextEl = document.getElementById('orb-next-event');
+      .filter(ev => ev.date === today && ev.startTime)
+      .map(ev => {
+        const [eh, em] = ev.startTime.split(':').map(Number);
+        return { ...ev, evMins: eh * 60 + em };
+      })
+      .filter(ev => ev.evMins > nowMins)
+      .sort((a, b) => a.evMins - b.evMins);
+
+    const nextEl      = document.getElementById('orb-next-event');
+    const nextLabelEl = document.querySelector('.orb-next-label');
     if (nextEl) {
-      if (upcoming.length) {
-        nextEl.innerHTML = `<em>${escHtml(upcoming[0].title)}</em>&thinsp;${fmtTimeSched(upcoming[0].startTime)}`;
+      if (upcoming.length === 0) {
+        if (nextLabelEl) nextLabelEl.textContent = 'Schedule';
+        nextEl.textContent = 'Nothing planned today';
       } else {
-        nextEl.textContent = '—';
+        if (nextLabelEl) nextLabelEl.textContent = 'Next';
+        const next = upcoming[0];
+        const diff = next.evMins - nowMins;
+        let timeStr;
+        if (diff <= 0)       timeStr = 'Now';
+        else if (diff < 60)  timeStr = `In ${diff}m`;
+        else {
+          const dh = Math.floor(diff / 60), dm = diff % 60;
+          timeStr = dm > 0 ? `In ${dh}h ${dm}m` : `In ${dh}h`;
+        }
+        nextEl.innerHTML =
+          `${timeStr}&thinsp;·&thinsp;<em>${escHtml(next.title)}</em>&thinsp;<span style="color:var(--muted);font-size:0.85em">${next.startTime}</span>`;
       }
     }
   }
@@ -3485,6 +3714,185 @@ function drawCosmodex() {
 // Tick every second (drives both mini and expanded states)
 setInterval(drawCosmodex, 1000);
 drawCosmodex(); // immediate first draw
+
+/* ── Dice Gadget ───────────────────────────────────────── */
+const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+
+function rollDice() {
+  const btn = document.getElementById('orb-dice-btn');
+  if (!btn || btn.dataset.rolling === '1') return;
+
+  // Pick from non-done tasks
+  const pool = TASKS.filter(t => !t.done);
+  if (pool.length === 0) {
+    btn.textContent = '⚀';
+    btn.title = 'No tasks to roll!';
+    return;
+  }
+
+  btn.dataset.rolling = '1';
+  btn.classList.add('rolling');
+
+  let frame = 0;
+  const total = 16;
+  const ticker = setInterval(() => {
+    btn.textContent = DICE_FACES[frame % 6];
+    frame++;
+    if (frame >= total) {
+      clearInterval(ticker);
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+      const face = DICE_FACES[Math.floor(Math.random() * 6)];
+      btn.textContent = face;
+      btn.title = picked.title;
+      btn.classList.remove('rolling');
+      btn.dataset.rolling = '0';
+
+      // Show result in next-event display
+      const nextEl = document.getElementById('orb-next-event');
+      const nextLabelEl = document.querySelector('.orb-next-label');
+      if (nextEl) {
+        if (nextLabelEl) nextLabelEl.textContent = 'Rolled';
+        nextEl.innerHTML = `${face}&thinsp;<em>${escHtml(picked.title)}</em>`;
+        setTimeout(() => { if (nextLabelEl) nextLabelEl.textContent = 'Next'; }, 5000);
+      }
+    }
+  }, 55);
+}
+
+document.getElementById('orb-dice-btn')?.addEventListener('click', rollDice);
+
+/* ── Spinning Wheel Gadget ────────────────────────────── */
+let wheelAngle   = 0;
+let wheelVelocity = 0;
+let wheelSpinning = false;
+let wheelTasks    = [];
+
+function drawWheel(canvas, angle) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const r  = Math.min(W, H) / 2 - 6;
+  ctx.clearRect(0, 0, W, H);
+
+  const n = wheelTasks.length;
+  if (n === 0) {
+    ctx.fillStyle = 'rgba(138,128,112,0.4)';
+    ctx.font = '13px "DM Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('No tasks', cx, cy);
+    return;
+  }
+
+  const slice = (Math.PI * 2) / n;
+  const WHEEL_COLORS = [
+    '#c9a227','#6b9fd4','#4a7c5e','#c45c2a','#8a6bbf','#2a8a7c','#bf6b8a','#a27c4a'
+  ];
+
+  for (let i = 0; i < n; i++) {
+    const a0 = angle + i * slice;
+    const a1 = a0 + slice;
+
+    // Slice fill
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, a0, a1);
+    ctx.closePath();
+    ctx.fillStyle = WHEEL_COLORS[i % WHEEL_COLORS.length] + '33';
+    ctx.fill();
+    ctx.strokeStyle = WHEEL_COLORS[i % WHEEL_COLORS.length] + '88';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Label
+    const midA = a0 + slice / 2;
+    const lx = cx + (r * 0.62) * Math.cos(midA);
+    const ly = cy + (r * 0.62) * Math.sin(midA);
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(midA + Math.PI / 2);
+    ctx.fillStyle = 'rgba(232,224,208,0.85)';
+    ctx.font = '9px "DM Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(wheelTasks[i].title.slice(0, 14), 0, 0);
+    ctx.restore();
+  }
+
+  // Pointer triangle on the right
+  ctx.beginPath();
+  ctx.moveTo(cx + r + 6, cy);
+  ctx.lineTo(cx + r + 14, cy - 7);
+  ctx.lineTo(cx + r + 14, cy + 7);
+  ctx.closePath();
+  ctx.fillStyle = '#e05550';
+  ctx.fill();
+
+  // Center hub
+  ctx.beginPath();
+  ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+  ctx.fillStyle = '#141210';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(201,162,39,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function openWheelOverlay() {
+  wheelTasks = TASKS.filter(t => !t.done).slice(0, 8);
+  const overlay = document.getElementById('orb-wheel-overlay');
+  const canvas  = document.getElementById('orb-wheel-canvas');
+  const resultEl = document.getElementById('orb-wheel-result');
+  if (!overlay || !canvas) return;
+  resultEl.textContent = '';
+  document.getElementById('orb-wheel-spin').disabled = false;
+  overlay.classList.add('visible');
+  drawWheel(canvas, wheelAngle);
+}
+
+function spinWheel() {
+  if (wheelSpinning) return;
+  const canvas  = document.getElementById('orb-wheel-canvas');
+  const resultEl = document.getElementById('orb-wheel-result');
+  const spinBtn  = document.getElementById('orb-wheel-spin');
+  if (!canvas) return;
+
+  wheelSpinning = true;
+  spinBtn.disabled = true;
+  resultEl.textContent = '';
+  wheelVelocity = 0.18 + Math.random() * 0.22; // random starting velocity
+
+  function tick() {
+    wheelAngle    += wheelVelocity;
+    wheelVelocity *= 0.978; // decelerate
+    drawWheel(canvas, wheelAngle);
+
+    if (wheelVelocity > 0.003) {
+      requestAnimationFrame(tick);
+    } else {
+      wheelSpinning = false;
+      spinBtn.disabled = false;
+
+      // Determine winner: pointer is at angle 0 (right side = 3 o'clock)
+      // Normalize angle so 0 = top (pointer at right means offset by -PI/2)
+      const n = wheelTasks.length;
+      if (n === 0) return;
+      const slice = (Math.PI * 2) / n;
+      // pointer is on the RIGHT side, so we find which slice is at angle 0
+      const norm = ((-wheelAngle) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const winIdx = Math.floor(norm / slice) % n;
+      const winner = wheelTasks[winIdx];
+      resultEl.innerHTML = `<em>${escHtml(winner.title)}</em>`;
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+document.getElementById('orb-wheel-btn')?.addEventListener('click', openWheelOverlay);
+document.getElementById('orb-wheel-spin')?.addEventListener('click', spinWheel);
+document.getElementById('orb-wheel-close')?.addEventListener('click', () => {
+  document.getElementById('orb-wheel-overlay')?.classList.remove('visible');
+});
 
 /* ── Overlay system ────────────────────────────────────── */
 function openOverlay(id) {
