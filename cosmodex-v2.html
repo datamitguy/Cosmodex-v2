@@ -8,10 +8,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 
-<!-- Firebase (ESM CDN) — exposed to page as window.CDX_DB / window.CDX_FB -->
+<!-- Firebase (ESM CDN) — exposed as window.CDX_DB / window.CDX_AUTH / window.CDX_FB -->
 <script type="module">
   import { initializeApp }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+  import { getAuth, signInAnonymously, onAuthStateChanged }
+    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
@@ -27,16 +29,25 @@
     appId:             "1:756256258932:web:688b03b04009b7d505ca21"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = initializeFirestore(app, {
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = initializeFirestore(app, {
     localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
   });
 
-  window.CDX_DB = db;
-  window.CDX_FB = {
+  window.CDX_DB   = db;
+  window.CDX_AUTH = auth;
+  window.CDX_FB   = {
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
-    onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit
+    onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
+    signInAnonymously, onAuthStateChanged
   };
+
+  // Restore previous anonymous session automatically on page load
+  onAuthStateChanged(auth, user => {
+    window.CDX_USER = user || null;
+    if (user) window.dispatchEvent(new Event('cdx-auth-ready'));
+  });
 </script>
 
 <style>
@@ -2463,12 +2474,8 @@ function updateNavCounts() {
   if (taskEl)  taskEl.textContent  = TASKS.filter(t => !t.done).length || '—';
 }
 
-/* ── Boot ─────────────────────────────────────────────── */
-waitForFirebase(() => {
-  initTasks();
-  initCalDropZones();
-  initAddTaskForm();
-});
+/* initTasks / initCalDropZones / initAddTaskForm are booted
+   by the 'cdx-auth-ready' event listener above, after sign-in. */
 
 /* ── Orb (expand/collapse) ─────────────────────────────── */
 const orb         = document.getElementById('cosmodex-orb');
@@ -2680,12 +2687,52 @@ document.querySelectorAll('.view-tab[data-view]').forEach(tab => {
 });
 
 /* ── Sign-in overlay ──────────────────────────────────── */
-document.getElementById('signin-btn')?.addEventListener('click', () => {
+function dismissSigninOverlay() {
   const overlay = document.getElementById('signin-overlay');
   overlay.style.opacity = '0';
   overlay.style.transition = 'opacity 0.4s ease';
   setTimeout(() => { overlay.style.display = 'none'; }, 400);
+}
+
+function waitForFirebaseAuth(fn) {
+  if (window.CDX_AUTH && window.CDX_FB) { fn(); return; }
+  setTimeout(() => waitForFirebaseAuth(fn), 100);
+}
+
+document.getElementById('signin-btn')?.addEventListener('click', () => {
+  const btn = document.getElementById('signin-btn');
+  btn.textContent = '…';
+  btn.disabled = true;
+
+  waitForFirebaseAuth(() => {
+    const { signInAnonymously } = window.CDX_FB;
+    signInAnonymously(window.CDX_AUTH)
+      .then(() => {
+        dismissSigninOverlay();
+        // cdx-auth-ready fires via onAuthStateChanged → boots task system
+      })
+      .catch(err => {
+        console.error('Sign-in failed:', err);
+        btn.textContent = 'Enter';
+        btn.disabled = false;
+        btn.style.background = 'var(--rust)';
+      });
+  });
 });
+
+// If returning visitor already has an anonymous session, skip sign-in screen
+window.addEventListener('cdx-auth-ready', () => {
+  dismissSigninOverlay();
+});
+
+/* ── Boot task system after auth ──────────────────────── */
+window.addEventListener('cdx-auth-ready', () => {
+  waitForFirebase(() => {
+    initTasks();
+    initCalDropZones();
+    initAddTaskForm();
+  });
+}, { once: true });
 
 </script>
 </body>
