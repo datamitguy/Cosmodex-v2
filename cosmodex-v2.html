@@ -1542,6 +1542,186 @@ body::after {
   display: block;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   CATEGORIES
+   ═══════════════════════════════════════════════════════════ */
+.cat-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.cat-badge {
+  font-family:var(--font-mono); font-size:9px;
+  padding:1px 7px; border-radius:100px;
+  letter-spacing:0.05em; text-transform:uppercase;
+  white-space:nowrap; flex-shrink:0;
+}
+.cat-work     { background:rgba(107,159,212,0.12); color:#6b9fd4; border:1px solid rgba(107,159,212,0.3); }
+.cat-personal { background:rgba(201,162,39,0.12);  color:#c9a227; border:1px solid rgba(201,162,39,0.3); }
+.cat-health   { background:rgba(74,124,94,0.12);   color:#4a7c5e; border:1px solid rgba(74,124,94,0.3); }
+.cat-learning { background:rgba(155,127,212,0.12); color:#9b7fd4; border:1px solid rgba(155,127,212,0.3); }
+.cat-creative { background:rgba(196,154,108,0.12); color:#c49a6c; border:1px solid rgba(196,154,108,0.3); }
+.cat-admin    { background:rgba(138,128,112,0.12); color:#8a8070; border:1px solid rgba(138,128,112,0.3); }
+
+/* ═══════════════════════════════════════════════════════════
+   CALENDAR — WEEK VIEW
+   ═══════════════════════════════════════════════════════════ */
+.week-header-row {
+  display:grid; grid-template-columns:48px repeat(7,1fr);
+  border-bottom:1px solid var(--border); flex-shrink:0;
+  background:var(--surface); position:sticky; top:0; z-index:4;
+}
+.week-day-header {
+  text-align:center; padding:6px 2px;
+  cursor:pointer; transition:background 0.15s;
+}
+.week-day-header:hover { background:rgba(201,162,39,0.04); }
+.week-body { display:grid; grid-template-columns:48px repeat(7,1fr); }
+.week-time-label {
+  font-family:var(--font-mono); font-size:9px; color:var(--muted);
+  padding:6px 8px 0; text-align:right;
+  border-bottom:1px solid rgba(42,37,32,0.3);
+}
+.week-cell {
+  border-left:1px solid rgba(42,37,32,0.3);
+  border-bottom:1px solid rgba(42,37,32,0.2);
+  min-height:44px; position:relative; cursor:pointer;
+  transition:background 0.12s;
+}
+.week-cell:hover { background:rgba(201,162,39,0.03); }
+.week-event-chip {
+  font-size:9px; padding:2px 5px; border-radius:3px;
+  margin:2px 2px 0; overflow:hidden; border-left:2px solid;
+}
+.week-event-chip .chip-title {
+  font-weight:500; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; display:block;
+  font-family:var(--font-body); color:var(--cream);
+}
+.week-event-chip .chip-time {
+  font-family:var(--font-mono); font-size:8px; color:var(--muted);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CALENDAR — MONTH VIEW
+   ═══════════════════════════════════════════════════════════ */
+.month-dow-header {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  border-bottom:1px solid var(--border); flex-shrink:0;
+  background:var(--surface); position:sticky; top:0; z-index:4;
+}
+.month-dow-label {
+  font-family:var(--font-mono); font-size:9px;
+  letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--muted); padding:6px; text-align:center;
+}
+.month-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--border); }
+.month-day-cell {
+  background:var(--bg); min-height:90px; padding:6px;
+  cursor:pointer; transition:background 0.15s; overflow:hidden;
+}
+.month-day-cell:hover { background:var(--elevated); }
+.month-day-cell.today { background:rgba(201,162,39,0.04); }
+.month-day-cell.other-month { opacity:0.32; }
+.month-day-cell.holiday { background:rgba(196,92,42,0.04); }
+.month-day-num { font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:3px; display:block; }
+.month-day-cell.today .month-day-num { color:var(--gold); font-weight:600; }
+.month-holiday-name {
+  font-family:var(--font-mono); font-size:7px; color:var(--rust);
+  letter-spacing:0.04em; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis; margin-bottom:2px; display:block;
+}
+.month-spark { display:flex; align-items:flex-end; gap:1px; height:14px; margin:3px 0; }
+.month-spark-bar { width:4px; border-radius:1px; min-height:2px; }
+.month-event-pill {
+  font-size:9px; font-family:var(--font-mono);
+  padding:1px 4px; border-radius:3px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-bottom:1px; color:var(--cream); display:block;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SCHEDULE MODAL
+   ═══════════════════════════════════════════════════════════ */
+.sched-label {
+  font-family:var(--font-mono); font-size:9px; letter-spacing:0.12em;
+  text-transform:uppercase; color:var(--muted); margin-bottom:5px; display:block;
+}
+.sched-input {
+  background:var(--elevated); border:1px solid var(--border);
+  border-radius:7px; padding:7px 10px; width:100%;
+  font-family:var(--font-body); font-size:13px; color:var(--cream);
+  outline:none; transition:border-color 0.2s;
+}
+.sched-input:focus { border-color:var(--gold); }
+.sched-row { margin-top:12px; }
+.sched-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.sched-subtask-item {
+  display:flex; align-items:center; gap:8px; padding:5px 0;
+  border-bottom:1px solid rgba(42,37,32,0.5);
+  font-family:var(--font-body); font-size:12px; color:var(--muted);
+}
+.sched-confirm-btn {
+  width:100%; margin-top:20px; padding:12px;
+  background:var(--gold); border:none; border-radius:10px;
+  color:var(--ink); font-family:var(--font-body);
+  font-size:14px; font-weight:500; cursor:pointer;
+  transition:background 0.2s, transform 0.15s;
+}
+.sched-confirm-btn:hover { background:var(--gold-hover); transform:translateY(-1px); }
+.sched-time-badge {
+  font-family:var(--font-mono); font-size:9px; padding:1px 6px;
+  border-radius:100px; background:rgba(107,159,212,0.1);
+  border:1px solid rgba(107,159,212,0.25); color:var(--blue); white-space:nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS OVERLAY
+   ═══════════════════════════════════════════════════════════ */
+.settings-section { margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--border); }
+.settings-section:last-child { border-bottom:none; }
+.settings-section-title { font-family:var(--font-display); font-size:16px; font-weight:300; color:var(--cream); margin-bottom:4px; }
+.settings-desc { font-family:var(--font-body); font-size:12px; color:var(--muted); margin-bottom:12px; line-height:1.5; }
+.settings-cat-grid { display:flex; flex-wrap:wrap; gap:8px; }
+.settings-cat-pill {
+  display:flex; align-items:center; gap:6px;
+  padding:6px 12px; border-radius:100px;
+  border:1px solid var(--border); background:var(--elevated);
+  cursor:pointer; transition:var(--ease-fast);
+  font-family:var(--font-mono); font-size:10px;
+  color:var(--muted); letter-spacing:0.06em;
+  text-transform:uppercase; user-select:none;
+}
+.settings-cat-pill.active { opacity:1; }
+.settings-cat-pill:not(.active) { opacity:0.45; }
+.settings-holiday-row {
+  display:flex; align-items:center; gap:8px;
+  padding:6px 0; border-bottom:1px solid rgba(42,37,32,0.4);
+  font-family:var(--font-body); font-size:12px; color:var(--cream);
+}
+.settings-holiday-row:last-of-type { border-bottom:none; }
+.settings-holiday-row .hol-type {
+  font-family:var(--font-mono); font-size:8px; letter-spacing:0.08em;
+  text-transform:uppercase; color:var(--muted);
+  background:var(--elevated); border:1px solid var(--border);
+  border-radius:4px; padding:1px 5px; flex-shrink:0;
+}
+.settings-holiday-row .hol-type.public { color:var(--rust); border-color:rgba(196,92,42,0.3); }
+
+/* ── Task category inline badge ────────────────────────── */
+.task-cat-badge {
+  font-family:var(--font-mono); font-size:9px;
+  padding:1px 6px; border-radius:100px;
+  letter-spacing:0.05em; text-transform:uppercase;
+  white-space:nowrap; flex-shrink:0;
+}
+
+/* ── Week view drop-over highlight ─────────────────────── */
+.week-cell.drop-over {
+  background: rgba(201,162,39,0.06) !important;
+  outline: 1px dashed rgba(201,162,39,0.45);
+  outline-offset: -2px;
+}
+
+/* ── Day view — active tab default ─────────────────────── */
+.view-tab[data-view="day"] { /* initially set by JS */ }
+
 </style>
 </head>
 <body>
@@ -1609,7 +1789,7 @@ body::after {
     <button class="nav-footer-btn" id="theme-btn" title="Toggle theme">
       <span id="theme-icon">◑</span>
     </button>
-    <button class="nav-footer-btn" id="settings-btn">
+    <button class="nav-footer-btn" id="settings-btn" title="Settings">
       <span>⚙</span>
     </button>
     <button class="nav-footer-btn" id="cmd-btn" title="Ctrl+K">
@@ -1692,6 +1872,14 @@ body::after {
             <option value="low">Low</option>
             <option value="med" selected>Medium</option>
             <option value="high">High</option>
+          </select>
+          <select class="task-priority-select" id="task-add-category">
+            <option value="personal" selected>Personal</option>
+            <option value="work">Work</option>
+            <option value="health">Health</option>
+            <option value="learning">Learning</option>
+            <option value="creative">Creative</option>
+            <option value="admin">Admin</option>
           </select>
           <input class="task-add-date" id="task-add-date" type="date" />
           <button class="task-add-confirm" id="task-add-confirm">Add</button>
@@ -1868,6 +2056,77 @@ body::after {
   </div>
 </div>
 
+<!-- Schedule Modal (z-index 850) -->
+<div class="overlay" id="schedule-modal" style="z-index:850">
+  <div class="overlay-panel" style="width:min(420px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title">Schedule</span>
+      <button class="overlay-close" data-close="schedule-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px">
+      <div class="sched-row" style="margin-top:0">
+        <label class="sched-label">Title</label>
+        <input id="sched-title" type="text" class="sched-input" placeholder="Event title" autocomplete="off" />
+      </div>
+      <div class="sched-grid-2">
+        <div>
+          <label class="sched-label">Date</label>
+          <input id="sched-date" type="date" class="sched-input" />
+        </div>
+        <div>
+          <label class="sched-label">Start time</label>
+          <input id="sched-time" type="time" class="sched-input" />
+        </div>
+      </div>
+      <div class="sched-row">
+        <label class="sched-label">Duration (minutes)</label>
+        <input id="sched-duration" type="number" class="sched-input" value="60" min="15" step="15" />
+      </div>
+      <div id="sched-subtasks-section" style="margin-top:14px;display:none">
+        <label class="sched-label">Subtasks (will also be added after main task)</label>
+        <div id="sched-subtasks-list" style="margin-top:6px"></div>
+      </div>
+      <button class="sched-confirm-btn" id="sched-confirm-btn">Add to Calendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Overlay (z-index 850) -->
+<div class="overlay" id="settings-overlay" style="z-index:850">
+  <div class="overlay-panel" style="width:min(500px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title">Settings</span>
+      <button class="overlay-close" data-close="settings-overlay">✕</button>
+    </div>
+    <div class="overlay-body">
+
+      <!-- Task List section -->
+      <div class="settings-section">
+        <div class="settings-section-title">Task List</div>
+        <div class="settings-desc">Filter which categories are visible in the task panel.</div>
+        <div class="settings-cat-grid" id="settings-cat-filters"></div>
+      </div>
+
+      <!-- Holidays section -->
+      <div class="settings-section">
+        <div class="settings-section-title">Holidays</div>
+        <div class="settings-desc">Public HK holidays are pre-loaded. Add personal holidays below.</div>
+        <div id="settings-holidays-list" style="max-height:220px;overflow-y:auto;margin-bottom:14px"></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input id="holiday-date" type="date" class="sched-input" style="flex:1;min-width:120px" />
+          <input id="holiday-name" type="text" class="sched-input" placeholder="Holiday name" style="flex:2;min-width:140px" />
+          <select id="holiday-type" class="task-priority-select">
+            <option value="personal">Personal</option>
+            <option value="public">Public</option>
+          </select>
+          <button class="task-add-confirm" id="holiday-add-btn" style="white-space:nowrap">Add</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- Command Palette -->
 <div id="cmd-palette">
   <div class="cmd-box">
@@ -1951,6 +2210,73 @@ body::after {
      ═══════════════════════════════════════════════════════ -->
 <script>
 'use strict';
+
+/* ══════════════════════════════════════════════════════════
+   CONSTANTS
+   ══════════════════════════════════════════════════════════ */
+const CATEGORIES = {
+  work:     { label:'Work',     color:'#6b9fd4' },
+  personal: { label:'Personal', color:'#c9a227' },
+  health:   { label:'Health',   color:'#4a7c5e' },
+  learning: { label:'Learning', color:'#9b7fd4' },
+  creative: { label:'Creative', color:'#c49a6c' },
+  admin:    { label:'Admin',    color:'#8a8070' },
+};
+
+const HK_HOLIDAYS = [
+  { date:'2025-01-01', name:"New Year's Day",          type:'public' },
+  { date:'2025-01-29', name:'Lunar New Year',           type:'public' },
+  { date:'2025-01-30', name:'Lunar New Year',           type:'public' },
+  { date:'2025-01-31', name:'Lunar New Year',           type:'public' },
+  { date:'2025-04-04', name:'Ching Ming Festival',      type:'public' },
+  { date:'2025-04-18', name:'Good Friday',              type:'public' },
+  { date:'2025-04-19', name:'Day after Good Friday',    type:'public' },
+  { date:'2025-04-21', name:'Easter Monday',            type:'public' },
+  { date:'2025-05-01', name:'Labour Day',               type:'public' },
+  { date:'2025-05-05', name:"Buddha's Birthday",        type:'public' },
+  { date:'2025-06-02', name:'Tuen Ng Festival',         type:'public' },
+  { date:'2025-07-01', name:'HKSAR Establishment Day',  type:'public' },
+  { date:'2025-09-07', name:'Day after Mid-Autumn',     type:'public' },
+  { date:'2025-10-01', name:'National Day',             type:'public' },
+  { date:'2025-10-07', name:'Chung Yeung Festival',     type:'public' },
+  { date:'2025-12-25', name:'Christmas Day',            type:'public' },
+  { date:'2025-12-26', name:'Boxing Day',               type:'public' },
+  { date:'2026-01-01', name:"New Year's Day",           type:'public' },
+  { date:'2026-02-17', name:'Lunar New Year',           type:'public' },
+  { date:'2026-02-18', name:'Lunar New Year',           type:'public' },
+  { date:'2026-02-19', name:'Lunar New Year',           type:'public' },
+  { date:'2026-04-03', name:'Good Friday',              type:'public' },
+  { date:'2026-04-04', name:'Day after Good Friday',    type:'public' },
+  { date:'2026-04-05', name:'Ching Ming Festival',      type:'public' },
+  { date:'2026-04-06', name:'Easter Monday',            type:'public' },
+  { date:'2026-05-01', name:'Labour Day',               type:'public' },
+  { date:'2026-05-25', name:"Buddha's Birthday",        type:'public' },
+  { date:'2026-06-19', name:'Tuen Ng Festival',         type:'public' },
+  { date:'2026-07-01', name:'HKSAR Establishment Day',  type:'public' },
+  { date:'2026-09-26', name:'Day after Mid-Autumn',     type:'public' },
+  { date:'2026-10-01', name:'National Day',             type:'public' },
+  { date:'2026-10-25', name:'Chung Yeung Festival',     type:'public' },
+  { date:'2026-12-25', name:'Christmas Day',            type:'public' },
+  { date:'2026-12-26', name:'Boxing Day',               type:'public' },
+];
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════════════════════ */
+let TASKS      = [];
+let CAL_EVENTS = [];
+let HOLIDAYS   = {};
+
+let _calView      = 'day';
+let _calDate      = new Date();
+let _dragTaskId   = null;
+let _dragSubId    = null;
+let _schedCtx     = null;
+
+let _settings = JSON.parse(localStorage.getItem('cdx_v2_settings') || 'null') || {
+  visibleCategories: Object.keys(CATEGORIES),
+};
+function saveSettings() { localStorage.setItem('cdx_v2_settings', JSON.stringify(_settings)); }
 
 /* ── Theme ─────────────────────────────────────────────── */
 (function initTheme() {
