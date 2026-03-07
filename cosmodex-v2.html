@@ -963,50 +963,50 @@ body::after {
   right: 20px; bottom: 20px;
   width: 88px; height: 88px;
   border-radius: 50%;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: #0a0908;
+  border: 1px solid rgba(201,162,39,0.2);
   cursor: pointer;
   z-index: 50;
-  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
   animation: orbPulse 3.5s ease-in-out infinite;
-  transition: width 0.5s cubic-bezier(0.25,0.46,0.45,0.94),
-              height 0.5s cubic-bezier(0.25,0.46,0.45,0.94),
-              right 0.5s cubic-bezier(0.25,0.46,0.45,0.94),
-              bottom 0.5s cubic-bezier(0.25,0.46,0.45,0.94),
-              border-radius 0.5s ease,
-              border-color 0.3s ease;
+  transition: width 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
+              height 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
+              right 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
+              bottom 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
+              border-radius 0.48s ease;
 }
 
 #cosmodex-orb:hover:not(.expanded) {
-  border-color: var(--gold);
+  border-color: rgba(201,162,39,0.55);
   animation-play-state: paused;
 }
 
 #cosmodex-orb.expanded {
-  position: fixed;
-  width: min(82vw, 82vh);
-  height: min(82vw, 82vh);
+  width: min(78vw, 78vh);
+  height: min(78vw, 78vh);
   top: 50%; left: 50%;
   right: auto; bottom: auto;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  border-color: rgba(201,162,39,0.3);
+  border-color: rgba(201,162,39,0.25);
   animation: none;
   z-index: 500;
   cursor: default;
 }
 
 #cosmodex-canvas {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  display: block;
 }
 
 /* Orb close button */
 #orb-close {
   position: fixed;
-  top: calc(50% - min(82vw,82vh)/2 - 40px);
-  right: calc(50% - min(82vw,82vh)/2 - 8px);
+  top: calc(50% - min(78vw,78vh)/2 - 40px);
+  right: calc(50% - min(78vw,78vh)/2 - 8px);
   width: 30px; height: 30px;
   border-radius: 50%;
   background: var(--elevated);
@@ -1034,7 +1034,7 @@ body::after {
 
 #orb-backdrop.visible { display: block; }
 
-/* Orb center text (visible when expanded) */
+/* Orb center overlay (visible when expanded) */
 #orb-time-display {
   position: fixed;
   top: 50%; left: 50%;
@@ -1049,30 +1049,45 @@ body::after {
 
 .orb-time-clock {
   font-family: var(--font-display);
-  font-size: clamp(28px, 5vw, 52px);
+  font-size: clamp(26px, 4.5vw, 54px);
   font-weight: 300;
-  color: var(--cream);
-  letter-spacing: 0.04em;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  display: block;
+  line-height: 1;
+}
+
+.orb-cosmodex-label {
+  font-family: var(--font-mono);
+  font-size: clamp(8px, 1vw, 11px);
+  letter-spacing: 0.28em;
+  color: rgba(201,162,39,0.45);
+  text-transform: uppercase;
+  margin-top: 6px;
   display: block;
 }
 
 .orb-next-label {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: 9px;
+  letter-spacing: 0.14em;
   color: var(--muted);
   text-transform: uppercase;
-  margin-top: 12px;
+  margin-top: 16px;
   display: block;
 }
 
 .orb-next-event {
-  font-family: var(--font-display);
-  font-size: clamp(14px, 2vw, 20px);
-  font-weight: 300;
+  font-family: var(--font-body);
+  font-size: clamp(12px, 1.6vw, 17px);
+  font-weight: 400;
   color: var(--cream);
-  margin-top: 4px;
+  margin-top: 3px;
   display: block;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .orb-next-event em {
@@ -1904,8 +1919,9 @@ body::after {
 </div>
 <button id="orb-close">✕</button>
 <div id="orb-time-display">
-  <span class="orb-time-clock" id="orb-clock">--:--</span>
-  <span class="orb-next-label">Next event</span>
+  <span class="orb-time-clock" id="orb-clock">--:--:--</span>
+  <span class="orb-cosmodex-label">Cosmodex</span>
+  <span class="orb-next-label">Next</span>
   <span class="orb-next-event" id="orb-next-event">—</span>
 </div>
 
@@ -2100,26 +2116,26 @@ body::after {
     </div>
     <div class="overlay-body">
 
-      <!-- Task List section -->
+      <!-- Task categories section -->
       <div class="settings-section">
-        <div class="settings-section-title">Task List</div>
-        <div class="settings-desc">Filter which categories are visible in the task panel.</div>
+        <div class="settings-section-title">Categories</div>
+        <div class="settings-desc">Toggle which categories appear in your task list. To change a task's category, click its coloured badge directly on the task row — it cycles through all categories.</div>
         <div class="settings-cat-grid" id="settings-cat-filters"></div>
       </div>
 
       <!-- Holidays section -->
       <div class="settings-section">
         <div class="settings-section-title">Holidays</div>
-        <div class="settings-desc">Public HK holidays are pre-loaded. Add personal holidays below.</div>
-        <div id="settings-holidays-list" style="max-height:220px;overflow-y:auto;margin-bottom:14px"></div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <input id="holiday-date" type="date" class="sched-input" style="flex:1;min-width:120px" />
-          <input id="holiday-name" type="text" class="sched-input" placeholder="Holiday name" style="flex:2;min-width:140px" />
+        <div class="settings-desc">HK public holidays are pre-loaded. Add your own personal holidays below — they appear highlighted on the calendar.</div>
+        <div id="settings-holidays-list" style="max-height:200px;overflow-y:auto;margin-bottom:14px"></div>
+        <div style="display:grid;grid-template-columns:1fr 2fr auto auto;gap:6px;align-items:center">
+          <input id="holiday-date" type="date" class="sched-input" />
+          <input id="holiday-name" type="text" class="sched-input" placeholder="Holiday name" />
           <select id="holiday-type" class="task-priority-select">
             <option value="personal">Personal</option>
             <option value="public">Public</option>
           </select>
-          <button class="task-add-confirm" id="holiday-add-btn" style="white-space:nowrap">Add</button>
+          <button class="task-add-confirm" id="holiday-add-btn">Add</button>
         </div>
       </div>
 
@@ -2499,8 +2515,8 @@ function buildTaskRow(task, idx) {
   const hasSubs  = task.subtasks && task.subtasks.length > 0;
   const cat      = task.category ? CATEGORIES[task.category] : null;
   const catBadge = cat
-    ? `<span class="task-cat-badge" style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>`
-    : '';
+    ? `<span class="task-cat-badge" data-setcat="${escAttr(task.id)}" title="Click to change category" style="cursor:pointer;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>`
+    : `<span class="task-cat-badge" data-setcat="${escAttr(task.id)}" title="Click to set category" style="cursor:pointer;opacity:0.35;border:1px dashed var(--border)">+ cat</span>`;
 
   let schedBadge = '';
   if (task.calEventId) {
@@ -2590,6 +2606,17 @@ function buildSubtaskRow(parentId, sub) {
   return row;
 }
 
+/* ── Category cycle ───────────────────────────────────── */
+const CAT_CYCLE = ['work', 'personal', 'health', 'learning', 'creative', 'admin', null];
+
+async function cycleTaskCategory(taskId) {
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  const idx  = CAT_CYCLE.indexOf(task.category || null);
+  const next = CAT_CYCLE[(idx + 1) % CAT_CYCLE.length];
+  await updateTask(taskId, { category: next });
+}
+
 /* ── Event delegation on tasks-body ──────────────────── */
 document.getElementById('tasks-body').addEventListener('click', e => {
   const check    = e.target.closest('[data-check]');
@@ -2599,12 +2626,14 @@ document.getElementById('tasks-body').addEventListener('click', e => {
   const addSub   = e.target.closest('[data-add-sub]');
   const expand   = e.target.closest('[data-expand]');
   const editEl   = e.target.closest('[data-edit]');
+  const setCat   = e.target.closest('[data-setcat]');
   const confirmSub = e.target.closest('.subtask-add-confirm');
 
   if (check)    { toggleTask(check.dataset.check); return; }
   if (subCheck) { toggleSubtask(subCheck.dataset.subcheck, subCheck.dataset.sub); return; }
   if (del)      { deleteTask(del.dataset.del); return; }
   if (delSub)   { deleteSubtask(delSub.dataset.delsub, delSub.dataset.sub); return; }
+  if (setCat)   { cycleTaskCategory(setCat.dataset.setcat); return; }
 
   if (addSub) {
     const taskId  = addSub.dataset.addSub;
@@ -3229,17 +3258,20 @@ function renderSettingsCats() {
 function renderSettingsHolidays() {
   const list = document.getElementById('settings-holidays-list');
   if (!list) return;
-  const entries = Object.values(HOLIDAYS).filter(h => !h.docId?.startsWith('_'));
+  // Filter out sentinel docs (no 'name' field) and sort by date
+  const entries = Object.values(HOLIDAYS)
+    .filter(h => h.name && h.date)
+    .sort((a, b) => a.date.localeCompare(b.date));
   if (!entries.length) {
-    list.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:4px 0">No holidays loaded yet.</div>`;
+    list.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:8px 0">Loading holidays…</div>`;
     return;
   }
   list.innerHTML = entries.map(h => `
     <div class="settings-holiday-row">
       <span style="flex:1">${escHtml(h.name)}</span>
       <span class="hol-type${h.type === 'public' ? ' public' : ''}">${h.type || 'personal'}</span>
-      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(h.date)}</span>
-      ${h.type !== 'public' ? `<button class="task-action-btn danger" data-delhol="${escAttr(h.docId)}" title="Delete">✕</button>` : ''}
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap">${fmtDate(h.date)}</span>
+      ${h.type !== 'public' ? `<button class="task-action-btn danger" data-delhol="${escAttr(h.docId)}" title="Delete">✕</button>` : '<span style="width:22px"></span>'}
     </div>`).join('');
   list.querySelectorAll('[data-delhol]').forEach(btn => {
     btn.addEventListener('click', () => deleteHoliday(btn.dataset.delhol));
@@ -3263,7 +3295,7 @@ function initSettingsPanel() {
   });
 }
 
-/* ── Orb (expand/collapse) ─────────────────────────────── */
+/* ── Cosmodex Orb ──────────────────────────────────────── */
 const orb         = document.getElementById('cosmodex-orb');
 const orbClose    = document.getElementById('orb-close');
 const orbBackdrop = document.getElementById('orb-backdrop');
@@ -3274,7 +3306,9 @@ function openOrb() {
   orbClose.classList.add('visible');
   orbBackdrop.classList.add('visible');
   orbDisplay.classList.add('visible');
-  tickOrbClock();
+  // redraw at expanded size after CSS transition
+  setTimeout(drawCosmodex, 50);
+  setTimeout(drawCosmodex, 500);
 }
 
 function closeOrb() {
@@ -3282,24 +3316,175 @@ function closeOrb() {
   orbClose.classList.remove('visible');
   orbBackdrop.classList.remove('visible');
   orbDisplay.classList.remove('visible');
+  setTimeout(drawCosmodex, 500);
 }
 
 orb.addEventListener('click', e => {
   if (!orb.classList.contains('expanded')) openOrb();
 });
-
 orbClose.addEventListener('click', closeOrb);
 orbBackdrop.addEventListener('click', closeOrb);
 
-function tickOrbClock() {
-  if (!orb.classList.contains('expanded')) return;
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2,'0');
-  const mm = String(now.getMinutes()).padStart(2,'0');
-  const ss = String(now.getSeconds()).padStart(2,'0');
-  document.getElementById('orb-clock').textContent = `${hh}:${mm}:${ss}`;
-  setTimeout(tickOrbClock, 1000);
+/* ── Radial chronodex canvas draw ─────────────────────── */
+function drawCosmodex() {
+  const canvas = document.getElementById('cosmodex-canvas');
+  if (!canvas) return;
+
+  const expanded = orb.classList.contains('expanded');
+  const dpr = window.devicePixelRatio || 1;
+  const W   = orb.offsetWidth;
+  const H   = orb.offsetHeight;
+  if (W < 4) return;
+
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const cx = W / 2, cy = H / 2;
+  const maxR   = Math.min(W, H) / 2 * 0.93;
+  const innerR = maxR * (expanded ? 0.30 : 0.35);
+  const baseR  = maxR * (expanded ? 0.54 : 0.65);
+  const eventR = maxR * (expanded ? 0.87 : 0.91);
+
+  const today = localDateStr(new Date());
+  const now   = new Date();
+  const curH  = now.getHours() + now.getMinutes() / 60;
+  const TWO_PI = Math.PI * 2;
+  const GAP    = (TWO_PI / 24) * 0.055;
+
+  // Subtle outer ring guide
+  ctx.beginPath();
+  ctx.arc(cx, cy, eventR + (expanded ? 2 : 1), 0, TWO_PI);
+  ctx.strokeStyle = 'rgba(201,162,39,0.07)';
+  ctx.lineWidth = expanded ? 1 : 0.5;
+  ctx.stroke();
+
+  for (let h = 0; h < 24; h++) {
+    const a0 = (h / 24)       * TWO_PI - Math.PI / 2 + GAP;
+    const a1 = ((h + 1) / 24) * TWO_PI - Math.PI / 2 - GAP;
+
+    const hStr = String(h).padStart(2, '0');
+    const evs  = CAL_EVENTS.filter(ev =>
+      ev.date === today && ev.startTime?.startsWith(hStr)
+    );
+    const hasEv  = evs.length > 0;
+    const isCur  = Math.floor(curH) === h;
+    const isPast = h < Math.floor(curH);
+
+    // Height of this segment
+    const segR = hasEv ? eventR : baseR;
+
+    // Fill colour
+    let fill;
+    if (hasEv) {
+      const t = TASKS.find(t => t.id === evs[0].taskId);
+      const c = getCatColor(t?.category);
+      fill = c + (expanded ? 'cc' : 'bb');
+    } else if (isCur) {
+      fill = 'rgba(201,162,39,0.42)';
+    } else if (isPast) {
+      fill = 'rgba(201,162,39,0.06)';
+    } else {
+      fill = 'rgba(232,224,208,0.045)';
+    }
+
+    // Draw petal segment
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, a0, a1);
+    ctx.arc(cx, cy, segR,   a1, a0, true);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+
+    // Stroke event segments
+    if (hasEv) {
+      const t = TASKS.find(t => t.id === evs[0].taskId);
+      ctx.strokeStyle = getCatColor(t?.category) + '44';
+      ctx.lineWidth   = 0.5;
+      ctx.stroke();
+    }
+
+    // Hour labels (expanded only, every 3h)
+    if (expanded && h % 3 === 0) {
+      const labelR = eventR + 14;
+      const midA   = ((h + 0.5) / 24) * TWO_PI - Math.PI / 2;
+      const label  = h === 0 ? '0' : String(h);
+      ctx.fillStyle = isCur
+        ? 'rgba(201,162,39,0.9)'
+        : 'rgba(138,128,112,0.55)';
+      ctx.font = '9px "DM Mono", monospace';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label,
+        cx + labelR * Math.cos(midA),
+        cy + labelR * Math.sin(midA));
+    }
+  }
+
+  // Current-time pointer line (blue)
+  const tAngle = (curH / 24) * TWO_PI - Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx + (innerR + 2) * Math.cos(tAngle),
+             cy + (innerR + 2) * Math.sin(tAngle));
+  ctx.lineTo(cx + (eventR + 4) * Math.cos(tAngle),
+             cy + (eventR + 4) * Math.sin(tAngle));
+  ctx.strokeStyle = '#6b9fd4';
+  ctx.lineWidth   = expanded ? 2 : 1.5;
+  ctx.lineCap     = 'round';
+  ctx.stroke();
+
+  // Center hub
+  ctx.beginPath();
+  ctx.arc(cx, cy, innerR - 1, 0, TWO_PI);
+  ctx.fillStyle = '#0a0908';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(201,162,39,0.22)';
+  ctx.lineWidth   = 1;
+  ctx.stroke();
+
+  // Mini clock in collapsed state
+  if (!expanded) {
+    const hh2 = String(now.getHours()).padStart(2, '0');
+    const mm2 = String(now.getMinutes()).padStart(2, '0');
+    ctx.fillStyle    = 'rgba(201,162,39,0.82)';
+    ctx.font         = `bold ${Math.max(8, Math.round(innerR * 0.72))}px "DM Mono", monospace`;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${hh2}:${mm2}`, cx, cy);
+  }
+
+  // Update expanded center overlay
+  if (expanded) {
+    const hh2 = String(now.getHours()).padStart(2, '0');
+    const mm2 = String(now.getMinutes()).padStart(2, '0');
+    const ss2 = String(now.getSeconds()).padStart(2, '0');
+    const clockEl = document.getElementById('orb-clock');
+    if (clockEl) clockEl.textContent = `${hh2}:${mm2}:${ss2}`;
+
+    // Next event
+    const nowStr = `${hh2}:${mm2}`;
+    const upcoming = CAL_EVENTS
+      .filter(ev => ev.date === today && ev.startTime && ev.startTime > nowStr)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const nextEl = document.getElementById('orb-next-event');
+    if (nextEl) {
+      if (upcoming.length) {
+        nextEl.innerHTML = `<em>${escHtml(upcoming[0].title)}</em>&thinsp;${fmtTimeSched(upcoming[0].startTime)}`;
+      } else {
+        nextEl.textContent = '—';
+      }
+    }
+  }
 }
+
+// Tick every second (drives both mini and expanded states)
+setInterval(drawCosmodex, 1000);
+drawCosmodex(); // immediate first draw
 
 /* ── Overlay system ────────────────────────────────────── */
 function openOverlay(id) {
