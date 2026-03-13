@@ -13,7 +13,7 @@
 <script type="module">
   import { initializeApp }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
-  import { getAuth, signInAnonymously, onAuthStateChanged }
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
@@ -48,10 +48,10 @@
   window.CDX_FB   = {
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
     onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
-    deleteField, signInAnonymously, onAuthStateChanged
+    deleteField, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
   };
 
-  // Restore previous anonymous session automatically on page load
+  // Restore existing Google session automatically on page load
   onAuthStateChanged(auth, user => {
     window.CDX_USER = user || null;
     if (user) window.dispatchEvent(new Event('cdx-auth-ready'));
@@ -2069,6 +2069,269 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* ═══════════════════════════════════════════════════════════
    MILESTONES PANEL
    ═══════════════════════════════════════════════════════════ */
+
+/* ── Planning dashboard card grid ──────────────────────── */
+.ms-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 24px;
+}
+
+/* Outer wrapper carries the conic-gradient progress border */
+.ms-dash-card-outer {
+  padding: 3px;
+  border-radius: 18px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+.ms-dash-card-outer:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+
+.ms-dash-card-inner {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.ms-dash-card-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--cream);
+  line-height: 1.3;
+}
+
+.ms-dash-card-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ms-dash-card-notes {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ms-dash-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.ms-dash-pct-label {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
+}
+
+.ms-dash-acts-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.ms-dash-milestones-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 3px 8px;
+}
+
+/* ── Alternating timeline (single-project view) ──────── */
+.ms-alt-timeline-wrap {
+  padding: 24px 40px 40px;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ms-alt-project-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.ms-alt-project-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--cream);
+  display: block;
+}
+
+.ms-alt-project-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+  display: block;
+}
+
+/* Progress bar under header */
+.ms-alt-progress-wrap {
+  max-width: 420px;
+  margin: 14px auto 32px;
+  text-align: center;
+}
+.ms-alt-progress-bar {
+  height: 6px;
+  background: var(--elevated);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  cursor: crosshair;
+  position: relative;
+}
+.ms-alt-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s;
+  pointer-events: none;
+}
+
+/* Central line container */
+.ms-alt-entries {
+  position: relative;
+}
+.ms-alt-center-line {
+  position: absolute;
+  left: 50%;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border);
+  transform: translateX(-50%);
+}
+.ms-alt-center-elapsed {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 3px;
+  border-radius: 2px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Each milestone row */
+.ms-alt-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr;
+  align-items: flex-start;
+  margin-bottom: 36px;
+  position: relative;
+}
+
+/* Dot column */
+.ms-alt-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 12px;
+  gap: 4px;
+}
+.ms-alt-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  z-index: 2;
+  flex-shrink: 0;
+}
+.ms-alt-date-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Card column */
+.ms-alt-card-col {
+  padding: 0 16px;
+}
+.ms-alt-milestone-card {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  animation: fadeUp 0.35s forwards;
+  opacity: 0;
+}
+
+.ms-alt-milestone-card:hover { border-color: rgba(201,162,39,0.3); }
+
+.ms-alt-card-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--cream);
+  margin-bottom: 4px;
+}
+
+.ms-alt-card-desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+/* Timeline start/end caps */
+.ms-alt-cap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.ms-alt-cap-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  z-index: 2;
+}
+.ms-alt-cap-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
 #panel-milestones .panel-toolbar {
   display: flex;
   align-items: center;
@@ -2818,7 +3081,15 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   <div class="signin-bg-glow"></div>
   <div class="signin-logo">Cosmo<em>dex</em></div>
   <div class="signin-sub">Your intelligent time companion</div>
-  <button class="signin-btn" id="signin-btn">Enter</button>
+  <button class="signin-btn" id="signin-btn" style="background:#fff;color:#1a1a1a;gap:12px">
+    <svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    Continue with Google
+  </button>
   <div id="signin-error" style="display:none;margin-top:18px;font-family:var(--font-body);font-size:12px;color:var(--rust);text-align:center;max-width:280px;line-height:1.5"></div>
 </div>
 
@@ -3375,6 +3646,8 @@ let _msProjEdit        = null;
 let _msEventEdit       = null;
 let _msNewActivities   = [];
 let _mainPanel         = 'default';  // 'default' | 'milestones'
+let _msView            = 'dashboard'; // 'dashboard' | 'timeline'
+let _msFocusProj       = null;        // project id when in timeline view
 
 let _settings = JSON.parse(localStorage.getItem('cdx_v2_settings') || 'null') || {
   visibleCategories: Object.keys(CATEGORIES),
@@ -4116,141 +4389,220 @@ function msDateToPercent(dateStr, startDate, endDate) {
 }
 
 function renderMilestones() {
+  if (_msView === 'timeline' && _msFocusProj) {
+    renderMilestoneTimeline(_msFocusProj);
+  } else {
+    _msView = 'dashboard';
+    _msFocusProj = null;
+    renderMilestoneDashboard();
+  }
+}
+
+/* ── Planning toolbar state ──────────────────────────── */
+function updateMilestoneToolbar() {
+  const toolbar = document.querySelector('#panel-milestones .panel-toolbar');
+  if (!toolbar) return;
+  if (_msView === 'timeline' && _msFocusProj) {
+    const proj = MILESTONE_PROJECTS.find(p => p.id === _msFocusProj);
+    toolbar.innerHTML = `
+      <button id="ms-back-btn" class="btn-ghost" style="font-size:10px;padding:5px 12px">← Back</button>
+      <span style="font-family:var(--font-display);font-size:15px;color:var(--cream);margin-left:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(proj?.title || '')}</span>
+      <div style="display:flex;gap:6px">
+        <button id="ms-add-event-btn-tl" class="ms-add-event-btn" data-ms-add-event="${escAttr(_msFocusProj)}">+ Milestone</button>
+        <button id="ms-edit-proj-btn-tl" class="ms-edit-proj-btn" data-ms-edit-proj="${escAttr(_msFocusProj)}">⋯</button>
+      </div>`;
+    document.getElementById('ms-back-btn')?.addEventListener('click', () => {
+      _msView = 'dashboard'; _msFocusProj = null;
+      updateMilestoneToolbar(); renderMilestoneDashboard();
+    });
+  } else {
+    toolbar.innerHTML = `
+      <span style="font-family:var(--font-display);font-size:16px;color:var(--cream)">Planning</span>
+      <div style="margin-left:auto">
+        <button id="ms-add-project-btn" class="btn-primary">+ Initiative</button>
+      </div>`;
+    document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
+  }
+}
+
+/* ── Dashboard: card grid ────────────────────────────── */
+function renderMilestoneDashboard() {
+  updateMilestoneToolbar();
   const body = document.getElementById('milestones-body');
   if (!body) return;
 
   if (!MILESTONE_PROJECTS.length) {
-    body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">No initiatives yet. Click "+ Initiative" to start.</div>`;
+    body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:60px">No initiatives yet.<br><br>Click "+ Initiative" to start.</div>`;
     return;
   }
 
-  body.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'ms-dash-grid';
 
   MILESTONE_PROJECTS.forEach(proj => {
-    const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id).sort((a,b) => a.date.localeCompare(b.date));
+    const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
     const allActs = events.flatMap(e => e.activities || []);
     const doneActs = allActs.filter(a => a.done).length;
     const totalActs = allActs.length;
     const pct = totalActs > 0 ? Math.round(doneActs / totalActs * 100) : 0;
-
-    // Calculate elapsed %
-    const now = new Date();
-    const start = new Date(proj.startDate);
-    const end = new Date(proj.endDate);
-    const totalMs = end - start;
-    const elapsedMs = Math.min(now - start, totalMs);
-    const elapsedPct = totalMs > 0 ? Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100)) : 0;
     const isComplete = pct === 100;
-
     const cat = proj.category ? CATEGORIES[proj.category] : null;
-    const catBadge = cat ? `<span class="cat-badge cat-${proj.category}" style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
 
-    // Milestone pips on banner bar
-    const pips = events.map(ev => {
-      const evPct = msDateToPercent(ev.date, proj.startDate, proj.endDate);
-      const evActs = ev.activities || [];
-      const evDone = evActs.filter(a => a.done).length;
-      const evColor = evDone === evActs.length && evActs.length > 0 ? '#4a7c5e' : proj.color;
-      return `<div class="initiative-milestone-pip" style="left:${evPct.toFixed(1)}%;background:${evColor}"
-               data-ms-pip="${escAttr(ev.id)}" title="${escAttr(ev.title)}"></div>`;
-    }).join('');
+    // Conic-gradient progress border: sweep clockwise from top
+    const deg = Math.round(pct * 3.6);
+    const borderBg = `conic-gradient(${proj.color} 0deg ${deg}deg, var(--border) ${deg}deg 360deg)`;
 
-    // Vertical timeline section
-    const timelineHtml = buildVerticalTimeline(proj, events, elapsedPct);
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'ms-vertical-container';
-    wrapper.dataset.projId = proj.id;
-    wrapper.innerHTML = `
-      <div class="initiative-banner" style="border-left-color:${escAttr(proj.color)}">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <div class="ms-project-dot" style="background:${escAttr(proj.color)}"></div>
-          <span class="ms-project-name">${escHtml(proj.title)}</span>
-          ${catBadge}
-          ${proj.notes ? `<span style="font-size:12px;color:var(--muted);flex:1;font-family:var(--font-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(proj.notes.slice(0,80))}${proj.notes.length>80?'…':''}</span>` : ''}
-          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
-            <span style="font-family:var(--font-mono);font-size:11px;color:${isComplete?'var(--sage)':'var(--gold)'}">${pct}%</span>
-            <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${doneActs}/${totalActs} done</span>
-            <button class="ms-add-event-btn" data-ms-add-event="${escAttr(proj.id)}">+ Milestone</button>
-            <button class="ms-edit-proj-btn" data-ms-edit-proj="${escAttr(proj.id)}">⋯</button>
+    const outer = document.createElement('div');
+    outer.className = 'ms-dash-card-outer';
+    outer.style.background = borderBg;
+    outer.dataset.msDashCard = proj.id;
+    outer.innerHTML = `
+      <div class="ms-dash-card-inner">
+        <div class="ms-dash-card-title">${escHtml(proj.title)}</div>
+        <div class="ms-dash-card-meta">
+          ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px">${cat.label}</span>` : ''}
+          <span>${escHtml(fmtDate(proj.startDate))} – ${escHtml(fmtDate(proj.endDate))}</span>
+        </div>
+        ${proj.notes ? `<div class="ms-dash-card-notes">${escHtml(proj.notes)}</div>` : ''}
+        <div class="ms-dash-card-footer">
+          <div>
+            <div class="ms-dash-pct-label" style="color:${isComplete ? 'var(--sage)' : proj.color}">${pct}%</div>
+            <div class="ms-dash-acts-label">${doneActs} / ${totalActs} tasks done</div>
+          </div>
+          <div style="text-align:right">
+            <div class="ms-dash-milestones-count">${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
           </div>
         </div>
-        <!-- Progress bar -->
-        <div class="initiative-progress-bar" data-proj-bar="${escAttr(proj.id)}" style="margin-top:12px">
-          <div class="initiative-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:${escAttr(proj.color)};opacity:0.35"></div>
-          <div class="initiative-progress-fill" style="width:${pct}%;background:${escAttr(proj.color)};opacity:0.7;transition:width 0.4s"></div>
-          ${pips}
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:9px;color:var(--muted)">
-          <span>▶ ${escHtml(fmtDate(proj.startDate))}</span>
-          <span>${escHtml(fmtDate(proj.endDate))} ■</span>
-        </div>
-      </div>
-      ${timelineHtml}
-    `;
-    body.appendChild(wrapper);
+      </div>`;
+    grid.appendChild(outer);
+  });
+
+  body.innerHTML = '';
+  body.appendChild(grid);
+
+  // Card click → open timeline
+  grid.querySelectorAll('[data-ms-dash-card]').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('button')) return;
+      _msView = 'timeline';
+      _msFocusProj = card.dataset.msDashCard;
+      updateMilestoneToolbar();
+      renderMilestoneTimeline(_msFocusProj);
+    });
   });
 }
 
-function buildVerticalTimeline(proj, events, elapsedPct) {
-  if (!events.length) {
-    return `<div style="padding:12px 20px 20px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">
-      Hover over the progress bar and click to add milestones at specific dates.
-    </div>`;
-  }
+/* ── Timeline: single-project alternating view ────────── */
+function renderMilestoneTimeline(projId) {
+  updateMilestoneToolbar();
+  const body = document.getElementById('milestones-body');
+  if (!body) return;
+  const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
+  if (!proj) { _msView = 'dashboard'; renderMilestoneDashboard(); return; }
 
-  const milestonesHtml = events.map((ev, idx) => {
+  const events = MILESTONE_EVENTS.filter(e => e.projectId === projId)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const allActs = events.flatMap(e => e.activities || []);
+  const doneActs = allActs.filter(a => a.done).length;
+  const totalActs = allActs.length;
+  const pct = totalActs > 0 ? Math.round(doneActs / totalActs * 100) : 0;
+
+  const now = new Date();
+  const start = new Date(proj.startDate);
+  const end   = new Date(proj.endDate);
+  const totalMs = end - start;
+  const elapsedPct = totalMs > 0 ? Math.max(0, Math.min(100, ((now - start) / totalMs) * 100)) : 0;
+
+  // Alternating milestone rows
+  const rowsHtml = events.map((ev, idx) => {
     const acts = ev.activities || [];
     const doneCount = acts.filter(a => a.done).length;
     const isPast = new Date(ev.date) < new Date();
-    const dotColor = doneCount === acts.length && acts.length > 0 ? '#4a7c5e' : (isPast ? proj.color : 'var(--border)');
+    const dotColor = doneCount === acts.length && acts.length > 0
+      ? '#4a7c5e' : (isPast ? proj.color : 'var(--border)');
 
     const actItems = acts.map(a => {
       const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
       const cat = task?.category ? CATEGORIES[task.category] : null;
-      const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-      return `
-        <div class="ms-action-item">
-          <div class="ms-action-check ${a.done?'done':''}" data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">${a.done?'✓':''}</div>
-          <span style="flex:1;font-family:var(--font-body);font-size:12px;color:${a.done?'var(--muted)':'var(--cream)'};${a.done?'text-decoration:line-through':''}">${escHtml(a.text||a.title||'')}</span>
-          ${catBadge}
-          <button class="task-action-btn danger" style="opacity:0" data-rm-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">✕</button>
-        </div>`;
+      const catBadge = cat
+        ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>`
+        : '';
+      return `<div class="ms-action-item">
+        <div class="ms-action-check ${a.done?'done':''}" data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">${a.done?'✓':''}</div>
+        <span style="flex:1;font-family:var(--font-body);font-size:12px;color:${a.done?'var(--muted)':'var(--cream)'};${a.done?'text-decoration:line-through':''}">${escHtml(a.text||a.title||'')}</span>
+        ${catBadge}
+        <button class="task-action-btn danger" style="opacity:0" data-rm-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">✕</button>
+      </div>`;
     }).join('');
 
-    return `
-      <div class="ms-v-milestone" style="margin-top:${idx===0?'16px':'28px'}">
-        <div class="ms-v-dot" style="background:${dotColor};border-color:var(--bg)"></div>
-        <div class="ms-action-card" data-ms-event-id="${escAttr(ev.id)}">
-          <div class="ms-action-card-header">
-            <span style="font-family:var(--font-display);font-size:14px;font-weight:400;color:var(--cream);flex:1">${escHtml(ev.title)}</span>
-            <span class="ms-date-pin">${escHtml(fmtDate(ev.date))}</span>
-            ${acts.length ? `<span style="font-family:var(--font-mono);font-size:9px;color:${doneCount===acts.length?'var(--sage)':'var(--muted)'}">${doneCount}/${acts.length}</span>` : ''}
-            <button class="ms-edit-proj-btn" data-ms-edit-ev="${escAttr(ev.id)}" style="font-size:11px">✎</button>
+    const card = `
+      <div class="ms-alt-milestone-card" style="animation-delay:${idx * 60}ms">
+        <div class="ms-alt-card-title">${escHtml(ev.title)}</div>
+        ${ev.description ? `<div class="ms-alt-card-desc">${escHtml(ev.description)}</div>` : ''}
+        <div class="ms-action-items-list" data-ev-id="${escAttr(ev.id)}" style="margin-bottom:10px">
+          ${actItems || '<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);padding:4px 0">No tasks yet.</div>'}
+        </div>
+        <div class="ms-add-task-row" data-ev-id="${escAttr(ev.id)}" style="border-top:1px solid var(--border);padding-top:8px">
+          <div style="display:flex;gap:6px;margin-bottom:4px">
+            <input class="ms-task-search-input form-input" placeholder="Search or add task…" data-ev-id="${escAttr(ev.id)}" style="flex:1;font-size:12px;padding:5px 9px" autocomplete="off">
+            <button class="btn-primary" style="font-size:10px;padding:5px 10px;white-space:nowrap" data-add-task-ev="${escAttr(ev.id)}">Add</button>
           </div>
-          ${ev.description ? `<div style="font-size:12px;color:var(--muted);font-family:var(--font-body);line-height:1.5;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">${escHtml(ev.description)}</div>` : ''}
-          <div class="ms-action-items-list" data-ev-id="${escAttr(ev.id)}">
-            ${actItems || '<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);padding:4px 0">No tasks yet.</div>'}
-          </div>
-          <!-- Add task row -->
-          <div class="ms-add-task-row" data-ev-id="${escAttr(ev.id)}" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
-            <div style="display:flex;gap:6px;margin-bottom:6px">
-              <input class="ms-task-search-input form-input" placeholder="Search or type new task…" data-ev-id="${escAttr(ev.id)}" style="flex:1;font-size:12px;padding:6px 10px" autocomplete="off">
-              <button class="btn-primary" style="font-size:10px;padding:5px 10px;white-space:nowrap" data-add-task-ev="${escAttr(ev.id)}">Add</button>
-            </div>
-            <div class="ms-task-search-results" data-ev-id="${escAttr(ev.id)}" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;max-height:160px;overflow-y:auto"></div>
-          </div>
+          <div class="ms-task-search-results" data-ev-id="${escAttr(ev.id)}" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;max-height:140px;overflow-y:auto"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
+          <button class="ms-edit-proj-btn" data-ms-edit-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--muted)">✎ Edit</button>
         </div>
       </div>`;
+
+    const dotCol = `
+      <div class="ms-alt-dot-col">
+        <div class="ms-alt-dot" style="background:${dotColor}"></div>
+        <div class="ms-alt-date-badge">${escHtml(fmtDate(ev.date))}</div>
+        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:8px;color:${doneCount===acts.length?'var(--sage)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
+      </div>`;
+
+    // Alternate: even idx → card on left, odd → card on right
+    const isLeft = idx % 2 === 0;
+    return `<div class="ms-alt-row" style="animation-delay:${idx*40}ms">
+      ${isLeft ? `<div class="ms-alt-card-col">${card}</div>` : '<div></div>'}
+      ${dotCol}
+      ${isLeft ? '<div></div>' : `<div class="ms-alt-card-col">${card}</div>`}
+    </div>`;
   }).join('');
 
-  return `
-    <div class="ms-v-timeline">
-      <div class="ms-v-line"></div>
-      <div class="ms-v-line-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:${escAttr(proj.color)};top:0"></div>
-      <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;padding-bottom:8px">▶ ${escHtml(fmtDate(proj.startDate))}</div>
-      ${milestonesHtml}
-      <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;padding-top:20px;margin-top:8px;border-top:1px dashed var(--border)">■ ${escHtml(fmtDate(proj.endDate))}</div>
+  body.innerHTML = `
+    <div class="ms-alt-timeline-wrap">
+      <div class="ms-alt-project-header">
+        <span class="ms-alt-project-title">${escHtml(proj.title)}</span>
+        <span class="ms-alt-project-sub">${escHtml(fmtDate(proj.startDate))} — ${escHtml(fmtDate(proj.endDate))}</span>
+      </div>
+      <div class="ms-alt-progress-wrap">
+        <div class="ms-alt-progress-bar" data-proj-bar="${escAttr(proj.id)}">
+          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:${proj.color};opacity:0.35"></div>
+          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:${proj.color};opacity:0.75;transition:width 0.4s;border-radius:3px"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px">
+          <span>${pct}% complete · ${doneActs}/${totalActs} tasks</span>
+          <span>${Math.round(elapsedPct)}% elapsed</span>
+        </div>
+      </div>
+      ${events.length ? `
+        <div class="ms-alt-entries">
+          <div class="ms-alt-center-line"></div>
+          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:${proj.color}88"></div>
+          <div class="ms-alt-cap">
+            <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
+            <div class="ms-alt-cap-label">Start · ${escHtml(fmtDate(proj.startDate))}</div>
+          </div>
+          ${rowsHtml}
+          <div class="ms-alt-cap">
+            <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
+            <div class="ms-alt-cap-label">End · ${escHtml(fmtDate(proj.endDate))}</div>
+          </div>
+        </div>`
+      : `<div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:40px 0">
+          No milestones yet. Click "+ Milestone" above to add one.
+        </div>`}
     </div>`;
 }
 
@@ -6469,45 +6821,34 @@ function waitForFirebaseAuth(fn) {
   setTimeout(() => waitForFirebaseAuth(fn), 100);
 }
 
-// Auto-attempt sign-in silently when Firebase ESM loads (handles returning visitors
-// and also pre-warms auth so the button press feels instant)
-waitForFirebaseAuth(() => {
-  if (!window.CDX_USER) {
-    window.CDX_FB.signInAnonymously(window.CDX_AUTH).catch(() => {});
-  }
-});
+// onAuthStateChanged in the ESM module handles returning Google sessions automatically.
+// No silent sign-in attempt needed — Google persists the session via IndexedDB.
 
 document.getElementById('signin-btn')?.addEventListener('click', () => {
   const btn = document.getElementById('signin-btn');
   const errEl = document.getElementById('signin-error');
-  btn.textContent = '…';
+  btn.innerHTML = '<span style="display:inline-block;width:18px;height:18px;border:2px solid #ccc;border-top-color:#333;border-radius:50%;animation:spin 0.7s linear infinite"></span>';
   btn.disabled = true;
   errEl.style.display = 'none';
 
-  const resetBtn = (label = 'Retry', errMsg = '') => {
-    btn.textContent = label;
+  const resetBtn = (errMsg = '') => {
+    btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Try again`;
     btn.disabled = false;
-    btn.style.background = '#c45c2a';
-    if (errMsg) {
-      errEl.textContent = errMsg;
-      errEl.style.display = 'block';
-    }
+    if (errMsg) { errEl.textContent = errMsg; errEl.style.display = 'block'; }
   };
-  // 8-second timeout so the button never stays stuck
-  const timeout = setTimeout(() => resetBtn('Retry',
-    'Connection timed out. Check your network and try again.'), 8000);
 
   waitForFirebaseAuth(() => {
-    window.CDX_FB.signInAnonymously(window.CDX_AUTH)
-      .then(() => { clearTimeout(timeout); /* onAuthStateChanged → cdx-auth-ready → dismiss */ })
+    const provider = new window.CDX_FB.GoogleAuthProvider();
+    window.CDX_FB.signInWithPopup(window.CDX_AUTH, provider)
+      .then(() => { /* onAuthStateChanged → cdx-auth-ready → dismiss overlay */ })
       .catch(err => {
-        clearTimeout(timeout);
-        console.error('Sign-in failed:', err);
-        const isNetwork = err.code === 'auth/network-request-failed';
-        const msg = isNetwork
-          ? 'Network error — check your connection and try again.'
-          : `Sign-in failed (${err.code || err.message}). If this persists, check that anonymous auth is enabled in the Firebase console and this domain is authorised.`;
-        resetBtn('Retry', msg);
+        console.error('Google sign-in failed:', err);
+        const msg = err.code === 'auth/popup-closed-by-user'
+          ? 'Sign-in cancelled. Click the button to try again.'
+          : err.code === 'auth/popup-blocked'
+          ? 'Pop-up was blocked. Please allow pop-ups for this site and retry.'
+          : `Sign-in failed: ${err.message}`;
+        resetBtn(msg);
       });
   });
 });
