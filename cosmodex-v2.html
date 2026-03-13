@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="referrer" content="origin" />
   <title>Cosmodex v2</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -2624,12 +2625,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <option value="high">High</option>
           </select>
           <select class="task-priority-select" id="task-add-category">
-            <option value="personal" selected>Personal</option>
-            <option value="work">Work</option>
-            <option value="health">Health</option>
-            <option value="learning">Learning</option>
-            <option value="creative">Creative</option>
-            <option value="admin">Admin</option>
+            <!-- populated by rebuildCategorySelects() using defaultCategory setting -->
           </select>
           <input class="task-add-date" id="task-add-date" type="date" />
           <button class="task-add-confirm" id="task-add-confirm">Add</button>
@@ -2823,6 +2819,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   <div class="signin-logo">Cosmo<em>dex</em></div>
   <div class="signin-sub">Your intelligent time companion</div>
   <button class="signin-btn" id="signin-btn">Enter</button>
+  <div id="signin-error" style="display:none;margin-top:18px;font-family:var(--font-body);font-size:12px;color:var(--rust);text-align:center;max-width:280px;line-height:1.5"></div>
 </div>
 
 <!-- Notes overlay -->
@@ -3128,7 +3125,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <!-- Manage categories section -->
       <div class="settings-section" id="settings-manage-cats-section">
         <div class="settings-section-title">Manage Categories</div>
-        <div class="settings-desc">Add or remove task and planning categories. Default categories cannot be deleted.</div>
+        <div class="settings-desc">Add or remove task and planning categories.</div>
         <div id="settings-cat-list" style="margin-bottom:14px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center">
           <input id="new-cat-label" class="sched-input" placeholder="Category name" autocomplete="off">
@@ -3137,9 +3134,16 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         </div>
       </div>
 
+      <!-- Default category section -->
+      <div class="settings-section">
+        <div class="settings-section-title">Default Category</div>
+        <div class="settings-desc">Pre-selected category when creating new tasks anywhere in the app.</div>
+        <select id="settings-default-category" class="form-input" style="width:100%;cursor:pointer"></select>
+      </div>
+
       <!-- Task categories section -->
       <div class="settings-section">
-        <div class="settings-section-title">Categories</div>
+        <div class="settings-section-title">Visible Categories</div>
         <div class="settings-desc">Toggle which categories appear in your task list. To change a task's category, click its coloured badge directly on the task row — it cycles through all categories.</div>
         <div class="settings-cat-grid" id="settings-cat-filters"></div>
       </div>
@@ -3374,7 +3378,10 @@ let _mainPanel         = 'default';  // 'default' | 'milestones'
 
 let _settings = JSON.parse(localStorage.getItem('cdx_v2_settings') || 'null') || {
   visibleCategories: Object.keys(CATEGORIES),
+  defaultCategory: Object.keys(CATEGORIES)[0] || '',
 };
+// Ensure defaultCategory exists (for older stored settings without it)
+if (!_settings.defaultCategory) _settings.defaultCategory = Object.keys(CATEGORIES)[0] || '';
 function saveSettings() { localStorage.setItem('cdx_v2_settings', JSON.stringify(_settings)); }
 
 /* ── Theme ─────────────────────────────────────────────── */
@@ -4030,7 +4037,15 @@ async function deleteMilestoneProject(id) {
   const evSnap = await getDocs(
     query(collection(window.CDX_DB, 'milestoneEvents'), where('projectId', '==', id))
   );
-  await Promise.all(evSnap.docs.map(d => deleteDoc(d.ref)));
+  // Cascade-delete any tasks linked via activities
+  const taskIds = [];
+  evSnap.docs.forEach(d => {
+    (d.data().activities || []).forEach(a => { if (a.taskId) taskIds.push(a.taskId); });
+  });
+  await Promise.all([
+    ...evSnap.docs.map(d => deleteDoc(d.ref)),
+    ...taskIds.map(tid => deleteDoc(doc(window.CDX_DB, 'tasks', tid))),
+  ]);
   await deleteDoc(doc(window.CDX_DB, 'milestoneProjects', id));
 }
 
@@ -4047,7 +4062,12 @@ async function updateMilestoneEvent(id, data) {
 
 async function deleteMilestoneEvent(id) {
   const { doc, deleteDoc } = window.CDX_FB;
-  await deleteDoc(doc(window.CDX_DB, 'milestoneEvents', id));
+  const ev = MILESTONE_EVENTS.find(e => e.id === id);
+  const taskIds = (ev?.activities || []).filter(a => a.taskId).map(a => a.taskId);
+  await Promise.all([
+    deleteDoc(doc(window.CDX_DB, 'milestoneEvents', id)),
+    ...taskIds.map(tid => deleteDoc(doc(window.CDX_DB, 'tasks', tid))),
+  ]);
 }
 
 async function toggleMilestoneActivity(eventId, actId) {
@@ -4074,7 +4094,7 @@ async function addMilestoneActivity(eventId, text, taskId=null) {
     const { collection, addDoc, serverTimestamp } = window.CDX_FB;
     const ref = await addDoc(collection(window.CDX_DB, 'tasks'), {
       title: text, done: false, priority: 'med',
-      dueDate: ev.date || null, category: null,
+      dueDate: ev.date || null, category: _settings.defaultCategory || null,
       calEventId: null, subtasks: [],
       createdAt: serverTimestamp()
     });
@@ -5580,6 +5600,9 @@ function initAddTaskForm() {
     await addTask(title, priority, dueDate, category);
     input.value = '';
     document.getElementById('task-add-date').value = '';
+    // Reset category to default
+    const catSel = document.getElementById('task-add-category');
+    if (catSel && _settings.defaultCategory) catSel.value = _settings.defaultCategory;
     input.focus();
   }
   confirm.addEventListener('click', submit);
@@ -5606,7 +5629,6 @@ function addCategory(label, color) {
 }
 
 function deleteCategory(key) {
-  if (DEFAULT_CATS.includes(key)) return;
   delete CATEGORIES[key];
   saveCategoriesLocal();
   renderSettingsCatList();
@@ -5616,10 +5638,11 @@ function deleteCategory(key) {
 }
 
 function rebuildCategorySelects() {
+  const def = _settings.defaultCategory;
   // Rebuild task-add-category select
   const taskCatSel = document.getElementById('task-add-category');
   if (taskCatSel) {
-    const cur = taskCatSel.value;
+    const cur = taskCatSel.value || def;
     taskCatSel.innerHTML = Object.entries(CATEGORIES).map(([k,v]) =>
       `<option value="${k}"${k===cur?' selected':''}>${v.label}</option>`
     ).join('');
@@ -5633,6 +5656,8 @@ function rebuildCategorySelects() {
         `<option value="${k}"${k===cur?' selected':''}>${v.label}</option>`
       ).join('');
   }
+  // Also refresh the settings default-category select if it's open
+  renderSettingsDefaultCat();
 }
 
 function renderSettingsCatList() {
@@ -5643,10 +5668,7 @@ function renderSettingsCatList() {
       <div style="width:14px;height:14px;border-radius:50%;background:${cat.color};flex-shrink:0"></div>
       <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(cat.label)}</span>
       <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);background:var(--elevated);border:1px solid var(--border);border-radius:4px;padding:1px 5px">${escHtml(key)}</span>
-      ${DEFAULT_CATS.includes(key)
-        ? '<span style="width:26px"></span>'
-        : `<button class="task-action-btn danger" data-del-cat="${escAttr(key)}" title="Delete">✕</button>`
-      }
+      <button class="task-action-btn danger" data-del-cat="${escAttr(key)}" title="Delete">✕</button>
     </div>`).join('');
   list.querySelectorAll('[data-del-cat]').forEach(btn => {
     btn.addEventListener('click', () => deleteCategory(btn.dataset.delCat));
@@ -5690,6 +5712,15 @@ function renderSettingsCats() {
   });
 }
 
+function renderSettingsDefaultCat() {
+  const sel = document.getElementById('settings-default-category');
+  if (!sel) return;
+  const cur = _settings.defaultCategory;
+  sel.innerHTML = Object.entries(CATEGORIES).map(([k,v]) =>
+    `<option value="${k}"${k===cur?' selected':''}>${v.label}</option>`
+  ).join('');
+}
+
 function renderSettingsHolidays() {
   const list = document.getElementById('settings-holidays-list');
   if (!list) return;
@@ -5718,8 +5749,14 @@ function initSettingsPanel() {
     renderSettingsCats();
     renderSettingsHolidays();
     renderSettingsCatList();
+    renderSettingsDefaultCat();
     initNewCatColorPicker();
     document.getElementById('settings-overlay').classList.add('open');
+  });
+  document.getElementById('settings-default-category')?.addEventListener('change', e => {
+    _settings.defaultCategory = e.target.value;
+    saveSettings();
+    rebuildCategorySelects();
   });
   document.getElementById('holiday-add-btn')?.addEventListener('click', async () => {
     const date = document.getElementById('holiday-date').value;
@@ -6442,21 +6479,36 @@ waitForFirebaseAuth(() => {
 
 document.getElementById('signin-btn')?.addEventListener('click', () => {
   const btn = document.getElementById('signin-btn');
+  const errEl = document.getElementById('signin-error');
   btn.textContent = '…';
   btn.disabled = true;
+  errEl.style.display = 'none';
 
-  const resetBtn = (label = 'Retry') => {
+  const resetBtn = (label = 'Retry', errMsg = '') => {
     btn.textContent = label;
     btn.disabled = false;
     btn.style.background = '#c45c2a';
+    if (errMsg) {
+      errEl.textContent = errMsg;
+      errEl.style.display = 'block';
+    }
   };
   // 8-second timeout so the button never stays stuck
-  const timeout = setTimeout(() => resetBtn('Retry'), 8000);
+  const timeout = setTimeout(() => resetBtn('Retry',
+    'Connection timed out. Check your network and try again.'), 8000);
 
   waitForFirebaseAuth(() => {
     window.CDX_FB.signInAnonymously(window.CDX_AUTH)
       .then(() => { clearTimeout(timeout); /* onAuthStateChanged → cdx-auth-ready → dismiss */ })
-      .catch(err => { clearTimeout(timeout); console.error('Sign-in failed:', err); resetBtn(); });
+      .catch(err => {
+        clearTimeout(timeout);
+        console.error('Sign-in failed:', err);
+        const isNetwork = err.code === 'auth/network-request-failed';
+        const msg = isNetwork
+          ? 'Network error — check your connection and try again.'
+          : `Sign-in failed (${err.code || err.message}). If this persists, check that anonymous auth is enabled in the Firebase console and this domain is authorised.`;
+        resetBtn('Retry', msg);
+      });
   });
 });
 
