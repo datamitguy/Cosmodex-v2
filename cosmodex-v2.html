@@ -31,9 +31,15 @@
 
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db   = initializeFirestore(app, {
-    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-  });
+  let _firestoreCache;
+  try {
+    _firestoreCache = persistentLocalCache({ tabManager: persistentMultipleTabManager() });
+  } catch(e) {
+    try { _firestoreCache = persistentLocalCache(); } catch(e2) { _firestoreCache = undefined; }
+  }
+  const db = _firestoreCache
+    ? initializeFirestore(app, { localCache: _firestoreCache })
+    : initializeFirestore(app, {});
 
   window.CDX_DB   = db;
   window.CDX_AUTH = auth;
@@ -1831,19 +1837,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.ms-project-block {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: visible;
-}
-.ms-project-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-}
+/* Keep project dot + name classes for banner use */
 .ms-project-dot {
   width: 10px; height: 10px;
   border-radius: 50%;
@@ -1853,73 +1847,153 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   font-family: var(--font-display);
   font-size: 16px;
   color: var(--cream);
-  flex: 1;
 }
-.ms-project-dates {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 0.08em;
+
+/* ═══ VERTICAL MILESTONES TIMELINE ════════════════════ */
+.ms-vertical-container {
+  padding: 0 0 32px;
 }
-.ms-timeline-wrap {
-  padding: 36px 20px 40px;
-  position: relative;
-  overflow-x: auto;
+.initiative-banner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gold);
+  border-radius: 14px;
+  padding: 16px 20px;
+  cursor: default;
 }
-.ms-timeline-bar {
+.initiative-progress-bar {
   position: relative;
   height: 6px;
-  border-radius: 3px;
   background: var(--elevated);
-}
-.ms-timeline-fill {
-  position: absolute;
-  left: 0; top: 0; bottom: 0; right: 0;
   border-radius: 3px;
-  opacity: 0.5;
+  margin-top: 12px;
+  cursor: crosshair;
+  overflow: visible;
 }
-.ms-event-marker {
+.initiative-progress-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-radius: 3px;
+  pointer-events: none;
+}
+.initiative-milestone-pip {
   position: absolute;
   top: 50%;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-  z-index: 2;
-}
-.ms-event-dot {
-  width: 14px; height: 14px;
+  width: 10px; height: 10px;
   border-radius: 50%;
   border: 2px solid var(--bg);
+  transform: translateY(-50%) translateX(-50%);
+  cursor: pointer;
+  z-index: 2;
   transition: transform 0.15s;
-  margin: 0 auto;
 }
-.ms-event-marker:hover .ms-event-dot { transform: scale(1.35); }
-.ms-event-label {
+.initiative-milestone-pip:hover { transform: translateY(-50%) translateX(-50%) scale(1.4); }
+.ms-v-timeline {
+  position: relative;
+  padding-left: 52px;
+  margin-left: 20px;
+  margin-top: 4px;
+}
+.ms-v-line {
   position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 20px; top: 0; bottom: 0;
+  width: 1px;
+  background: var(--border);
+  border-left: 1px dashed var(--border);
+}
+.ms-v-line-elapsed {
+  position: absolute;
+  left: 19px;
+  width: 3px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 1;
+}
+.ms-v-milestone {
+  position: relative;
+}
+.ms-v-dot {
+  position: absolute;
+  left: -38px; top: 10px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  z-index: 2;
+}
+.ms-action-card {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.ms-action-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.ms-action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(42,37,32,0.4);
+}
+.ms-action-item:last-child { border-bottom: none; }
+.ms-action-item:hover .task-action-btn { opacity: 1 !important; }
+.ms-action-check {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  transition: var(--ease-fast);
+  color: white;
+}
+.ms-action-check:hover { border-color: var(--gold); }
+.ms-action-check.done { background: var(--sage); border-color: var(--sage); }
+.ms-date-pin {
   font-family: var(--font-mono);
   font-size: 9px;
-  color: var(--cream);
-  white-space: nowrap;
-  letter-spacing: 0.05em;
-  pointer-events: none;
-  max-width: 88px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-}
-.ms-event-date-label {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--font-mono);
-  font-size: 8px;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: var(--surface);
+  border: 1px solid var(--border);
   color: var(--muted);
   white-space: nowrap;
-  pointer-events: none;
 }
+#ms-date-tooltip {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  pointer-events: none;
+  z-index: 9999;
+  display: none;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.ms-task-search-result {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream);
+  border-bottom: 1px solid rgba(42,37,32,0.3);
+}
+.ms-task-search-result:last-child { border-bottom: none; }
+.ms-task-search-result:hover { background: rgba(201,162,39,0.06); }
 .ms-add-event-btn {
   font-family: var(--font-mono);
   font-size: 10px;
@@ -2333,7 +2407,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <div class="panel-toolbar">
         <span style="font-family:var(--font-display);font-size:16px;color:var(--cream)">Planning</span>
         <div style="margin-left:auto">
-          <button id="ms-add-project-btn" class="btn-primary">+ Project</button>
+          <button id="ms-add-project-btn" class="btn-primary">+ Initiative</button>
         </div>
       </div>
       <div id="milestones-body" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:28px"></div>
@@ -2559,16 +2633,16 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   </div>
 </div>
 
-<!-- Milestone: Add/Edit Project Modal -->
+<!-- Milestone: Add/Edit Initiative Modal -->
 <div class="overlay" id="ms-project-modal" style="z-index:860">
   <div class="overlay-panel" style="width:min(480px,92vw)">
     <div class="overlay-header">
-      <span class="overlay-title" id="ms-proj-modal-title">New Project</span>
+      <span class="overlay-title" id="ms-proj-modal-title">New Initiative</span>
       <button class="overlay-close" data-close="ms-project-modal">✕</button>
     </div>
     <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
       <div class="form-group">
-        <label class="form-label">Project Name</label>
+        <label class="form-label">Initiative Name</label>
         <input id="ms-proj-title" class="form-input" placeholder="e.g. Product Launch" autocomplete="off">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -2586,11 +2660,22 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <div id="ms-proj-color-picker" class="ms-color-picker"></div>
         <input type="hidden" id="ms-proj-color-val" value="">
       </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select id="ms-proj-category" class="form-input" style="cursor:pointer">
+          <option value="">— None —</option>
+          <!-- populated by openMsProjectModal -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes / Context</label>
+        <textarea id="ms-proj-notes" class="form-input" rows="3" placeholder="Background context, goals, constraints…"></textarea>
+      </div>
       <div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">
-        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--rust);display:none">Delete Project</button>
+        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--rust);display:none">Delete Initiative</button>
         <div style="display:flex;gap:8px;margin-left:auto">
           <button data-close="ms-project-modal" class="btn-ghost">Cancel</button>
-          <button id="ms-proj-confirm" class="btn-primary">Save</button>
+          <button id="ms-proj-confirm" class="btn-primary">Save Initiative</button>
         </div>
       </div>
     </div>
@@ -2620,12 +2705,13 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <textarea id="ms-event-desc" class="form-input" rows="2" placeholder="What needs to happen…"></textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">Activities</label>
-        <div id="ms-event-activities-list" style="margin-bottom:8px;min-height:24px"></div>
-        <div style="display:flex;gap:8px">
-          <input id="ms-activity-input" class="form-input" placeholder="Add activity…" autocomplete="off" style="flex:1">
-          <button id="ms-activity-add" class="btn-ghost" style="flex-shrink:0">+</button>
+        <label class="form-label">Tasks</label>
+        <div id="ms-event-activities-list" style="margin-bottom:10px;min-height:24px"></div>
+        <div style="display:flex;gap:8px;margin-bottom:6px">
+          <input id="ms-activity-input" class="form-input" placeholder="Search or type new task…" autocomplete="off" style="flex:1">
+          <button id="ms-activity-add" class="btn-ghost" style="flex-shrink:0">Add</button>
         </div>
+        <div id="ms-activity-search-results" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;max-height:160px;overflow-y:auto"></div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
         <button data-close="ms-event-modal" class="btn-ghost">Cancel</button>
@@ -2728,6 +2814,18 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     </div>
     <div class="overlay-body">
 
+      <!-- Manage categories section -->
+      <div class="settings-section" id="settings-manage-cats-section">
+        <div class="settings-section-title">Manage Categories</div>
+        <div class="settings-desc">Add or remove task and planning categories. Default categories cannot be deleted.</div>
+        <div id="settings-cat-list" style="margin-bottom:14px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center">
+          <input id="new-cat-label" class="sched-input" placeholder="Category name" autocomplete="off">
+          <div id="new-cat-color-picker" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+          <button class="task-add-confirm" id="new-cat-add-btn">Add</button>
+        </div>
+      </div>
+
       <!-- Task categories section -->
       <div class="settings-section">
         <div class="settings-section-title">Categories</div>
@@ -2793,6 +2891,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
 <button id="mob-fab" title="Add">+</button>
 
+<!-- Milestone date tooltip -->
+<div id="ms-date-tooltip"></div>
+
 <!-- Mobile drawer -->
 <div id="mob-more-drawer">
   <div class="drawer-handle"></div>
@@ -2846,7 +2947,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* ══════════════════════════════════════════════════════════
    CONSTANTS
    ══════════════════════════════════════════════════════════ */
-const CATEGORIES = {
+let CATEGORIES = {
   work:     { label:'Work',     color:'#6b9fd4' },
   personal: { label:'Personal', color:'#c9a227' },
   health:   { label:'Health',   color:'#4a7c5e' },
@@ -2854,6 +2955,22 @@ const CATEGORIES = {
   creative: { label:'Creative', color:'#c49a6c' },
   admin:    { label:'Admin',    color:'#8a8070' },
 };
+
+// Load saved categories from localStorage
+(function loadSavedCategories() {
+  const saved = localStorage.getItem('cdx_categories');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // Merge: keep defaults, add custom
+      Object.assign(CATEGORIES, parsed);
+    } catch(e) {}
+  }
+})();
+
+const DEFAULT_CATS = ['work','personal','health','learning','creative','admin'];
+const CAT_COLOR_PALETTE = ['#6b9fd4','#c9a227','#4a7c5e','#9b7fd4','#c49a6c','#8a8070','#d46b6b','#6bd4c4','#d4a96b','#a06bd4'];
+let _newCatColor = CAT_COLOR_PALETTE[0];
 
 const LIST_COLORS = [
   '#5c4433', '#3d5c4a', '#4a3d5c', '#5c3d42', '#3d4e5c',
@@ -3160,10 +3277,10 @@ function initListsOverlay() {
 /* ══════════════════════════════════════════════════════════
    MILESTONES — FIRESTORE CRUD
    ══════════════════════════════════════════════════════════ */
-async function addMilestoneProject(title, startDate, endDate, color) {
+async function addMilestoneProject(title, startDate, endDate, color, category='', notes='') {
   const { addDoc, collection, serverTimestamp } = window.CDX_FB;
   await addDoc(collection(window.CDX_DB, 'milestoneProjects'),
-    { title, startDate, endDate, color, createdAt: serverTimestamp() });
+    { title, startDate, endDate, color, category: category||null, notes: notes||'', createdAt: serverTimestamp() });
 }
 
 async function updateMilestoneProject(id, data) {
@@ -3199,10 +3316,35 @@ async function deleteMilestoneEvent(id) {
 async function toggleMilestoneActivity(eventId, actId) {
   const ev = MILESTONE_EVENTS.find(e => e.id === eventId);
   if (!ev) return;
+  const act = ev.activities.find(a => a.id === actId);
   const activities = ev.activities.map(a =>
     a.id === actId ? { ...a, done: !a.done } : a
   );
   await updateMilestoneEvent(eventId, { activities });
+  // Sync linked task
+  if (act?.taskId) {
+    const task = TASKS.find(t => t.id === act.taskId);
+    if (task) await updateTask(act.taskId, { done: !act.done });
+  }
+}
+
+async function addMilestoneActivity(eventId, text, taskId=null) {
+  const ev = MILESTONE_EVENTS.find(e => e.id === eventId);
+  if (!ev) return;
+  // If no taskId provided, create a real task
+  let realTaskId = taskId;
+  if (!taskId && text) {
+    const { collection, addDoc, serverTimestamp } = window.CDX_FB;
+    const ref = await addDoc(collection(window.CDX_DB, 'tasks'), {
+      title: text, done: false, priority: 'med',
+      dueDate: ev.date || null, category: null,
+      calEventId: null, subtasks: [],
+      createdAt: serverTimestamp()
+    });
+    realTaskId = ref.id;
+  }
+  const newAct = { id: crypto.randomUUID(), text: text||'', taskId: realTaskId||null, done: false };
+  await updateMilestoneEvent(eventId, { activities: [...(ev.activities||[]), newAct] });
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3219,44 +3361,140 @@ function msDateToPercent(dateStr, startDate, endDate) {
 function renderMilestones() {
   const body = document.getElementById('milestones-body');
   if (!body) return;
+
   if (!MILESTONE_PROJECTS.length) {
-    body.innerHTML = '<p style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">No projects yet. Click "+ Project" to start tracking your initiatives.</p>';
+    body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">No initiatives yet. Click "+ Initiative" to start.</div>`;
     return;
   }
-  body.innerHTML = MILESTONE_PROJECTS.map(proj => {
-    const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
-    const completedActs = events.reduce((n, ev) => n + ev.activities.filter(a => a.done).length, 0);
-    const totalActs = events.reduce((n, ev) => n + ev.activities.length, 0);
-    const markers = events.map(ev => {
-      const pct = msDateToPercent(ev.date, proj.startDate, proj.endDate);
-      return `
-        <div class="ms-event-marker" style="left:${pct.toFixed(2)}%" data-ms-event-id="${escAttr(ev.id)}">
-          <div class="ms-event-date-label">${escHtml(fmtDate(ev.date))}</div>
-          <div class="ms-event-dot" style="background:${escAttr(proj.color)}"></div>
-          <div class="ms-event-label">${escHtml(ev.title)}</div>
-        </div>`;
+
+  body.innerHTML = '';
+
+  MILESTONE_PROJECTS.forEach(proj => {
+    const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id).sort((a,b) => a.date.localeCompare(b.date));
+    const allActs = events.flatMap(e => e.activities || []);
+    const doneActs = allActs.filter(a => a.done).length;
+    const totalActs = allActs.length;
+    const pct = totalActs > 0 ? Math.round(doneActs / totalActs * 100) : 0;
+
+    // Calculate elapsed %
+    const now = new Date();
+    const start = new Date(proj.startDate);
+    const end = new Date(proj.endDate);
+    const totalMs = end - start;
+    const elapsedMs = Math.min(now - start, totalMs);
+    const elapsedPct = totalMs > 0 ? Math.max(0, Math.min(100, (elapsedMs / totalMs) * 100)) : 0;
+    const isComplete = pct === 100;
+
+    const cat = proj.category ? CATEGORIES[proj.category] : null;
+    const catBadge = cat ? `<span class="cat-badge cat-${proj.category}" style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
+
+    // Milestone pips on banner bar
+    const pips = events.map(ev => {
+      const evPct = msDateToPercent(ev.date, proj.startDate, proj.endDate);
+      const evActs = ev.activities || [];
+      const evDone = evActs.filter(a => a.done).length;
+      const evColor = evDone === evActs.length && evActs.length > 0 ? '#4a7c5e' : proj.color;
+      return `<div class="initiative-milestone-pip" style="left:${evPct.toFixed(1)}%;background:${evColor}"
+               data-ms-pip="${escAttr(ev.id)}" title="${escAttr(ev.title)}"></div>`;
     }).join('');
-    const progressHtml = totalActs > 0
-      ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.06em">${completedActs}/${totalActs} done</span>`
-      : '';
-    return `
-      <div class="ms-project-block">
-        <div class="ms-project-header">
+
+    // Vertical timeline section
+    const timelineHtml = buildVerticalTimeline(proj, events, elapsedPct);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'ms-vertical-container';
+    wrapper.dataset.projId = proj.id;
+    wrapper.innerHTML = `
+      <div class="initiative-banner" style="border-left-color:${escAttr(proj.color)}">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <div class="ms-project-dot" style="background:${escAttr(proj.color)}"></div>
           <span class="ms-project-name">${escHtml(proj.title)}</span>
-          ${progressHtml}
-          <span class="ms-project-dates">${escHtml(fmtDate(proj.startDate))} → ${escHtml(fmtDate(proj.endDate))}</span>
-          <button class="ms-add-event-btn" data-ms-add-event="${escAttr(proj.id)}">+ Milestone</button>
-          <button class="ms-edit-proj-btn" data-ms-edit-proj="${escAttr(proj.id)}">⋯</button>
+          ${catBadge}
+          ${proj.notes ? `<span style="font-size:12px;color:var(--muted);flex:1;font-family:var(--font-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(proj.notes.slice(0,80))}${proj.notes.length>80?'…':''}</span>` : ''}
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            <span style="font-family:var(--font-mono);font-size:11px;color:${isComplete?'var(--sage)':'var(--gold)'}">${pct}%</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${doneActs}/${totalActs} done</span>
+            <button class="ms-add-event-btn" data-ms-add-event="${escAttr(proj.id)}">+ Milestone</button>
+            <button class="ms-edit-proj-btn" data-ms-edit-proj="${escAttr(proj.id)}">⋯</button>
+          </div>
         </div>
-        <div class="ms-timeline-wrap">
-          <div class="ms-timeline-bar">
-            <div class="ms-timeline-fill" style="background:${escAttr(proj.color)}"></div>
-            ${markers}
+        <!-- Progress bar -->
+        <div class="initiative-progress-bar" data-proj-bar="${escAttr(proj.id)}" style="margin-top:12px">
+          <div class="initiative-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:${escAttr(proj.color)};opacity:0.35"></div>
+          <div class="initiative-progress-fill" style="width:${pct}%;background:${escAttr(proj.color)};opacity:0.7;transition:width 0.4s"></div>
+          ${pips}
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:var(--font-mono);font-size:9px;color:var(--muted)">
+          <span>▶ ${escHtml(fmtDate(proj.startDate))}</span>
+          <span>${escHtml(fmtDate(proj.endDate))} ■</span>
+        </div>
+      </div>
+      ${timelineHtml}
+    `;
+    body.appendChild(wrapper);
+  });
+}
+
+function buildVerticalTimeline(proj, events, elapsedPct) {
+  if (!events.length) {
+    return `<div style="padding:12px 20px 20px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">
+      Hover over the progress bar and click to add milestones at specific dates.
+    </div>`;
+  }
+
+  const milestonesHtml = events.map((ev, idx) => {
+    const acts = ev.activities || [];
+    const doneCount = acts.filter(a => a.done).length;
+    const isPast = new Date(ev.date) < new Date();
+    const dotColor = doneCount === acts.length && acts.length > 0 ? '#4a7c5e' : (isPast ? proj.color : 'var(--border)');
+
+    const actItems = acts.map(a => {
+      const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
+      const cat = task?.category ? CATEGORIES[task.category] : null;
+      const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+      return `
+        <div class="ms-action-item">
+          <div class="ms-action-check ${a.done?'done':''}" data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">${a.done?'✓':''}</div>
+          <span style="flex:1;font-family:var(--font-body);font-size:12px;color:${a.done?'var(--muted)':'var(--cream)'};${a.done?'text-decoration:line-through':''}">${escHtml(a.text||a.title||'')}</span>
+          ${catBadge}
+          <button class="task-action-btn danger" style="opacity:0" data-rm-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">✕</button>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="ms-v-milestone" style="margin-top:${idx===0?'16px':'28px'}">
+        <div class="ms-v-dot" style="background:${dotColor};border-color:var(--bg)"></div>
+        <div class="ms-action-card" data-ms-event-id="${escAttr(ev.id)}">
+          <div class="ms-action-card-header">
+            <span style="font-family:var(--font-display);font-size:14px;font-weight:400;color:var(--cream);flex:1">${escHtml(ev.title)}</span>
+            <span class="ms-date-pin">${escHtml(fmtDate(ev.date))}</span>
+            ${acts.length ? `<span style="font-family:var(--font-mono);font-size:9px;color:${doneCount===acts.length?'var(--sage)':'var(--muted)'}">${doneCount}/${acts.length}</span>` : ''}
+            <button class="ms-edit-proj-btn" data-ms-edit-ev="${escAttr(ev.id)}" style="font-size:11px">✎</button>
+          </div>
+          ${ev.description ? `<div style="font-size:12px;color:var(--muted);font-family:var(--font-body);line-height:1.5;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">${escHtml(ev.description)}</div>` : ''}
+          <div class="ms-action-items-list" data-ev-id="${escAttr(ev.id)}">
+            ${actItems || '<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);padding:4px 0">No tasks yet.</div>'}
+          </div>
+          <!-- Add task row -->
+          <div class="ms-add-task-row" data-ev-id="${escAttr(ev.id)}" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <div style="display:flex;gap:6px;margin-bottom:6px">
+              <input class="ms-task-search-input form-input" placeholder="Search or type new task…" data-ev-id="${escAttr(ev.id)}" style="flex:1;font-size:12px;padding:6px 10px" autocomplete="off">
+              <button class="btn-primary" style="font-size:10px;padding:5px 10px;white-space:nowrap" data-add-task-ev="${escAttr(ev.id)}">Add</button>
+            </div>
+            <div class="ms-task-search-results" data-ev-id="${escAttr(ev.id)}" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;max-height:160px;overflow-y:auto"></div>
           </div>
         </div>
       </div>`;
   }).join('');
+
+  return `
+    <div class="ms-v-timeline">
+      <div class="ms-v-line"></div>
+      <div class="ms-v-line-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:${escAttr(proj.color)};top:0"></div>
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;padding-bottom:8px">▶ ${escHtml(fmtDate(proj.startDate))}</div>
+      ${milestonesHtml}
+      <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;padding-top:20px;margin-top:8px;border-top:1px dashed var(--border)">■ ${escHtml(fmtDate(proj.endDate))}</div>
+    </div>`;
 }
 
 function renderMsColorPicker(containerId, selectedColor) {
@@ -3272,33 +3510,50 @@ function renderMsActivityList() {
   const el = document.getElementById('ms-event-activities-list');
   if (!el) return;
   if (!_msNewActivities.length) {
-    el.innerHTML = '<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em">No activities yet.</p>';
+    el.innerHTML = '<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em">No tasks yet.</p>';
     return;
   }
-  el.innerHTML = _msNewActivities.map((a, i) => `
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(a.text)}</span>
-      <span style="font-size:11px;color:var(--muted);cursor:pointer;padding:2px 6px" data-rm-activity="${i}">✕</span>
-    </div>
-  `).join('');
+  el.innerHTML = _msNewActivities.map((a, i) => {
+    const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
+    const cat  = task?.category ? CATEGORIES[task.category] : null;
+    const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:8px;color:var(--sage);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
+    return `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(a.text||a.title||'')}</span>
+        ${catBadge}${linkedBadge}
+        <span style="font-size:11px;color:var(--muted);cursor:pointer;padding:2px 6px" data-rm-activity="${i}">✕</span>
+      </div>`;
+  }).join('');
 }
 
 function openMsProjectModal(projId = null) {
   _msProjEdit = projId;
   const proj = projId ? MILESTONE_PROJECTS.find(p => p.id === projId) : null;
-  document.getElementById('ms-proj-modal-title').textContent = proj ? 'Edit Project' : 'New Project';
+  document.getElementById('ms-proj-modal-title').textContent = proj ? 'Edit Initiative' : 'New Initiative';
   document.getElementById('ms-proj-title').value = proj ? proj.title : '';
   document.getElementById('ms-proj-start').value = proj ? proj.startDate : '';
   document.getElementById('ms-proj-end').value   = proj ? proj.endDate : '';
   const selColor = proj ? proj.color : PROJECT_COLORS[0];
   document.getElementById('ms-proj-color-val').value = selColor;
   renderMsColorPicker('ms-proj-color-picker', selColor);
+  // Populate category select
+  const catSel = document.getElementById('ms-proj-category');
+  if (catSel) {
+    catSel.innerHTML = '<option value="">— None —</option>' +
+      Object.entries(CATEGORIES).map(([k,v]) =>
+        `<option value="${k}"${proj?.category===k?' selected':''}>${v.label}</option>`
+      ).join('');
+  }
+  // Populate notes
+  const notesEl = document.getElementById('ms-proj-notes');
+  if (notesEl) notesEl.value = proj ? (proj.notes || '') : '';
   const delBtn = document.getElementById('ms-proj-delete-btn');
   if (delBtn) delBtn.style.display = proj ? '' : 'none';
   openOverlay('ms-project-modal');
 }
 
-function openMsEventModal(projectId, eventId = null) {
+function openMsEventModal(projectId, eventId = null, prefilledDate = '') {
   const ev = eventId ? MILESTONE_EVENTS.find(e => e.id === eventId) : null;
   _msEventEdit = eventId || null;
   _msNewActivities = ev ? JSON.parse(JSON.stringify(ev.activities)) : [];
@@ -3306,8 +3561,13 @@ function openMsEventModal(projectId, eventId = null) {
   document.getElementById('ms-event-project-id').value = projectId;
   document.getElementById('ms-event-id').value = eventId || '';
   document.getElementById('ms-event-title').value = ev ? ev.title : '';
-  document.getElementById('ms-event-date').value  = ev ? ev.date  : '';
+  document.getElementById('ms-event-date').value  = ev ? ev.date : (prefilledDate || '');
   document.getElementById('ms-event-desc').value  = ev ? (ev.description || '') : '';
+  // Clear task search
+  const searchInp = document.getElementById('ms-activity-input');
+  if (searchInp) searchInp.value = '';
+  const searchRes = document.getElementById('ms-activity-search-results');
+  if (searchRes) { searchRes.style.display = 'none'; searchRes.innerHTML = ''; }
   renderMsActivityList();
   openOverlay('ms-event-modal');
 }
@@ -3336,8 +3596,40 @@ function openMsEventDetail(eventId) {
   openOverlay('ms-event-detail');
 }
 
+/* ── Helper: calculate date from progress bar click ───── */
+function dateFromBarClick(projId, bar, clickX) {
+  const rect = bar.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (clickX - rect.left) / rect.width));
+  const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
+  if (!proj) return null;
+  const start = new Date(proj.startDate);
+  const end   = new Date(proj.endDate);
+  const ms = start.getTime() + pct * (end.getTime() - start.getTime());
+  return localDateStr(new Date(ms));
+}
+
+/* ── Helper: task search results for milestone panels ─── */
+function showMsTaskSearchResults(query, evId, containerEl) {
+  if (!containerEl) return;
+  const q = (query || '').toLowerCase().trim();
+  if (!q) { containerEl.style.display = 'none'; containerEl.innerHTML = ''; return; }
+  const ev = MILESTONE_EVENTS.find(e => e.id === evId);
+  const existingTaskIds = new Set((ev?.activities || []).map(a => a.taskId).filter(Boolean));
+  const results = TASKS
+    .filter(t => !t.done && t.title.toLowerCase().includes(q) && !existingTaskIds.has(t.id))
+    .slice(0, 5);
+  if (!results.length) { containerEl.style.display = 'none'; containerEl.innerHTML = ''; return; }
+  containerEl.style.display = 'block';
+  containerEl.innerHTML = results.map(t => {
+    const cat = t.category ? CATEGORIES[t.category] : null;
+    const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div>`;
+    return `<div class="ms-task-search-result" data-task-id="${escAttr(t.id)}" data-ev-id="${escAttr(evId)}">${dot}<span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
+  }).join('');
+}
+
 function initMilestonesPanel() {
-  // Add project button
+  // Add initiative button
   document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
 
   // Color swatch selection in project modal
@@ -3350,54 +3642,212 @@ function initMilestonesPanel() {
     document.getElementById('ms-proj-color-val').value = sw.dataset.color;
   });
 
-  // Project modal confirm
+  // Initiative modal confirm — includes category + notes
   document.getElementById('ms-proj-confirm').addEventListener('click', async () => {
-    const title = document.getElementById('ms-proj-title').value.trim();
-    const start = document.getElementById('ms-proj-start').value;
-    const end   = document.getElementById('ms-proj-end').value;
-    const color = document.getElementById('ms-proj-color-val').value || PROJECT_COLORS[0];
+    const title    = document.getElementById('ms-proj-title').value.trim();
+    const start    = document.getElementById('ms-proj-start').value;
+    const end      = document.getElementById('ms-proj-end').value;
+    const color    = document.getElementById('ms-proj-color-val').value || PROJECT_COLORS[0];
+    const category = document.getElementById('ms-proj-category')?.value || '';
+    const notes    = document.getElementById('ms-proj-notes')?.value.trim() || '';
     if (!title || !start || !end) return;
     if (_msProjEdit) {
-      await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color });
+      await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes });
     } else {
-      await addMilestoneProject(title, start, end, color);
+      await addMilestoneProject(title, start, end, color, category, notes);
     }
     closeOverlay('ms-project-modal');
   });
 
-  // Project delete button
+  // Initiative delete button
   document.getElementById('ms-proj-delete-btn').addEventListener('click', async () => {
     if (!_msProjEdit) return;
     const proj = MILESTONE_PROJECTS.find(p => p.id === _msProjEdit);
-    if (confirm(`Delete project "${proj ? proj.title : ''}" and all its milestones?`)) {
+    if (confirm(`Delete initiative "${proj ? proj.title : ''}" and all its milestones?`)) {
       await deleteMilestoneProject(_msProjEdit);
       closeOverlay('ms-project-modal');
     }
   });
 
-  // Milestones body delegation (+ milestone, edit project, click marker)
-  document.getElementById('milestones-body').addEventListener('click', e => {
-    const addEvBtn   = e.target.closest('[data-ms-add-event]');
-    const editProjBtn = e.target.closest('[data-ms-edit-proj]');
-    const marker     = e.target.closest('[data-ms-event-id]');
-    if (addEvBtn)    { openMsEventModal(addEvBtn.dataset.msAddEvent); return; }
-    if (editProjBtn) { openMsProjectModal(editProjBtn.dataset.msEditProj); return; }
-    if (marker)      { openMsEventDetail(marker.dataset.msEventId); return; }
-  });
+  // ── milestones-body: unified click delegation ───────────
+  const msBody = document.getElementById('milestones-body');
 
-  // Event modal — add activity
-  document.getElementById('ms-activity-add').addEventListener('click', () => {
-    const inp = document.getElementById('ms-activity-input');
-    const text = inp.value.trim();
-    if (text) {
-      _msNewActivities.push({ id: crypto.randomUUID(), text, done: false });
-      inp.value = '';
-      renderMsActivityList();
+  msBody.addEventListener('click', async e => {
+    // Pip click — open event modal (do NOT bubble to bar click)
+    const pip = e.target.closest('[data-ms-pip]');
+    if (pip) { e.stopPropagation(); return; }
+
+    // + Milestone button
+    const addEvBtn = e.target.closest('[data-ms-add-event]');
+    if (addEvBtn) { openMsEventModal(addEvBtn.dataset.msAddEvent); return; }
+
+    // ⋯ Edit initiative button
+    const editProjBtn = e.target.closest('[data-ms-edit-proj]');
+    if (editProjBtn && editProjBtn.dataset.msEditProj) {
+      openMsProjectModal(editProjBtn.dataset.msEditProj); return;
+    }
+
+    // ✎ Edit event/milestone button
+    const editEvBtn = e.target.closest('[data-ms-edit-ev]');
+    if (editEvBtn) {
+      const evId = editEvBtn.dataset.msEditEv;
+      const ev = MILESTONE_EVENTS.find(ev => ev.id === evId);
+      if (ev) openMsEventModal(ev.projectId, evId);
+      return;
+    }
+
+    // Toggle activity checkbox
+    const actCheck = e.target.closest('[data-toggle-act]');
+    if (actCheck) {
+      await toggleMilestoneActivity(actCheck.dataset.evId, actCheck.dataset.toggleAct);
+      return;
+    }
+
+    // Remove activity
+    const rmAct = e.target.closest('[data-rm-act]');
+    if (rmAct) {
+      const ev = MILESTONE_EVENTS.find(ev => ev.id === rmAct.dataset.evId);
+      if (ev) {
+        const activities = ev.activities.filter(a => a.id !== rmAct.dataset.rmAct);
+        await updateMilestoneEvent(rmAct.dataset.evId, { activities });
+      }
+      return;
+    }
+
+    // Add task button (from inline search row)
+    const addTaskEvBtn = e.target.closest('[data-add-task-ev]');
+    if (addTaskEvBtn) {
+      const evId = addTaskEvBtn.dataset.addTaskEv;
+      const inputEl = msBody.querySelector(`.ms-task-search-input[data-ev-id="${evId}"]`);
+      const text = inputEl?.value.trim();
+      if (!text) return;
+      // Check if it matches an existing task
+      const match = TASKS.find(t => t.title.toLowerCase() === text.toLowerCase() && !t.done);
+      if (match) {
+        await addMilestoneActivity(evId, match.title, match.id);
+      } else {
+        await addMilestoneActivity(evId, text, null);
+      }
+      if (inputEl) inputEl.value = '';
+      const resultsEl = msBody.querySelector(`.ms-task-search-results[data-ev-id="${evId}"]`);
+      if (resultsEl) { resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; }
+      return;
+    }
+
+    // Task search result click (inline card)
+    const searchResult = e.target.closest('.ms-task-search-result[data-task-id]');
+    if (searchResult) {
+      const taskId = searchResult.dataset.taskId;
+      const evId   = searchResult.dataset.evId;
+      const task   = TASKS.find(t => t.id === taskId);
+      if (task) await addMilestoneActivity(evId, task.title, task.id);
+      const inputEl   = msBody.querySelector(`.ms-task-search-input[data-ev-id="${evId}"]`);
+      if (inputEl) inputEl.value = '';
+      const resultsEl = msBody.querySelector(`.ms-task-search-results[data-ev-id="${evId}"]`);
+      if (resultsEl) { resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; }
+      return;
+    }
+
+    // Progress bar click → open milestone modal at that date
+    // (must be last: only fires if no other target matched)
+    const bar = e.target.closest('[data-proj-bar]');
+    if (bar && !e.target.closest('[data-ms-pip]') && !e.target.closest('button')) {
+      const projId  = bar.dataset.projBar;
+      const dateStr = dateFromBarClick(projId, bar, e.clientX);
+      if (projId && dateStr) openMsEventModal(projId, null, dateStr);
+      return;
     }
   });
-  document.getElementById('ms-activity-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('ms-activity-add').click();
+
+  // ── Task search input (live search) ────────────────────
+  msBody.addEventListener('input', e => {
+    const inp = e.target.closest('.ms-task-search-input');
+    if (!inp) return;
+    const evId = inp.dataset.evId;
+    const resultsEl = msBody.querySelector(`.ms-task-search-results[data-ev-id="${evId}"]`);
+    showMsTaskSearchResults(inp.value, evId, resultsEl);
   });
+
+  // ── Progress bar: hover tooltip + click to add milestone ─
+  const tooltip = document.getElementById('ms-date-tooltip');
+
+  msBody.addEventListener('mousemove', e => {
+    const bar = e.target.closest('[data-proj-bar]');
+    if (!bar || e.target.closest('[data-ms-pip]')) {
+      if (tooltip) tooltip.style.display = 'none';
+      return;
+    }
+    const projId = bar.dataset.projBar;
+    const dateStr = dateFromBarClick(projId, bar, e.clientX);
+    if (tooltip && dateStr) {
+      tooltip.textContent = fmtDate(dateStr);
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 12) + 'px';
+      tooltip.style.top  = (e.clientY - 28) + 'px';
+    }
+  });
+
+  msBody.addEventListener('mouseleave', () => {
+    if (tooltip) tooltip.style.display = 'none';
+  });
+
+  // ── Event modal: activity add with task search ──────────
+  const modalActivityAdd = document.getElementById('ms-activity-add');
+  const modalActivityInp = document.getElementById('ms-activity-input');
+  const modalSearchRes   = document.getElementById('ms-activity-search-results');
+
+  if (modalActivityInp) {
+    modalActivityInp.addEventListener('input', () => {
+      const q = modalActivityInp.value.trim().toLowerCase();
+      if (!q) { if (modalSearchRes) { modalSearchRes.style.display='none'; modalSearchRes.innerHTML=''; } return; }
+      const results = TASKS.filter(t => !t.done && t.title.toLowerCase().includes(q)).slice(0,5);
+      if (!results.length) { if (modalSearchRes) { modalSearchRes.style.display='none'; modalSearchRes.innerHTML=''; } return; }
+      if (modalSearchRes) {
+        modalSearchRes.style.display = 'block';
+        modalSearchRes.innerHTML = results.map(t => {
+          const cat = t.category ? CATEGORIES[t.category] : null;
+          const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+          return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
+        }).join('');
+      }
+    });
+    modalActivityInp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); modalActivityAdd?.click(); }
+    });
+  }
+
+  if (modalSearchRes) {
+    modalSearchRes.addEventListener('click', e => {
+      const item = e.target.closest('[data-modal-task-id]');
+      if (!item) return;
+      const task = TASKS.find(t => t.id === item.dataset.modalTaskId);
+      if (task) {
+        _msNewActivities.push({ id: crypto.randomUUID(), text: task.title, taskId: task.id, done: false });
+        renderMsActivityList();
+      }
+      modalActivityInp.value = '';
+      modalSearchRes.style.display = 'none';
+      modalSearchRes.innerHTML = '';
+    });
+  }
+
+  if (modalActivityAdd) {
+    modalActivityAdd.addEventListener('click', () => {
+      const text = modalActivityInp?.value.trim();
+      if (!text) return;
+      // Check if typed text exactly matches an existing task
+      const match = TASKS.find(t => t.title.toLowerCase() === text.toLowerCase() && !t.done);
+      if (match) {
+        _msNewActivities.push({ id: crypto.randomUUID(), text: match.title, taskId: match.id, done: false });
+      } else {
+        _msNewActivities.push({ id: crypto.randomUUID(), text, taskId: null, done: false });
+      }
+      if (modalActivityInp) modalActivityInp.value = '';
+      if (modalSearchRes) { modalSearchRes.style.display = 'none'; modalSearchRes.innerHTML = ''; }
+      renderMsActivityList();
+    });
+  }
+
   document.getElementById('ms-event-activities-list').addEventListener('click', e => {
     const rm = e.target.closest('[data-rm-activity]');
     if (rm) { _msNewActivities.splice(+rm.dataset.rmActivity, 1); renderMsActivityList(); }
@@ -3411,11 +3861,26 @@ function initMilestonesPanel() {
     const projId = document.getElementById('ms-event-project-id').value;
     const evId   = document.getElementById('ms-event-id').value;
     if (!title || !date) return;
+
+    // For new tasks (taskId=null), create real tasks in Firestore before saving
+    const activitiesToSave = await Promise.all(_msNewActivities.map(async a => {
+      if (!a.taskId && a.text) {
+        const { collection, addDoc, serverTimestamp } = window.CDX_FB;
+        const ref = await addDoc(collection(window.CDX_DB, 'tasks'), {
+          title: a.text, done: false, priority: 'med',
+          dueDate: date || null, category: null,
+          calEventId: null, subtasks: [],
+          createdAt: serverTimestamp()
+        });
+        return { ...a, taskId: ref.id };
+      }
+      return a;
+    }));
+
     if (evId) {
-      await updateMilestoneEvent(evId,
-        { title, date, description: desc, activities: _msNewActivities });
+      await updateMilestoneEvent(evId, { title, date, description: desc, activities: activitiesToSave });
     } else {
-      await addMilestoneEvent(projId, title, date, desc, _msNewActivities);
+      await addMilestoneEvent(projId, title, date, desc, activitiesToSave);
     }
     closeOverlay('ms-event-modal');
   });
@@ -3441,6 +3906,13 @@ function initMilestonesPanel() {
       closeOverlay('ms-event-detail');
     }
   });
+
+  // Hide tooltip when mouse leaves the milestones body
+  if (tooltip) {
+    document.addEventListener('mousemove', e => {
+      if (!e.target.closest('[data-proj-bar]')) tooltip.style.display = 'none';
+    });
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3768,13 +4240,12 @@ function buildSubtaskRow(parentId, sub) {
 }
 
 /* ── Category cycle ───────────────────────────────────── */
-const CAT_CYCLE = ['work', 'personal', 'health', 'learning', 'creative', 'admin', null];
-
 async function cycleTaskCategory(taskId) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
-  const idx  = CAT_CYCLE.indexOf(task.category || null);
-  const next = CAT_CYCLE[(idx + 1) % CAT_CYCLE.length];
+  const catCycle = Object.keys(CATEGORIES).concat([null]);
+  const idx  = catCycle.indexOf(task.category || null);
+  const next = catCycle[(idx + 1) % catCycle.length];
   await updateTask(taskId, { category: next });
 }
 
@@ -4379,6 +4850,84 @@ function initAddTaskForm() {
 }
 
 /* ── Settings ─────────────────────────────────────────── */
+/* ── Category Management ──────────────────────────────── */
+function saveCategoriesLocal() {
+  localStorage.setItem('cdx_categories', JSON.stringify(CATEGORIES));
+}
+
+function addCategory(label, color) {
+  const key = label.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20) || `cat${Date.now()}`;
+  if (CATEGORIES[key]) return; // already exists
+  CATEGORIES[key] = { label, color };
+  saveCategoriesLocal();
+  renderSettingsCatList();
+  renderSettingsCats();
+  renderTasks();
+  rebuildCategorySelects();
+}
+
+function deleteCategory(key) {
+  if (DEFAULT_CATS.includes(key)) return;
+  delete CATEGORIES[key];
+  saveCategoriesLocal();
+  renderSettingsCatList();
+  renderSettingsCats();
+  renderTasks();
+  rebuildCategorySelects();
+}
+
+function rebuildCategorySelects() {
+  // Rebuild task-add-category select
+  const taskCatSel = document.getElementById('task-add-category');
+  if (taskCatSel) {
+    const cur = taskCatSel.value;
+    taskCatSel.innerHTML = Object.entries(CATEGORIES).map(([k,v]) =>
+      `<option value="${k}"${k===cur?' selected':''}>${v.label}</option>`
+    ).join('');
+  }
+  // Rebuild ms-proj-category select
+  const projCatSel = document.getElementById('ms-proj-category');
+  if (projCatSel) {
+    const cur = projCatSel.value;
+    projCatSel.innerHTML = '<option value="">— None —</option>' +
+      Object.entries(CATEGORIES).map(([k,v]) =>
+        `<option value="${k}"${k===cur?' selected':''}>${v.label}</option>`
+      ).join('');
+  }
+}
+
+function renderSettingsCatList() {
+  const list = document.getElementById('settings-cat-list');
+  if (!list) return;
+  list.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(42,37,32,0.4)">
+      <div style="width:14px;height:14px;border-radius:50%;background:${cat.color};flex-shrink:0"></div>
+      <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(cat.label)}</span>
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);background:var(--elevated);border:1px solid var(--border);border-radius:4px;padding:1px 5px">${escHtml(key)}</span>
+      ${DEFAULT_CATS.includes(key)
+        ? '<span style="width:26px"></span>'
+        : `<button class="task-action-btn danger" data-del-cat="${escAttr(key)}" title="Delete">✕</button>`
+      }
+    </div>`).join('');
+  list.querySelectorAll('[data-del-cat]').forEach(btn => {
+    btn.addEventListener('click', () => deleteCategory(btn.dataset.delCat));
+  });
+}
+
+function initNewCatColorPicker() {
+  const picker = document.getElementById('new-cat-color-picker');
+  if (!picker) return;
+  picker.innerHTML = CAT_COLOR_PALETTE.map(c => `
+    <div style="width:18px;height:18px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===_newCatColor?'var(--cream)':'transparent'};transition:transform 0.15s;box-sizing:border-box"
+         data-newcatcolor="${c}"></div>`).join('');
+  picker.querySelectorAll('[data-newcatcolor]').forEach(sw => {
+    sw.addEventListener('click', () => {
+      _newCatColor = sw.dataset.newcatcolor;
+      initNewCatColorPicker();
+    });
+  });
+}
+
 function renderSettingsCats() {
   const grid = document.getElementById('settings-cat-filters');
   if (!grid) return;
@@ -4429,6 +4978,8 @@ function initSettingsPanel() {
   document.getElementById('settings-btn')?.addEventListener('click', () => {
     renderSettingsCats();
     renderSettingsHolidays();
+    renderSettingsCatList();
+    initNewCatColorPicker();
     document.getElementById('settings-overlay').classList.add('open');
   });
   document.getElementById('holiday-add-btn')?.addEventListener('click', async () => {
@@ -4439,6 +4990,13 @@ function initSettingsPanel() {
     await addHoliday(date, name, type);
     document.getElementById('holiday-date').value = '';
     document.getElementById('holiday-name').value = '';
+  });
+  // Initialize manage categories section
+  renderSettingsCatList();
+  initNewCatColorPicker();
+  document.getElementById('new-cat-add-btn')?.addEventListener('click', () => {
+    const label = document.getElementById('new-cat-label').value.trim();
+    if (label) { addCategory(label, _newCatColor); document.getElementById('new-cat-label').value = ''; }
   });
 }
 
@@ -5163,6 +5721,8 @@ window.addEventListener('cdx-auth-ready', () => {
 /* ── Boot task system after auth ──────────────────────── */
 window.addEventListener('cdx-auth-ready', () => {
   waitForFirebase(() => {
+    // Rebuild selects with any custom categories loaded from localStorage
+    rebuildCategorySelects();
     initData();
     initCalDropZones();
     initAddTaskForm();
