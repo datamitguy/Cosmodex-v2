@@ -1656,6 +1656,313 @@ body::after {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   SHARED BUTTON + FORM UTILITIES
+   ═══════════════════════════════════════════════════════════ */
+.btn-primary {
+  background: var(--gold); color: var(--ink);
+  border: none; border-radius: 8px; padding: 8px 16px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer; font-weight: 500;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-primary:hover { background: var(--gold-hover); }
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-ghost {
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em;
+  text-transform: uppercase; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-ghost:hover { border-color: var(--gold); color: var(--cream); }
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.form-input {
+  background: var(--elevated); border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+  font-family: var(--font-body); font-size: 13px; color: var(--cream);
+  outline: none; transition: border-color 0.2s; width: 100%; box-sizing: border-box;
+}
+.form-input:focus { border-color: var(--gold); }
+textarea.form-input { resize: vertical; min-height: 60px; }
+
+/* ═══════════════════════════════════════════════════════════
+   LISTS PANEL
+   ═══════════════════════════════════════════════════════════ */
+.lists-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+.list-tile {
+  border-radius: 16px;
+  padding: 20px 16px 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.list-tile:hover { transform: translateY(-2px); opacity: 0.9; }
+.list-tile-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 400;
+  color: rgba(232,224,208,0.95);
+  line-height: 1.3;
+  word-break: break-word;
+}
+.list-tile-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(232,224,208,0.5);
+  margin-top: 12px;
+  text-transform: uppercase;
+}
+.lists-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.lists-detail-title-text {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--cream);
+  outline: none;
+  border-bottom: 1px solid transparent;
+  padding: 2px 4px;
+  min-width: 0;
+}
+.lists-detail-title-text:focus { border-bottom-color: var(--gold); }
+.lists-detail-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 20px;
+}
+.list-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.list-item-row:last-child { border-bottom: none; }
+.list-item-check {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.list-item-check.done { background: var(--sage); border-color: var(--sage); }
+.list-item-check.done::after { content: '✓'; font-size: 11px; color: white; }
+.list-item-text {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--cream);
+}
+.list-item-text.done { color: var(--muted); text-decoration: line-through; }
+.list-item-del {
+  color: var(--muted); cursor: pointer; font-size: 12px;
+  opacity: 0; transition: opacity 0.15s; padding: 4px;
+}
+.list-item-row:hover .list-item-del { opacity: 1; }
+.lists-detail-add-row {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.lists-item-input {
+  flex: 1;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 14px;
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.lists-item-input:focus { border-color: var(--gold); }
+
+/* ═══════════════════════════════════════════════════════════
+   MILESTONES PANEL
+   ═══════════════════════════════════════════════════════════ */
+#panel-milestones .panel-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  height: 46px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ms-project-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: visible;
+}
+.ms-project-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.ms-project-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ms-project-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  color: var(--cream);
+  flex: 1;
+}
+.ms-project-dates {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.ms-timeline-wrap {
+  padding: 36px 20px 40px;
+  position: relative;
+  overflow-x: auto;
+}
+.ms-timeline-bar {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--elevated);
+}
+.ms-timeline-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0; right: 0;
+  border-radius: 3px;
+  opacity: 0.5;
+}
+.ms-event-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 2;
+}
+.ms-event-dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  transition: transform 0.15s;
+  margin: 0 auto;
+}
+.ms-event-marker:hover .ms-event-dot { transform: scale(1.35); }
+.ms-event-label {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--cream);
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  max-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+.ms-event-date-label {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ms-add-event-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ms-add-event-btn:hover { color: var(--gold); border-color: var(--gold); }
+.ms-edit-proj-btn {
+  font-family: var(--font-mono); font-size: 13px;
+  color: var(--muted); background: transparent; border: none;
+  cursor: pointer; padding: 4px 8px; border-radius: 6px;
+  transition: color 0.15s;
+}
+.ms-edit-proj-btn:hover { color: var(--cream); }
+.ms-color-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.ms-color-swatch {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.15s, border-color 0.15s;
+  box-sizing: border-box;
+}
+.ms-color-swatch.selected { border-color: var(--cream); transform: scale(1.2); }
+.ms-color-swatch:hover { transform: scale(1.15); }
+.ms-activity-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ms-activity-row:last-child { border-bottom: none; }
+.ms-activity-check {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ms-activity-check.done { background: var(--sage); border-color: var(--sage); }
+.ms-activity-check.done::after { content: '✓'; font-size: 10px; color: white; }
+.ms-activity-text { flex: 1; font-size: 13px; color: var(--cream); font-family: var(--font-body); }
+.ms-activity-text.done { color: var(--muted); text-decoration: line-through; }
+.ms-activity-del {
+  font-size: 11px; color: var(--muted); cursor: pointer;
+  opacity: 0; transition: opacity 0.15s; padding: 3px 5px;
+}
+.ms-activity-row:hover .ms-activity-del { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════
    CATEGORIES
    ═══════════════════════════════════════════════════════════ */
 .cat-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
@@ -1875,6 +2182,10 @@ body::after {
         Tasks
         <span class="nav-item-count" id="nav-count-tasks">—</span>
       </div>
+      <div class="nav-item" data-panel="lists" id="nav-lists">
+        <span class="nav-item-icon">▤</span>
+        Lists
+      </div>
     </div>
 
     <div class="nav-section">
@@ -1997,6 +2308,17 @@ body::after {
       <div class="tasks-body" id="tasks-body">
         <!-- Populated by renderTasks() via Firebase onSnapshot -->
       </div>
+    </div>
+
+    <!-- Milestones Panel (shown via Planning nav item) -->
+    <div id="panel-milestones" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div class="panel-toolbar">
+        <span style="font-family:var(--font-display);font-size:16px;color:var(--cream)">Planning</span>
+        <div style="margin-left:auto">
+          <button id="ms-add-project-btn" class="btn-primary">+ Project</button>
+        </div>
+      </div>
+      <div id="milestones-body" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:28px"></div>
     </div>
 
   </div><!-- /main-content -->
@@ -2145,6 +2467,36 @@ body::after {
   </div>
 </div>
 
+<!-- Lists overlay -->
+<div class="overlay" id="lists-overlay" style="z-index:820">
+  <div class="overlay-panel" style="width:min(860px,92vw);height:85dvh;display:flex;flex-direction:column">
+    <div class="overlay-header">
+      <span class="overlay-title">Lists</span>
+      <button class="overlay-close" data-close="lists-overlay">✕</button>
+    </div>
+    <!-- Grid view (default) -->
+    <div id="lists-grid-view" style="flex:1;overflow-y:auto;padding:20px">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button id="lists-add-btn" class="btn-primary">+ New List</button>
+      </div>
+      <div id="lists-tile-grid" class="lists-tile-grid"></div>
+    </div>
+    <!-- Detail view (hidden until tile clicked) -->
+    <div id="lists-detail-view" style="flex:1;display:none;flex-direction:column;min-height:0">
+      <div class="lists-detail-header">
+        <button id="lists-back-btn" class="btn-ghost">← Back</button>
+        <span id="lists-detail-title" class="lists-detail-title-text" contenteditable="true"></span>
+        <button id="lists-delete-btn" class="btn-ghost" style="color:var(--rust)">Delete</button>
+      </div>
+      <div id="lists-detail-items" class="lists-detail-items"></div>
+      <div class="lists-detail-add-row">
+        <input id="lists-item-input" class="lists-item-input" placeholder="Add item…" type="text" autocomplete="off">
+        <button id="lists-item-add-btn" class="btn-primary">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Planning overlay -->
 <div class="overlay" id="plan-overlay">
   <div class="overlay-panel" style="width:min(820px,92vw)">
@@ -2176,6 +2528,104 @@ body::after {
       <div class="overlay-placeholder">
         <div class="overlay-placeholder-icon">◉</div>
         <div class="overlay-placeholder-text">Project manager — PIN protected</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Milestone: Add/Edit Project Modal -->
+<div class="overlay" id="ms-project-modal" style="z-index:860">
+  <div class="overlay-panel" style="width:min(480px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title" id="ms-proj-modal-title">New Project</span>
+      <button class="overlay-close" data-close="ms-project-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label">Project Name</label>
+        <input id="ms-proj-title" class="form-input" placeholder="e.g. Product Launch" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group">
+          <label class="form-label">Start Date</label>
+          <input id="ms-proj-start" type="date" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Date</label>
+          <input id="ms-proj-end" type="date" class="form-input">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <div id="ms-proj-color-picker" class="ms-color-picker"></div>
+        <input type="hidden" id="ms-proj-color-val" value="">
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">
+        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--rust);display:none">Delete Project</button>
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <button data-close="ms-project-modal" class="btn-ghost">Cancel</button>
+          <button id="ms-proj-confirm" class="btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Milestone: Add/Edit Event Modal -->
+<div class="overlay" id="ms-event-modal" style="z-index:860">
+  <div class="overlay-panel" style="width:min(520px,92vw);max-height:90dvh;overflow-y:auto">
+    <div class="overlay-header">
+      <span class="overlay-title" id="ms-event-modal-title">New Milestone</span>
+      <button class="overlay-close" data-close="ms-event-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <input type="hidden" id="ms-event-project-id" value="">
+      <input type="hidden" id="ms-event-id" value="">
+      <div class="form-group">
+        <label class="form-label">Milestone Title</label>
+        <input id="ms-event-title" class="form-input" placeholder="e.g. Beta Launch" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input id="ms-event-date" type="date" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea id="ms-event-desc" class="form-input" rows="2" placeholder="What needs to happen…"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Activities</label>
+        <div id="ms-event-activities-list" style="margin-bottom:8px;min-height:24px"></div>
+        <div style="display:flex;gap:8px">
+          <input id="ms-activity-input" class="form-input" placeholder="Add activity…" autocomplete="off" style="flex:1">
+          <button id="ms-activity-add" class="btn-ghost" style="flex-shrink:0">+</button>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
+        <button data-close="ms-event-modal" class="btn-ghost">Cancel</button>
+        <button id="ms-event-confirm" class="btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Milestone: Event Detail Panel -->
+<div class="overlay" id="ms-event-detail" style="z-index:855">
+  <div class="overlay-panel" style="width:min(480px,92vw);max-height:85dvh;overflow-y:auto">
+    <div class="overlay-header">
+      <span class="overlay-title" id="ms-detail-title">Milestone</span>
+      <button class="overlay-close" data-close="ms-event-detail">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:16px">
+      <div id="ms-detail-meta" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:0.06em"></div>
+      <div id="ms-detail-desc" style="font-size:14px;color:var(--cream);line-height:1.6;font-family:var(--font-body)"></div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Activities</div>
+        <div id="ms-detail-activities"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button id="ms-detail-edit-btn" class="btn-ghost">Edit</button>
+        <button id="ms-detail-delete-btn" class="btn-ghost" style="color:var(--rust)">Delete</button>
       </div>
     </div>
   </div>
@@ -2322,6 +2772,10 @@ body::after {
       <span class="drawer-item-icon">✦</span>
       Cosmos
     </div>
+    <div class="drawer-item" data-open="lists-overlay">
+      <span class="drawer-item-icon">▤</span>
+      Lists
+    </div>
     <div class="drawer-item" id="mob-theme-btn">
       <span class="drawer-item-icon">◑</span>
       Theme
@@ -2347,6 +2801,16 @@ const CATEGORIES = {
   creative: { label:'Creative', color:'#c49a6c' },
   admin:    { label:'Admin',    color:'#8a8070' },
 };
+
+const LIST_COLORS = [
+  '#5c4433', '#3d5c4a', '#4a3d5c', '#5c3d42', '#3d4e5c',
+  '#5c5233', '#3d5c55', '#5c4a3d', '#3d485c', '#52435c'
+];
+
+const PROJECT_COLORS = [
+  '#c9a227', '#4a7c5e', '#6b9fd4', '#c45c2a', '#9b7fd4',
+  '#c49a6c', '#5c8a6b', '#a05c8a', '#6b8ac4', '#c4a05c'
+];
 
 const HK_HOLIDAYS = [
   { date:'2025-01-01', name:"New Year's Day",          type:'public' },
@@ -2398,6 +2862,18 @@ let _dragTaskId   = null;
 let _dragSubId    = null;
 let _schedCtx     = null;
 
+// Lists state
+let LISTS     = [];
+let _listView = null;  // currently open list ID
+
+// Milestones state
+let MILESTONE_PROJECTS = [];
+let MILESTONE_EVENTS   = [];
+let _msProjEdit        = null;
+let _msEventEdit       = null;
+let _msNewActivities   = [];
+let _mainPanel         = 'default';  // 'default' | 'milestones'
+
 let _settings = JSON.parse(localStorage.getItem('cdx_v2_settings') || 'null') || {
   visibleCategories: Object.keys(CATEGORIES),
 };
@@ -2435,23 +2911,480 @@ document.getElementById('hamburger')?.addEventListener('click', () => {
 const NAV_OVERLAY_MAP = {
   habits:   'habits-overlay',
   insights: 'insights-overlay',
-  planning: 'plan-overlay',
   lifeos:   'lifeos-overlay',
 };
 
 document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
   item.addEventListener('click', () => {
     const panel = item.dataset.panel;
+    // Overlays (habits, insights, lifeos)
     if (NAV_OVERLAY_MAP[panel]) {
       openOverlay(NAV_OVERLAY_MAP[panel]);
       return;
     }
+    // Lists overlay
+    if (panel === 'lists') {
+      openOverlay('lists-overlay');
+      return;
+    }
+    // Planning → full milestones panel
+    if (panel === 'planning') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('milestones');
+      return;
+    }
+    // Workspace panels (today, calendar, tasks) → restore default layout
+    showMainPanel('default');
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     item.classList.add('active');
     const title = item.textContent.trim().replace(/[0-9—\s]+$/, '').trim();
     document.getElementById('page-title').textContent = title;
   });
 });
+
+/* ══════════════════════════════════════════════════════════
+   PANEL SWITCHING (Calendar/Tasks ↔ Milestones)
+   ══════════════════════════════════════════════════════════ */
+function showMainPanel(name) {
+  const isDefault = (name === 'default');
+  document.getElementById('panel-calendar').style.display = isDefault ? '' : 'none';
+  document.getElementById('panel-tasks').style.display    = isDefault ? '' : 'none';
+  document.getElementById('panel-milestones').style.display = isDefault ? 'none' : 'flex';
+  _mainPanel = name;
+  document.querySelectorAll('.nav-item[data-panel]').forEach(el => {
+    const p = el.dataset.panel;
+    const isActive = p === 'planning' ? !isDefault : (isDefault && ['today','calendar','tasks','lists'].includes(p) ? el.classList.contains('active') : false);
+    // only manage active for the clicked panel
+  });
+  if (!isDefault) renderMilestones();
+  const titleEl = document.getElementById('page-title');
+  if (titleEl) titleEl.textContent = isDefault ? 'Today' : 'Planning';
+}
+
+/* ══════════════════════════════════════════════════════════
+   LISTS — FIRESTORE CRUD
+   ══════════════════════════════════════════════════════════ */
+async function addList(title) {
+  const { addDoc, collection, serverTimestamp } = window.CDX_FB;
+  const color = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
+  await addDoc(collection(window.CDX_DB, 'lists'), {
+    title, color, items: [], createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+  });
+}
+
+async function updateList(id, data) {
+  const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
+  await updateDoc(doc(window.CDX_DB, 'lists', id), { ...data, updatedAt: serverTimestamp() });
+}
+
+async function deleteList(id) {
+  const { doc, deleteDoc } = window.CDX_FB;
+  await deleteDoc(doc(window.CDX_DB, 'lists', id));
+}
+
+async function addListItem(listId, text) {
+  const list = LISTS.find(l => l.id === listId);
+  if (!list) return;
+  const newItem = { id: crypto.randomUUID(), text, done: false, createdAt: new Date().toISOString() };
+  await updateList(listId, { items: [...list.items, newItem] });
+}
+
+async function toggleListItem(listId, itemId) {
+  const list = LISTS.find(l => l.id === listId);
+  if (!list) return;
+  const items = list.items.map(i => i.id === itemId ? { ...i, done: !i.done } : i);
+  await updateList(listId, { items });
+}
+
+async function deleteListItem(listId, itemId) {
+  const list = LISTS.find(l => l.id === listId);
+  if (!list) return;
+  await updateList(listId, { items: list.items.filter(i => i.id !== itemId) });
+}
+
+/* ══════════════════════════════════════════════════════════
+   LISTS — RENDER
+   ══════════════════════════════════════════════════════════ */
+function renderLists() {
+  const grid = document.getElementById('lists-tile-grid');
+  if (!grid) return;
+  if (!LISTS.length) {
+    grid.innerHTML = '<p style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em">No lists yet. Create one above.</p>';
+    return;
+  }
+  grid.innerHTML = LISTS.map(l => `
+    <div class="list-tile" style="background:${escAttr(l.color)}" data-list-id="${escAttr(l.id)}">
+      <span class="list-tile-name">${escHtml(l.title)}</span>
+      <span class="list-tile-count">${l.items.length} item${l.items.length !== 1 ? 's' : ''}</span>
+    </div>
+  `).join('');
+}
+
+function renderListDetail(listId) {
+  const list = LISTS.find(l => l.id === listId);
+  if (!list) return;
+  const titleEl = document.getElementById('lists-detail-title');
+  if (titleEl) { titleEl.textContent = list.title; }
+  const body = document.getElementById('lists-detail-items');
+  if (!body) return;
+  if (!list.items.length) {
+    body.innerHTML = '<p style="color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:16px 0;letter-spacing:0.08em">No items yet. Add one below.</p>';
+    return;
+  }
+  body.innerHTML = list.items.map(item => `
+    <div class="list-item-row" data-item-id="${escAttr(item.id)}">
+      <div class="list-item-check ${item.done ? 'done' : ''}" data-toggle-item="${escAttr(item.id)}"></div>
+      <span class="list-item-text ${item.done ? 'done' : ''}">${escHtml(item.text)}</span>
+      <span class="list-item-del" data-del-item="${escAttr(item.id)}">✕</span>
+    </div>
+  `).join('');
+}
+
+function openListDetail(listId) {
+  _listView = listId;
+  document.getElementById('lists-grid-view').style.display = 'none';
+  const dv = document.getElementById('lists-detail-view');
+  dv.style.display = 'flex';
+  renderListDetail(listId);
+}
+
+function closeListDetail() {
+  _listView = null;
+  document.getElementById('lists-detail-view').style.display = 'none';
+  document.getElementById('lists-grid-view').style.display = 'block';
+  renderLists();
+}
+
+function initListsOverlay() {
+  // Tile clicks → open detail
+  document.getElementById('lists-tile-grid').addEventListener('click', e => {
+    const tile = e.target.closest('[data-list-id]');
+    if (tile) openListDetail(tile.dataset.listId);
+  });
+  // Back button
+  document.getElementById('lists-back-btn').addEventListener('click', closeListDetail);
+  // Add new list
+  document.getElementById('lists-add-btn').addEventListener('click', async () => {
+    const title = prompt('List name:');
+    if (title && title.trim()) await addList(title.trim());
+  });
+  // Delete list
+  document.getElementById('lists-delete-btn').addEventListener('click', async () => {
+    if (!_listView) return;
+    if (confirm('Delete this list and all its items?')) {
+      await deleteList(_listView);
+      closeListDetail();
+    }
+  });
+  // Add item
+  const addBtn = document.getElementById('lists-item-add-btn');
+  const inp = document.getElementById('lists-item-input');
+  async function doAddItem() {
+    const text = inp.value.trim();
+    if (text && _listView) { await addListItem(_listView, text); inp.value = ''; }
+  }
+  addBtn.addEventListener('click', doAddItem);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') doAddItem(); });
+  // Inline title edit (save on blur)
+  document.getElementById('lists-detail-title').addEventListener('blur', async e => {
+    const t = e.target.textContent.trim();
+    if (_listView && t) await updateList(_listView, { title: t });
+  });
+  // Item toggles + deletes (delegation)
+  document.getElementById('lists-detail-items').addEventListener('click', async e => {
+    const toggle = e.target.closest('[data-toggle-item]');
+    const del    = e.target.closest('[data-del-item]');
+    if (toggle && _listView) await toggleListItem(_listView, toggle.dataset.toggleItem);
+    if (del    && _listView) await deleteListItem(_listView, del.dataset.delItem);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   MILESTONES — FIRESTORE CRUD
+   ══════════════════════════════════════════════════════════ */
+async function addMilestoneProject(title, startDate, endDate, color) {
+  const { addDoc, collection, serverTimestamp } = window.CDX_FB;
+  await addDoc(collection(window.CDX_DB, 'milestoneProjects'),
+    { title, startDate, endDate, color, createdAt: serverTimestamp() });
+}
+
+async function updateMilestoneProject(id, data) {
+  const { doc, updateDoc } = window.CDX_FB;
+  await updateDoc(doc(window.CDX_DB, 'milestoneProjects', id), data);
+}
+
+async function deleteMilestoneProject(id) {
+  const { doc, deleteDoc, collection, getDocs, query, where } = window.CDX_FB;
+  const evSnap = await getDocs(
+    query(collection(window.CDX_DB, 'milestoneEvents'), where('projectId', '==', id))
+  );
+  await Promise.all(evSnap.docs.map(d => deleteDoc(d.ref)));
+  await deleteDoc(doc(window.CDX_DB, 'milestoneProjects', id));
+}
+
+async function addMilestoneEvent(projectId, title, date, description, activities) {
+  const { addDoc, collection, serverTimestamp } = window.CDX_FB;
+  await addDoc(collection(window.CDX_DB, 'milestoneEvents'),
+    { projectId, title, date, description, activities, createdAt: serverTimestamp() });
+}
+
+async function updateMilestoneEvent(id, data) {
+  const { doc, updateDoc } = window.CDX_FB;
+  await updateDoc(doc(window.CDX_DB, 'milestoneEvents', id), data);
+}
+
+async function deleteMilestoneEvent(id) {
+  const { doc, deleteDoc } = window.CDX_FB;
+  await deleteDoc(doc(window.CDX_DB, 'milestoneEvents', id));
+}
+
+async function toggleMilestoneActivity(eventId, actId) {
+  const ev = MILESTONE_EVENTS.find(e => e.id === eventId);
+  if (!ev) return;
+  const activities = ev.activities.map(a =>
+    a.id === actId ? { ...a, done: !a.done } : a
+  );
+  await updateMilestoneEvent(eventId, { activities });
+}
+
+/* ══════════════════════════════════════════════════════════
+   MILESTONES — RENDER
+   ══════════════════════════════════════════════════════════ */
+function msDateToPercent(dateStr, startDate, endDate) {
+  const d = new Date(dateStr).getTime();
+  const s = new Date(startDate).getTime();
+  const e = new Date(endDate).getTime();
+  if (e === s) return 0;
+  return Math.min(100, Math.max(0, ((d - s) / (e - s)) * 100));
+}
+
+function renderMilestones() {
+  const body = document.getElementById('milestones-body');
+  if (!body) return;
+  if (!MILESTONE_PROJECTS.length) {
+    body.innerHTML = '<p style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">No projects yet. Click "+ Project" to start tracking your initiatives.</p>';
+    return;
+  }
+  body.innerHTML = MILESTONE_PROJECTS.map(proj => {
+    const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
+    const completedActs = events.reduce((n, ev) => n + ev.activities.filter(a => a.done).length, 0);
+    const totalActs = events.reduce((n, ev) => n + ev.activities.length, 0);
+    const markers = events.map(ev => {
+      const pct = msDateToPercent(ev.date, proj.startDate, proj.endDate);
+      return `
+        <div class="ms-event-marker" style="left:${pct.toFixed(2)}%" data-ms-event-id="${escAttr(ev.id)}">
+          <div class="ms-event-date-label">${escHtml(fmtDate(ev.date))}</div>
+          <div class="ms-event-dot" style="background:${escAttr(proj.color)}"></div>
+          <div class="ms-event-label">${escHtml(ev.title)}</div>
+        </div>`;
+    }).join('');
+    const progressHtml = totalActs > 0
+      ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.06em">${completedActs}/${totalActs} done</span>`
+      : '';
+    return `
+      <div class="ms-project-block">
+        <div class="ms-project-header">
+          <div class="ms-project-dot" style="background:${escAttr(proj.color)}"></div>
+          <span class="ms-project-name">${escHtml(proj.title)}</span>
+          ${progressHtml}
+          <span class="ms-project-dates">${escHtml(fmtDate(proj.startDate))} → ${escHtml(fmtDate(proj.endDate))}</span>
+          <button class="ms-add-event-btn" data-ms-add-event="${escAttr(proj.id)}">+ Milestone</button>
+          <button class="ms-edit-proj-btn" data-ms-edit-proj="${escAttr(proj.id)}">⋯</button>
+        </div>
+        <div class="ms-timeline-wrap">
+          <div class="ms-timeline-bar">
+            <div class="ms-timeline-fill" style="background:${escAttr(proj.color)}"></div>
+            ${markers}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderMsColorPicker(containerId, selectedColor) {
+  const picker = document.getElementById(containerId);
+  if (!picker) return;
+  picker.innerHTML = PROJECT_COLORS.map(c => `
+    <div class="ms-color-swatch ${selectedColor === c ? 'selected' : ''}"
+         style="background:${c}" data-color="${c}"></div>
+  `).join('');
+}
+
+function renderMsActivityList() {
+  const el = document.getElementById('ms-event-activities-list');
+  if (!el) return;
+  if (!_msNewActivities.length) {
+    el.innerHTML = '<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em">No activities yet.</p>';
+    return;
+  }
+  el.innerHTML = _msNewActivities.map((a, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(a.text)}</span>
+      <span style="font-size:11px;color:var(--muted);cursor:pointer;padding:2px 6px" data-rm-activity="${i}">✕</span>
+    </div>
+  `).join('');
+}
+
+function openMsProjectModal(projId = null) {
+  _msProjEdit = projId;
+  const proj = projId ? MILESTONE_PROJECTS.find(p => p.id === projId) : null;
+  document.getElementById('ms-proj-modal-title').textContent = proj ? 'Edit Project' : 'New Project';
+  document.getElementById('ms-proj-title').value = proj ? proj.title : '';
+  document.getElementById('ms-proj-start').value = proj ? proj.startDate : '';
+  document.getElementById('ms-proj-end').value   = proj ? proj.endDate : '';
+  const selColor = proj ? proj.color : PROJECT_COLORS[0];
+  document.getElementById('ms-proj-color-val').value = selColor;
+  renderMsColorPicker('ms-proj-color-picker', selColor);
+  const delBtn = document.getElementById('ms-proj-delete-btn');
+  if (delBtn) delBtn.style.display = proj ? '' : 'none';
+  openOverlay('ms-project-modal');
+}
+
+function openMsEventModal(projectId, eventId = null) {
+  const ev = eventId ? MILESTONE_EVENTS.find(e => e.id === eventId) : null;
+  _msEventEdit = eventId || null;
+  _msNewActivities = ev ? JSON.parse(JSON.stringify(ev.activities)) : [];
+  document.getElementById('ms-event-modal-title').textContent = ev ? 'Edit Milestone' : 'New Milestone';
+  document.getElementById('ms-event-project-id').value = projectId;
+  document.getElementById('ms-event-id').value = eventId || '';
+  document.getElementById('ms-event-title').value = ev ? ev.title : '';
+  document.getElementById('ms-event-date').value  = ev ? ev.date  : '';
+  document.getElementById('ms-event-desc').value  = ev ? (ev.description || '') : '';
+  renderMsActivityList();
+  openOverlay('ms-event-modal');
+}
+
+function openMsEventDetail(eventId) {
+  const ev = MILESTONE_EVENTS.find(e => e.id === eventId);
+  if (!ev) return;
+  const proj = MILESTONE_PROJECTS.find(p => p.id === ev.projectId);
+  document.getElementById('ms-detail-title').textContent = ev.title;
+  document.getElementById('ms-detail-meta').textContent =
+    fmtDate(ev.date) + (proj ? ' · ' + proj.title : '');
+  document.getElementById('ms-detail-desc').textContent = ev.description || '';
+  const acts = document.getElementById('ms-detail-activities');
+  if (!ev.activities.length) {
+    acts.innerHTML = '<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em">No activities.</p>';
+  } else {
+    acts.innerHTML = ev.activities.map(a => `
+      <div class="ms-activity-row">
+        <div class="ms-activity-check ${a.done ? 'done' : ''}"
+             data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(eventId)}"></div>
+        <span class="ms-activity-text ${a.done ? 'done' : ''}">${escHtml(a.text)}</span>
+      </div>`).join('');
+  }
+  document.getElementById('ms-detail-edit-btn').dataset.editEvId   = eventId;
+  document.getElementById('ms-detail-delete-btn').dataset.delEvId  = eventId;
+  openOverlay('ms-event-detail');
+}
+
+function initMilestonesPanel() {
+  // Add project button
+  document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
+
+  // Color swatch selection in project modal
+  document.getElementById('ms-proj-color-picker').addEventListener('click', e => {
+    const sw = e.target.closest('[data-color]');
+    if (!sw) return;
+    document.querySelectorAll('#ms-proj-color-picker .ms-color-swatch')
+      .forEach(s => s.classList.remove('selected'));
+    sw.classList.add('selected');
+    document.getElementById('ms-proj-color-val').value = sw.dataset.color;
+  });
+
+  // Project modal confirm
+  document.getElementById('ms-proj-confirm').addEventListener('click', async () => {
+    const title = document.getElementById('ms-proj-title').value.trim();
+    const start = document.getElementById('ms-proj-start').value;
+    const end   = document.getElementById('ms-proj-end').value;
+    const color = document.getElementById('ms-proj-color-val').value || PROJECT_COLORS[0];
+    if (!title || !start || !end) return;
+    if (_msProjEdit) {
+      await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color });
+    } else {
+      await addMilestoneProject(title, start, end, color);
+    }
+    closeOverlay('ms-project-modal');
+  });
+
+  // Project delete button
+  document.getElementById('ms-proj-delete-btn').addEventListener('click', async () => {
+    if (!_msProjEdit) return;
+    const proj = MILESTONE_PROJECTS.find(p => p.id === _msProjEdit);
+    if (confirm(`Delete project "${proj ? proj.title : ''}" and all its milestones?`)) {
+      await deleteMilestoneProject(_msProjEdit);
+      closeOverlay('ms-project-modal');
+    }
+  });
+
+  // Milestones body delegation (+ milestone, edit project, click marker)
+  document.getElementById('milestones-body').addEventListener('click', e => {
+    const addEvBtn   = e.target.closest('[data-ms-add-event]');
+    const editProjBtn = e.target.closest('[data-ms-edit-proj]');
+    const marker     = e.target.closest('[data-ms-event-id]');
+    if (addEvBtn)    { openMsEventModal(addEvBtn.dataset.msAddEvent); return; }
+    if (editProjBtn) { openMsProjectModal(editProjBtn.dataset.msEditProj); return; }
+    if (marker)      { openMsEventDetail(marker.dataset.msEventId); return; }
+  });
+
+  // Event modal — add activity
+  document.getElementById('ms-activity-add').addEventListener('click', () => {
+    const inp = document.getElementById('ms-activity-input');
+    const text = inp.value.trim();
+    if (text) {
+      _msNewActivities.push({ id: crypto.randomUUID(), text, done: false });
+      inp.value = '';
+      renderMsActivityList();
+    }
+  });
+  document.getElementById('ms-activity-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('ms-activity-add').click();
+  });
+  document.getElementById('ms-event-activities-list').addEventListener('click', e => {
+    const rm = e.target.closest('[data-rm-activity]');
+    if (rm) { _msNewActivities.splice(+rm.dataset.rmActivity, 1); renderMsActivityList(); }
+  });
+
+  // Event modal confirm
+  document.getElementById('ms-event-confirm').addEventListener('click', async () => {
+    const title  = document.getElementById('ms-event-title').value.trim();
+    const date   = document.getElementById('ms-event-date').value;
+    const desc   = document.getElementById('ms-event-desc').value.trim();
+    const projId = document.getElementById('ms-event-project-id').value;
+    const evId   = document.getElementById('ms-event-id').value;
+    if (!title || !date) return;
+    if (evId) {
+      await updateMilestoneEvent(evId,
+        { title, date, description: desc, activities: _msNewActivities });
+    } else {
+      await addMilestoneEvent(projId, title, date, desc, _msNewActivities);
+    }
+    closeOverlay('ms-event-modal');
+  });
+
+  // Event detail — activity toggles
+  document.getElementById('ms-detail-activities').addEventListener('click', async e => {
+    const toggle = e.target.closest('[data-toggle-act]');
+    if (toggle) await toggleMilestoneActivity(toggle.dataset.evId, toggle.dataset.toggleAct);
+  });
+
+  // Event detail — edit button
+  document.getElementById('ms-detail-edit-btn').addEventListener('click', () => {
+    const evId = document.getElementById('ms-detail-edit-btn').dataset.editEvId;
+    const ev = MILESTONE_EVENTS.find(e => e.id === evId);
+    if (ev) { closeOverlay('ms-event-detail'); openMsEventModal(ev.projectId, evId); }
+  });
+
+  // Event detail — delete button
+  document.getElementById('ms-detail-delete-btn').addEventListener('click', async () => {
+    const evId = document.getElementById('ms-detail-delete-btn').dataset.delEvId;
+    if (confirm('Delete this milestone?')) {
+      await deleteMilestoneEvent(evId);
+      closeOverlay('ms-event-detail');
+    }
+  });
+}
 
 /* ── Date label ────────────────────────────────────────── */
 (function setPageDate() {
@@ -2557,6 +3490,22 @@ function initData() {
     HOLIDAYS = {};
     snap.docs.forEach(d => { HOLIDAYS[d.id] = { docId: d.id, ...d.data() }; });
     renderCalendar(); renderSettingsHolidays();
+  });
+
+  onSnapshot(query(collection(db, 'lists'), orderBy('createdAt', 'asc')), snap => {
+    LISTS = snap.docs.map(d => ({ id: d.id, items: [], ...d.data() }));
+    renderLists();
+    if (_listView) renderListDetail(_listView);
+  });
+
+  onSnapshot(query(collection(db, 'milestoneProjects'), orderBy('startDate', 'asc')), snap => {
+    MILESTONE_PROJECTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (_mainPanel === 'milestones') renderMilestones();
+  });
+
+  onSnapshot(query(collection(db, 'milestoneEvents'), orderBy('date', 'asc')), snap => {
+    MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, activities: [], ...d.data() }));
+    if (_mainPanel === 'milestones') renderMilestones();
   });
 
   seedHolidays();
@@ -3885,7 +4834,8 @@ const CMD_COMMANDS = [
   { label: 'Ask Cosmos',       icon: '✦', action: () => openOverlay('claude-panel'), keys: '' },
   { label: 'Insights',         icon: '◈', action: () => openOverlay('insights-overlay'), keys: '' },
   { label: 'Habits',           icon: '◎', action: () => openOverlay('habits-overlay'), keys: '' },
-  { label: 'Planning',         icon: '◳', action: () => openOverlay('plan-overlay'), keys: '' },
+  { label: 'Lists',            icon: '▤', action: () => openOverlay('lists-overlay'), keys: '' },
+  { label: 'Planning',         icon: '◳', action: () => showMainPanel('milestones'), keys: '' },
   { label: 'Life OS',          icon: '◉', action: () => openOverlay('lifeos-overlay'), keys: '' },
   { label: 'Toggle Theme',     icon: '◑', action: toggleTheme, keys: '' },
 ];
@@ -4065,6 +5015,8 @@ window.addEventListener('cdx-auth-ready', () => {
     initSettingsPanel();
     initCalNav();
     renderCalendar();
+    initListsOverlay();
+    initMilestonesPanel();
   });
 }, { once: true });
 
