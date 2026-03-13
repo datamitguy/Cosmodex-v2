@@ -982,12 +982,12 @@ body::after {
 }
 
 #cosmodex-orb.expanded {
-  width: min(78vw, 78vh);
-  height: min(78vw, 78vh);
+  width: min(480px, 90vw);
+  height: min(680px, 88dvh);
   top: 50%; left: 50%;
   right: auto; bottom: auto;
   transform: translate(-50%, -50%);
-  border-radius: 50%;
+  border-radius: 24px;
   border-color: rgba(201,162,39,0.25);
   animation: none;
   z-index: 500;
@@ -1002,21 +1002,20 @@ body::after {
   display: block;
 }
 
-/* Orb close button */
+/* Orb close button — now inside #cosmodex-orb, top-right */
 #orb-close {
-  position: fixed;
-  top: calc(50% - min(78vw,78vh)/2 - 40px);
-  right: calc(50% - min(78vw,78vh)/2 - 8px);
-  width: 30px; height: 30px;
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 28px; height: 28px;
   border-radius: 50%;
-  background: var(--elevated);
+  background: rgba(20,18,16,0.85);
   border: 1px solid var(--border);
   color: var(--muted);
   cursor: pointer;
   display: none;
   align-items: center; justify-content: center;
-  font-size: 14px;
-  z-index: 501;
+  font-size: 13px;
+  z-index: 3;
   transition: var(--ease-fast);
 }
 
@@ -1034,37 +1033,55 @@ body::after {
 
 #orb-backdrop.visible { display: block; }
 
-/* Orb info strip — positioned BELOW the circle, not overlaying it */
-#orb-time-display {
-  position: fixed;
-  top: calc(50% + min(39vw, 39vh) + 18px);
-  left: 50%;
-  transform: translateX(-50%);
+/* Orb header — time + date, top of the expanded rectangle */
+#orb-header {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 22px 44px 0;
   text-align: center;
-  z-index: 502;
-  pointer-events: auto;
+  z-index: 2;
+  pointer-events: none;
   display: none;
-  background: rgba(10,9,8,0.88);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(201,162,39,0.18);
-  border-radius: 16px;
-  padding: 10px 20px 12px;
-  min-width: 240px;
-  max-width: min(340px, 90vw);
+  background: linear-gradient(to bottom, rgba(10,9,8,0.95) 0%, rgba(10,9,8,0.7) 55%, transparent 100%);
+  border-radius: 24px 24px 0 0;
+  padding-bottom: 28px;
 }
-
-#orb-time-display.visible { display: block; }
+#orb-header.visible { display: block; }
 
 .orb-time-clock {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 400;
-  color: rgba(201,162,39,0.55);
-  letter-spacing: 0.12em;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 300;
+  color: rgba(201,162,39,0.92);
+  letter-spacing: 0.04em;
   display: block;
   line-height: 1;
 }
+
+.orb-date-line {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-top: 6px;
+}
+
+/* Orb footer — next event info, bottom of the expanded rectangle */
+#orb-time-display {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  text-align: center;
+  z-index: 2;
+  pointer-events: auto;
+  display: none;
+  background: linear-gradient(to top, rgba(10,9,8,0.97) 0%, rgba(10,9,8,0.8) 55%, transparent 100%);
+  border-radius: 0 0 22px 22px;
+  padding: 36px 20px 18px;
+}
+
+#orb-time-display.visible { display: block; }
 
 .orb-cosmodex-label { display: none; }
 
@@ -2330,18 +2347,26 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 <div id="orb-backdrop"></div>
 <div id="cosmodex-orb" title="Open Cosmodex dial">
   <canvas id="cosmodex-canvas"></canvas>
-</div>
-<button id="orb-close">✕</button>
-<div id="orb-time-display">
-  <span class="orb-time-clock" id="orb-clock">--:--:--</span>
-  <span class="orb-cosmodex-label">Cosmodex</span>
-  <span class="orb-next-label">Next</span>
-  <span class="orb-next-event" id="orb-next-event">—</span>
-  <!-- Gadget buttons -->
-  <div class="orb-gadgets">
-    <button class="orb-gadget-btn" id="orb-dice-btn" title="Roll the dice">⚄</button>
-    <button class="orb-gadget-btn" id="orb-wheel-btn" title="Spin the wheel">◎</button>
+
+  <!-- Header: time + date (only visible when expanded) -->
+  <div id="orb-header">
+    <span class="orb-time-clock" id="orb-clock">--:--:--</span>
+    <span class="orb-date-line" id="orb-date-line">—</span>
   </div>
+
+  <!-- Footer: next event info + gadgets -->
+  <div id="orb-time-display">
+    <span class="orb-cosmodex-label">Cosmodex</span>
+    <span class="orb-next-label">Next</span>
+    <span class="orb-next-event" id="orb-next-event">—</span>
+    <div class="orb-gadgets">
+      <button class="orb-gadget-btn" id="orb-dice-btn" title="Roll the dice">⚄</button>
+      <button class="orb-gadget-btn" id="orb-wheel-btn" title="Spin the wheel">◎</button>
+    </div>
+  </div>
+
+  <!-- Close button (top-right, inside orb) -->
+  <button id="orb-close">✕</button>
 </div>
 <!-- Spinning wheel overlay -->
 <div id="orb-wheel-overlay">
@@ -4346,12 +4371,14 @@ const orb         = document.getElementById('cosmodex-orb');
 const orbClose    = document.getElementById('orb-close');
 const orbBackdrop = document.getElementById('orb-backdrop');
 const orbDisplay  = document.getElementById('orb-time-display');
+const orbHeader   = document.getElementById('orb-header');
 
 function openOrb() {
   orb.classList.add('expanded');
   orbClose.classList.add('visible');
   orbBackdrop.classList.add('visible');
   orbDisplay.classList.add('visible');
+  orbHeader.classList.add('visible');
   // redraw at expanded size after CSS transition
   setTimeout(drawCosmodex, 50);
   setTimeout(drawCosmodex, 500);
@@ -4362,6 +4389,7 @@ function closeOrb() {
   orbClose.classList.remove('visible');
   orbBackdrop.classList.remove('visible');
   orbDisplay.classList.remove('visible');
+  orbHeader.classList.remove('visible');
   setTimeout(drawCosmodex, 500);
 }
 
@@ -4391,14 +4419,29 @@ function drawCosmodex() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
 
-  const cx = W / 2, cy = H / 2;
-  const maxR   = Math.min(W, H) / 2 * 0.93;
+  const cx = W / 2;
+  // When expanded: shift centre up slightly to leave room for header (≈80px) and footer (≈110px)
+  const cy = expanded ? H / 2 - 15 : H / 2;
+  // When expanded: constrain radius so chart stays between header and footer
+  const maxR = expanded
+    ? Math.min(W * 0.44, (H - 210) / 2)
+    : Math.min(W, H) / 2 * 0.93;
   const innerR = maxR * (expanded ? 0.28 : 0.35);
   const baseR  = maxR * (expanded ? 0.52 : 0.65);
   const eventR = maxR * (expanded ? 0.70 : 0.72); // reduced: was 0.87/0.91
 
   const today  = localDateStr(new Date());
   const now    = new Date();
+
+  // Update date line in orb header
+  if (expanded) {
+    const dateLine = document.getElementById('orb-date-line');
+    if (dateLine) {
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      dateLine.textContent = `${days[now.getDay()]} · ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    }
+  }
   const curH   = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
   const TWO_PI = Math.PI * 2;
   const GAP    = (TWO_PI / 24) * 0.06;
@@ -4496,9 +4539,9 @@ function drawCosmodex() {
     // Hour labels at exact boundary (expanded, every 3h)
     if (expanded && h % 3 === 0) {
       const boundA = (h / 24) * TWO_PI - Math.PI / 2; // FIXED: boundary, not midpoint
-      const labelDist = eventR + 17;
-      ctx.fillStyle = isCur ? 'rgba(201,162,39,0.95)' : 'rgba(138,128,112,0.6)';
-      ctx.font = `${h % 6 === 0 ? 10 : 8}px "DM Mono", monospace`;
+      const labelDist = eventR + (h % 6 === 0 ? 22 : 19);
+      ctx.fillStyle = isCur ? 'rgba(201,162,39,0.95)' : 'rgba(138,128,112,0.7)';
+      ctx.font = `${h % 6 === 0 ? 14 : 11}px "DM Mono", monospace`;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(h),
