@@ -17,7 +17,8 @@
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
-    onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit
+    onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
+    deleteField
   } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -46,7 +47,7 @@
   window.CDX_FB   = {
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
     onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
-    signInAnonymously, onAuthStateChanged
+    deleteField, signInAnonymously, onAuthStateChanged
   };
 
   // Restore previous anonymous session automatically on page load
@@ -1716,7 +1717,7 @@ body::after {
 textarea.form-input { resize: vertical; min-height: 60px; }
 
 /* ═══════════════════════════════════════════════════════════
-   LISTS PANEL
+   LISTS PANEL (legacy styles kept for compatibility)
    ═══════════════════════════════════════════════════════════ */
 .lists-tile-grid {
   display: grid;
@@ -1750,81 +1751,319 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   margin-top: 12px;
   text-transform: uppercase;
 }
-.lists-detail-header {
+
+/* ═══ LISTS PAGE ════════════════════════════════════════ */
+.list-sidebar-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-left-color 0.15s;
+  border-left: 3px solid transparent;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  position: relative;
+}
+.list-sidebar-card:hover { background: rgba(201,162,39,0.05); border-left-color: rgba(201,162,39,0.3); }
+.list-sidebar-card.active { background: rgba(201,162,39,0.08); border-left-color: var(--gold); }
+.list-sidebar-card-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
-.lists-detail-title-text {
-  flex: 1;
-  font-family: var(--font-display);
-  font-size: 18px;
+.list-sidebar-card-name {
+  font-family: var(--font-body);
+  font-size: 13px;
   color: var(--cream);
-  outline: none;
-  border-bottom: 1px solid transparent;
-  padding: 2px 4px;
-  min-width: 0;
-}
-.lists-detail-title-text:focus { border-bottom-color: var(--gold); }
-.lists-detail-items {
   flex: 1;
-  overflow-y: auto;
-  padding: 8px 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.list-item-row {
+.list-sidebar-card-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+.list-sidebar-card-progress {
+  position: absolute;
+  bottom: 0; left: 3px; right: 0;
+  height: 2px;
+  background: var(--elevated);
+  border-radius: 0 0 0 10px;
+  overflow: hidden;
+}
+.list-sidebar-card-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.3s;
+}
+.list-detail-item {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(42,37,32,0.4);
+  animation: fadeUp 0.25s forwards;
+  opacity: 0;
 }
-.list-item-row:last-child { border-bottom: none; }
-.list-item-check {
+.list-detail-item:last-child { border-bottom: none; }
+.list-detail-item-check {
   width: 18px; height: 18px;
   border-radius: 50%;
   border: 1.5px solid var(--border);
   cursor: pointer;
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
   transition: background 0.15s, border-color 0.15s;
+  color: white;
 }
-.list-item-check.done { background: var(--sage); border-color: var(--sage); }
-.list-item-check.done::after { content: '✓'; font-size: 11px; color: white; }
-.list-item-text {
+.list-detail-item-check:hover { border-color: var(--gold); }
+.list-detail-item-check.done { background: var(--sage); border-color: var(--sage); }
+.list-detail-item-text {
   flex: 1;
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--cream);
+  outline: none;
 }
-.list-item-text.done { color: var(--muted); text-decoration: line-through; }
-.list-item-del {
-  color: var(--muted); cursor: pointer; font-size: 12px;
-  opacity: 0; transition: opacity 0.15s; padding: 4px;
+.list-detail-item-text.done { color: var(--muted); text-decoration: line-through; }
+.list-detail-item-del {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 4px 6px;
+  border-radius: 4px;
 }
-.list-item-row:hover .list-item-del { opacity: 1; }
-.lists-detail-add-row {
+.list-detail-item:hover .list-detail-item-del { opacity: 1; }
+.list-detail-item-del:hover { color: var(--rust); background: rgba(196,92,42,0.08); }
+
+/* ═══ HABITS V2 PAGE ════════════════════════════════════ */
+.habits-v2-tab {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0 14px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+.habits-v2-tab:hover { color: var(--cream); }
+.habits-v2-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+.habits-v2-pane {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.habits-v2-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.habits-v2-section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.habits-v2-section-desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: -6px;
+}
+
+/* Day strip */
+.habits-day-strip-v2 {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) repeat(7, 40px) 44px;
+  gap: 4px;
+  align-items: end;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.habit-day-header-cell {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+  padding-bottom: 6px;
+}
+.habit-day-header-cell.today-col { color: var(--gold); }
+
+/* Habit list */
+.habits-list-v2 { display: flex; flex-direction: column; }
+
+.habit-row-v2 {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) repeat(7, 40px) 44px;
+  gap: 4px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(42,37,32,0.4);
+  animation: fadeUp 0.3s forwards;
+  opacity: 0;
+}
+.habit-row-v2:last-child { border-bottom: none; }
+
+.habit-name-v2 {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 8px;
+}
+.habit-check-v2 {
+  width: 28px; height: 28px;
+  margin: 0 auto;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  color: white;
+}
+.habit-check-v2:hover { border-color: var(--gold); transform: scale(1.05); }
+.habit-check-v2.done { background: var(--sage); border-color: var(--sage); }
+.habit-check-v2.today-col { border-color: rgba(201,162,39,0.4); }
+.habit-check-v2.done.today-col { background: var(--gold); border-color: var(--gold); }
+
+.habit-streak-v2 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.habit-del-v2 {
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 14px; opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  padding: 4px;
+  text-align: center;
+}
+.habit-row-v2:hover .habit-del-v2 { opacity: 0.5; }
+.habit-del-v2:hover { opacity: 1 !important; color: var(--rust); }
+
+/* Add row */
+.habits-add-row-v2 {
   display: flex;
   gap: 8px;
-  padding: 12px 20px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  align-items: center;
+  margin-top: 4px;
 }
-.lists-item-input {
+
+/* Routine items */
+.routine-list-v2 { display: flex; flex-direction: column; }
+.routine-item-v2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(42,37,32,0.3);
+}
+.routine-item-v2:last-child { border-bottom: none; }
+.routine-time-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--gold);
+  background: rgba(201,162,39,0.08);
+  border: 1px solid rgba(201,162,39,0.2);
+  border-radius: 4px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-width: 46px;
+  text-align: center;
+}
+.routine-text-v2 {
   flex: 1;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream);
+  background: none;
+  border: none;
+  outline: none;
+  padding: 2px 0;
+}
+.routine-text-v2:focus { border-bottom: 1px solid var(--gold); }
+.routine-del-v2 {
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 13px; opacity: 0;
+  transition: opacity 0.15s;
+  padding: 2px 6px;
+}
+.routine-item-v2:hover .routine-del-v2 { opacity: 0.6; }
+.routine-del-v2:hover { opacity: 1 !important; color: var(--rust); }
+
+/* Keystone behaviour item */
+.keystone-row-v2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
   background: var(--elevated);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 9px 14px;
-  color: var(--cream);
-  font-family: var(--font-body);
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
+  margin-bottom: 6px;
+  transition: border-color 0.15s;
 }
-.lists-item-input:focus { border-color: var(--gold); }
+.keystone-row-v2:hover { border-color: rgba(201,162,39,0.3); }
+.keystone-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+}
+.keystone-text {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream);
+}
+.keystone-del {
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 12px; opacity: 0;
+  transition: opacity 0.15s;
+  padding: 2px 6px;
+}
+.keystone-row-v2:hover .keystone-del { opacity: 0.5; }
+.keystone-del:hover { opacity: 1 !important; color: var(--rust); }
 
 /* ═══════════════════════════════════════════════════════════
    MILESTONES PANEL
@@ -2413,6 +2652,124 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <div id="milestones-body" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:28px"></div>
     </div>
 
+    <!-- Lists Panel (full page) -->
+    <div id="panel-lists" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <!-- Two-column layout: left = list of lists, right = list detail -->
+      <div style="display:flex;height:100%;overflow:hidden">
+        <!-- Left: List of all lists -->
+        <div id="lists-sidebar" style="width:280px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+          <!-- New list input always visible at top -->
+          <div style="padding:12px;border-bottom:1px solid var(--border);flex-shrink:0">
+            <div style="display:flex;gap:6px">
+              <input id="lists-new-title" class="form-input" placeholder="New list name…" autocomplete="off" style="font-size:13px;padding:7px 10px">
+              <button id="lists-create-btn" class="btn-primary" style="white-space:nowrap;font-size:10px;padding:7px 12px">+ Create</button>
+            </div>
+          </div>
+          <!-- List tiles (vertical cards in sidebar) -->
+          <div id="lists-sidebar-items" style="flex:1;overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent"></div>
+        </div>
+        <!-- Right: Selected list detail -->
+        <div id="lists-detail-panel" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+          <!-- Empty state when no list selected -->
+          <div id="lists-empty-state" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--muted)">
+            <div style="font-size:32px;opacity:0.3">▤</div>
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase">Select a list or create one</div>
+          </div>
+          <!-- Detail: header + items + add row (hidden until list selected) -->
+          <div id="lists-detail-content" style="display:none;flex-direction:column;height:100%;overflow:hidden">
+            <!-- Header -->
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0">
+              <div id="lists-detail-color-strip" style="width:4px;height:28px;border-radius:2px;flex-shrink:0"></div>
+              <span id="lists-detail-name" style="font-family:var(--font-display);font-size:20px;font-weight:300;color:var(--cream);flex:1;outline:none;border-bottom:1px solid transparent;padding:2px 4px" contenteditable="true"></span>
+              <span id="lists-detail-count" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em"></span>
+              <!-- Delete: shows confirmation inline -->
+              <div id="lists-delete-confirm" style="display:none;align-items:center;gap:6px">
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--rust)">Delete list?</span>
+                <button id="lists-delete-yes" class="btn-ghost" style="color:var(--rust);font-size:10px;padding:4px 10px">Yes</button>
+                <button id="lists-delete-no" class="btn-ghost" style="font-size:10px;padding:4px 10px">No</button>
+              </div>
+              <button id="lists-delete-btn" class="task-action-btn danger" title="Delete list" style="opacity:0.5">🗑</button>
+            </div>
+            <!-- Items -->
+            <div id="lists-detail-items" style="flex:1;overflow-y:auto;padding:0 20px;scrollbar-width:thin;scrollbar-color:var(--border) transparent"></div>
+            <!-- Add item row (pinned at bottom) -->
+            <div style="padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0">
+              <div style="display:flex;gap:8px">
+                <input id="lists-item-input" class="form-input" placeholder="Add item… (Enter to confirm)" type="text" autocomplete="off" style="font-size:13px">
+                <button id="lists-item-add-btn" class="btn-primary" style="white-space:nowrap;font-size:10px;padding:7px 14px">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Habits Panel (full page) -->
+    <div id="panel-habits" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <!-- Tab bar -->
+      <div style="height:38px;min-height:38px;display:flex;align-items:stretch;padding:0 16px;border-bottom:1px solid var(--border);background:rgba(20,18,16,0.5);gap:4px">
+        <button class="habits-v2-tab active" data-htab="habits">Habits</button>
+        <button class="habits-v2-tab" data-htab="routines">Routines</button>
+        <button class="habits-v2-tab" data-htab="behaviours">Behaviours</button>
+      </div>
+      <!-- Habits pane -->
+      <div id="hpane-habits" class="habits-v2-pane">
+        <div class="habits-v2-section">
+          <div class="habits-v2-section-label">Daily Tracker — Last 7 days</div>
+          <div id="habits-day-strip" class="habits-day-strip-v2"></div>
+          <div id="habits-list" class="habits-list-v2"></div>
+          <div class="habits-add-row-v2">
+            <input class="form-input" id="habit-new-inp" placeholder="Add habit… (Enter to save)" autocomplete="off" style="font-size:13px">
+            <button id="habits-add-btn" class="btn-primary" style="white-space:nowrap;font-size:10px;padding:7px 14px">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <!-- Routines pane -->
+      <div id="hpane-routines" class="habits-v2-pane" style="display:none">
+        <div class="habits-v2-section">
+          <div class="habits-v2-section-label">Morning Routine</div>
+          <div id="routines-morning-list" class="routine-list-v2"></div>
+          <div class="habits-add-row-v2">
+            <input class="form-input" id="routine-morning-time" placeholder="06:00" style="width:72px;font-size:12px;padding:7px 8px;flex-shrink:0" autocomplete="off">
+            <input class="form-input" id="routine-morning-inp" placeholder="Add morning step…" autocomplete="off" style="font-size:13px;flex:1">
+            <button class="btn-primary" onclick="routineAdd('morning')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+          </div>
+        </div>
+        <div class="habits-v2-section">
+          <div class="habits-v2-section-label">Evening Routine</div>
+          <div id="routines-evening-list" class="routine-list-v2"></div>
+          <div class="habits-add-row-v2">
+            <input class="form-input" id="routine-evening-time" placeholder="21:00" style="width:72px;font-size:12px;padding:7px 8px;flex-shrink:0" autocomplete="off">
+            <input class="form-input" id="routine-evening-inp" placeholder="Add evening step…" autocomplete="off" style="font-size:13px;flex:1">
+            <button class="btn-primary" onclick="routineAdd('evening')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <!-- Behaviours pane -->
+      <div id="hpane-behaviours" class="habits-v2-pane" style="display:none">
+        <div class="habits-v2-section">
+          <div class="habits-v2-section-label">Identity &amp; Values</div>
+          <div class="habits-v2-section-desc">Who are you becoming? What do you stand for?</div>
+          <textarea class="form-input" id="behav-identity" rows="4" placeholder="I am someone who shows up consistently…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
+        </div>
+        <div class="habits-v2-section">
+          <div class="habits-v2-section-label">Keystone Behaviours</div>
+          <div class="habits-v2-section-desc">Core behaviours that anchor your identity</div>
+          <div id="behav-keystone-list" class="habits-list-v2"></div>
+          <div class="habits-add-row-v2" style="margin-top:10px">
+            <input class="form-input" id="behav-keystone-inp" placeholder="Add keystone behaviour…" autocomplete="off" style="font-size:13px">
+            <button id="behav-keystone-add-btn" class="btn-primary" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+          </div>
+        </div>
+        <div class="habits-v2-section">
+          <div class="habits-v2-section-label">Reflection Notes</div>
+          <div class="habits-v2-section-desc">Weekly reflection, friction points, what's working</div>
+          <textarea class="form-input" id="behav-notes" rows="5" placeholder="This week I noticed…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
+          <div id="behav-save-indicator" style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-top:4px;height:14px;transition:opacity 0.3s"></div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
 
@@ -2546,52 +2903,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       </div>
       <div class="overlay-placeholder">
         <div class="overlay-placeholder-text">Bar chart + 90-day heatmap — populated from Firestore</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Habits overlay -->
-<div class="overlay" id="habits-overlay">
-  <div class="overlay-panel">
-    <div class="overlay-header">
-      <span class="overlay-title">Habits &amp; Routines</span>
-      <button class="overlay-close" data-close="habits-overlay">✕</button>
-    </div>
-    <div class="overlay-body">
-      <div class="overlay-placeholder">
-        <div class="overlay-placeholder-icon">◎</div>
-        <div class="overlay-placeholder-text">Habits · Routines · Behaviours</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Lists overlay -->
-<div class="overlay" id="lists-overlay" style="z-index:820">
-  <div class="overlay-panel" style="width:min(860px,92vw);height:85dvh;display:flex;flex-direction:column">
-    <div class="overlay-header">
-      <span class="overlay-title">Lists</span>
-      <button class="overlay-close" data-close="lists-overlay">✕</button>
-    </div>
-    <!-- Grid view (default) -->
-    <div id="lists-grid-view" style="flex:1;overflow-y:auto;padding:20px">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-        <button id="lists-add-btn" class="btn-primary">+ New List</button>
-      </div>
-      <div id="lists-tile-grid" class="lists-tile-grid"></div>
-    </div>
-    <!-- Detail view (hidden until tile clicked) -->
-    <div id="lists-detail-view" style="flex:1;display:none;flex-direction:column;min-height:0">
-      <div class="lists-detail-header">
-        <button id="lists-back-btn" class="btn-ghost">← Back</button>
-        <span id="lists-detail-title" class="lists-detail-title-text" contenteditable="true"></span>
-        <button id="lists-delete-btn" class="btn-ghost" style="color:var(--rust)">Delete</button>
-      </div>
-      <div id="lists-detail-items" class="lists-detail-items"></div>
-      <div class="lists-detail-add-row">
-        <input id="lists-item-input" class="lists-item-input" placeholder="Add item…" type="text" autocomplete="off">
-        <button id="lists-item-add-btn" class="btn-primary">Add</button>
       </div>
     </div>
   </div>
@@ -2898,7 +3209,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 <div id="mob-more-drawer">
   <div class="drawer-handle"></div>
   <div class="drawer-grid">
-    <div class="drawer-item" data-open="habits-overlay">
+    <div class="drawer-item" data-mob-panel="habits">
       <span class="drawer-item-icon">◎</span>
       Habits
     </div>
@@ -2926,7 +3237,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <span class="drawer-item-icon">✦</span>
       Cosmos
     </div>
-    <div class="drawer-item" data-open="lists-overlay">
+    <div class="drawer-item" data-mob-panel="lists">
       <span class="drawer-item-icon">▤</span>
       Lists
     </div>
@@ -3036,6 +3347,19 @@ let _schedCtx     = null;
 let LISTS     = [];
 let _listView = null;  // currently open list ID
 
+// Habits state
+let _habits        = [];
+let _habitLogs     = {};
+let _routines      = { morning: [], evening: [] };
+let _behav         = { identity: '', keystone: [], notes: '' };
+let _habitsTab     = 'habits';
+let _habitsUnsub   = null;
+let _habitLogsUnsub = null;
+let _routinesUnsub = null;
+let _behavUnsub    = null;
+let _routinesSaveTimer = null;
+let _behavSaveTimer    = null;
+
 // Orb petal state
 let _orbGeometry  = null; // set by drawCosmodex when expanded
 let _orbClickHour = 9;    // hour of last petal click
@@ -3083,7 +3407,6 @@ document.getElementById('hamburger')?.addEventListener('click', () => {
 
 /* ── Nav items ─────────────────────────────────────────── */
 const NAV_OVERLAY_MAP = {
-  habits:   'habits-overlay',
   insights: 'insights-overlay',
   lifeos:   'lifeos-overlay',
 };
@@ -3091,14 +3414,23 @@ const NAV_OVERLAY_MAP = {
 document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
   item.addEventListener('click', () => {
     const panel = item.dataset.panel;
-    // Overlays (habits, insights, lifeos)
+    // Overlays (insights, lifeos)
     if (NAV_OVERLAY_MAP[panel]) {
       openOverlay(NAV_OVERLAY_MAP[panel]);
       return;
     }
-    // Lists overlay
+    // Lists → full page
     if (panel === 'lists') {
-      openOverlay('lists-overlay');
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('lists');
+      return;
+    }
+    // Habits → full page
+    if (panel === 'habits') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('habits');
       return;
     }
     // Planning → full milestones panel
@@ -3121,19 +3453,18 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
    PANEL SWITCHING (Calendar/Tasks ↔ Milestones)
    ══════════════════════════════════════════════════════════ */
 function showMainPanel(name) {
-  const isDefault = (name === 'default');
-  document.getElementById('panel-calendar').style.display = isDefault ? '' : 'none';
-  document.getElementById('panel-tasks').style.display    = isDefault ? '' : 'none';
-  document.getElementById('panel-milestones').style.display = isDefault ? 'none' : 'flex';
+  document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
+  document.getElementById('panel-tasks').style.display       = name === 'default' ? '' : 'none';
+  document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
+  document.getElementById('panel-lists').style.display       = name === 'lists' ? 'flex' : 'none';
+  document.getElementById('panel-habits').style.display      = name === 'habits' ? 'flex' : 'none';
   _mainPanel = name;
-  document.querySelectorAll('.nav-item[data-panel]').forEach(el => {
-    const p = el.dataset.panel;
-    const isActive = p === 'planning' ? !isDefault : (isDefault && ['today','calendar','tasks','lists'].includes(p) ? el.classList.contains('active') : false);
-    // only manage active for the clicked panel
-  });
-  if (!isDefault) renderMilestones();
+  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines' };
   const titleEl = document.getElementById('page-title');
-  if (titleEl) titleEl.textContent = isDefault ? 'Today' : 'Planning';
+  if (titleEl) titleEl.textContent = titles[name] || 'Today';
+  if (name === 'milestones') renderMilestones();
+  if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
+  if (name === 'habits') { switchHabitsTab(_habitsTab || 'habits'); }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3178,79 +3509,130 @@ async function deleteListItem(listId, itemId) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   LISTS — RENDER
+   LISTS PAGE — RENDER
    ══════════════════════════════════════════════════════════ */
 function renderLists() {
-  const grid = document.getElementById('lists-tile-grid');
-  if (!grid) return;
+  const sidebar = document.getElementById('lists-sidebar-items');
+  if (!sidebar) return;
   if (!LISTS.length) {
-    grid.innerHTML = '<p style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em">No lists yet. Create one above.</p>';
+    sidebar.innerHTML = '<div style="padding:16px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No lists yet</div>';
     return;
   }
-  grid.innerHTML = LISTS.map(l => `
-    <div class="list-tile" style="background:${escAttr(l.color)}" data-list-id="${escAttr(l.id)}">
-      <span class="list-tile-name">${escHtml(l.title)}</span>
-      <span class="list-tile-count">${l.items.length} item${l.items.length !== 1 ? 's' : ''}</span>
-    </div>
-  `).join('');
+  sidebar.innerHTML = LISTS.map(l => {
+    const doneCount = (l.items||[]).filter(i=>i.done).length;
+    const total = (l.items||[]).length;
+    const pct = total > 0 ? (doneCount/total)*100 : 0;
+    const isActive = _listView === l.id;
+    return `
+      <div class="list-sidebar-card ${isActive?'active':''}" data-list-id="${escAttr(l.id)}">
+        <div class="list-sidebar-card-dot" style="background:${escAttr(l.color)}"></div>
+        <span class="list-sidebar-card-name">${escHtml(l.title)}</span>
+        <span class="list-sidebar-card-count">${total > 0 ? `${doneCount}/${total}` : '—'}</span>
+        <div class="list-sidebar-card-progress">
+          <div class="list-sidebar-card-progress-fill" style="width:${pct.toFixed(0)}%;background:${escAttr(l.color)}88"></div>
+        </div>
+      </div>`;
+  }).join('');
+  // Re-bind if current list is open
+  if (_listView) renderListDetail(_listView);
 }
 
 function renderListDetail(listId) {
   const list = LISTS.find(l => l.id === listId);
-  if (!list) return;
-  const titleEl = document.getElementById('lists-detail-title');
-  if (titleEl) { titleEl.textContent = list.title; }
-  const body = document.getElementById('lists-detail-items');
-  if (!body) return;
-  if (!list.items.length) {
-    body.innerHTML = '<p style="color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:16px 0;letter-spacing:0.08em">No items yet. Add one below.</p>';
+  const emptyState    = document.getElementById('lists-empty-state');
+  const detailContent = document.getElementById('lists-detail-content');
+  if (!list) {
+    if (emptyState) emptyState.style.display = 'flex';
+    if (detailContent) detailContent.style.display = 'none';
     return;
   }
-  body.innerHTML = list.items.map(item => `
-    <div class="list-item-row" data-item-id="${escAttr(item.id)}">
-      <div class="list-item-check ${item.done ? 'done' : ''}" data-toggle-item="${escAttr(item.id)}"></div>
-      <span class="list-item-text ${item.done ? 'done' : ''}">${escHtml(item.text)}</span>
-      <span class="list-item-del" data-del-item="${escAttr(item.id)}">✕</span>
-    </div>
-  `).join('');
+  if (emptyState) emptyState.style.display = 'none';
+  if (detailContent) detailContent.style.display = 'flex';
+
+  const nameEl = document.getElementById('lists-detail-name');
+  const countEl = document.getElementById('lists-detail-count');
+  const colorEl = document.getElementById('lists-detail-color-strip');
+  if (nameEl) nameEl.textContent = list.title;
+  if (colorEl) colorEl.style.background = list.color;
+  const items = list.items || [];
+  const doneCount = items.filter(i=>i.done).length;
+  if (countEl) countEl.textContent = `${doneCount}/${items.length} done`;
+
+  const body = document.getElementById('lists-detail-items');
+  if (!body) return;
+  if (!items.length) {
+    body.innerHTML = '<div style="padding:24px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No items yet — add one below</div>';
+    return;
+  }
+  // Sort: undone first, done at bottom
+  const sorted = [...items.filter(i=>!i.done), ...items.filter(i=>i.done)];
+  body.innerHTML = sorted.map((item, idx) => `
+    <div class="list-detail-item" style="animation-delay:${idx*20}ms" data-item-id="${escAttr(item.id)}">
+      <div class="list-detail-item-check ${item.done?'done':''}" data-toggle-item="${escAttr(item.id)}">${item.done?'✓':''}</div>
+      <span class="list-detail-item-text ${item.done?'done':''}" data-item-id="${escAttr(item.id)}">${escHtml(item.text)}</span>
+      <span class="list-detail-item-del" data-del-item="${escAttr(item.id)}">✕</span>
+    </div>`).join('');
 }
 
 function openListDetail(listId) {
   _listView = listId;
-  document.getElementById('lists-grid-view').style.display = 'none';
-  const dv = document.getElementById('lists-detail-view');
-  dv.style.display = 'flex';
+  // Reset delete confirm state
+  const delConfirm = document.getElementById('lists-delete-confirm');
+  const delBtn = document.getElementById('lists-delete-btn');
+  if (delConfirm) delConfirm.style.display = 'none';
+  if (delBtn) delBtn.style.display = '';
+  renderLists();
   renderListDetail(listId);
+  // Focus add input
+  setTimeout(() => document.getElementById('lists-item-input')?.focus(), 100);
 }
 
 function closeListDetail() {
   _listView = null;
-  document.getElementById('lists-detail-view').style.display = 'none';
-  document.getElementById('lists-grid-view').style.display = 'block';
+  const emptyState = document.getElementById('lists-empty-state');
+  const detailContent = document.getElementById('lists-detail-content');
+  if (emptyState) emptyState.style.display = 'flex';
+  if (detailContent) detailContent.style.display = 'none';
   renderLists();
 }
 
-function initListsOverlay() {
-  // Tile clicks → open detail
-  document.getElementById('lists-tile-grid').addEventListener('click', e => {
-    const tile = e.target.closest('[data-list-id]');
-    if (tile) openListDetail(tile.dataset.listId);
+function initListsPage() {
+  // Sidebar card clicks
+  const sidebarItems = document.getElementById('lists-sidebar-items');
+  if (sidebarItems) {
+    sidebarItems.addEventListener('click', e => {
+      const card = e.target.closest('[data-list-id]');
+      if (card) openListDetail(card.dataset.listId);
+    });
+  }
+
+  // Create new list — NO prompt(), inline input
+  const createBtn = document.getElementById('lists-create-btn');
+  const newTitleInp = document.getElementById('lists-new-title');
+  async function doCreateList() {
+    const title = newTitleInp.value.trim();
+    if (!title) { newTitleInp.focus(); return; }
+    newTitleInp.value = '';
+    await addList(title);
+  }
+  createBtn?.addEventListener('click', doCreateList);
+  newTitleInp?.addEventListener('keydown', e => { if (e.key === 'Enter') doCreateList(); });
+
+  // Delete list — inline confirmation, NO confirm()
+  document.getElementById('lists-delete-btn')?.addEventListener('click', () => {
+    document.getElementById('lists-delete-confirm').style.display = 'flex';
+    document.getElementById('lists-delete-btn').style.display = 'none';
   });
-  // Back button
-  document.getElementById('lists-back-btn').addEventListener('click', closeListDetail);
-  // Add new list
-  document.getElementById('lists-add-btn').addEventListener('click', async () => {
-    const title = prompt('List name:');
-    if (title && title.trim()) await addList(title.trim());
+  document.getElementById('lists-delete-no')?.addEventListener('click', () => {
+    document.getElementById('lists-delete-confirm').style.display = 'none';
+    document.getElementById('lists-delete-btn').style.display = '';
   });
-  // Delete list
-  document.getElementById('lists-delete-btn').addEventListener('click', async () => {
+  document.getElementById('lists-delete-yes')?.addEventListener('click', async () => {
     if (!_listView) return;
-    if (confirm('Delete this list and all its items?')) {
-      await deleteList(_listView);
-      closeListDetail();
-    }
+    await deleteList(_listView);
+    closeListDetail();
   });
+
   // Add item
   const addBtn = document.getElementById('lists-item-add-btn');
   const inp = document.getElementById('lists-item-input');
@@ -3258,19 +3640,374 @@ function initListsOverlay() {
     const text = inp.value.trim();
     if (text && _listView) { await addListItem(_listView, text); inp.value = ''; }
   }
-  addBtn.addEventListener('click', doAddItem);
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') doAddItem(); });
-  // Inline title edit (save on blur)
-  document.getElementById('lists-detail-title').addEventListener('blur', async e => {
-    const t = e.target.textContent.trim();
-    if (_listView && t) await updateList(_listView, { title: t });
-  });
-  // Item toggles + deletes (delegation)
-  document.getElementById('lists-detail-items').addEventListener('click', async e => {
+  addBtn?.addEventListener('click', doAddItem);
+  inp?.addEventListener('keydown', e => { if (e.key === 'Enter') doAddItem(); });
+
+  // Item toggles + deletes
+  document.getElementById('lists-detail-items')?.addEventListener('click', async e => {
     const toggle = e.target.closest('[data-toggle-item]');
     const del    = e.target.closest('[data-del-item]');
     if (toggle && _listView) await toggleListItem(_listView, toggle.dataset.toggleItem);
     if (del    && _listView) await deleteListItem(_listView, del.dataset.delItem);
+  });
+
+  // Inline title rename (blur = save)
+  document.getElementById('lists-detail-name')?.addEventListener('blur', async e => {
+    const t = e.target.textContent.trim();
+    if (_listView && t) await updateList(_listView, { title: t });
+  });
+  document.getElementById('lists-detail-name')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+    if (e.key === 'Escape') { e.target.blur(); }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   HABITS — HELPERS
+   ══════════════════════════════════════════════════════════ */
+function getHabitsUid() { return window.CDX_USER?.uid || null; }
+
+function last7Days() {
+  const days = []; const now = new Date();
+  for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate()-i); days.push(d); }
+  return days;
+}
+
+/* ══════════════════════════════════════════════════════════
+   HABITS — SUBSCRIBE
+   ══════════════════════════════════════════════════════════ */
+function habitsSubscribe() {
+  const uid = getHabitsUid();
+  if (!uid || !window.CDX_DB) return;
+  const { collection, query, where, onSnapshot } = window.CDX_FB;
+  const db = window.CDX_DB;
+
+  if (_habitsUnsub) { _habitsUnsub(); _habitsUnsub = null; }
+  if (_habitLogsUnsub) { _habitLogsUnsub(); _habitLogsUnsub = null; }
+
+  _habitsUnsub = onSnapshot(collection(db, 'users', uid, 'habits'), snap => {
+    _habits = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(h => !h.archivedAt)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    if (_habitsTab === 'habits') renderHabits();
+  }, err => console.warn('habits onSnapshot:', err.message));
+
+  const d14 = new Date(); d14.setDate(d14.getDate() - 13);
+  _habitLogsUnsub = onSnapshot(
+    query(collection(db, 'users', uid, 'habitLogs'), where('date', '>=', localDateStr(d14))),
+    snap => {
+      snap.docs.forEach(d => { _habitLogs[d.id] = d.data(); });
+      if (_habitsTab === 'habits') renderHabits();
+    }, err => console.warn('habitLogs onSnapshot:', err.message));
+}
+
+function routinesSubscribe() {
+  const uid = getHabitsUid();
+  if (!uid || !window.CDX_DB || _routinesUnsub) return;
+  const { doc, onSnapshot } = window.CDX_FB;
+  _routinesUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'routines', 'config'), snap => {
+    if (snap.exists()) { const d = snap.data(); _routines = { morning: d.morning||[], evening: d.evening||[] }; }
+    if (_habitsTab === 'routines') renderRoutines();
+  }, err => console.warn('routines onSnapshot:', err.message));
+}
+
+function behavSubscribe() {
+  const uid = getHabitsUid();
+  if (!uid || !window.CDX_DB || _behavUnsub) return;
+  const { doc, onSnapshot } = window.CDX_FB;
+  _behavUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'behaviours', 'current'), snap => {
+    if (snap.exists()) { const d = snap.data(); _behav = { identity: d.identity||'', keystone: d.keystone||[], notes: d.notes||'' }; }
+    if (_habitsTab === 'behaviours') renderBehaviours();
+  }, err => console.warn('behaviours onSnapshot:', err.message));
+}
+
+/* ══════════════════════════════════════════════════════════
+   HABITS — TAB SWITCH
+   ══════════════════════════════════════════════════════════ */
+function switchHabitsTab(tab) {
+  _habitsTab = tab;
+  ['habits','routines','behaviours'].forEach(t => {
+    const btn  = document.querySelector(`.habits-v2-tab[data-htab="${t}"]`);
+    const pane = document.getElementById('hpane-'+t);
+    if (btn) btn.classList.toggle('active', t === tab);
+    if (pane) pane.style.display = t === tab ? 'flex' : 'none';
+  });
+  if (tab === 'habits')      { habitsSubscribe(); renderHabits(); }
+  if (tab === 'routines')    { routinesSubscribe(); renderRoutines(); }
+  if (tab === 'behaviours')  { behavSubscribe(); renderBehaviours(); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   HABITS — RENDER
+   ══════════════════════════════════════════════════════════ */
+function renderHabits() {
+  const days     = last7Days();
+  const todayStr = localDateStr(new Date());
+  const DN       = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+  // Day strip header
+  const strip = document.getElementById('habits-day-strip');
+  if (strip) {
+    strip.innerHTML =
+      '<div></div>' +
+      days.map(d => {
+        const ds = localDateStr(d);
+        const isT = ds === todayStr;
+        return `<div class="habit-day-header-cell ${isT?'today-col':''}">${DN[d.getDay()]}<br>${d.getDate()}</div>`;
+      }).join('') +
+      '<div class="habit-day-header-cell" style="font-size:8px">STREAK</div>';
+  }
+
+  const list = document.getElementById('habits-list');
+  if (!list) return;
+
+  if (!_habits.length) {
+    list.innerHTML = '<div style="padding:20px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">No habits yet — add one below</div>';
+    return;
+  }
+
+  list.innerHTML = _habits.map((h, idx) => {
+    const checks = days.map(d => {
+      const ds = localDateStr(d);
+      const done = !!_habitLogs[ds]?.completions?.[h.id];
+      const isToday = ds === todayStr;
+      return `<div class="habit-check-v2 ${done?'done':''} ${isToday?'today-col':''}"
+               data-habit-id="${escAttr(h.id)}" data-date="${escAttr(ds)}"
+               title="${ds}">${done?'✓':''}</div>`;
+    }).join('');
+    const streak = habitsStreak(h);
+    return `<div class="habit-row-v2" style="animation-delay:${idx*30}ms">
+      <span class="habit-name-v2">${escHtml(h.name)}</span>
+      ${checks}
+      <div class="habit-streak-v2">${streak > 0 ? streak+'d' : '—'}</div>
+      <button class="habit-del-v2" data-del-habit="${escAttr(h.id)}" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+
+  // Bind check clicks
+  list.querySelectorAll('.habit-check-v2').forEach(el => {
+    el.addEventListener('click', () => habitToggle(el.dataset.habitId, el.dataset.date));
+  });
+  list.querySelectorAll('[data-del-habit]').forEach(el => {
+    el.addEventListener('click', () => habitDelete(el.dataset.delHabit));
+  });
+}
+
+function habitsStreak(h) {
+  let s = 0; const now = new Date();
+  for (let i = 0; ; i++) {
+    const d = new Date(now); d.setDate(now.getDate()-i);
+    if (_habitLogs[localDateStr(d)]?.completions?.[h.id]) s++;
+    else break;
+    if (s > 365) break;
+  }
+  return s;
+}
+
+/* ══════════════════════════════════════════════════════════
+   HABITS — CRUD
+   ══════════════════════════════════════════════════════════ */
+async function habitsAddNew() {
+  const inp  = document.getElementById('habit-new-inp');
+  const name = inp.value.trim();
+  if (!name) return;
+  inp.value = '';
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const id = 'h_' + Date.now();
+  const tempHabit = { id, name, order: _habits.length };
+  _habits.push(tempHabit);
+  renderHabits();
+  const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+  try {
+    await setDoc(doc(window.CDX_DB, 'users', uid, 'habits', id), {
+      id, name, order: _habits.length - 1, createdAt: serverTimestamp(), archivedAt: null
+    });
+  } catch(e) {
+    console.warn('habitsAddNew error:', e);
+    _habits = _habits.filter(h => h.id !== id);
+    inp.value = name;
+    renderHabits();
+  }
+}
+
+async function habitToggle(habitId, dateStr) {
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const { doc, setDoc, updateDoc, deleteField } = window.CDX_FB;
+  if (!_habitLogs[dateStr]) _habitLogs[dateStr] = { date: dateStr, completions: {} };
+  const wasDone = !!_habitLogs[dateStr].completions[habitId];
+  if (wasDone) delete _habitLogs[dateStr].completions[habitId];
+  else         _habitLogs[dateStr].completions[habitId] = true;
+  renderHabits();
+  try {
+    const logRef = doc(window.CDX_DB, 'users', uid, 'habitLogs', dateStr);
+    if (!wasDone) {
+      await setDoc(logRef, { date: dateStr, completions: { [habitId]: true } }, { merge: true });
+    } else {
+      await updateDoc(logRef, { [`completions.${habitId}`]: deleteField() });
+    }
+  } catch(e) {
+    console.warn('habitToggle error:', e);
+    if (!wasDone) delete _habitLogs[dateStr].completions[habitId];
+    else          _habitLogs[dateStr].completions[habitId] = true;
+    renderHabits();
+  }
+}
+
+async function habitDelete(habitId) {
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const removed = _habits.find(h => h.id === habitId);
+  _habits = _habits.filter(h => h.id !== habitId);
+  renderHabits();
+  const { doc, deleteDoc } = window.CDX_FB;
+  try {
+    await deleteDoc(doc(window.CDX_DB, 'users', uid, 'habits', habitId));
+  } catch(e) {
+    console.warn('habitDelete error:', e);
+    if (removed) { _habits.push(removed); _habits.sort((a,b)=>(a.order??0)-(b.order??0)); }
+    renderHabits();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ROUTINES
+   ══════════════════════════════════════════════════════════ */
+function renderRoutines() {
+  ['morning','evening'].forEach(slot => {
+    const list  = document.getElementById('routines-'+slot+'-list');
+    const items = _routines[slot] || [];
+    if (!list) return;
+    if (!items.length) {
+      list.innerHTML = `<div style="padding:12px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">No steps yet</div>`;
+      return;
+    }
+    list.innerHTML = items.map((item, i) => `
+      <div class="routine-item-v2">
+        <div class="routine-time-badge">${escHtml(item.time || '--:--')}</div>
+        <input class="routine-text-v2" value="${escAttr(item.text||'')}" placeholder="Step…"
+               onchange="routineUpdate('${slot}',${i},'text',this.value)">
+        <button class="routine-del-v2" onclick="routineDelete('${slot}',${i})">✕</button>
+      </div>`).join('');
+  });
+}
+
+function routineAdd(slot) {
+  const timeEl = document.getElementById('routine-'+slot+'-time');
+  const textEl = document.getElementById('routine-'+slot+'-inp');
+  const text   = textEl.value.trim();
+  if (!text) return;
+  (_routines[slot] = _routines[slot] || []).push({ time: timeEl.value.trim(), text });
+  routinesSave(_routines);
+  textEl.value = ''; timeEl.value = '';
+  renderRoutines();
+}
+
+function routineUpdate(slot, i, field, val) {
+  if (_routines[slot]?.[i]) _routines[slot][i][field] = val;
+  routinesSave(_routines);
+}
+
+function routineDelete(slot, i) {
+  (_routines[slot] || []).splice(i, 1);
+  routinesSave(_routines);
+  renderRoutines();
+}
+
+function routinesSave(data) {
+  _routines = data;
+  clearTimeout(_routinesSaveTimer);
+  _routinesSaveTimer = setTimeout(async () => {
+    const uid = getHabitsUid();
+    if (!uid || !window.CDX_DB) return;
+    const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+    try { await setDoc(doc(window.CDX_DB, 'users', uid, 'routines', 'config'), { ...data, updatedAt: serverTimestamp() }); }
+    catch(e) { console.warn('routinesSave error:', e); }
+  }, 800);
+}
+
+/* ══════════════════════════════════════════════════════════
+   BEHAVIOURS
+   ══════════════════════════════════════════════════════════ */
+function renderBehaviours() {
+  const idEl = document.getElementById('behav-identity');
+  const notesEl = document.getElementById('behav-notes');
+  if (idEl && idEl !== document.activeElement) idEl.value = _behav.identity || '';
+  if (notesEl && notesEl !== document.activeElement) notesEl.value = _behav.notes || '';
+
+  const list = document.getElementById('behav-keystone-list');
+  const ks   = _behav.keystone || [];
+  if (!list) return;
+  if (!ks.length) {
+    list.innerHTML = '<div style="padding:8px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">No keystone behaviours yet</div>';
+    return;
+  }
+  list.innerHTML = ks.map((k, i) => `
+    <div class="keystone-row-v2">
+      <div class="keystone-dot"></div>
+      <span class="keystone-text">${escHtml(k)}</span>
+      <button class="keystone-del" onclick="behavKeystoneDelete(${i})">✕</button>
+    </div>`).join('');
+}
+
+function behavAutoSave() {
+  _behav.identity = document.getElementById('behav-identity')?.value || '';
+  _behav.notes    = document.getElementById('behav-notes')?.value || '';
+  // Show saving indicator
+  const ind = document.getElementById('behav-save-indicator');
+  if (ind) { ind.textContent = 'Saving…'; ind.style.opacity = '1'; }
+  clearTimeout(_behavSaveTimer);
+  _behavSaveTimer = setTimeout(async () => {
+    const uid = getHabitsUid();
+    if (!uid || !window.CDX_DB) return;
+    const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+    try {
+      await setDoc(doc(window.CDX_DB, 'users', uid, 'behaviours', 'current'), {
+        ..._behav, updatedAt: serverTimestamp()
+      });
+      if (ind) { ind.textContent = 'Saved ✓'; setTimeout(() => { ind.style.opacity = '0'; }, 1500); }
+    } catch(e) {
+      console.warn('behavSave error:', e);
+      if (ind) { ind.textContent = 'Save failed'; }
+    }
+  }, 1000);
+}
+
+function behavKeystoneAdd() {
+  const inp = document.getElementById('behav-keystone-inp');
+  const val = inp.value.trim();
+  if (!val) return;
+  (_behav.keystone = _behav.keystone || []).push(val);
+  behavAutoSave(); inp.value = '';
+  renderBehaviours();
+}
+
+function behavKeystoneDelete(i) {
+  (_behav.keystone || []).splice(i, 1);
+  behavAutoSave();
+  renderBehaviours();
+}
+
+/* ══════════════════════════════════════════════════════════
+   HABITS — INIT
+   ══════════════════════════════════════════════════════════ */
+function initHabitsPage() {
+  // Tab buttons
+  document.querySelectorAll('.habits-v2-tab[data-htab]').forEach(btn => {
+    btn.addEventListener('click', () => switchHabitsTab(btn.dataset.htab));
+  });
+
+  // Add habit
+  const habitsAddBtn = document.getElementById('habits-add-btn');
+  const habitInp     = document.getElementById('habit-new-inp');
+  habitsAddBtn?.addEventListener('click', habitsAddNew);
+  habitInp?.addEventListener('keydown', e => { if (e.key === 'Enter') habitsAddNew(); });
+
+  // Keystone add
+  document.getElementById('behav-keystone-add-btn')?.addEventListener('click', behavKeystoneAdd);
+  document.getElementById('behav-keystone-inp')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') behavKeystoneAdd();
   });
 }
 
@@ -4067,8 +4804,10 @@ function initData() {
 
   onSnapshot(query(collection(db, 'lists'), orderBy('createdAt', 'asc')), snap => {
     LISTS = snap.docs.map(d => ({ id: d.id, items: [], ...d.data() }));
-    renderLists();
-    if (_listView) renderListDetail(_listView);
+    if (_mainPanel === 'lists') {
+      renderLists();
+      if (_listView) renderListDetail(_listView);
+    }
   });
 
   onSnapshot(query(collection(db, 'milestoneProjects'), orderBy('startDate', 'asc')), snap => {
@@ -5539,8 +6278,8 @@ const CMD_COMMANDS = [
   { label: 'Open Notes',       icon: '✎', action: () => openOverlay('notes-overlay'), keys: '' },
   { label: 'Ask Cosmos',       icon: '✦', action: () => openOverlay('claude-panel'), keys: '' },
   { label: 'Insights',         icon: '◈', action: () => openOverlay('insights-overlay'), keys: '' },
-  { label: 'Habits',           icon: '◎', action: () => openOverlay('habits-overlay'), keys: '' },
-  { label: 'Lists',            icon: '▤', action: () => openOverlay('lists-overlay'), keys: '' },
+  { label: 'Habits',           icon: '◎', action: () => showMainPanel('habits'), keys: '' },
+  { label: 'Lists',            icon: '▤', action: () => showMainPanel('lists'), keys: '' },
   { label: 'Planning',         icon: '◳', action: () => showMainPanel('milestones'), keys: '' },
   { label: 'Life OS',          icon: '◉', action: () => openOverlay('lifeos-overlay'), keys: '' },
   { label: 'Toggle Theme',     icon: '◑', action: toggleTheme, keys: '' },
@@ -5637,11 +6376,19 @@ document.querySelectorAll('.mob-nav-btn[data-mob]').forEach(btn => {
   });
 });
 
-// Drawer items
+// Drawer items — overlays
 document.querySelectorAll('.drawer-item[data-open]').forEach(item => {
   item.addEventListener('click', () => {
     document.getElementById('mob-more-drawer').classList.remove('open');
     openOverlay(item.dataset.open);
+  });
+});
+
+// Drawer items — full panels (habits, lists)
+document.querySelectorAll('.drawer-item[data-mob-panel]').forEach(item => {
+  item.addEventListener('click', () => {
+    document.getElementById('mob-more-drawer').classList.remove('open');
+    showMainPanel(item.dataset.mobPanel);
   });
 });
 
@@ -5730,7 +6477,8 @@ window.addEventListener('cdx-auth-ready', () => {
     initSettingsPanel();
     initCalNav();
     renderCalendar();
-    initListsOverlay();
+    initListsPage();
+    initHabitsPage();
     initMilestonesPanel();
     initOrbAddTask();
   });
