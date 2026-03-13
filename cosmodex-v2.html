@@ -982,8 +982,8 @@ body::after {
 }
 
 #cosmodex-orb.expanded {
-  width: min(480px, 90vw);
-  height: min(680px, 88dvh);
+  width: min(640px, 94vw);
+  height: min(820px, 92dvh);
   top: 50%; left: 50%;
   right: auto; bottom: auto;
   transform: translate(-50%, -50%);
@@ -1000,6 +1000,7 @@ body::after {
   width: 100%;
   height: 100%;
   display: block;
+  pointer-events: none;
 }
 
 /* Orb close button — now inside #cosmodex-orb, top-right */
@@ -2656,6 +2657,33 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   </div>
 </div>
 
+<!-- Orb Petal Quick-Add Modal (z-index 520, inside orb backdrop) -->
+<div class="overlay" id="orb-add-task-modal" style="z-index:520">
+  <div class="overlay-panel" style="width:min(380px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title" id="orb-add-task-title">Add task at 9am</span>
+      <button class="overlay-close" data-close="orb-add-task-modal">✕</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <input id="orb-task-title-input" class="form-input" placeholder="Task name…" autocomplete="off">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group">
+          <label class="form-label">Start time</label>
+          <input type="time" id="orb-task-time" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration (min)</label>
+          <input type="number" id="orb-task-duration" class="form-input" value="60" min="15" step="15">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button data-close="orb-add-task-modal" class="btn-ghost">Cancel</button>
+        <button id="orb-add-task-confirm" class="btn-primary">Add to Calendar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Schedule Modal (z-index 850) -->
 <div class="overlay" id="schedule-modal" style="z-index:850">
   <div class="overlay-panel" style="width:min(420px,92vw)">
@@ -2890,6 +2918,10 @@ let _schedCtx     = null;
 // Lists state
 let LISTS     = [];
 let _listView = null;  // currently open list ID
+
+// Orb petal state
+let _orbGeometry  = null; // set by drawCosmodex when expanded
+let _orbClickHour = 9;    // hour of last petal click
 
 // Milestones state
 let MILESTONE_PROJECTS = [];
@@ -3408,6 +3440,50 @@ function initMilestonesPanel() {
       await deleteMilestoneEvent(evId);
       closeOverlay('ms-event-detail');
     }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ORB PETAL QUICK-ADD
+   ══════════════════════════════════════════════════════════ */
+function openOrbAddTaskModal(hour) {
+  _orbClickHour = hour;
+  const label = hour === 0 ? '12am' : hour < 12 ? `${hour}am` : hour === 12 ? '12pm' : `${hour - 12}pm`;
+  document.getElementById('orb-add-task-title').textContent = `Add task at ${label}`;
+  document.getElementById('orb-task-time').value = `${String(hour).padStart(2, '0')}:00`;
+  document.getElementById('orb-task-title-input').value = '';
+  openOverlay('orb-add-task-modal');
+  setTimeout(() => document.getElementById('orb-task-title-input')?.focus(), 80);
+}
+
+async function confirmOrbAddTask() {
+  const title    = document.getElementById('orb-task-title-input').value.trim();
+  const time     = document.getElementById('orb-task-time').value;
+  const duration = parseInt(document.getElementById('orb-task-duration').value) || 60;
+  if (!title || !time) return;
+  const { collection, addDoc, serverTimestamp } = window.CDX_FB;
+  const db = window.CDX_DB;
+  const today = localDateStr(new Date());
+  const endTime = addMinutes(time, duration);
+  // Create calendar event
+  const evRef = await addDoc(collection(db, 'calEvents'), {
+    title, date: today, startTime: time, endTime, duration,
+    color: getCatColor('personal'), createdAt: serverTimestamp()
+  });
+  // Create linked task
+  await addDoc(collection(db, 'tasks'), {
+    title, done: false, priority: 'med',
+    dueDate: today, category: 'personal',
+    calEventId: evRef.id, subtasks: [],
+    createdAt: serverTimestamp()
+  });
+  closeOverlay('orb-add-task-modal');
+}
+
+function initOrbAddTask() {
+  document.getElementById('orb-add-task-confirm')?.addEventListener('click', confirmOrbAddTask);
+  document.getElementById('orb-task-title-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmOrbAddTask();
   });
 }
 
@@ -4394,9 +4470,25 @@ function closeOrb() {
 }
 
 orb.addEventListener('click', e => {
-  if (!orb.classList.contains('expanded')) openOrb();
+  if (!orb.classList.contains('expanded')) { openOrb(); return; }
+  // When expanded: ignore clicks that hit UI children (header, footer, close)
+  // With pointer-events:none on canvas, direct canvas-area clicks land on orb itself
+  if (e.target !== orb) return;
+  // Petal click — detect which hour
+  if (!_orbGeometry) return;
+  const rect = orb.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const { cx, cy, innerR, eventR } = _orbGeometry;
+  const dx = x - cx, dy = y - cy;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist >= innerR * 0.85 && dist <= eventR + 28) {
+    const angle = Math.atan2(dy, dx);
+    const hour = Math.floor(((angle + Math.PI / 2) / (Math.PI * 2) * 24 + 24) % 24);
+    openOrbAddTaskModal(hour);
+  }
 });
-orbClose.addEventListener('click', closeOrb);
+orbClose.addEventListener('click', e => { e.stopPropagation(); closeOrb(); });
 orbBackdrop.addEventListener('click', closeOrb);
 
 /* ── Radial chronodex canvas draw ─────────────────────── */
@@ -4420,11 +4512,11 @@ function drawCosmodex() {
   ctx.clearRect(0, 0, W, H);
 
   const cx = W / 2;
-  // When expanded: shift centre up slightly to leave room for header (≈80px) and footer (≈110px)
-  const cy = expanded ? H / 2 - 15 : H / 2;
+  // When expanded: shift centre up slightly to leave room for header (≈90px) and footer (≈120px)
+  const cy = expanded ? H / 2 - 10 : H / 2;
   // When expanded: constrain radius so chart stays between header and footer
   const maxR = expanded
-    ? Math.min(W * 0.44, (H - 210) / 2)
+    ? Math.min(W * 0.46, (H - 230) / 2)
     : Math.min(W, H) / 2 * 0.93;
   const innerR = maxR * (expanded ? 0.28 : 0.35);
   const baseR  = maxR * (expanded ? 0.52 : 0.65);
@@ -4432,6 +4524,13 @@ function drawCosmodex() {
 
   const today  = localDateStr(new Date());
   const now    = new Date();
+
+  // Store geometry for petal click detection
+  if (expanded) {
+    _orbGeometry = { cx, cy, innerR: maxR * 0.28, eventR: maxR * 0.70 };
+  } else {
+    _orbGeometry = null;
+  }
 
   // Update date line in orb header
   if (expanded) {
@@ -4600,16 +4699,22 @@ function drawCosmodex() {
   ctx.lineWidth   = 1;
   ctx.stroke();
 
-  // Time in center hub — always draw HH:MM on canvas
-  {
+  // Tiny gold dot at centre (replaces time text — time shown in header instead)
+  if (!expanded) {
     const hh2 = String(now.getHours()).padStart(2, '0');
     const mm2 = String(now.getMinutes()).padStart(2, '0');
-    const fontSize = expanded ? Math.round(innerR * 0.55) : Math.max(8, Math.round(innerR * 0.72));
+    const fontSize = Math.max(8, Math.round(innerR * 0.72));
     ctx.fillStyle    = 'rgba(201,162,39,0.88)';
     ctx.font         = `bold ${fontSize}px "DM Mono", monospace`;
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(`${hh2}:${mm2}`, cx, cy);
+  } else {
+    // In expanded mode: small pulsing dot + tap hint
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(201,162,39,0.6)';
+    ctx.fill();
   }
 
   // Update the info strip below orb (expanded only)
@@ -5022,24 +5127,31 @@ function waitForFirebaseAuth(fn) {
   setTimeout(() => waitForFirebaseAuth(fn), 100);
 }
 
+// Auto-attempt sign-in silently when Firebase ESM loads (handles returning visitors
+// and also pre-warms auth so the button press feels instant)
+waitForFirebaseAuth(() => {
+  if (!window.CDX_USER) {
+    window.CDX_FB.signInAnonymously(window.CDX_AUTH).catch(() => {});
+  }
+});
+
 document.getElementById('signin-btn')?.addEventListener('click', () => {
   const btn = document.getElementById('signin-btn');
   btn.textContent = '…';
   btn.disabled = true;
 
+  const resetBtn = (label = 'Retry') => {
+    btn.textContent = label;
+    btn.disabled = false;
+    btn.style.background = '#c45c2a';
+  };
+  // 8-second timeout so the button never stays stuck
+  const timeout = setTimeout(() => resetBtn('Retry'), 8000);
+
   waitForFirebaseAuth(() => {
-    const { signInAnonymously } = window.CDX_FB;
-    signInAnonymously(window.CDX_AUTH)
-      .then(() => {
-        dismissSigninOverlay();
-        // cdx-auth-ready fires via onAuthStateChanged → boots task system
-      })
-      .catch(err => {
-        console.error('Sign-in failed:', err);
-        btn.textContent = 'Enter';
-        btn.disabled = false;
-        btn.style.background = 'var(--rust)';
-      });
+    window.CDX_FB.signInAnonymously(window.CDX_AUTH)
+      .then(() => { clearTimeout(timeout); /* onAuthStateChanged → cdx-auth-ready → dismiss */ })
+      .catch(err => { clearTimeout(timeout); console.error('Sign-in failed:', err); resetBtn(); });
   });
 });
 
@@ -5060,6 +5172,7 @@ window.addEventListener('cdx-auth-ready', () => {
     renderCalendar();
     initListsOverlay();
     initMilestonesPanel();
+    initOrbAddTask();
   });
 }, { once: true });
 
