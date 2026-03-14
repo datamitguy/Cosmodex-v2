@@ -2317,6 +2317,82 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   gap: 20px;
   padding: 24px;
 }
+/* When inside the narrow planning-left column, cards are single-column */
+.planning-left .ms-dash-grid {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 12px;
+}
+/* Compact card style for left panel */
+.planning-left .ms-dash-card-inner {
+  padding: 14px 14px 12px;
+  gap: 8px;
+}
+.planning-left .ms-dash-card-title {
+  font-size: 14px;
+}
+.planning-left .ms-dash-pct-label {
+  font-size: 16px;
+}
+/* Milestone list inside card */
+.ms-card-milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ms-card-milestone-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.ms-card-milestone-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.ms-card-milestone-name {
+  flex: 1;
+  color: var(--cream);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+}
+.ms-card-milestone-date {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 9px;
+}
+/* Task chips inside card */
+.ms-card-tasks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.ms-card-task-chip {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 2px 6px;
+  border-radius: 100px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-card-task-chip.done {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
 
 /* Outer wrapper carries the conic-gradient progress border */
 .ms-dash-card-outer {
@@ -2580,6 +2656,214 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+
+/* ── Planning two-panel layout ──────────────────────── */
+.planning-split {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+.planning-left {
+  width: 30%;
+  min-width: 220px;
+  max-width: 360px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.planning-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.planning-right-tabs {
+  display: flex;
+  align-items: stretch;
+  padding: 0 16px;
+  gap: 4px;
+  height: 38px;
+  min-height: 38px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(20,18,16,0.5);
+  flex-shrink: 0;
+}
+.planning-right-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0 12px;
+  transition: color 150ms, border-color 150ms;
+}
+.planning-right-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.planning-right-tab:hover:not(.active) { color: var(--cream); }
+.planning-right-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.plan-widget-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+.plan-widget-textarea {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--cream);
+  padding: 10px 12px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  resize: vertical;
+  min-height: 60px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 150ms;
+}
+.plan-widget-textarea:focus { outline: none; border-color: var(--gold); }
+.plan-priority-input {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--cream);
+  padding: 8px 10px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 6px;
+  transition: border-color 150ms;
+}
+.plan-priority-input:focus { outline: none; border-color: var(--gold); }
+.plan-week-nav, .plan-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.plan-nav-btn {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  transition: background 150ms, color 150ms;
+}
+.plan-nav-btn:hover { background: rgba(201,162,39,0.12); color: var(--gold); border-color: var(--gold-dim); }
+.plan-nav-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cream);
+  flex: 1;
+  text-align: center;
+}
+.plan-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.plan-week-grid-day {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--muted);
+  text-align: center;
+  padding: 2px 0;
+}
+.plan-week-grid-cell {
+  background: var(--elevated);
+  border-radius: 6px;
+  padding: 6px;
+  min-height: 56px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  overflow: hidden;
+}
+.plan-stat-bar { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.plan-stat-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+}
+.plan-stat-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.plan-stat-bar-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 500ms cubic-bezier(0.25,0.46,0.45,0.94); }
+.plan-month-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 3px;
+  margin-bottom: 16px;
+}
+.plan-month-day-cell {
+  aspect-ratio: 1;
+  background: var(--elevated);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  position: relative;
+  overflow: hidden;
+}
+.plan-month-day-cell.today { border: 1px solid var(--gold); color: var(--gold); }
+.plan-event-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); margin-top: 2px; }
+.plan-milestone-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.plan-milestone-row input[type="text"] {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--cream);
+  font-family: var(--font-display);
+  font-size: 14px;
+  outline: none;
+}
+.plan-milestone-row input[type="date"] {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 6px;
+}
+.plan-milestone-row input[type="checkbox"] { accent-color: var(--gold); cursor: pointer; }
+#plan-add-month-ms {
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  width: 100%;
+  margin-top: 8px;
+  transition: border-color 150ms, color 150ms;
+}
+#plan-add-month-ms:hover { border-color: var(--gold); color: var(--gold); }
 /* Keep project dot + name classes for banner use */
 .ms-project-dot {
   width: 10px; height: 10px;
@@ -4106,13 +4390,83 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
     <!-- Milestones Panel (shown via Planning nav item) -->
     <div id="panel-milestones" style="display:none;flex:1;flex-direction:column;overflow:hidden">
-      <div class="panel-toolbar">
-        <span style="font-family:var(--font-display);font-size:16px;color:var(--cream)">Planning</span>
-        <div style="margin-left:auto">
-          <button id="ms-add-project-btn" class="btn-primary">+ Initiative</button>
+      <div class="planning-split">
+        <!-- Left: initiative cards (30%) -->
+        <div class="planning-left">
+          <div class="panel-toolbar" style="height:46px;padding:0 16px;flex-shrink:0">
+            <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Initiatives</span>
+            <div style="margin-left:auto">
+              <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:6px 12px">+ New</button>
+            </div>
+          </div>
+          <div id="milestones-body" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px"></div>
+        </div>
+        <!-- Right: planning widgets (70%) -->
+        <div class="planning-right">
+          <div class="planning-right-tabs">
+            <button class="planning-right-tab active" data-ptab="week">Week</button>
+            <button class="planning-right-tab" data-ptab="month">Month</button>
+          </div>
+          <!-- Week pane -->
+          <div id="plan-right-week" class="planning-right-body">
+            <div class="plan-week-nav">
+              <button class="plan-nav-btn" id="plan-week-prev">←</button>
+              <span class="plan-nav-label" id="plan-week-label">—</span>
+              <button class="plan-nav-btn" id="plan-week-today">Today</button>
+              <button class="plan-nav-btn" id="plan-week-next">→</button>
+            </div>
+            <div style="display:flex;gap:20px;min-height:0">
+              <div style="width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+                <label class="plan-widget-label">Intention</label>
+                <textarea id="pw-intention" class="plan-widget-textarea" placeholder="What matters most this week?"></textarea>
+                <label class="plan-widget-label">Top 3 Priorities</label>
+                <input id="pw-p1" class="plan-priority-input" placeholder="1.">
+                <input id="pw-p2" class="plan-priority-input" placeholder="2.">
+                <input id="pw-p3" class="plan-priority-input" placeholder="3.">
+                <label class="plan-widget-label">Review — Went Well</label>
+                <textarea id="pw-went-well" class="plan-widget-textarea" placeholder="What went well?"></textarea>
+                <label class="plan-widget-label">Carry Forward</label>
+                <textarea id="pw-carry-fwd" class="plan-widget-textarea" placeholder="What to carry forward?"></textarea>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">
+                <div id="pw-task-grid"></div>
+                <div id="pw-stats"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Timeline pane (shown when card clicked) -->
+          <div id="plan-right-timeline" style="display:none;flex:1;overflow-y:auto;flex-direction:column">
+            <div id="plan-tl-header" style="display:flex;align-items:center;padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0;gap:10px">
+              <button id="plan-tl-back" class="btn-ghost" style="font-size:10px;padding:5px 12px">← Back</button>
+              <span id="plan-tl-title" style="font-family:var(--font-display);font-size:15px;font-weight:300;color:var(--cream);flex:1"></span>
+              <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:6px 12px">+ Milestone</button>
+            </div>
+            <div id="plan-tl-body" style="flex:1;overflow-y:auto"></div>
+          </div>
+          <!-- Month pane -->
+          <div id="plan-right-month" class="planning-right-body" style="display:none">
+            <div class="plan-month-nav">
+              <button class="plan-nav-btn" id="plan-month-prev">←</button>
+              <span class="plan-nav-label" id="plan-month-label">—</span>
+              <button class="plan-nav-btn" id="plan-month-today">Today</button>
+              <button class="plan-nav-btn" id="plan-month-next">→</button>
+            </div>
+            <div style="display:flex;gap:20px;flex-wrap:wrap">
+              <div style="width:280px;flex-shrink:0">
+                <div class="plan-month-cal-grid" id="pm-cal-grid"></div>
+              </div>
+              <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:10px">
+                <label class="plan-widget-label">Month Intention</label>
+                <textarea id="pm-intention" class="plan-widget-textarea" placeholder="What do you want to accomplish this month?" style="min-height:72px"></textarea>
+                <label class="plan-widget-label">Milestones</label>
+                <div id="pm-milestones"></div>
+                <button id="plan-add-month-ms">+ Add Milestone</button>
+                <div id="pm-stats"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div id="milestones-body" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:28px"></div>
     </div>
 
     <!-- Lists Panel (full page) -->
@@ -4644,6 +4998,74 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
     </div><!-- /panel-habits -->
 
+    <!-- Insights full-page panel -->
+    <div id="panel-insights" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div style="flex:1;overflow-y:auto;padding:24px 32px 40px">
+        <!-- Done Wall section -->
+        <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Completed Tasks</div>
+          <div class="done-wall-stats" id="done-wall-stats"></div>
+          <div class="done-filter-bar" id="done-filter-bar" style="margin-top:10px">
+            <button class="done-filter-btn active" data-filter="all">All</button>
+            <button class="done-filter-btn" data-filter="today">Today</button>
+            <button class="done-filter-btn" data-filter="week">This week</button>
+            <button class="done-filter-btn" data-filter="month">This month</button>
+          </div>
+          <div class="done-grid" id="done-grid" style="margin-top:14px"></div>
+        </div>
+
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Habit Insights</div>
+        <div style="font-family:var(--font-display);font-size:22px;font-weight:300;color:var(--cream);margin-bottom:4px;">What's actually happening</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Friction detection, pattern analysis, and contextual nudges — not generic reminders.</div>
+
+        <div class="stat-card-grid" style="margin-bottom:20px;">
+          <div class="stat-card">
+            <span class="stat-card-number" id="ins-total">—</span>
+            <span class="stat-card-label">Total Focus hrs</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-number" id="ins-week">—</span>
+            <span class="stat-card-label">This week</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-number" id="ins-best">—</span>
+            <span class="stat-card-label">Best day</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-card-number" id="ins-days">—</span>
+            <span class="stat-card-label">Days active</span>
+          </div>
+        </div>
+
+        <div class="hb-insight-layout">
+          <!-- Friction Detector -->
+          <div class="hb-insight-card">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
+            <div class="hb-friction-insight" id="ins-friction-list">
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading habit data…</div>
+            </div>
+            <div class="hb-ai-nudge">
+              <div class="hb-an-label">Cosmodex Pattern Insight</div>
+              <div class="hb-an-text" id="ins-pattern-insight">Analysing your habits…</div>
+            </div>
+          </div>
+
+          <!-- Context Patterns -->
+          <div class="hb-insight-card">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Habit Success by Context</div>
+            <div class="hb-pattern-wrap" id="ins-context-list">
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading…</div>
+            </div>
+          </div>
+
+          <!-- Week Debrief -->
+          <div class="hb-week-card" id="ins-week-debrief">
+            <!-- populated by renderInsights() -->
+          </div>
+        </div>
+      </div>
+    </div><!-- /panel-insights -->
+
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
 
@@ -4703,7 +5125,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
 <!-- Focus / Pomodoro overlay -->
 <div class="overlay" id="pomo-overlay" style="z-index:800">
-  <div class="overlay-panel" style="width:min(1100px,98vw);height:96dvh;max-height:96dvh">
+  <div class="overlay-panel" style="width:99vw;max-width:none;height:98dvh;max-height:98dvh;border-radius:0">
     <div class="overlay-header">
       <span class="overlay-title">Focus</span>
       <button id="pomo-del-event-btn" style="display:none;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:11px;font-family:var(--font-mono);cursor:pointer;margin-right:8px" title="Delete calendar event">✕ Delete Event</button>
@@ -4804,81 +5226,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   </div>
 </div>
 
-<!-- Insights overlay -->
-<div class="overlay" id="insights-overlay">
-  <div class="overlay-panel" style="width:min(1000px,96vw)">
-    <div class="overlay-header">
-      <span class="overlay-title">Habit Intelligence</span>
-      <button class="overlay-close" data-close="insights-overlay">✕</button>
-    </div>
-    <div class="overlay-body">
-      <!-- Done Wall section (top of insights) -->
-      <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Completed Tasks</div>
-        <div class="done-wall-stats" id="done-wall-stats"></div>
-        <div class="done-filter-bar" id="done-filter-bar" style="margin-top:10px">
-          <button class="done-filter-btn active" data-filter="all">All</button>
-          <button class="done-filter-btn" data-filter="today">Today</button>
-          <button class="done-filter-btn" data-filter="week">This week</button>
-          <button class="done-filter-btn" data-filter="month">This month</button>
-        </div>
-        <div class="done-grid" id="done-grid" style="margin-top:14px"></div>
-      </div>
-
-      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Habit Insights</div>
-      <div style="font-family:var(--font-display);font-size:22px;font-weight:300;color:var(--cream);margin-bottom:4px;">What's actually happening</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Friction detection, pattern analysis, and contextual nudges — not generic reminders.</div>
-
-      <div class="stat-card-grid" style="margin-bottom:20px;">
-        <div class="stat-card">
-          <span class="stat-card-number" id="ins-total">—</span>
-          <span class="stat-card-label">Total Focus hrs</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card-number" id="ins-week">—</span>
-          <span class="stat-card-label">This week</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card-number" id="ins-best">—</span>
-          <span class="stat-card-label">Best day</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-card-number" id="ins-days">—</span>
-          <span class="stat-card-label">Days active</span>
-        </div>
-      </div>
-
-      <div class="hb-insight-layout">
-
-        <!-- Friction Detector -->
-        <div class="hb-insight-card">
-          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
-          <div class="hb-friction-insight" id="ins-friction-list">
-            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading habit data…</div>
-          </div>
-          <div class="hb-ai-nudge">
-            <div class="hb-an-label">Cosmodex Pattern Insight</div>
-            <div class="hb-an-text" id="ins-pattern-insight">Analysing your habits…</div>
-          </div>
-        </div>
-
-        <!-- Context Patterns -->
-        <div class="hb-insight-card">
-          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Habit Success by Context</div>
-          <div class="hb-pattern-wrap" id="ins-context-list">
-            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading…</div>
-          </div>
-        </div>
-
-        <!-- Week Debrief -->
-        <div class="hb-week-card" id="ins-week-debrief">
-          <!-- populated by renderInsights() -->
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Insights full-page panel (inserted into main content area via showMainPanel) -->
+<template id="insights-panel-tpl"><!-- placeholder; actual panel is in #panel-insights --></template>
 
 <!-- Planning overlay -->
 <div class="overlay" id="plan-overlay">
@@ -5316,7 +5665,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <span class="drawer-item-icon">◎</span>
       Habits
     </div>
-    <div class="drawer-item" data-open="insights-overlay">
+    <div class="drawer-item" data-panel-nav="insights">
       <span class="drawer-item-icon">◈</span>
       Insights
     </div>
@@ -5462,7 +5811,7 @@ let _habitLogs     = {};
 let _routines      = { morning: [], evening: [] };
 let _behav         = { identity: '', keystone: [], notes: '' };
 let _hbSettings    = { season:'', seasonStartDate:'', quote:'', quoteAuthor:'', customHabits:'', nonNegotiable:'' };
-let _habitsTab     = 'habits';
+let _habitsTab     = 'tracker';
 let _habitsUnsub   = null;
 let _habitLogsUnsub = null;
 let _routinesUnsub = null;
@@ -5523,14 +5872,13 @@ document.getElementById('hamburger')?.addEventListener('click', () => {
 
 /* ── Nav items ─────────────────────────────────────────── */
 const NAV_OVERLAY_MAP = {
-  insights:  'insights-overlay',
   lifeos:    'lifeos-overlay',
 };
 
 document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
   item.addEventListener('click', () => {
     const panel = item.dataset.panel;
-    // Overlays (insights, lifeos)
+    // Overlays (lifeos)
     if (NAV_OVERLAY_MAP[panel]) {
       openOverlay(NAV_OVERLAY_MAP[panel]);
       return;
@@ -5547,6 +5895,13 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       showMainPanel('habits');
+      return;
+    }
+    // Insights → full page
+    if (panel === 'insights') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('insights');
       return;
     }
     // Planning → full milestones panel
@@ -5574,13 +5929,15 @@ function showMainPanel(name) {
   document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
   document.getElementById('panel-lists').style.display       = name === 'lists' ? 'flex' : 'none';
   document.getElementById('panel-habits').style.display      = name === 'habits' ? 'flex' : 'none';
+  document.getElementById('panel-insights').style.display    = name === 'insights' ? 'flex' : 'none';
   _mainPanel = name;
-  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines' };
+  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
-  if (name === 'milestones') renderMilestones();
+  if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
   if (name === 'habits') { switchHabitsTab(_habitsTab || 'habits'); }
+  if (name === 'insights') { habitsSubscribe(); renderInsights(); loadDoneWall(); }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -6859,12 +7216,10 @@ function msDateToPercent(dateStr, startDate, endDate) {
 }
 
 function renderMilestones() {
+  // Always show dashboard in left panel; timeline (if active) in right panel
+  renderMilestoneDashboard();
   if (_msView === 'timeline' && _msFocusProj) {
-    renderMilestoneTimeline(_msFocusProj);
-  } else {
-    _msView = 'dashboard';
-    _msFocusProj = null;
-    renderMilestoneDashboard();
+    showPlanningTimeline(_msFocusProj);
   }
 }
 
@@ -6872,27 +7227,12 @@ function renderMilestones() {
 function updateMilestoneToolbar() {
   const toolbar = document.querySelector('#panel-milestones .panel-toolbar');
   if (!toolbar) return;
-  if (_msView === 'timeline' && _msFocusProj) {
-    const proj = MILESTONE_PROJECTS.find(p => p.id === _msFocusProj);
-    toolbar.innerHTML = `
-      <button id="ms-back-btn" class="btn-ghost" style="font-size:10px;padding:5px 12px">← Back</button>
-      <span style="font-family:var(--font-display);font-size:15px;color:var(--cream);margin-left:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(proj?.title || '')}</span>
-      <div style="display:flex;gap:6px">
-        <button id="ms-add-event-btn-tl" class="ms-add-event-btn" data-ms-add-event="${escAttr(_msFocusProj)}">+ Milestone</button>
-        <button id="ms-edit-proj-btn-tl" class="ms-edit-proj-btn" data-ms-edit-proj="${escAttr(_msFocusProj)}">⋯</button>
-      </div>`;
-    document.getElementById('ms-back-btn')?.addEventListener('click', () => {
-      _msView = 'dashboard'; _msFocusProj = null;
-      updateMilestoneToolbar(); renderMilestoneDashboard();
-    });
-  } else {
-    toolbar.innerHTML = `
-      <span style="font-family:var(--font-display);font-size:16px;color:var(--cream)">Planning</span>
-      <div style="margin-left:auto">
-        <button id="ms-add-project-btn" class="btn-primary">+ Initiative</button>
-      </div>`;
-    document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
-  }
+  toolbar.innerHTML = `
+    <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Initiatives</span>
+    <div style="margin-left:auto">
+      <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:6px 12px">+ New</button>
+    </div>`;
+  document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
 }
 
 /* ── Dashboard: card grid ────────────────────────────── */
@@ -6926,6 +7266,29 @@ function renderMilestoneDashboard() {
     outer.className = 'ms-dash-card-outer';
     outer.style.background = borderBg;
     outer.dataset.msDashCard = proj.id;
+    // Build milestone + task detail section
+    const visibleEvents = events.sort((a,b) => a.date.localeCompare(b.date)).slice(0, 4);
+    const msListHtml = visibleEvents.length ? `
+      <div class="ms-card-milestones">
+        ${visibleEvents.map(ev => {
+          const evDone = (ev.activities||[]).length > 0 && (ev.activities||[]).every(a => a.done);
+          const dotColor = evDone ? 'var(--sage)' : (new Date(ev.date) < new Date() ? 'var(--rust)' : proj.color);
+          const linkedTasks = (ev.activities||[]).filter(a => a.taskId).slice(0,3)
+            .map(a => { const t = TASKS.find(t => t.id === a.taskId); return t ? { title: t.title, done: t.done } : { title: a.text, done: a.done }; });
+          return `<div>
+            <div class="ms-card-milestone-item">
+              <div class="ms-card-milestone-dot" style="background:${dotColor}"></div>
+              <span class="ms-card-milestone-name" style="${evDone ? 'text-decoration:line-through;opacity:0.5' : ''}">${escHtml(ev.title)}</span>
+              <span class="ms-card-milestone-date">${escHtml(fmtDate(ev.date))}</span>
+            </div>
+            ${linkedTasks.length ? `<div class="ms-card-tasks" style="margin-left:11px">
+              ${linkedTasks.map(t => `<span class="ms-card-task-chip${t.done?' done':''}" title="${escAttr(t.title)}">${escHtml(t.title)}</span>`).join('')}
+            </div>` : ''}
+          </div>`;
+        }).join('')}
+        ${events.length > 4 ? `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;padding-left:11px">+${events.length-4} more</div>` : ''}
+      </div>` : `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.06em;opacity:0.6">No milestones yet</div>`;
+
     outer.innerHTML = `
       <div class="ms-dash-card-inner">
         <div class="ms-dash-card-title">${escHtml(proj.title)}</div>
@@ -6933,7 +7296,7 @@ function renderMilestoneDashboard() {
           ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px">${cat.label}</span>` : ''}
           <span>${escHtml(fmtDate(proj.startDate))} – ${escHtml(fmtDate(proj.endDate))}</span>
         </div>
-        ${proj.notes ? `<div class="ms-dash-card-notes">${escHtml(proj.notes)}</div>` : ''}
+        ${msListHtml}
         <div class="ms-dash-card-footer">
           <div>
             <div class="ms-dash-pct-label" style="color:${isComplete ? 'var(--sage)' : proj.color}">${pct}%</div>
@@ -6950,22 +7313,51 @@ function renderMilestoneDashboard() {
   body.innerHTML = '';
   body.appendChild(grid);
 
-  // Card click → open timeline
+  // Card click → open timeline in right panel
   grid.querySelectorAll('[data-ms-dash-card]').forEach(card => {
     card.addEventListener('click', e => {
       if (e.target.closest('button')) return;
       _msView = 'timeline';
       _msFocusProj = card.dataset.msDashCard;
-      updateMilestoneToolbar();
-      renderMilestoneTimeline(_msFocusProj);
+      showPlanningTimeline(_msFocusProj);
     });
   });
 }
 
+function showPlanningTimeline(projId) {
+  const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
+  if (!proj) return;
+  // Hide week/month panes and tabs; show timeline container
+  document.getElementById('plan-right-week').style.display  = 'none';
+  document.getElementById('plan-right-month').style.display = 'none';
+  document.querySelector('.planning-right-tabs').style.display = 'none';
+  const tl = document.getElementById('plan-right-timeline');
+  tl.style.display = 'flex';
+  document.getElementById('plan-tl-title').textContent = proj.title;
+  const addBtn = document.getElementById('plan-tl-add-ms');
+  if (addBtn) {
+    addBtn.dataset.msAddEvent = projId;
+    addBtn.onclick = () => openMsEventModal(projId);
+  }
+  const backBtn = document.getElementById('plan-tl-back');
+  if (backBtn) {
+    backBtn.onclick = () => {
+      _msView = 'dashboard'; _msFocusProj = null;
+      tl.style.display = 'none';
+      document.querySelector('.planning-right-tabs').style.display = '';
+      // Restore the active tab pane
+      const activeTab = document.querySelector('.planning-right-tab.active')?.dataset.ptab || 'week';
+      document.getElementById('plan-right-week').style.display  = activeTab === 'week'  ? '' : 'none';
+      document.getElementById('plan-right-month').style.display = activeTab === 'month' ? '' : 'none';
+    };
+  }
+  renderMilestoneTimeline(projId);
+}
+
 /* ── Timeline: single-project alternating view ────────── */
 function renderMilestoneTimeline(projId) {
-  updateMilestoneToolbar();
-  const body = document.getElementById('milestones-body');
+  // Render into right panel timeline body (new two-panel layout)
+  const body = document.getElementById('plan-tl-body') || document.getElementById('milestones-body');
   if (!body) return;
   const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
   if (!proj) { _msView = 'dashboard'; renderMilestoneDashboard(); return; }
@@ -7522,6 +7914,52 @@ function initMilestonesPanel() {
     }
   });
 
+  // Also attach click + input delegation to right-panel timeline body
+  const tlBody = document.getElementById('plan-tl-body');
+  if (tlBody) {
+    tlBody.addEventListener('click', async e => {
+      const editEvBtn = e.target.closest('[data-ms-edit-ev]');
+      if (editEvBtn) { const ev = MILESTONE_EVENTS.find(ev => ev.id === editEvBtn.dataset.msEditEv); if (ev) openMsEventModal(ev.projectId, editEvBtn.dataset.msEditEv); return; }
+      const delEvBtn = e.target.closest('[data-ms-del-ev]');
+      if (delEvBtn) { if (confirm('Delete this milestone?')) await deleteMilestoneEvent(delEvBtn.dataset.msDelEv); return; }
+      const actCheck = e.target.closest('[data-toggle-act]');
+      if (actCheck) { await toggleMilestoneActivity(actCheck.dataset.evId, actCheck.dataset.toggleAct); return; }
+      const rmAct = e.target.closest('[data-rm-act]');
+      if (rmAct) { const ev = MILESTONE_EVENTS.find(ev => ev.id === rmAct.dataset.evId); if (ev) { const activities = ev.activities.filter(a => a.id !== rmAct.dataset.rmAct); await updateMilestoneEvent(rmAct.dataset.evId, { activities }); } return; }
+      const addTaskEvBtn = e.target.closest('[data-add-task-ev]');
+      if (addTaskEvBtn) {
+        const evId = addTaskEvBtn.dataset.addTaskEv;
+        const inputEl = tlBody.querySelector(`.ms-task-search-input[data-ev-id="${evId}"]`);
+        const text = inputEl?.value.trim();
+        if (!text) return;
+        const match = TASKS.find(t => t.title.toLowerCase() === text.toLowerCase() && !t.done);
+        if (match) await addMilestoneActivity(evId, match.title, match.id);
+        else await addMilestoneActivity(evId, text, null);
+        if (inputEl) inputEl.value = '';
+        const resultsEl = tlBody.querySelector(`.ms-task-search-results[data-ev-id="${evId}"]`);
+        if (resultsEl) { resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; }
+        return;
+      }
+      const searchResult = e.target.closest('.ms-task-search-result[data-task-id]');
+      if (searchResult) {
+        const task = TASKS.find(t => t.id === searchResult.dataset.taskId);
+        if (task) await addMilestoneActivity(searchResult.dataset.evId, task.title, task.id);
+        const inputEl = tlBody.querySelector(`.ms-task-search-input[data-ev-id="${searchResult.dataset.evId}"]`);
+        if (inputEl) inputEl.value = '';
+        const resultsEl = tlBody.querySelector(`.ms-task-search-results[data-ev-id="${searchResult.dataset.evId}"]`);
+        if (resultsEl) { resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; }
+        return;
+      }
+    });
+    tlBody.addEventListener('input', e => {
+      const inp = e.target.closest('.ms-task-search-input');
+      if (!inp) return;
+      const evId = inp.dataset.evId;
+      const resultsEl = tlBody.querySelector(`.ms-task-search-results[data-ev-id="${evId}"]`);
+      showMsTaskSearchResults(inp.value, evId, resultsEl);
+    });
+  }
+
   // Hide tooltip when mouse leaves the milestones body
   if (tooltip) {
     document.addEventListener('mousemove', e => {
@@ -7529,6 +7967,231 @@ function initMilestonesPanel() {
     });
   }
 }
+
+/* ══════════════════════════════════════════════════════════
+   PLANNING WIDGETS (Week / Month panels in Planning page)
+   ══════════════════════════════════════════════════════════ */
+(function(){
+  let _planWeekOffset = 0;
+  let _planMonthOffset = 0;
+  let _planSaveTimer = null;
+
+  function isoWeekKey(date) {
+    const d = new Date(date || new Date());
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+    const w1 = new Date(d.getFullYear(), 0, 4);
+    const wn = 1 + Math.round(((d - w1) / 86400000 - 3 + (w1.getDay() + 6) % 7) / 7);
+    return `${d.getFullYear()}-W${String(wn).padStart(2,'0')}`;
+  }
+  function monthKey(date) {
+    const d = date || new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  }
+  function getWeekStart(offset) {
+    const now = new Date();
+    const dow = now.getDay();
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1) + (offset || 0) * 7);
+    mon.setHours(0,0,0,0);
+    return mon;
+  }
+
+  function switchPlanRightTab(tab) {
+    document.querySelectorAll('.planning-right-tab').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
+    document.getElementById('plan-right-week').style.display  = tab === 'week'  ? '' : 'none';
+    document.getElementById('plan-right-month').style.display = tab === 'month' ? '' : 'none';
+    if (tab === 'week')  buildWeekPlan();
+    if (tab === 'month') buildMonthPlan();
+  }
+
+  async function buildWeekPlan() {
+    const ws = getWeekStart(_planWeekOffset);
+    const we = new Date(ws); we.setDate(ws.getDate() + 6);
+    const fmt = d => d.toLocaleDateString('en-GB', { month:'short', day:'numeric' });
+    const labelEl = document.getElementById('plan-week-label');
+    if (labelEl) labelEl.textContent = `Week of ${fmt(ws)} – ${fmt(we)}`;
+    const key = isoWeekKey(ws);
+
+    let data = {};
+    const uid = window.CDX_USER?.uid;
+    if (uid && window.CDX_FB && window.CDX_DB) {
+      try {
+        const { doc, getDoc, collection } = window.CDX_FB;
+        const snap = await getDoc(doc(collection(window.CDX_DB, 'users', uid, 'weeklyPlans'), key));
+        if (snap.exists()) data = snap.data();
+      } catch(e) {}
+    }
+
+    const ids = ['pw-intention','pw-p1','pw-p2','pw-p3','pw-went-well','pw-carry-fwd'];
+    const vals = [data.intention||'', ...(data.priorities||[]).slice(0,3), data.reviewWentWell||'', data.reviewCarryForward||''];
+    ids.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el) { el.value = vals[i] || ''; el.oninput = () => scheduleSave('week', key); }
+    });
+
+    // 7-column task grid
+    const days = Array.from({length:7}, (_,i) => { const d = new Date(ws); d.setDate(ws.getDate()+i); return localDateStr(d); });
+    const grid = document.getElementById('pw-task-grid');
+    if (grid) grid.innerHTML = `<div class="plan-week-grid">
+      ${days.map(d => `<div class="plan-week-grid-day">${new Date(d+'T00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'})}</div>`).join('')}
+      ${days.map(d => {
+        const dt = TASKS.filter(t => (t.dueDate||t.due) === d && !t._parent);
+        return `<div class="plan-week-grid-cell">
+          ${dt.map(t => `<div style="padding:1px 0;color:${t.done?'var(--muted)':'var(--cream)'};text-decoration:${t.done?'line-through':'none'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px" title="${escAttr(t.title||'')}">${escHtml(t.title||'')}</div>`).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
+
+    const done = TASKS.filter(t => t.done && days.includes(t.dueDate||t.due)).length;
+    const total = TASKS.filter(t => days.includes(t.dueDate||t.due)).length;
+    const stats = document.getElementById('pw-stats');
+    if (stats) stats.innerHTML = `<div class="plan-stat-bar" style="margin-top:8px">
+      <div class="plan-stat-bar-label"><span>Tasks Done</span><span>${done}/${total}</span></div>
+      <div class="plan-stat-bar-track"><div class="plan-stat-bar-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div>
+    </div>`;
+  }
+
+  async function buildMonthPlan() {
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth() + _planMonthOffset, 1);
+    const key = monthKey(target);
+    const labelEl = document.getElementById('plan-month-label');
+    if (labelEl) labelEl.textContent = target.toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+
+    let data = {};
+    const uid = window.CDX_USER?.uid;
+    if (uid && window.CDX_FB && window.CDX_DB) {
+      try {
+        const { doc, getDoc, collection } = window.CDX_FB;
+        const snap = await getDoc(doc(collection(window.CDX_DB, 'users', uid, 'monthlyPlans'), key));
+        if (snap.exists()) data = snap.data();
+      } catch(e) {}
+    }
+
+    const intentEl = document.getElementById('pm-intention');
+    if (intentEl) { intentEl.value = data.intention||''; intentEl.oninput = () => scheduleSave('month', key); }
+
+    // Calendar grid
+    const daysInMonth = new Date(target.getFullYear(), target.getMonth()+1, 0).getDate();
+    const firstDow = (new Date(target.getFullYear(), target.getMonth(), 1).getDay() + 6) % 7;
+    const todayStr = localDateStr(new Date());
+    const calEl = document.getElementById('pm-cal-grid');
+    if (calEl) {
+      let html = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d =>
+        `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:center;padding:2px">${d}</div>`).join('');
+      for (let i = 0; i < firstDow; i++) html += `<div></div>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${key}-${String(d).padStart(2,'0')}`;
+        const hasEv = CAL_EVENTS.some(e => e.date === ds);
+        const isToday = ds === todayStr;
+        html += `<div class="plan-month-day-cell${isToday?' today':''}">
+          <span>${d}</span>${hasEv?`<div class="plan-event-dot"></div>`:''}
+        </div>`;
+      }
+      calEl.innerHTML = html;
+    }
+
+    renderPlanMilestones(data.milestones || [], key);
+
+    const done = TASKS.filter(t => t.done && (t.dueDate||t.due)?.startsWith(key)).length;
+    const total = TASKS.filter(t => (t.dueDate||t.due)?.startsWith(key)).length;
+    const stats = document.getElementById('pm-stats');
+    if (stats) stats.innerHTML = `<div class="plan-stat-bar" style="margin-top:12px">
+      <div class="plan-stat-bar-label"><span>Tasks Done</span><span>${done}/${total}</span></div>
+      <div class="plan-stat-bar-track"><div class="plan-stat-bar-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div>
+    </div>`;
+  }
+
+  function renderPlanMilestones(milestones, key) {
+    const container = document.getElementById('pm-milestones');
+    if (!container) return;
+    container.innerHTML = milestones.map((m, i) => `
+      <div class="plan-milestone-row" data-id="${escAttr(m.id||String(i))}">
+        <input type="checkbox"${m.done?' checked':''} onchange="window._schedulePlanSave('month','${escAttr(key)}')">
+        <input type="date" value="${escAttr(m.date||'')}" onchange="window._schedulePlanSave('month','${escAttr(key)}')">
+        <input type="text" value="${escAttr(m.title||'')}" placeholder="Milestone…" oninput="window._schedulePlanSave('month','${escAttr(key)}')">
+        <button onclick="this.closest('.plan-milestone-row').remove();window._schedulePlanSave('month','${escAttr(key)}')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0 4px;font-size:14px;line-height:1">✕</button>
+      </div>`).join('');
+  }
+
+  function addPlanMonthMilestone() {
+    const target = new Date();
+    target.setMonth(target.getMonth() + _planMonthOffset);
+    const key = monthKey(target);
+    const container = document.getElementById('pm-milestones');
+    if (!container) return;
+    const row = document.createElement('div');
+    row.className = 'plan-milestone-row';
+    row.dataset.id = Date.now();
+    row.innerHTML = `
+      <input type="checkbox">
+      <input type="date" value="${localDateStr(new Date())}" onchange="window._schedulePlanSave('month','${key}')">
+      <input type="text" placeholder="Milestone…" oninput="window._schedulePlanSave('month','${key}')">
+      <button onclick="this.closest('.plan-milestone-row').remove();window._schedulePlanSave('month','${key}')" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0 4px;font-size:14px;line-height:1">✕</button>`;
+    container.appendChild(row);
+    row.querySelector('input[type="text"]').focus();
+  }
+
+  function scheduleSave(tab, key) {
+    clearTimeout(_planSaveTimer);
+    _planSaveTimer = setTimeout(() => savePlanData(tab, key), 800);
+  }
+  window._schedulePlanSave = scheduleSave;
+
+  async function savePlanData(tab, key) {
+    const uid = window.CDX_USER?.uid;
+    if (!uid || !window.CDX_FB || !window.CDX_DB) return;
+    const { doc, setDoc, collection, serverTimestamp } = window.CDX_FB;
+    let payload;
+    if (tab === 'week') {
+      payload = {
+        intention: document.getElementById('pw-intention')?.value || '',
+        priorities: ['pw-p1','pw-p2','pw-p3'].map(id => document.getElementById(id)?.value || ''),
+        reviewWentWell: document.getElementById('pw-went-well')?.value || '',
+        reviewCarryForward: document.getElementById('pw-carry-fwd')?.value || '',
+        updatedAt: serverTimestamp(),
+      };
+    } else {
+      const milestones = [];
+      document.querySelectorAll('#pm-milestones .plan-milestone-row').forEach(row => {
+        milestones.push({
+          id: row.dataset.id,
+          date: row.querySelector('input[type="date"]')?.value || '',
+          title: row.querySelector('input[type="text"]')?.value || '',
+          done: row.querySelector('input[type="checkbox"]')?.checked || false,
+        });
+      });
+      payload = {
+        intention: document.getElementById('pm-intention')?.value || '',
+        milestones,
+        updatedAt: serverTimestamp(),
+      };
+    }
+    try {
+      await setDoc(doc(collection(window.CDX_DB, 'users', uid, tab === 'week' ? 'weeklyPlans' : 'monthlyPlans'), key), payload, { merge: true });
+    } catch(e) { console.warn('Plan save error:', e); }
+  }
+
+  // Wire up tabs + nav buttons once, auto-build on first open
+  let _planWidgetsInited = false;
+  window.initPlanningWidgets = function() {
+    if (!_planWidgetsInited) {
+      _planWidgetsInited = true;
+      document.querySelectorAll('.planning-right-tab').forEach(btn => {
+        btn.addEventListener('click', () => switchPlanRightTab(btn.dataset.ptab));
+      });
+      document.getElementById('plan-week-prev')?.addEventListener('click', () => { _planWeekOffset--; buildWeekPlan(); });
+      document.getElementById('plan-week-next')?.addEventListener('click', () => { _planWeekOffset++; buildWeekPlan(); });
+      document.getElementById('plan-week-today')?.addEventListener('click', () => { _planWeekOffset = 0; buildWeekPlan(); });
+      document.getElementById('plan-month-prev')?.addEventListener('click', () => { _planMonthOffset--; buildMonthPlan(); });
+      document.getElementById('plan-month-next')?.addEventListener('click', () => { _planMonthOffset++; buildMonthPlan(); });
+      document.getElementById('plan-month-today')?.addEventListener('click', () => { _planMonthOffset = 0; buildMonthPlan(); });
+      document.getElementById('plan-add-month-ms')?.addEventListener('click', addPlanMonthMilestone);
+    }
+    buildWeekPlan(); // refresh data each time panel opens
+  };
+})();
 
 /* ══════════════════════════════════════════════════════════
    ORB PETAL QUICK-ADD
@@ -7837,7 +8500,7 @@ function buildTaskRow(task, idx) {
     const ts = ev?.startTime ? fmtTimeSched(ev.startTime) : '';
     const te = ev?.endTime ? fmtTimeSched(ev.endTime) : '';
     const timeStr = ts && te ? `${ts}–${te}` : ts || 'Scheduled';
-    schedBadge = `<span class="task-cal-badge">◻ ${timeStr}</span>`;
+    schedBadge = `<span class="task-cal-badge">⊙ ${timeStr}</span>`;
   }
 
   const PRIORITY_LABELS = { high: 'High', med: 'Med', low: 'Low' };
@@ -7943,7 +8606,7 @@ function buildSubtaskRow(parentId, sub) {
   let schedBadge = '';
   if (sub.calEventId) {
     const ev = CAL_EVENTS.find(e => e.id === sub.calEventId);
-    if (ev?.startTime) schedBadge = `<span class="task-cal-badge" style="font-size:9px">◻ ${fmtTimeSched(ev.startTime)}</span>`;
+    if (ev?.startTime) schedBadge = `<span class="task-cal-badge" style="font-size:9px">⊙ ${fmtTimeSched(ev.startTime)}</span>`;
   }
 
   row.innerHTML = `
@@ -8813,11 +9476,22 @@ function saveCategoriesLocal() {
   localStorage.setItem('cdx_categories', JSON.stringify(CATEGORIES));
 }
 
+async function saveCategories() {
+  saveCategoriesLocal();
+  const user = window.CDX_USER;
+  if (!user || !window.CDX_FB || !window.CDX_DB) return;
+  const { doc, setDoc } = window.CDX_FB;
+  try {
+    await setDoc(doc(window.CDX_DB, 'users', user.uid, 'config', 'categories'),
+      { categories: CATEGORIES }, { merge: false });
+  } catch(e) { console.warn('Categories Firestore save failed:', e); }
+}
+
 function addCategory(label, color) {
   const key = label.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20) || `cat${Date.now()}`;
   if (CATEGORIES[key]) return; // already exists
   CATEGORIES[key] = { label, color };
-  saveCategoriesLocal();
+  saveCategories();
   renderSettingsCatList();
   renderSettingsCats();
   renderTasks();
@@ -8826,7 +9500,7 @@ function addCategory(label, color) {
 
 function deleteCategory(key) {
   delete CATEGORIES[key];
-  saveCategoriesLocal();
+  saveCategories();
   renderSettingsCatList();
   renderSettingsCats();
   renderTasks();
@@ -9500,11 +10174,6 @@ document.getElementById('orb-wheel-close')?.addEventListener('click', () => {
 function openOverlay(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add('open');
-  if (id === 'insights-overlay') {
-    habitsSubscribe();
-    renderInsights();
-    loadDoneWall();
-  }
   if (id === 'notes-overlay') initNotesCanvas();
   if (id === 'pomo-overlay') { window.setPomoEvent?.(null); initPomoOverlay(); }
 }
@@ -9545,7 +10214,7 @@ const CMD_COMMANDS = [
   { label: 'Focus Timer',      icon: '◎', action: () => openOverlay('pomo-overlay'), keys: 'F' },
   { label: 'Open Notes',       icon: '✎', action: () => openOverlay('notes-overlay'), keys: '' },
   { label: 'Ask Cosmos',       icon: '✦', action: () => openOverlay('claude-panel'), keys: '' },
-  { label: 'Insights',         icon: '◈', action: () => openOverlay('insights-overlay'), keys: '' },
+  { label: 'Insights',         icon: '◈', action: () => showMainPanel('insights'), keys: '' },
   { label: 'Habits',           icon: '◎', action: () => showMainPanel('habits'), keys: '' },
   { label: 'Lists',            icon: '▤', action: () => showMainPanel('lists'), keys: '' },
   { label: 'Planning',         icon: '◳', action: () => showMainPanel('milestones'), keys: '' },
@@ -9652,11 +10321,17 @@ document.querySelectorAll('.drawer-item[data-open]').forEach(item => {
   });
 });
 
-// Drawer items — full panels (habits, lists)
+// Drawer items — full panels (habits, lists, insights)
 document.querySelectorAll('.drawer-item[data-mob-panel]').forEach(item => {
   item.addEventListener('click', () => {
     document.getElementById('mob-more-drawer').classList.remove('open');
     showMainPanel(item.dataset.mobPanel);
+  });
+});
+document.querySelectorAll('.drawer-item[data-panel-nav]').forEach(item => {
+  item.addEventListener('click', () => {
+    document.getElementById('mob-more-drawer').classList.remove('open');
+    showMainPanel(item.dataset.panelNav);
   });
 });
 
@@ -10181,6 +10856,23 @@ function initDoneWall() {
 /* ── Boot task system after auth ──────────────────────── */
 window.addEventListener('cdx-auth-ready', () => {
   waitForFirebase(() => {
+    // Subscribe to Firestore categories config
+    const _catUser = window.CDX_USER;
+    if (_catUser && window.CDX_FB && window.CDX_DB) {
+      const { doc, onSnapshot } = window.CDX_FB;
+      onSnapshot(doc(window.CDX_DB, 'users', _catUser.uid, 'config', 'categories'), snap => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data?.categories && typeof data.categories === 'object') {
+            CATEGORIES = data.categories;
+            saveCategoriesLocal();
+            renderSettingsCatList?.();
+            renderSettingsCats?.();
+            rebuildCategorySelects?.();
+          }
+        }
+      }, err => console.warn('Categories snapshot error:', err));
+    }
     // Rebuild selects with any custom categories loaded from localStorage
     rebuildCategorySelects();
     initData();
