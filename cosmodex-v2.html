@@ -356,14 +356,14 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px;
+  padding: 12px 8px;
   border-radius: 8px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 16px;
   letter-spacing: 0.05em;
   transition: var(--ease-fast);
   white-space: nowrap;
@@ -1209,29 +1209,26 @@ body::after {
    COSMODEX ORB (floating, bottom-right)
    ═══════════════════════════════════════════════════════════ */
 #cosmodex-orb {
-  position: fixed;
-  right: 20px; bottom: 20px;
+  position: relative;
   width: 88px; height: 88px;
   border-radius: 50%;
   background: #0a0908;
-  border: 1px solid rgba(201,162,39,0.2);
+  border: 1px solid rgba(201,162,39,0.3);
   cursor: pointer;
   z-index: 50;
   overflow: hidden;
-  animation: orbPulse 3.5s ease-in-out infinite;
+  margin: 10px auto 6px;
+  display: block;
   transition: width 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
               height 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
-              right 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
-              bottom 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
               border-radius 0.48s ease;
 }
-
 #cosmodex-orb:hover:not(.expanded) {
-  border-color: rgba(201,162,39,0.55);
-  animation-play-state: paused;
+  border-color: rgba(201,162,39,0.6);
 }
 
 #cosmodex-orb.expanded {
+  position: fixed;
   width: min(640px, 94vw);
   height: min(820px, 92dvh);
   top: 50%; left: 50%;
@@ -1242,6 +1239,7 @@ body::after {
   animation: none;
   z-index: 500;
   cursor: default;
+  margin: 0;
 }
 
 #cosmodex-canvas {
@@ -3932,17 +3930,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <div class="nav-section-label">Workspace</div>
       <div class="nav-item active" data-panel="today">
         <span class="nav-item-icon">◈</span>
-        Today
+        Dashboard
         <span class="nav-item-count" id="nav-count-today">—</span>
-      </div>
-      <div class="nav-item" data-panel="calendar">
-        <span class="nav-item-icon">◻</span>
-        Calendar
-      </div>
-      <div class="nav-item" data-panel="tasks">
-        <span class="nav-item-icon">◇</span>
-        Tasks
-        <span class="nav-item-count" id="nav-count-tasks">—</span>
       </div>
       <div class="nav-item" data-panel="lists" id="nav-lists">
         <span class="nav-item-icon">▤</span>
@@ -3968,10 +3957,28 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <span class="nav-item-icon">◉</span>
         Life OS
       </div>
-      <div class="nav-item" data-panel="done-wall" id="nav-done-wall">
-        <span class="nav-item-icon">✦</span>
-        Done Wall
+    </div>
+  </div>
+
+  <!-- Cosmodex Dial -->
+  <div style="padding:4px 16px 4px;text-align:center">
+    <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Cosmodex</div>
+    <div id="cosmodex-orb" title="Open Cosmodex dial">
+      <canvas id="cosmodex-canvas"></canvas>
+      <div id="orb-header">
+        <span class="orb-time-clock" id="orb-clock">--:--:--</span>
+        <span class="orb-date-line" id="orb-date-line">—</span>
       </div>
+      <div id="orb-time-display">
+        <span class="orb-cosmodex-label">Cosmodex</span>
+        <span class="orb-next-label">Next</span>
+        <span class="orb-next-event" id="orb-next-event">—</span>
+        <div class="orb-gadgets">
+          <button class="orb-gadget-btn" id="orb-dice-btn" title="Roll the dice">⚄</button>
+          <button class="orb-gadget-btn" id="orb-wheel-btn" title="Spin the wheel">◎</button>
+        </div>
+      </div>
+      <button id="orb-close">✕</button>
     </div>
   </div>
 
@@ -4644,29 +4651,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
      COSMODEX ORB
      ═══════════════════════════════════════════════════════ -->
 <div id="orb-backdrop"></div>
-<div id="cosmodex-orb" title="Open Cosmodex dial">
-  <canvas id="cosmodex-canvas"></canvas>
-
-  <!-- Header: time + date (only visible when expanded) -->
-  <div id="orb-header">
-    <span class="orb-time-clock" id="orb-clock">--:--:--</span>
-    <span class="orb-date-line" id="orb-date-line">—</span>
-  </div>
-
-  <!-- Footer: next event info + gadgets -->
-  <div id="orb-time-display">
-    <span class="orb-cosmodex-label">Cosmodex</span>
-    <span class="orb-next-label">Next</span>
-    <span class="orb-next-event" id="orb-next-event">—</span>
-    <div class="orb-gadgets">
-      <button class="orb-gadget-btn" id="orb-dice-btn" title="Roll the dice">⚄</button>
-      <button class="orb-gadget-btn" id="orb-wheel-btn" title="Spin the wheel">◎</button>
-    </div>
-  </div>
-
-  <!-- Close button (top-right, inside orb) -->
-  <button id="orb-close">✕</button>
-</div>
 <!-- Spinning wheel overlay -->
 <div id="orb-wheel-overlay">
   <div class="orb-wheel-panel">
@@ -4722,6 +4706,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   <div class="overlay-panel" style="width:min(1100px,98vw);height:96dvh;max-height:96dvh">
     <div class="overlay-header">
       <span class="overlay-title">Focus</span>
+      <button id="pomo-del-event-btn" style="display:none;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:11px;font-family:var(--font-mono);cursor:pointer;margin-right:8px" title="Delete calendar event">✕ Delete Event</button>
       <button class="overlay-close" id="pomo-close">✕</button>
     </div>
     <div class="pomo-layout">
@@ -4755,6 +4740,14 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <div class="pomo-btns">
             <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
             <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
+          </div>
+          <!-- Session complete prompt -->
+          <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(201,162,39,0.08);border:1px solid rgba(201,162,39,0.25);border-radius:10px;padding:12px 16px;text-align:center">
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--gold);margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
+            <div style="display:flex;gap:8px;justify-content:center">
+              <button id="pomo-done-yes" style="background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
+              <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
+            </div>
           </div>
           <div class="pomo-sess" id="pomo-sess">
             <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
@@ -4819,6 +4812,19 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <button class="overlay-close" data-close="insights-overlay">✕</button>
     </div>
     <div class="overlay-body">
+      <!-- Done Wall section (top of insights) -->
+      <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Completed Tasks</div>
+        <div class="done-wall-stats" id="done-wall-stats"></div>
+        <div class="done-filter-bar" id="done-filter-bar" style="margin-top:10px">
+          <button class="done-filter-btn active" data-filter="all">All</button>
+          <button class="done-filter-btn" data-filter="today">Today</button>
+          <button class="done-filter-btn" data-filter="week">This week</button>
+          <button class="done-filter-btn" data-filter="month">This month</button>
+        </div>
+        <div class="done-grid" id="done-grid" style="margin-top:14px"></div>
+      </div>
+
       <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Habit Insights</div>
       <div style="font-family:var(--font-display);font-size:22px;font-weight:300;color:var(--cream);margin-bottom:4px;">What's actually happening</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Friction detection, pattern analysis, and contextual nudges — not generic reminders.</div>
@@ -5370,8 +5376,8 @@ let CATEGORIES = {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      // Merge: keep defaults, add custom
-      Object.assign(CATEGORIES, parsed);
+      // Replace entirely so deletions persist across sessions
+      CATEGORIES = parsed;
     } catch(e) {}
   }
 })();
@@ -5519,7 +5525,6 @@ document.getElementById('hamburger')?.addEventListener('click', () => {
 const NAV_OVERLAY_MAP = {
   insights:  'insights-overlay',
   lifeos:    'lifeos-overlay',
-  'done-wall': 'done-wall-overlay',
 };
 
 document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
@@ -7762,12 +7767,17 @@ function renderTasks() {
   ];
 
   let rowIdx = 0;
-  const collapsibleGroups = ['No date', 'Upcoming'];
+  const collapsibleGroups = ['No date', 'Upcoming', 'Done'];
   groups.forEach(group => {
     if (!group.tasks.length) return;
     const isCollapsible = collapsibleGroups.includes(group.label);
     const storageKey = 'cdx_group_collapsed_' + group.label.replace(' ', '_');
-    const isCollapsed = isCollapsible && localStorage.getItem(storageKey) === 'true';
+    // Done group is collapsed by default; others only if explicitly saved
+    const isCollapsed = isCollapsible && (
+      group.label === 'Done'
+        ? localStorage.getItem(storageKey) !== 'false'
+        : localStorage.getItem(storageKey) === 'true'
+    );
 
     const labelEl = document.createElement('div');
     labelEl.className = 'tasks-group-label';
@@ -8359,6 +8369,7 @@ function renderDayView(date) {
       openOverlay('pomo-overlay');
       const titleEl = document.getElementById('pomo-ev-title');
       if (titleEl) titleEl.textContent = ev.title;
+      window.setPomoEvent?.(ev);
       initPomoOverlay();
     });
     slot.appendChild(chip);
@@ -8433,6 +8444,7 @@ function renderWeekView(date) {
       openOverlay('pomo-overlay');
       const titleEl = document.getElementById('pomo-ev-title');
       if (titleEl) titleEl.textContent = ev.title;
+      window.setPomoEvent?.(ev);
       initPomoOverlay();
     });
   });
@@ -8579,6 +8591,15 @@ function initCalDropZones() {
       const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
       openScheduleModal(localDateStr(_calDate), `${String(h).padStart(2,'0')}:00`, _dragTaskId, _dragSubId);
     });
+    // Click empty slot to create new event
+    dayContainer.addEventListener('click', e => {
+      if (_dragTaskId) return;
+      const slot = e.target.closest('.cal-hour-slot');
+      if (!slot) return;
+      if (e.target.closest('.cal-event')) return; // clicking existing event
+      const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
+      openQuickCalModal(localDateStr(_calDate), `${String(h).padStart(2,'0')}:00`);
+    });
   }
 
   // Week view (delegated via document)
@@ -8601,6 +8622,52 @@ function initCalDropZones() {
     openScheduleModal(cell.dataset.date, `${String(h).padStart(2,'0')}:00`, _dragTaskId, _dragSubId);
   });
 }
+
+/* ── Quick Calendar Event Creation ───────────────────── */
+function openQuickCalModal(date, startTime) {
+  const titleEl = document.getElementById('qcal-title');
+  if (titleEl) { titleEl.value = ''; }
+  const dateEl = document.getElementById('qcal-date');
+  if (dateEl) dateEl.value = date;
+  const timeEl = document.getElementById('qcal-time');
+  if (timeEl) timeEl.value = startTime;
+  const durEl = document.getElementById('qcal-duration');
+  if (durEl) durEl.value = 60;
+  const sel = document.getElementById('qcal-category');
+  if (sel) sel.innerHTML = '<option value="">No category</option>' + Object.entries(CATEGORIES).map(([k,v]) => `<option value="${escAttr(k)}">${escHtml(v.label)}</option>`).join('');
+  document.getElementById('quick-cal-modal')?.classList.add('open');
+  setTimeout(() => titleEl?.focus(), 100);
+}
+
+async function confirmQuickCalEvent() {
+  const title    = document.getElementById('qcal-title')?.value.trim();
+  const date     = document.getElementById('qcal-date')?.value;
+  const startTime= document.getElementById('qcal-time')?.value;
+  const duration = parseInt(document.getElementById('qcal-duration')?.value) || 60;
+  const category = document.getElementById('qcal-category')?.value || null;
+  if (!title || !date || !startTime) { showToast('Please fill in title, date and time', 'error'); return; }
+  const { collection, addDoc, serverTimestamp } = window.CDX_FB;
+  const db  = window.CDX_DB;
+  const uid = window.CDX_USER?.uid;
+  if (!uid) return;
+  try {
+    const taskRef = await addDoc(collection(db, 'tasks'), {
+      uid, title, category, done: false, dueDate: date, createdAt: serverTimestamp()
+    });
+    const endTime = addMinutes(startTime, duration);
+    await addDoc(collection(db, 'calEvents'), {
+      uid, title, date, startTime, endTime, duration, taskId: taskRef.id,
+      color: getCatColor(category), createdAt: serverTimestamp()
+    });
+    document.getElementById('quick-cal-modal')?.classList.remove('open');
+    showToast(`Created "${title}"`, 'success');
+  } catch(e) { showToast('Error creating event', 'error'); console.error(e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('qcal-confirm-btn')?.addEventListener('click', confirmQuickCalEvent);
+  document.getElementById('qcal-title')?.addEventListener('keydown', e => { if (e.key === 'Enter') confirmQuickCalEvent(); });
+});
 
 /* ── Add-task form ────────────────────────────────────── */
 function initAddTaskForm() {
@@ -9003,16 +9070,16 @@ function drawCosmodex() {
   const maxR = expanded
     ? Math.min(W * 0.46, (H - 230) / 2)
     : Math.min(W, H) / 2 * 0.93;
-  const innerR = maxR * (expanded ? 0.28 : 0.35);
+  const innerR = maxR * (expanded ? 0.14 : 0.175);
   const baseR  = maxR * (expanded ? 0.52 : 0.65);
-  const eventR = maxR * (expanded ? 0.70 : 0.72); // reduced: was 0.87/0.91
+  const eventR = maxR * (expanded ? 0.70 : 0.72);
 
   const today  = localDateStr(new Date());
   const now    = new Date();
 
   // Store geometry for petal click detection
   if (expanded) {
-    _orbGeometry = { cx, cy, innerR: maxR * 0.28, eventR: maxR * 0.70 };
+    _orbGeometry = { cx, cy, innerR: maxR * 0.14, eventR: maxR * 0.70 };
   } else {
     _orbGeometry = null;
   }
@@ -9133,23 +9200,24 @@ function drawCosmodex() {
         cy + labelDist * Math.sin(boundA));
     }
 
-    // Event title labels — drawn INSIDE the petal (between baseR and eventR)
+    // Event title labels — along the petal radius (inner → outer, readable from outside)
     if (hasEv && evs[0].title && segR > baseR) {
-      const midA  = ((h + 0.5) / 24) * TWO_PI - Math.PI / 2;
-      const lDist = (baseR + eventR) / 2; // midpoint of the extended petal
-      const lx = cx + lDist * Math.cos(midA);
-      const ly = cy + lDist * Math.sin(midA);
+      const midA   = ((h + 0.5) / 24) * TWO_PI - Math.PI / 2;
+      const isLeft = Math.cos(midA) < 0;
+      // For left-side petals: start at outer edge, rotate inward (stays readable from outside)
+      const startDist = isLeft ? eventR - 2 : innerR + 2;
+      const sx = cx + startDist * Math.cos(midA);
+      const sy = cy + startDist * Math.sin(midA);
       const fontSize = expanded ? 8 : 6;
-      const maxChars = expanded ? 14 : 8;
+      const maxPx = eventR - innerR - 4;
       ctx.save();
-      ctx.translate(lx, ly);
-      ctx.rotate(midA + Math.PI / 2);
-      if (lx < cx) ctx.rotate(Math.PI); // flip right-reading for left side
-      ctx.fillStyle = 'rgba(232,224,208,0.9)';
+      ctx.translate(sx, sy);
+      ctx.rotate(isLeft ? midA + Math.PI : midA);
+      ctx.fillStyle = 'rgba(232,224,208,0.95)';
       ctx.font = `${fontSize}px "DM Mono", monospace`;
-      ctx.textAlign    = 'center';
+      ctx.textAlign    = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(evs[0].title.slice(0, maxChars), 0, 0);
+      ctx.fillText(evs[0].title, 0, 0, maxPx);
       ctx.restore();
     }
   }
@@ -9435,10 +9503,10 @@ function openOverlay(id) {
   if (id === 'insights-overlay') {
     habitsSubscribe();
     renderInsights();
+    loadDoneWall();
   }
   if (id === 'notes-overlay') initNotesCanvas();
-  if (id === 'pomo-overlay') initPomoOverlay();
-  if (id === 'done-wall-overlay') loadDoneWall();
+  if (id === 'pomo-overlay') { window.setPomoEvent?.(null); initPomoOverlay(); }
 }
 
 function closeOverlay(id) {
@@ -9750,6 +9818,7 @@ function computeMomentumScore() {
 }
 
 function openDailyRitual() {
+  if (new Date().getHours() >= 11) return; // only show before 11 AM
   const today = localDateStr(new Date());
   const last = localStorage.getItem('cdx_ritual_date');
   if (last === today) return; // already shown today
@@ -10410,8 +10479,40 @@ window.addEventListener('cdx-auth-ready', () => {
     }); // end requestAnimationFrame
   }
 
+  let _pomoEvent = null; // active calendar event (set when opened from calendar)
+
+  window.setPomoEvent = function(ev) {
+    _pomoEvent = ev || null;
+    if (ev && ev.duration) {
+      const mins = Math.max(1, Math.round(ev.duration / 60));
+      setDuration(mins);
+    }
+    // Show/hide delete event button
+    const delBtn = document.getElementById('pomo-del-event-btn');
+    if (delBtn) delBtn.style.display = _pomoEvent ? 'inline-flex' : 'none';
+    // Hide completion prompt when opening fresh
+    const prompt = document.getElementById('pomo-complete-prompt');
+    if (prompt) prompt.style.display = 'none';
+  };
+
   window.initPomoOverlay = function() {
     buildTicks(); renderPomo(); startBreathing(); renderFocusChecklist(); initScribble();
+    // Reset completion prompt
+    const prompt = document.getElementById('pomo-complete-prompt');
+    if (prompt) prompt.style.display = 'none';
+    // Wire delete event button
+    const delBtn = document.getElementById('pomo-del-event-btn');
+    if (delBtn) {
+      delBtn.style.display = _pomoEvent ? 'inline-flex' : 'none';
+      delBtn.onclick = async () => {
+        if (!_pomoEvent) return;
+        if (!confirm(`Delete event "${_pomoEvent.title}"?`)) return;
+        const { doc, deleteDoc } = window.CDX_FB;
+        try { await deleteDoc(doc(window.CDX_DB, 'calEvents', _pomoEvent.id)); } catch(e) {}
+        _pomoEvent = null; delBtn.style.display = 'none';
+        showToast('Event deleted', 'success');
+      };
+    }
   };
 
   // Duration swipe
@@ -10444,6 +10545,24 @@ window.addEventListener('cdx-auth-ready', () => {
           document.getElementById('pomo-lock-msg')?.classList.remove('show');
           // Completion chime
           try { const ac = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.35, 0.7].forEach((t, i) => { const osc = ac.createOscillator(), g = ac.createGain(); osc.connect(g); g.connect(ac.destination); osc.frequency.value = [528,660,792][i]; g.gain.value = 0.18; osc.start(ac.currentTime + t); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + t + 0.9); osc.stop(ac.currentTime + t + 0.9); }); } catch(e) {}
+          // Show task completion prompt if there's a linked task
+          const elapsedSecs = pomo.totalSecs;
+          const promptEl = document.getElementById('pomo-complete-prompt');
+          if (promptEl && _pomoEvent?.taskId) {
+            promptEl.style.display = 'block';
+            document.getElementById('pomo-done-yes').onclick = async () => {
+              promptEl.style.display = 'none';
+              const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
+              try {
+                await updateDoc(doc(window.CDX_DB, 'tasks', _pomoEvent.taskId), {
+                  done: true, doneDate: localDateStr(new Date()),
+                  sessionTimeSecs: (elapsedSecs || 0)
+                });
+                showToast('Task marked done ✓', 'success', 3000);
+              } catch(e) { showToast('Could not update task', 'error'); }
+            };
+            document.getElementById('pomo-done-no').onclick = () => { promptEl.style.display = 'none'; };
+          }
         }
         renderPomo();
       }, 500);
@@ -10583,24 +10702,37 @@ window.addEventListener('cdx-auth-ready', () => {
   </div>
 </div>
 
-<!-- ── Done Wall Overlay ───────────────────────────────── -->
-<div class="overlay" id="done-wall-overlay" style="z-index:940">
-  <div class="overlay-panel" style="width:min(860px,96vw);max-height:92dvh;display:flex;flex-direction:column">
+<!-- ── Quick Calendar Event Modal ──────────────────────── -->
+<div class="overlay" id="quick-cal-modal" style="z-index:860">
+  <div class="overlay-panel" style="width:min(380px,92vw)">
     <div class="overlay-header">
-      <span class="overlay-title">Done Wall</span>
-      <button class="overlay-close" data-close="done-wall-overlay">✕</button>
+      <span class="overlay-title">New Event</span>
+      <button class="overlay-close" data-close="quick-cal-modal">✕</button>
     </div>
-    <div style="padding:16px 20px 0;border-bottom:1px solid var(--border)">
-      <div class="done-wall-stats" id="done-wall-stats"></div>
-      <div class="done-filter-bar" id="done-filter-bar">
-        <button class="done-filter-btn active" data-filter="all">All</button>
-        <button class="done-filter-btn" data-filter="today">Today</button>
-        <button class="done-filter-btn" data-filter="week">This week</button>
-        <button class="done-filter-btn" data-filter="month">This month</button>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="sched-label">Title</label>
+        <input id="qcal-title" type="text" class="sched-input" placeholder="Event / task title" autocomplete="off" />
       </div>
-    </div>
-    <div class="overlay-body" style="overflow-y:auto;flex:1;padding:20px">
-      <div class="done-grid" id="done-grid"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="sched-label">Date</label>
+          <input id="qcal-date" type="date" class="sched-input" />
+        </div>
+        <div>
+          <label class="sched-label">Time</label>
+          <input id="qcal-time" type="time" class="sched-input" />
+        </div>
+      </div>
+      <div>
+        <label class="sched-label">Duration (min)</label>
+        <input id="qcal-duration" type="number" class="sched-input" value="60" min="15" step="15" />
+      </div>
+      <div>
+        <label class="sched-label">Category</label>
+        <select id="qcal-category" class="sched-input"></select>
+      </div>
+      <button class="sched-confirm-btn" id="qcal-confirm-btn">Create Event + Task</button>
     </div>
   </div>
 </div>
