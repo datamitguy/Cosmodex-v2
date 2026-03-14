@@ -2737,6 +2737,348 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* ── Day view — active tab default ─────────────────────── */
 .view-tab[data-view="day"] { /* initially set by JS */ }
 
+/* ═══════════════════════════════════════════════════════════
+   HABIT BUILDER — ADDITIONAL TOKENS
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --elev2:       #161310;
+  --border2:     #3a3530;
+  --sage-glow:   rgba(74,124,94,0.12);
+  --sky-glow:    rgba(107,159,212,0.12);
+  --lavender:    #8a78c0;
+  --sky:         #6b9fd4;
+  --r-sm:        8px;
+  --r-md:        14px;
+  --r-lg:        20px;
+  --r-xl:        28px;
+  --ease:        cubic-bezier(0.16,1,0.3,1);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HABIT BUILDER — LAUNCHER TAB
+   ═══════════════════════════════════════════════════════════ */
+.hb-launcher-wrap { display:flex; flex-direction:column; gap:28px; max-width:1100px; }
+
+.hb-hero {
+  background: linear-gradient(135deg, var(--surface) 0%, var(--elevated) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+.hb-hero-bg {
+  position:absolute; inset:0; pointer-events:none;
+  background: radial-gradient(ellipse at 20% 50%, rgba(201,162,39,0.06) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 20%, rgba(74,124,94,0.04) 0%, transparent 50%);
+}
+.hb-hero-grid {
+  position:absolute; inset:0; pointer-events:none;
+  background-image: linear-gradient(rgba(201,162,39,0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(201,162,39,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.hb-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; position:relative; }
+.hb-time { font-family:var(--font-display); font-size:52px; font-weight:200; color:var(--cream); line-height:1; letter-spacing:-0.02em; }
+.hb-date { font-family:var(--font-mono); font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--muted); margin-top:8px; }
+.hb-right { text-align:right; position:relative; }
+.hb-temp { font-family:var(--font-mono); font-size:13px; color:var(--muted); margin-bottom:4px; }
+.hb-season { font-size:12px; color:var(--gold); font-style:italic; }
+
+.hb-quote {
+  font-family:var(--font-display); font-size:17px; font-weight:300; font-style:italic;
+  color:var(--cream); line-height:1.6;
+  border-left:2px solid var(--gold); background:rgba(201,162,39,0.04);
+  border-radius:0 var(--r-md) var(--r-md) 0; padding:16px 20px;
+  margin-bottom:28px; position:relative;
+}
+.hb-quote-attr { font-family:var(--font-mono); font-size:10px; color:var(--muted); letter-spacing:0.08em; margin-top:8px; display:block; }
+
+.hb-stats { display:flex; gap:0; border:1px solid var(--border); border-radius:var(--r-md); background:var(--elevated); overflow:hidden; }
+.hb-stat { flex:1; padding:16px 20px; text-align:center; border-right:1px solid var(--border); }
+.hb-stat:last-child { border-right:none; }
+.hb-stat-n { font-family:var(--font-display); font-size:28px; font-weight:300; color:var(--gold); display:block; line-height:1; }
+.hb-stat-l { font-family:var(--font-mono); font-size:9px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-top:4px; display:block; }
+
+/* Routine grid */
+.hb-routine-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.hb-routine-timeline { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:28px; }
+.hb-rt-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.hb-rt-title { font-family:var(--font-mono); font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); }
+.hb-rt-progress { font-family:var(--font-mono); font-size:11px; color:var(--gold); }
+.hb-rt-overall { height:3px; background:var(--elevated); border-radius:2px; margin-bottom:24px; overflow:hidden; }
+.hb-rt-fill { height:100%; background:linear-gradient(90deg,var(--sage),var(--gold)); border-radius:2px; transition:width 1s var(--ease); }
+
+.hb-step { display:flex; gap:16px; padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer; transition:all .2s; position:relative; }
+.hb-step:last-child { border-bottom:none; padding-bottom:0; }
+.hb-step-left { display:flex; flex-direction:column; align-items:center; gap:0; width:48px; flex-shrink:0; }
+.hb-step-time { font-family:var(--font-mono); font-size:10px; color:var(--muted); letter-spacing:0.04em; text-align:center; margin-bottom:6px; }
+.hb-step-check {
+  width:24px; height:24px; border-radius:50%; border:2px solid var(--border2);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition:all .25s var(--ease); flex-shrink:0;
+}
+.hb-step-check.done { background:var(--sage); border-color:var(--sage); box-shadow:0 0 12px var(--sage-glow); }
+.hb-step-check.skip { background:var(--elevated); border-color:var(--muted); }
+.hb-step-check.active { border-color:var(--gold); box-shadow:0 0 0 3px var(--gold-glow); animation:hb-pulse-ring 2s infinite; }
+@keyframes hb-pulse-ring { 0%,100%{box-shadow:0 0 0 3px var(--gold-glow);}50%{box-shadow:0 0 0 6px rgba(201,162,39,0.06);} }
+.hb-step-line { width:1px; flex:1; min-height:20px; background:var(--border); margin-top:4px; }
+.hb-step-line.done { background:var(--sage); }
+
+.hb-step-body { flex:1; padding-top:2px; }
+.hb-step-name { font-size:14px; color:var(--cream); font-weight:500; margin-bottom:3px; transition:color .2s; }
+.hb-step-name.done { color:var(--muted); text-decoration:line-through; }
+.hb-step-meta { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.hb-step-dur { font-family:var(--font-mono); font-size:10px; color:var(--muted); letter-spacing:0.04em; }
+.hb-step-stack { font-size:11px; color:var(--muted); margin-top:5px; font-style:italic; }
+.hb-step-stack span { color:var(--gold-dim); }
+.hb-step-expand { max-height:0; overflow:hidden; transition:max-height .4s var(--ease); }
+.hb-step-expand.open { max-height:200px; }
+.hb-step-expand-inner { padding:12px 0 4px; }
+.hb-step-why { font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:10px; padding:10px 14px; background:var(--elevated); border-radius:var(--r-sm); border-left:2px solid var(--gold-dim); }
+.hb-step-actions { display:flex; gap:8px; }
+
+/* Intent panel */
+.hb-intent-panel { display:flex; flex-direction:column; gap:16px; }
+.hb-intent-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
+.hb-ic-label { font-family:var(--font-mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+.hb-identity-card { padding:18px; background:linear-gradient(135deg,rgba(201,162,39,0.06),rgba(201,162,39,0.02)); border:1px solid rgba(201,162,39,0.15); border-radius:var(--r-md); }
+.hb-id-label { font-family:var(--font-mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; color:var(--gold); margin-bottom:8px; }
+.hb-id-text { font-family:var(--font-display); font-size:17px; font-weight:300; font-style:italic; color:var(--cream); line-height:1.4; }
+
+.hb-nonneg { padding:16px 18px; background:var(--elevated); border-radius:var(--r-md); border-left:2px solid var(--rust); }
+.hb-nonneg-label { font-family:var(--font-mono); font-size:9px; color:var(--rust); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+.hb-nonneg-text { font-size:14px; color:var(--cream); }
+
+.hb-energy-select { display:flex; flex-direction:column; gap:8px; }
+.hb-energy-row { display:flex; gap:8px; }
+.hb-energy-chip { flex:1; padding:10px 8px; border-radius:var(--r-sm); border:1px solid var(--border2); background:var(--elevated); cursor:pointer; transition:all .2s; text-align:center; }
+.hb-energy-chip:hover,.hb-energy-chip.on { border-color:currentColor; background:rgba(255,255,255,.03); }
+.hb-ec-icon { font-size:16px; margin-bottom:2px; }
+.hb-ec-name { font-family:var(--font-mono); font-size:9px; letter-spacing:0.06em; text-transform:uppercase; }
+.hb-energy-chip.deep { color:var(--blue); }
+.hb-energy-chip.deep.on { background:var(--sky-glow); }
+.hb-energy-chip.admin { color:var(--gold); }
+.hb-energy-chip.admin.on { background:var(--gold-glow); }
+.hb-energy-chip.creative { color:#c49a6c; }
+.hb-energy-chip.creative.on { background:rgba(196,154,108,.1); }
+.hb-energy-chip.low { color:var(--sage); }
+.hb-energy-chip.low.on { background:var(--sage-glow); }
+
+.hb-launch-btn {
+  width:100%; padding:20px; border-radius:var(--r-lg);
+  background:linear-gradient(135deg,var(--gold) 0%,#a88018 100%);
+  border:none; cursor:pointer; font-family:var(--font-display); font-size:22px; font-weight:300;
+  color:var(--ink); letter-spacing:0.04em;
+  transition:all .3s var(--ease); position:relative; overflow:hidden;
+}
+.hb-launch-btn:hover { transform:translateY(-2px); box-shadow:0 8px 32px rgba(201,162,39,0.3); }
+.hb-launch-btn:active { transform:translateY(0); }
+.hb-lb-sub { font-family:var(--font-mono); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; margin-top:4px; display:block; opacity:.7; }
+
+/* ═══════════════════════════════════════════════════════════
+   HABIT BUILDER — BUILDER TAB
+   ═══════════════════════════════════════════════════════════ */
+.hb-builder-layout { display:grid; grid-template-columns:320px 1fr; gap:24px; align-items:start; max-width:1100px; }
+
+.hb-library { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
+.hb-lib-search { display:flex; gap:8px; margin-bottom:16px; }
+.hb-lib-input {
+  flex:1; background:var(--elevated); border:1px solid var(--border2); border-radius:var(--r-sm);
+  padding:10px 14px; font-family:var(--font-body); font-size:13px; color:var(--cream); outline:none;
+}
+.hb-lib-input:focus { border-color:var(--gold); }
+.hb-lib-input::placeholder { color:var(--muted); }
+.hb-lib-cats { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+.hb-cat-chip {
+  font-family:var(--font-mono); font-size:9px; padding:5px 12px; border-radius:100px;
+  border:1px solid var(--border2); color:var(--muted); cursor:pointer; transition:all .2s; letter-spacing:0.06em; text-transform:uppercase;
+}
+.hb-cat-chip.on,.hb-cat-chip:hover { border-color:var(--gold); color:var(--gold); background:var(--gold-glow); }
+.hb-lib-items { display:flex; flex-direction:column; gap:6px; max-height:360px; overflow-y:auto; }
+.hb-lib-items::-webkit-scrollbar { width:3px; }
+.hb-lib-items::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+.hb-lib-template {
+  padding:12px 14px; background:var(--elevated); border:1px solid transparent;
+  border-radius:var(--r-sm); cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:12px;
+}
+.hb-lib-template:hover { border-color:var(--border2); background:var(--elev2); }
+.hb-lib-template.adding { border-color:var(--sage); background:var(--sage-glow); }
+.hb-lt-icon { font-size:18px; width:28px; text-align:center; flex-shrink:0; }
+.hb-lt-info { flex:1; }
+.hb-lt-name { font-size:13px; color:var(--cream); margin-bottom:2px; }
+.hb-lt-meta { font-family:var(--font-mono); font-size:10px; color:var(--muted); letter-spacing:0.03em; }
+.hb-lt-add { font-size:16px; color:var(--muted); transition:color .2s; }
+.hb-lib-template:hover .hb-lt-add { color:var(--gold); }
+
+.hb-detail { display:flex; flex-direction:column; gap:16px; }
+.hb-detail-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:28px; }
+.hb-habit-row { display:flex; align-items:center; gap:14px; padding:16px; background:var(--elevated); border-radius:var(--r-md); border:1px solid var(--border2); margin-bottom:20px; }
+.hb-habit-icon { font-size:24px; width:40px; text-align:center; }
+.hb-habit-name { font-size:16px; font-weight:500; color:var(--cream); }
+.hb-habit-badge { margin-left:auto; font-family:var(--font-mono); font-size:9px; padding:4px 10px; border-radius:100px; letter-spacing:0.06em; text-transform:uppercase; }
+
+.hb-ia-wrap { margin-bottom:20px; }
+.hb-ia-label { font-family:var(--font-mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; color:var(--gold); margin-bottom:10px; }
+.hb-ia-text { font-family:var(--font-display); font-size:16px; font-style:italic; color:var(--cream); padding:14px 18px; background:linear-gradient(135deg,rgba(201,162,39,0.07),rgba(201,162,39,0.02)); border:1px solid rgba(201,162,39,0.15); border-radius:var(--r-md); }
+.hb-ia-research { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5; padding:8px 12px; background:var(--elevated); border-radius:var(--r-sm); }
+
+.hb-stack-builder { margin-bottom:20px; }
+.hb-sb-label { font-family:var(--font-mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+.hb-sb-formula { display:flex; align-items:center; gap:10px; padding:14px 18px; background:var(--elevated); border-radius:var(--r-md); border:1px solid var(--border2); }
+.hb-sb-anchor { font-size:13px; color:var(--cream); }
+.hb-sb-anchor select { background:var(--elev2); border:1px solid var(--border2); border-radius:6px; color:var(--cream); font-family:var(--font-body); font-size:13px; padding:4px 8px; outline:none; cursor:pointer; }
+.hb-sb-anchor select:focus { border-color:var(--gold); }
+.hb-sb-arrow { color:var(--gold); font-size:14px; flex-shrink:0; }
+.hb-sb-new { font-size:13px; color:var(--gold); font-weight:500; }
+.hb-sb-research { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.5; }
+
+.hb-cue-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.hb-cue-item { padding:12px 14px; background:var(--elevated); border:1px solid var(--border2); border-radius:var(--r-sm); }
+.hb-ci-label { font-family:var(--font-mono); font-size:9px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+.hb-ci-val { font-size:13px; color:var(--cream); }
+.hb-ci-input { background:none; border:none; outline:none; font-family:var(--font-body); font-size:13px; color:var(--cream); width:100%; }
+.hb-ci-input:focus { border-bottom:1px solid var(--gold); }
+.hb-ci-input::placeholder { color:var(--muted); }
+
+.hb-why-reward { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+.hb-wr-item { padding:14px; background:var(--elevated); border-radius:var(--r-sm); border:1px solid var(--border2); }
+.hb-wr-label { font-family:var(--font-mono); font-size:9px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+.hb-wr-val { font-size:13px; color:var(--cream); line-height:1.5; background:none; border:none; outline:none; width:100%; resize:none; font-family:var(--font-body); }
+.hb-wr-val:focus { border-bottom:1px solid var(--gold); }
+.hb-wr-val::placeholder { color:var(--muted); }
+
+.hb-ramp-wrap { margin-bottom:20px; }
+.hb-ramp-label { font-family:var(--font-mono); font-size:9px; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+.hb-ramp-steps { display:flex; gap:8px; }
+.hb-ramp-step { flex:1; padding:10px 8px; background:var(--elevated); border:1px solid var(--border2); border-radius:var(--r-sm); text-align:center; cursor:pointer; transition:all .2s; }
+.hb-ramp-step.active { background:var(--sage-glow); border-color:var(--sage); }
+.hb-rs-week { font-family:var(--font-mono); font-size:9px; color:var(--muted); letter-spacing:0.06em; margin-bottom:4px; }
+.hb-rs-dose { font-size:12px; color:var(--cream); font-weight:500; }
+.hb-rs-dose.active { color:var(--sage); }
+
+.hb-friction-guard { padding:14px 18px; background:rgba(196,92,42,.05); border:1px solid rgba(196,92,42,.2); border-radius:var(--r-md); }
+.hb-fg-label { font-family:var(--font-mono); font-size:9px; color:var(--rust); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; }
+.hb-fg-q { font-size:13px; color:var(--cream); margin-bottom:10px; }
+.hb-fg-opts { display:flex; gap:8px; flex-wrap:wrap; }
+.hb-fg-opt { font-family:var(--font-mono); font-size:10px; padding:5px 12px; border-radius:100px; border:1px solid rgba(196,92,42,.3); color:var(--rust); cursor:pointer; transition:all .2s; letter-spacing:0.04em; }
+.hb-fg-opt:hover,.hb-fg-opt.on { background:rgba(196,92,42,.1); border-color:var(--rust); }
+
+.hb-divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   HABIT BUILDER — PROGRESS TAB
+   ═══════════════════════════════════════════════════════════ */
+.hb-progress-layout { max-width:1100px; }
+.hb-prog-top { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px; }
+.hb-prog-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
+.hb-pc-label { font-family:var(--font-mono); font-size:9px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+
+.hb-ring-wrap { display:flex; align-items:center; gap:16px; }
+.hb-ring-big { font-family:var(--font-display); font-size:32px; font-weight:300; color:var(--cream); }
+.hb-ring-sub { font-size:12px; color:var(--muted); line-height:1.5; }
+
+.hb-heatmap { display:grid; grid-template-columns:repeat(13,1fr); gap:4px; }
+.hb-hm-cell { aspect-ratio:1; border-radius:3px; background:var(--elevated); transition:all .2s; cursor:pointer; }
+.hb-hm-cell:hover { transform:scale(1.2); }
+.hb-hm-cell.l1 { background:rgba(74,124,94,.3); }
+.hb-hm-cell.l2 { background:rgba(74,124,94,.55); }
+.hb-hm-cell.l3 { background:rgba(74,124,94,.75); }
+.hb-hm-cell.l4 { background:var(--sage); }
+
+.hb-habits-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+.hb-habit-prog-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
+.hb-hpc-top { display:flex; align-items:flex-start; gap:12px; margin-bottom:16px; }
+.hb-hpc-icon { font-size:22px; width:36px; text-align:center; }
+.hb-hpc-info { flex:1; }
+.hb-hpc-name { font-size:15px; font-weight:500; color:var(--cream); margin-bottom:3px; }
+.hb-hpc-identity { font-size:12px; color:var(--gold); font-style:italic; }
+.hb-hpc-streak { text-align:right; }
+.hb-hpc-streak-n { font-family:var(--font-display); font-size:28px; font-weight:300; color:var(--sage); line-height:1; }
+.hb-hpc-streak-l { font-family:var(--font-mono); font-size:9px; color:var(--muted); letter-spacing:0.06em; }
+
+.hb-day-row { display:flex; gap:6px; margin-bottom:14px; }
+.hb-day-dot { flex:1; height:6px; border-radius:3px; background:var(--elevated); }
+.hb-day-dot.done { background:var(--sage); }
+.hb-day-dot.today { background:var(--gold); }
+.hb-day-dot.miss { background:var(--elev2); }
+
+.hb-auto-bar { margin-bottom:8px; }
+.hb-ab-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+.hb-ab-label { font-family:var(--font-mono); font-size:9px; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+.hb-ab-pct { font-family:var(--font-mono); font-size:10px; color:var(--cream); }
+.hb-ab-track { height:4px; background:var(--elevated); border-radius:2px; overflow:hidden; }
+.hb-ab-fill { height:100%; border-radius:2px; transition:width 1s var(--ease); }
+.hb-stack-note { font-size:11px; color:var(--muted); font-style:italic; padding:8px 12px; background:var(--elevated); border-radius:var(--r-sm); }
+
+/* ═══════════════════════════════════════════════════════════
+   HABIT BUILDER — INSIGHTS (for insights overlay)
+   ═══════════════════════════════════════════════════════════ */
+.hb-insight-layout { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.hb-insight-card { background:var(--elevated); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
+.hb-friction-insight { margin-bottom:16px; }
+.hb-fi-habit { display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--bg); border-radius:var(--r-sm); margin-bottom:8px; border-left:2px solid transparent; }
+.hb-fi-habit.warn { border-left-color:var(--rust); }
+.hb-fi-habit.ok { border-left-color:var(--sage); }
+.hb-fi-icon { font-size:16px; }
+.hb-fi-info { flex:1; }
+.hb-fi-name { font-size:13px; color:var(--cream); margin-bottom:2px; }
+.hb-fi-reason { font-family:var(--font-mono); font-size:10px; color:var(--muted); }
+.hb-fi-action { font-family:var(--font-mono); font-size:10px; color:var(--rust); letter-spacing:0.04em; }
+.hb-fi-action.ok { color:var(--sage); }
+
+.hb-pattern-wrap {}
+.hb-pw-item { padding:14px; background:var(--bg); border-radius:var(--r-md); margin-bottom:10px; }
+.hb-pw-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.hb-pw-name { font-size:13px; color:var(--cream); }
+.hb-pw-score { font-family:var(--font-mono); font-size:11px; }
+.hb-pw-bar { height:3px; background:var(--border2); border-radius:2px; overflow:hidden; }
+.hb-pw-fill { height:100%; border-radius:2px; }
+.hb-pw-note { font-size:11px; color:var(--muted); margin-top:6px; line-height:1.5; }
+
+.hb-ai-nudge { padding:16px 18px; background:linear-gradient(135deg,rgba(107,159,212,.06),rgba(107,159,212,.02)); border:1px solid rgba(107,159,212,.2); border-radius:var(--r-md); margin-top:16px; }
+.hb-an-label { font-family:var(--font-mono); font-size:9px; color:var(--sky); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.hb-an-label::before { content:'◈'; font-size:10px; }
+.hb-an-text { font-size:13px; color:var(--cream); line-height:1.6; }
+
+.hb-week-card { background:var(--elevated); border:1px solid var(--border); border-radius:var(--r-lg); padding:28px; grid-column:1/-1; }
+.hb-wc-title { font-family:var(--font-display); font-size:24px; font-weight:300; color:var(--cream); margin-bottom:4px; }
+.hb-wc-sub { font-family:var(--font-mono); font-size:10px; color:var(--muted); letter-spacing:0.08em; margin-bottom:20px; }
+.hb-wc-habits { display:flex; gap:12px; flex-wrap:wrap; }
+.hb-wc-tag { padding:8px 14px; background:var(--bg); border:1px solid var(--border2); border-radius:var(--r-sm); font-size:12px; color:var(--cream); }
+.hb-wc-tag.win { border-color:var(--sage); color:var(--sage); background:var(--sage-glow); }
+.hb-wc-tag.partial { border-color:var(--gold-dim); color:var(--gold); }
+.hb-wc-tag.miss { border-color:var(--rust); color:var(--rust); background:rgba(196,92,42,.05); }
+
+/* Shared tag utilities for habit builder */
+.hb-tag { font-family:var(--font-mono); font-size:9px; padding:3px 9px; border-radius:4px; letter-spacing:0.05em; text-transform:uppercase; }
+.hb-tag-sage { background:var(--sage-glow); color:var(--sage); border:1px solid rgba(74,124,94,.3); }
+.hb-tag-gold { background:var(--gold-glow); color:var(--gold); border:1px solid rgba(201,162,39,.3); }
+.hb-tag-rust { background:rgba(196,92,42,.08); color:var(--rust); border:1px solid rgba(196,92,42,.3); }
+.hb-tag-sky { background:var(--sky-glow); color:var(--sky); border:1px solid rgba(107,159,212,.3); }
+.hb-tag-lav { background:rgba(138,120,192,.08); color:var(--lavender); border:1px solid rgba(138,120,192,.3); }
+
+/* Action buttons in builder */
+.hb-btn-do { font-family:var(--font-body); font-size:12px; font-weight:500; padding:8px 18px; border-radius:8px; background:var(--gold); color:var(--ink); border:none; cursor:pointer; transition:all .2s; }
+.hb-btn-do:hover { background:var(--gold-hover); transform:translateY(-1px); }
+.hb-btn-skip { font-family:var(--font-body); font-size:12px; padding:8px 16px; border-radius:8px; background:none; color:var(--muted); border:1px solid var(--border2); cursor:pointer; transition:all .2s; }
+.hb-btn-skip:hover { border-color:var(--muted); color:var(--cream); }
+
+/* Settings for habit builder */
+.hb-settings-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(42,37,32,0.4); }
+.hb-settings-row:last-child { border-bottom:none; }
+.hb-settings-row-label { font-family:var(--font-body); font-size:13px; color:var(--cream); flex:1; }
+.hb-settings-row-sub { font-size:11px; color:var(--muted); margin-top:2px; }
+.hb-settings-input { background:var(--elevated); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-family:var(--font-body); font-size:12px; color:var(--cream); outline:none; width:100%; }
+.hb-settings-input:focus { border-color:var(--gold); }
+.hb-settings-textarea { background:var(--elevated); border:1px solid var(--border); border-radius:6px; padding:8px 10px; font-family:var(--font-display); font-size:13px; color:var(--cream); outline:none; width:100%; resize:vertical; line-height:1.6; }
+.hb-settings-textarea:focus { border-color:var(--gold); }
+
+@media(max-width:900px) {
+  .hb-builder-layout { grid-template-columns:1fr; }
+  .hb-routine-grid,.hb-prog-top,.hb-habits-grid,.hb-cue-grid,.hb-why-reward,.hb-insight-layout { grid-template-columns:1fr; }
+}
+
 </style>
 </head>
 <body>
@@ -2966,13 +3308,15 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <!-- Habits Panel (full page) -->
     <div id="panel-habits" style="display:none;flex:1;flex-direction:column;overflow:hidden">
       <!-- Tab bar -->
-      <div style="height:38px;min-height:38px;display:flex;align-items:stretch;padding:0 16px;border-bottom:1px solid var(--border);background:rgba(20,18,16,0.5);gap:4px">
-        <button class="habits-v2-tab active" data-htab="habits">Habits</button>
-        <button class="habits-v2-tab" data-htab="routines">Routines</button>
-        <button class="habits-v2-tab" data-htab="behaviours">Behaviours</button>
+      <div style="height:38px;min-height:38px;display:flex;align-items:stretch;padding:0 16px;border-bottom:1px solid var(--border);background:rgba(20,18,16,0.5);gap:4px;overflow-x:auto;scrollbar-width:none">
+        <button class="habits-v2-tab active" data-htab="tracker">Tracker</button>
+        <button class="habits-v2-tab" data-htab="launcher">Launcher</button>
+        <button class="habits-v2-tab" data-htab="builder">Builder</button>
+        <button class="habits-v2-tab" data-htab="progress">Progress</button>
       </div>
-      <!-- Habits pane -->
-      <div id="hpane-habits" class="habits-v2-pane">
+
+      <!-- TRACKER pane (Firebase-backed daily tracker) -->
+      <div id="hpane-tracker" class="habits-v2-pane">
         <div class="habits-v2-section">
           <div class="habits-v2-section-label">Daily Tracker — Last 7 days</div>
           <div id="habits-day-strip" class="habits-day-strip-v2"></div>
@@ -2982,9 +3326,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <button id="habits-add-btn" class="btn-primary" style="white-space:nowrap;font-size:10px;padding:7px 14px">+ Add</button>
           </div>
         </div>
-      </div>
-      <!-- Routines pane -->
-      <div id="hpane-routines" class="habits-v2-pane" style="display:none">
         <div class="habits-v2-section">
           <div class="habits-v2-section-label">Morning Routine</div>
           <div id="routines-morning-list" class="routine-list-v2"></div>
@@ -3003,13 +3344,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <button class="btn-primary" onclick="routineAdd('evening')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
           </div>
         </div>
-      </div>
-      <!-- Behaviours pane -->
-      <div id="hpane-behaviours" class="habits-v2-pane" style="display:none">
         <div class="habits-v2-section">
           <div class="habits-v2-section-label">Identity &amp; Values</div>
           <div class="habits-v2-section-desc">Who are you becoming? What do you stand for?</div>
-          <textarea class="form-input" id="behav-identity" rows="4" placeholder="I am someone who shows up consistently…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
+          <textarea class="form-input" id="behav-identity" rows="3" placeholder="I am someone who shows up consistently…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
         </div>
         <div class="habits-v2-section">
           <div class="habits-v2-section-label">Keystone Behaviours</div>
@@ -3023,11 +3361,426 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <div class="habits-v2-section">
           <div class="habits-v2-section-label">Reflection Notes</div>
           <div class="habits-v2-section-desc">Weekly reflection, friction points, what's working</div>
-          <textarea class="form-input" id="behav-notes" rows="5" placeholder="This week I noticed…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
+          <textarea class="form-input" id="behav-notes" rows="4" placeholder="This week I noticed…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
           <div id="behav-save-indicator" style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-top:4px;height:14px;transition:opacity 0.3s"></div>
         </div>
       </div>
-    </div>
+
+      <!-- LAUNCHER pane -->
+      <div id="hpane-launcher" class="habits-v2-pane" style="display:none;max-width:1100px">
+        <div class="hb-launcher-wrap">
+
+          <!-- Hero -->
+          <div class="hb-hero">
+            <div class="hb-hero-bg"></div>
+            <div class="hb-hero-grid"></div>
+            <div class="hb-top">
+              <div class="hb-left">
+                <div class="hb-time" id="hb-clock">06:42</div>
+                <div class="hb-date" id="hb-clockdate">SATURDAY · MARCH 15</div>
+              </div>
+              <div class="hb-right">
+                <div class="hb-season" id="hb-season-label">The Rebuilding · Day 42</div>
+              </div>
+            </div>
+            <div class="hb-quote" style="position:relative;">
+              <span id="hb-quote-text">"We are what we repeatedly do. Excellence, then, is not an act but a habit."</span>
+              <span class="hb-quote-attr">— Aristotle · Your identity today: <em style="color:var(--gold);" id="hb-identity-today">I am someone who builds with intention</em></span>
+            </div>
+            <div class="hb-stats">
+              <div class="hb-stat"><span class="hb-stat-n" id="hb-streak-n">—</span><span class="hb-stat-l">Day Streak</span></div>
+              <div class="hb-stat"><span class="hb-stat-n" id="hb-momentum-n">—</span><span class="hb-stat-l">Momentum</span></div>
+              <div class="hb-stat"><span class="hb-stat-n" id="hb-done-n">—</span><span class="hb-stat-l">Done Yesterday</span></div>
+              <div class="hb-stat"><span class="hb-stat-n">66d</span><span class="hb-stat-l">Avg to Auto</span></div>
+            </div>
+          </div>
+
+          <div class="hb-routine-grid">
+
+            <!-- Morning Routine Timeline -->
+            <div class="hb-routine-timeline">
+              <div class="hb-rt-header">
+                <div class="hb-rt-title">Morning Routine</div>
+                <div class="hb-rt-progress" id="hb-rt-progress">0 of 0 done</div>
+              </div>
+              <div class="hb-rt-overall"><div class="hb-rt-fill" id="hb-rt-bar" style="width:0%"></div></div>
+              <div id="hb-timeline-steps">
+                <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">
+                  Add steps in the Tracker tab → Morning Routine
+                </div>
+              </div>
+            </div>
+
+            <!-- Intent Panel -->
+            <div class="hb-intent-panel">
+
+              <!-- Identity Affirmation -->
+              <div class="hb-intent-card">
+                <div class="hb-ic-label">Today's Identity</div>
+                <div class="hb-identity-card">
+                  <div class="hb-id-label">I am someone who…</div>
+                  <div class="hb-id-text" id="hb-id-display">"builds systems, not just tasks — and shows up for my morning before the world asks anything of me."</div>
+                </div>
+              </div>
+
+              <!-- Non-Negotiable -->
+              <div class="hb-intent-card">
+                <div class="hb-ic-label">Today's Non-Negotiable</div>
+                <div class="hb-nonneg">
+                  <div class="hb-nonneg-label">If I do only one thing →</div>
+                  <div class="hb-nonneg-text" id="hb-nonneg-text" contenteditable="true" style="outline:none;min-height:20px" placeholder="Write your one thing…">Finalize the Design Council intake form flow and get it reviewed</div>
+                </div>
+              </div>
+
+              <!-- Energy Level -->
+              <div class="hb-intent-card">
+                <div class="hb-ic-label">Today's Energy Level</div>
+                <div class="hb-energy-select">
+                  <div class="hb-energy-row">
+                    <div class="hb-energy-chip deep on" onclick="hbPickEnergy(this)">
+                      <div class="hb-ec-icon">🔵</div>
+                      <div class="hb-ec-name">Deep Focus</div>
+                    </div>
+                    <div class="hb-energy-chip admin" onclick="hbPickEnergy(this)">
+                      <div class="hb-ec-icon">🟡</div>
+                      <div class="hb-ec-name">Admin Mode</div>
+                    </div>
+                  </div>
+                  <div class="hb-energy-row">
+                    <div class="hb-energy-chip creative" onclick="hbPickEnergy(this)">
+                      <div class="hb-ec-icon">🟠</div>
+                      <div class="hb-ec-name">Creative</div>
+                    </div>
+                    <div class="hb-energy-chip low" onclick="hbPickEnergy(this)">
+                      <div class="hb-ec-icon">🟢</div>
+                      <div class="hb-ec-name">Low &amp; Steady</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Launch -->
+              <button class="hb-launch-btn" id="hb-launch-btn" onclick="hbLaunchDay()">
+                Begin the day
+                <span class="hb-lb-sub" id="hb-lb-sub">Loading routine…</span>
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUILDER pane -->
+      <div id="hpane-builder" class="habits-v2-pane" style="display:none;max-width:1200px">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Concept · Habit Builder</div>
+        <div style="font-family:var(--font-display);font-size:26px;font-weight:300;color:var(--cream);margin-bottom:6px;">Build a new habit</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;max-width:700px;">Research-backed habit design: identity anchor → implementation intention → habit stack → minimal viable dose → friction guard. Every field earns its place.</div>
+
+        <div class="hb-builder-layout">
+
+          <!-- Library Sidebar -->
+          <div class="hb-library">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Habit Library</div>
+            <div class="hb-lib-search">
+              <input class="hb-lib-input" placeholder="Search habits…" id="hb-search-inp" oninput="hbFilterHabits(this.value)">
+            </div>
+            <div class="hb-lib-cats">
+              <span class="hb-cat-chip on" onclick="hbPickCat(this,'all')">All</span>
+              <span class="hb-cat-chip" onclick="hbPickCat(this,'mind')">Mind</span>
+              <span class="hb-cat-chip" onclick="hbPickCat(this,'body')">Body</span>
+              <span class="hb-cat-chip" onclick="hbPickCat(this,'work')">Work</span>
+              <span class="hb-cat-chip" onclick="hbPickCat(this,'soul')">Soul</span>
+            </div>
+            <div class="hb-lib-items" id="hb-habit-list">
+              <!-- populated by JS -->
+            </div>
+          </div>
+
+          <!-- Builder Detail -->
+          <div class="hb-detail">
+            <div class="hb-detail-card">
+              <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Selected Habit</div>
+              <div class="hb-habit-row">
+                <div class="hb-habit-icon" id="hb-sel-icon">📖</div>
+                <div class="hb-habit-name" id="hb-sel-name">Read 15 pages every morning</div>
+                <span class="hb-habit-badge hb-tag hb-tag-lav" id="hb-sel-cat">Mind</span>
+              </div>
+
+              <!-- 1. Identity Anchor -->
+              <div class="hb-ia-wrap">
+                <div class="hb-ia-label">① Identity Anchor <span style="color:var(--muted);font-size:9px;margin-left:6px;">→ +32% adherence (2024 research)</span></div>
+                <div class="hb-ia-text" id="hb-sel-identity">"I am a person who reads every morning — because curious people build better things."</div>
+                <div class="hb-ia-research">🧠 Framing habits as identity statements (not goals) increased adherence by 32% in 2024 Journal of Personality &amp; Social Psychology study. This is shown to you every morning.</div>
+              </div>
+
+              <hr class="hb-divider">
+
+              <!-- 2. Habit Stack -->
+              <div class="hb-stack-builder">
+                <div class="hb-sb-label">② Habit Stack — If–Then Plan <span style="color:var(--muted);font-size:9px;margin-left:6px;">→ 64% higher success vs standalone</span></div>
+                <div class="hb-sb-formula">
+                  <div class="hb-sb-anchor">After
+                    <select id="hb-stack-anchor">
+                      <option>my morning coffee</option>
+                      <option>my cold shower</option>
+                      <option>breakfast</option>
+                      <option>my walk</option>
+                      <option>waking up</option>
+                      <option>my journaling</option>
+                    </select>
+                  </div>
+                  <div class="hb-sb-arrow">→</div>
+                  <div class="hb-sb-new" id="hb-sb-new">I will read for 15 min</div>
+                </div>
+                <div class="hb-sb-research">📌 Implementation intentions (if–then plans) make people 2–3× more likely to follow through. Habit stacking anchors to existing neural pathways — reducing required willpower to near zero.</div>
+              </div>
+
+              <hr class="hb-divider">
+
+              <!-- 3. Cue + Context -->
+              <div class="hb-cue-grid">
+                <div class="hb-cue-item">
+                  <div class="hb-ci-label">Cue / Location</div>
+                  <input class="hb-ci-input" id="hb-cue-loc" value="☕ At my reading chair with coffee" placeholder="Where / what triggers this?">
+                </div>
+                <div class="hb-cue-item">
+                  <div class="hb-ci-label">Time Window</div>
+                  <input class="hb-ci-input" id="hb-cue-time" value="🕖 06:30 – 06:55 AM" placeholder="What time window?">
+                </div>
+                <div class="hb-cue-item">
+                  <div class="hb-ci-label">Routine Slot</div>
+                  <input class="hb-ci-input" id="hb-cue-slot" value="📅 Morning Routine · Step 6" placeholder="Which routine?">
+                </div>
+                <div class="hb-cue-item">
+                  <div class="hb-ci-label">Frequency</div>
+                  <input class="hb-ci-input" id="hb-cue-freq" value="📆 Daily (Mon–Sun)" placeholder="How often?">
+                </div>
+              </div>
+
+              <hr class="hb-divider">
+
+              <!-- 4. Why + Reward -->
+              <div class="hb-why-reward">
+                <div class="hb-wr-item">
+                  <div class="hb-wr-label">Why it matters</div>
+                  <textarea class="hb-wr-val" id="hb-why" rows="2" placeholder="Why does this habit matter to you?">Compounds knowledge — leaders who read 15 min/day consume 18+ books/year</textarea>
+                </div>
+                <div class="hb-wr-item">
+                  <div class="hb-wr-label">Immediate reward</div>
+                  <textarea class="hb-wr-val" id="hb-reward" rows="2" placeholder="What's the immediate reward?">A moment of peace before the workday. First coffee sip = only after first page.</textarea>
+                </div>
+              </div>
+
+              <hr class="hb-divider">
+
+              <!-- 5. Difficulty Ramp -->
+              <div class="hb-ramp-wrap">
+                <div class="hb-ramp-label">⑤ Difficulty Ramp — Tiny Habits Scale-Up <span style="color:var(--muted);font-size:9px;margin-left:6px;">→ 2.7× more likely to stick long-term</span></div>
+                <div class="hb-ramp-steps" id="hb-ramp-steps">
+                  <div class="hb-ramp-step active" onclick="hbPickRamp(this)">
+                    <div class="hb-rs-week">Wk 1–2</div>
+                    <div class="hb-rs-dose active" id="hb-ramp-dose-0">5 pages</div>
+                  </div>
+                  <div class="hb-ramp-step" onclick="hbPickRamp(this)">
+                    <div class="hb-rs-week">Wk 3–4</div>
+                    <div class="hb-rs-dose" id="hb-ramp-dose-1">10 pages</div>
+                  </div>
+                  <div class="hb-ramp-step" onclick="hbPickRamp(this)">
+                    <div class="hb-rs-week">Wk 5–8</div>
+                    <div class="hb-rs-dose" id="hb-ramp-dose-2">15 pages</div>
+                  </div>
+                  <div class="hb-ramp-step" onclick="hbPickRamp(this)">
+                    <div class="hb-rs-week">Wk 9+</div>
+                    <div class="hb-rs-dose" id="hb-ramp-dose-3">20+ pages</div>
+                  </div>
+                </div>
+                <div class="hb-sb-research" style="margin-top:10px;">🪜 Starting tiny and scaling up makes you 2.7× more likely to maintain long-term (BJ Fogg + 2025 meta-analysis). Cosmodex auto-upgrades your dose as streak builds.</div>
+              </div>
+
+              <hr class="hb-divider">
+
+              <!-- 6. Friction Guard -->
+              <div class="hb-friction-guard">
+                <div class="hb-fg-label">⑥ Friction Guard — Pre-Mortem</div>
+                <div class="hb-fg-q">What's most likely to break this habit?</div>
+                <div class="hb-fg-opts" id="hb-fg-opts">
+                  <span class="hb-fg-opt" onclick="this.classList.toggle('on')">Travelling</span>
+                  <span class="hb-fg-opt on" onclick="this.classList.toggle('on')">Late nights</span>
+                  <span class="hb-fg-opt" onclick="this.classList.toggle('on')">Meetings at 7am</span>
+                  <span class="hb-fg-opt" onclick="this.classList.toggle('on')">Low motivation</span>
+                  <span class="hb-fg-opt" onclick="this.classList.toggle('on')">Weekend drift</span>
+                </div>
+                <div style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6;" id="hb-friction-tip">
+                  💡 <em>Late nights selected:</em> Cosmodex will auto-reduce tomorrow's dose if you sleep past midnight — keeping the chain alive without perfection pressure.
+                </div>
+              </div>
+
+              <div style="margin-top:24px;display:flex;gap:12px;">
+                <button class="hb-btn-do" style="flex:1;font-size:15px;padding:16px;" onclick="hbAddToTracker()">Add to Tracker →</button>
+                <button class="hb-btn-skip" style="padding:16px 20px;" onclick="hbSaveDraft()">Save Draft</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROGRESS pane -->
+      <div id="hpane-progress" class="habits-v2-pane" style="display:none">
+        <div class="hb-progress-layout">
+          <div style="font-family:var(--font-display);font-size:26px;font-weight:300;color:var(--cream);margin-bottom:4px;">Your automaticity map</div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;margin-bottom:20px;">HABITS NEED ~66 DAYS TO BECOME AUTOMATIC</div>
+          <div class="hb-prog-top">
+
+            <!-- Completion Ring -->
+            <div class="hb-prog-card">
+              <div class="hb-pc-label">This Week's Completion</div>
+              <div class="hb-ring-wrap">
+                <svg width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0">
+                  <circle cx="40" cy="40" r="32" fill="none" stroke="var(--elevated)" stroke-width="8"/>
+                  <circle cx="40" cy="40" r="32" fill="none" stroke="var(--sage)" stroke-width="8"
+                    stroke-dasharray="201" stroke-dashoffset="50" stroke-linecap="round"
+                    transform="rotate(-90 40 40)" style="transition:stroke-dashoffset 1s var(--ease);"
+                    id="hb-ring-arc"/>
+                  <text x="40" y="45" text-anchor="middle" fill="var(--cream)" font-family="var(--font-display)" font-size="16" font-weight="300" id="hb-ring-pct">75%</text>
+                </svg>
+                <div>
+                  <div class="hb-ring-big" id="hb-ring-ratio">27/36</div>
+                  <div class="hb-ring-sub">habit completions<br>this week</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Momentum -->
+            <div class="hb-prog-card">
+              <div class="hb-pc-label">Momentum Score · 7-day rolling</div>
+              <div style="font-family:var(--font-display);font-size:52px;font-weight:200;color:var(--gold);line-height:1;margin-bottom:8px;" id="hb-momentum-score">74</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.6;">Falls gently, recovers quickly. Not a streak — no punishment for missing one day.</div>
+              <div style="display:flex;gap:4px;margin-top:12px;align-items:flex-end;height:36px;" id="hb-momentum-bars">
+                <div style="flex:1;background:var(--gold);border-radius:2px;height:65%;"></div>
+                <div style="flex:1;background:var(--gold);border-radius:2px;height:80%;"></div>
+                <div style="flex:1;background:var(--gold-dim);border-radius:2px;height:35%;"></div>
+                <div style="flex:1;background:var(--gold);border-radius:2px;height:90%;"></div>
+                <div style="flex:1;background:var(--gold);border-radius:2px;height:75%;"></div>
+                <div style="flex:1;background:var(--gold-dim);border-radius:2px;height:30%;"></div>
+                <div style="flex:1;background:var(--gold);border-radius:2px;height:74%;"></div>
+              </div>
+            </div>
+
+            <!-- Heatmap -->
+            <div class="hb-prog-card">
+              <div class="hb-pc-label">13-Week Heatmap</div>
+              <div class="hb-heatmap" id="hb-heatmap"></div>
+              <div style="display:flex;gap:6px;align-items:center;margin-top:10px;">
+                <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);">Less</span>
+                <div style="width:10px;height:10px;background:var(--elevated);border-radius:2px;"></div>
+                <div style="width:10px;height:10px;background:rgba(74,124,94,.3);border-radius:2px;"></div>
+                <div style="width:10px;height:10px;background:rgba(74,124,94,.6);border-radius:2px;"></div>
+                <div style="width:10px;height:10px;background:var(--sage);border-radius:2px;"></div>
+                <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);">More</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Individual Habit Cards -->
+          <div class="hb-habits-grid" id="hb-prog-habit-cards">
+            <div class="hb-habit-prog-card">
+              <div class="hb-hpc-top">
+                <div class="hb-hpc-icon">📖</div>
+                <div class="hb-hpc-info">
+                  <div class="hb-hpc-name">Read 15 pages</div>
+                  <div class="hb-hpc-identity">I am a curious, continuous learner</div>
+                </div>
+                <div class="hb-hpc-streak"><div class="hb-hpc-streak-n">14</div><div class="hb-hpc-streak-l">day streak</div></div>
+              </div>
+              <div class="hb-day-row">
+                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot miss"></div>
+                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot today"></div>
+              </div>
+              <div class="hb-auto-bar">
+                <div class="hb-ab-top"><div class="hb-ab-label">Automaticity</div><div class="hb-ab-pct">62%</div></div>
+                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:62%;background:var(--sage);"></div></div>
+              </div>
+              <div class="hb-auto-bar">
+                <div class="hb-ab-top"><div class="hb-ab-label">Identity Integration</div><div class="hb-ab-pct">71%</div></div>
+                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:71%;background:var(--gold);"></div></div>
+              </div>
+              <div class="hb-stack-note">Stacked onto: morning coffee → book before phone</div>
+            </div>
+            <div class="hb-habit-prog-card">
+              <div class="hb-hpc-top">
+                <div class="hb-hpc-icon">🥛</div>
+                <div class="hb-hpc-info">
+                  <div class="hb-hpc-name">Morning hydration</div>
+                  <div class="hb-hpc-identity">I am someone who respects my body</div>
+                </div>
+                <div class="hb-hpc-streak"><div class="hb-hpc-streak-n">42</div><div class="hb-hpc-streak-l">day streak</div></div>
+              </div>
+              <div class="hb-day-row">
+                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div>
+                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot today"></div>
+              </div>
+              <div class="hb-auto-bar">
+                <div class="hb-ab-top"><div class="hb-ab-label">Automaticity</div><div class="hb-ab-pct">89%</div></div>
+                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:89%;background:var(--sage);"></div></div>
+              </div>
+              <div class="hb-auto-bar">
+                <div class="hb-ab-top"><div class="hb-ab-label">Identity Integration</div><div class="hb-ab-pct">94%</div></div>
+                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:94%;background:var(--gold);"></div></div>
+              </div>
+              <div class="hb-stack-note" style="color:var(--sage);">🎉 Near automatic — minimal willpower needed</div>
+            </div>
+            <div class="hb-habit-prog-card">
+              <div class="hb-hpc-top">
+                <div class="hb-hpc-icon">📓</div>
+                <div class="hb-hpc-info">
+                  <div class="hb-hpc-name">10-min journaling</div>
+                  <div class="hb-hpc-identity">I am a reflective, intentional thinker</div>
+                </div>
+                <div class="hb-hpc-streak"><div class="hb-hpc-streak-n">7</div><div class="hb-hpc-streak-l">day streak</div></div>
+              </div>
+              <div class="hb-day-row">
+                <div class="hb-day-dot miss"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div>
+                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot today"></div>
+              </div>
+              <div class="hb-auto-bar">
+                <div class="hb-ab-top"><div class="hb-ab-label">Automaticity</div><div class="hb-ab-pct">31%</div></div>
+                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:31%;background:var(--amber);"></div></div>
+              </div>
+              <div class="hb-auto-bar">
+                <div class="hb-ab-top"><div class="hb-ab-label">Identity Integration</div><div class="hb-ab-pct">44%</div></div>
+                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:44%;background:var(--gold);"></div></div>
+              </div>
+              <div class="hb-stack-note">~35 more days to reach automaticity threshold</div>
+            </div>
+            <div class="hb-habit-prog-card">
+              <div class="hb-hpc-top">
+                <div class="hb-hpc-icon">🚶</div>
+                <div class="hb-hpc-info">
+                  <div class="hb-hpc-name">Morning walk (10 min)</div>
+                  <div class="hb-hpc-identity">I am an active, present person</div>
+                </div>
+                <div class="hb-hpc-streak"><div class="hb-hpc-streak-n">21</div><div class="hb-hpc-streak-l">day streak</div></div>
+              </div>
+              <div class="hb-day-row">
+                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div>
+                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot today"></div>
+              </div>
+              <div class="hb-auto-bar">
+                <div class="hb-ab-top"><div class="hb-ab-label">Automaticity</div><div class="hb-ab-pct">55%</div></div>
+                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:55%;background:var(--sage);"></div></div>
+              </div>
+              <div class="hb-auto-bar">
+                <div class="hb-ab-top"><div class="hb-ab-label">Identity Integration</div><div class="hb-ab-pct">60%</div></div>
+                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:60%;background:var(--gold);"></div></div>
+              </div>
+              <div class="hb-stack-note">Stacked onto: hydration → shoes on immediately</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-habits -->
 
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
@@ -3145,13 +3898,17 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
 <!-- Insights overlay -->
 <div class="overlay" id="insights-overlay">
-  <div class="overlay-panel">
+  <div class="overlay-panel" style="width:min(1000px,96vw)">
     <div class="overlay-header">
-      <span class="overlay-title">Insights</span>
+      <span class="overlay-title">Habit Intelligence</span>
       <button class="overlay-close" data-close="insights-overlay">✕</button>
     </div>
     <div class="overlay-body">
-      <div class="stat-card-grid">
+      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Habit Insights</div>
+      <div style="font-family:var(--font-display);font-size:22px;font-weight:300;color:var(--cream);margin-bottom:4px;">What's actually happening</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Friction detection, pattern analysis, and contextual nudges — not generic reminders.</div>
+
+      <div class="stat-card-grid" style="margin-bottom:20px;">
         <div class="stat-card">
           <span class="stat-card-number" id="ins-total">—</span>
           <span class="stat-card-label">Total Focus hrs</span>
@@ -3169,8 +3926,102 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <span class="stat-card-label">Days active</span>
         </div>
       </div>
-      <div class="overlay-placeholder">
-        <div class="overlay-placeholder-text">Bar chart + 90-day heatmap — populated from Firestore</div>
+
+      <div class="hb-insight-layout">
+
+        <!-- Friction Detector -->
+        <div class="hb-insight-card">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
+          <div class="hb-friction-insight">
+            <div class="hb-fi-habit warn">
+              <div class="hb-fi-icon">📓</div>
+              <div class="hb-fi-info">
+                <div class="hb-fi-name">Journaling — skipped 3× last 2 weeks</div>
+                <div class="hb-fi-reason">Pattern: skipped after late nights (past midnight)</div>
+              </div>
+              <div class="hb-fi-action">⚠ Flagged</div>
+            </div>
+            <div style="padding:12px 14px;background:rgba(196,92,42,.04);border:1px solid rgba(196,92,42,.15);border-radius:var(--r-sm);margin-bottom:12px;">
+              <div style="font-size:12px;color:var(--cream);margin-bottom:8px;font-weight:500;">What's blocking it?</div>
+              <div class="hb-fg-opts">
+                <span class="hb-fg-opt on">😴 Too tired at night</span>
+                <span class="hb-fg-opt" onclick="this.classList.toggle('on')">🌫 Unclear what to write</span>
+                <span class="hb-fg-opt" onclick="this.classList.toggle('on')">📱 Phone distracts</span>
+              </div>
+              <div style="margin-top:10px;font-size:12px;color:var(--muted);">💡 Suggestion: reduce to 5-min prompt-based version on days after midnight bedtime</div>
+            </div>
+            <div class="hb-fi-habit ok">
+              <div class="hb-fi-icon">🥛</div>
+              <div class="hb-fi-info">
+                <div class="hb-fi-name">Hydration — 42 day streak</div>
+                <div class="hb-fi-reason">Near automatic · no willpower required</div>
+              </div>
+              <div class="hb-fi-action ok">✓ Locked in</div>
+            </div>
+            <div class="hb-fi-habit ok">
+              <div class="hb-fi-icon">🚶</div>
+              <div class="hb-fi-info">
+                <div class="hb-fi-name">Morning walk — thriving</div>
+                <div class="hb-fi-reason">Consistent context · same time, same route</div>
+              </div>
+              <div class="hb-fi-action ok">✓ Growing</div>
+            </div>
+          </div>
+          <div class="hb-ai-nudge">
+            <div class="hb-an-label">Cosmodex Pattern Insight</div>
+            <div class="hb-an-text">Your habits succeed 89% more on days you complete the morning routine before 7am. On days you skip the walk, journaling drops too — they're behaviourally linked. Protecting the walk protects the chain.</div>
+          </div>
+        </div>
+
+        <!-- Context Patterns -->
+        <div class="hb-insight-card">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Habit Success by Context</div>
+          <div class="hb-pattern-wrap">
+            <div class="hb-pw-item">
+              <div class="hb-pw-top"><div class="hb-pw-name">Weekday mornings (before 7am)</div><div class="hb-pw-score" style="color:var(--sage);">91%</div></div>
+              <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:91%;background:var(--sage);"></div></div>
+              <div class="hb-pw-note">Your best context. Protect this window aggressively.</div>
+            </div>
+            <div class="hb-pw-item">
+              <div class="hb-pw-top"><div class="hb-pw-name">Weekend mornings</div><div class="hb-pw-score" style="color:var(--amber);">64%</div></div>
+              <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:64%;background:var(--amber);"></div></div>
+              <div class="hb-pw-note">Weekend drift is real — routine starts 40 min later on avg.</div>
+            </div>
+            <div class="hb-pw-item">
+              <div class="hb-pw-top"><div class="hb-pw-name">After late nights (&gt;midnight)</div><div class="hb-pw-score" style="color:var(--rust);">28%</div></div>
+              <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:28%;background:var(--rust);"></div></div>
+              <div class="hb-pw-note">Trigger: auto-reduce to 2-step minimal routine next morning.</div>
+            </div>
+            <div class="hb-pw-item">
+              <div class="hb-pw-top"><div class="hb-pw-name">Travel days</div><div class="hb-pw-score" style="color:var(--rust);">22%</div></div>
+              <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:22%;background:var(--rust);"></div></div>
+              <div class="hb-pw-note">Suggestion: activate "Travel Mode" — 3-step survival routine.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Week Debrief -->
+        <div class="hb-week-card">
+          <div class="hb-wc-title">Week Debrief · Mar 8–14</div>
+          <div class="hb-wc-sub">GENERATED AUTOMATICALLY · EVERY SUNDAY</div>
+          <div style="font-size:14px;color:var(--cream);line-height:1.7;margin-bottom:20px;max-width:680px;">
+            You completed 75% of your habits this week — up from 68% last week. Hydration is now fully automatic. Journaling needs attention: 3 skips linked to late nights. Your morning walk protected your energy on 5/7 days.
+          </div>
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Habit Performance</div>
+          <div class="hb-wc-habits">
+            <span class="hb-wc-tag win">🥛 Hydration · 7/7</span>
+            <span class="hb-wc-tag win">🚶 Walk · 6/7</span>
+            <span class="hb-wc-tag win">📖 Reading · 6/7</span>
+            <span class="hb-wc-tag partial">📓 Journaling · 4/7</span>
+            <span class="hb-wc-tag partial">🧊 Cold shower · 4/7</span>
+            <span class="hb-wc-tag miss">🧘 Meditation · 2/7</span>
+          </div>
+          <div style="margin-top:20px;padding:16px 18px;background:var(--bg);border-radius:var(--r-md);border-left:2px solid var(--gold);">
+            <div style="font-family:var(--font-display);font-size:16px;font-style:italic;color:var(--gold);margin-bottom:4px;">"Next week's one focus: protect journaling on Tues/Wed evenings."</div>
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);">Set during last Sunday's debrief</div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -3417,6 +4268,32 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <div class="settings-section-title">Visible Categories</div>
         <div class="settings-desc">Toggle which categories appear in your task list. To change a task's category, click its coloured badge directly on the task row — it cycles through all categories.</div>
         <div class="settings-cat-grid" id="settings-cat-filters"></div>
+      </div>
+
+      <!-- Habit Builder Settings -->
+      <div class="settings-section">
+        <div class="settings-section-title">Habit Builder</div>
+        <div class="settings-desc">Configure your identity statement, season name, and quote shown on the Launcher.</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Identity Statement (shown on Launcher)</div>
+            <textarea class="hb-settings-textarea" id="hb-cfg-identity" rows="2" placeholder="I am someone who builds with intention…">builds systems, not just tasks — and shows up for my morning before the world asks anything of me.</textarea>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Season / Life Chapter Label</div>
+            <input class="hb-settings-input" id="hb-cfg-season" value="The Rebuilding · Day 42" placeholder="e.g. The Rebuilding · Day 42">
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Daily Quote</div>
+            <textarea class="hb-settings-textarea" id="hb-cfg-quote" rows="2" placeholder="Your daily quote…">"We are what we repeatedly do. Excellence, then, is not an act but a habit." — Aristotle</textarea>
+          </div>
+          <div>
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Habit Library — Custom Entries</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Add custom habits to the builder library (one per line: emoji Name · Duration · Category)</div>
+            <textarea class="hb-settings-textarea" id="hb-cfg-custom-habits" rows="4" placeholder="🧘 Breathwork · 5 min · mind&#10;💧 Cold plunge · 3 min · body"></textarea>
+          </div>
+          <button class="btn-primary" onclick="hbSaveSettings()" style="align-self:flex-start;font-size:11px;padding:8px 16px;">Save Habit Settings</button>
+        </div>
       </div>
 
       <!-- Holidays section -->
@@ -4006,15 +4883,16 @@ function behavSubscribe() {
    ══════════════════════════════════════════════════════════ */
 function switchHabitsTab(tab) {
   _habitsTab = tab;
-  ['habits','routines','behaviours'].forEach(t => {
+  ['tracker','launcher','builder','progress'].forEach(t => {
     const btn  = document.querySelector(`.habits-v2-tab[data-htab="${t}"]`);
     const pane = document.getElementById('hpane-'+t);
     if (btn) btn.classList.toggle('active', t === tab);
     if (pane) pane.style.display = t === tab ? 'flex' : 'none';
   });
-  if (tab === 'habits')      { habitsSubscribe(); renderHabits(); }
-  if (tab === 'routines')    { routinesSubscribe(); renderRoutines(); }
-  if (tab === 'behaviours')  { behavSubscribe(); renderBehaviours(); }
+  if (tab === 'tracker')  { habitsSubscribe(); renderHabits(); routinesSubscribe(); renderRoutines(); behavSubscribe(); renderBehaviours(); }
+  if (tab === 'launcher') { hbInitLauncher(); }
+  if (tab === 'builder')  { hbRenderLibrary(); }
+  if (tab === 'progress') { hbBuildHeatmap(); }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -4289,6 +5167,280 @@ function initHabitsPage() {
   document.getElementById('behav-keystone-inp')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') behavKeystoneAdd();
   });
+
+  // Init tracker data
+  habitsSubscribe();
+  renderHabits();
+}
+
+/* ══════════════════════════════════════════════════════════
+   HABIT BUILDER — LIBRARY & CLOCK
+   ══════════════════════════════════════════════════════════ */
+const HB_HABITS = [
+  {icon:'📖',name:'Read 15 pages',cat:'mind',dur:'20 min',tag:'Compound Knowledge',identity:'"I am a curious, continuous learner who compounds knowledge daily."',sbNew:'I will read for 15 min'},
+  {icon:'📓',name:'10-min journaling',cat:'mind',dur:'10 min',tag:'Mental Clarity',identity:'"I am a reflective, intentional person who thinks before I act."',sbNew:'I will write in my journal for 10 min'},
+  {icon:'🧘',name:'Meditation',cat:'mind',dur:'10 min',tag:'Focus',identity:'"I am someone who chooses calm over chaos."',sbNew:'I will meditate for 10 min'},
+  {icon:'📝',name:'Gratitude (3 things)',cat:'soul',dur:'5 min',tag:'Positive Affect',identity:'"I am someone who finds light, even on hard days."',sbNew:'I will write 3 things I\'m grateful for'},
+  {icon:'🥛',name:'Drink 500ml water',cat:'body',dur:'2 min',tag:'Hydration',identity:'"I am someone who respects and nourishes my body."',sbNew:'I will drink 500ml water'},
+  {icon:'🚶',name:'Morning walk',cat:'body',dur:'10 min',tag:'Alertness',identity:'"I am an active, present person who moves with purpose."',sbNew:'I will go for a 10-min walk'},
+  {icon:'🧊',name:'Cold shower',cat:'body',dur:'3 min',tag:'Resilience',identity:'"I am someone who does hard things on purpose."',sbNew:'I will finish my shower with 2 min cold'},
+  {icon:'💪',name:'7-min workout',cat:'body',dur:'7 min',tag:'Energy',identity:'"I am someone who moves their body every day."',sbNew:'I will do a 7-min workout'},
+  {icon:'📵',name:'No phone first 20 min',cat:'mind',dur:'20 min',tag:'Focus',identity:'"I am someone who guards my attention fiercely."',sbNew:'I will keep my phone face-down for 20 min'},
+  {icon:'🌅',name:'Watch the sunrise',cat:'soul',dur:'5 min',tag:'Groundedness',identity:'"I am someone who starts the day with intention."',sbNew:'I will step outside and watch the sunrise'},
+  {icon:'🎯',name:'Set daily intention',cat:'work',dur:'3 min',tag:'Clarity',identity:'"I am an intentional person who decides before the day decides for me."',sbNew:'I will write my single focus for the day'},
+  {icon:'📬',name:'Zero inbox review',cat:'work',dur:'15 min',tag:'Control',identity:'"I am someone who stays on top of what matters."',sbNew:'I will process my inbox to zero'},
+  {icon:'🔬',name:'Learn one new thing',cat:'mind',dur:'10 min',tag:'Growth',identity:'"I am a lifelong learner who compounds curiosity."',sbNew:'I will spend 10 min learning something new'},
+  {icon:'🤝',name:'Connect with someone',cat:'soul',dur:'5 min',tag:'Belonging',identity:'"I am someone who invests in real relationships."',sbNew:'I will reach out to one person today'},
+  {icon:'🌙',name:'Evening wind-down',cat:'soul',dur:'20 min',tag:'Sleep',identity:'"I am someone who protects their recovery."',sbNew:'I will do my evening wind-down routine'},
+];
+
+let _hbCurrentCat = 'all';
+let _hbCurrentSearch = '';
+let _hbSelectedHabit = HB_HABITS[0];
+let _hbDoneCount = 0;
+let _hbTotalSteps = 0;
+
+function hbRenderLibrary() {
+  const list = document.getElementById('hb-habit-list');
+  if (!list) return;
+
+  // Load any custom habits from settings
+  const customRaw = document.getElementById('hb-cfg-custom-habits')?.value || '';
+  const customHabits = customRaw.split('\n').filter(l => l.trim()).map(l => {
+    const parts = l.split('·').map(p => p.trim());
+    const namePart = parts[0] || '';
+    const icon = namePart.match(/^\p{Emoji}/u)?.[0] || '⭐';
+    const name = namePart.replace(/^\p{Emoji}\s*/u, '').trim();
+    return { icon, name, cat: (parts[2]||'mind').toLowerCase(), dur: parts[1]||'5 min', tag: 'Custom', identity: `"I am someone who practices ${name.toLowerCase()}."`, sbNew: `I will ${name.toLowerCase()}` };
+  }).filter(h => h.name);
+
+  const allHabits = [...HB_HABITS, ...customHabits];
+  list.innerHTML = '';
+  allHabits.filter(h =>
+    (_hbCurrentCat === 'all' || h.cat === _hbCurrentCat) &&
+    (h.name.toLowerCase().includes(_hbCurrentSearch) || (h.tag||'').toLowerCase().includes(_hbCurrentSearch))
+  ).forEach(h => {
+    const el = document.createElement('div');
+    el.className = 'hb-lib-template';
+    if (_hbSelectedHabit && _hbSelectedHabit.name === h.name) el.classList.add('adding');
+    el.innerHTML = `<div class="hb-lt-icon">${h.icon}</div><div class="hb-lt-info"><div class="hb-lt-name">${h.name}</div><div class="hb-lt-meta">${h.dur} · ${h.tag}</div></div><div class="hb-lt-add">+</div>`;
+    el.addEventListener('click', () => hbSelectHabit(h, el));
+    list.appendChild(el);
+  });
+}
+
+function hbSelectHabit(h, el) {
+  document.querySelectorAll('.hb-lib-template').forEach(t => t.classList.remove('adding'));
+  if (el) el.classList.add('adding');
+  _hbSelectedHabit = h;
+  const setEl = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+  setEl('hb-sel-icon', h.icon);
+  setEl('hb-sel-name', h.name);
+  const badge = document.getElementById('hb-sel-cat');
+  if (badge) { badge.textContent = h.cat.charAt(0).toUpperCase() + h.cat.slice(1); badge.className = `hb-habit-badge hb-tag hb-tag-${h.cat === 'mind' ? 'lav' : h.cat === 'body' ? 'sage' : h.cat === 'work' ? 'sky' : 'gold'}`; }
+  const identity = document.getElementById('hb-sel-identity');
+  if (identity) identity.textContent = h.identity || `"I am a person who practices ${h.name.toLowerCase()} — because it reflects who I'm becoming."`;
+  const sbNew = document.getElementById('hb-sb-new');
+  if (sbNew) sbNew.textContent = h.sbNew || `I will ${h.name.toLowerCase()}`;
+  // Reset cue fields
+  const setVal = (id, val) => { const e = document.getElementById(id); if (e) e.value = val; };
+  setVal('hb-cue-loc', '');
+  setVal('hb-cue-time', '');
+  setVal('hb-cue-slot', '📅 Morning Routine');
+  setVal('hb-cue-freq', '📆 Daily (Mon–Sun)');
+  const why = document.getElementById('hb-why');
+  if (why) why.value = '';
+  const reward = document.getElementById('hb-reward');
+  if (reward) reward.value = '';
+}
+
+function hbFilterHabits(v) { _hbCurrentSearch = v.toLowerCase(); hbRenderLibrary(); }
+
+function hbPickCat(el, cat) {
+  document.querySelectorAll('.hb-cat-chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  _hbCurrentCat = cat;
+  hbRenderLibrary();
+}
+
+function hbPickRamp(el) {
+  document.querySelectorAll('.hb-ramp-step').forEach(r => {
+    r.classList.remove('active');
+    r.querySelector('.hb-rs-dose')?.classList.remove('active');
+  });
+  el.classList.add('active');
+  el.querySelector('.hb-rs-dose')?.classList.add('active');
+}
+
+function hbAddToTracker() {
+  if (!_hbSelectedHabit) return;
+  const inp = document.getElementById('habit-new-inp');
+  if (inp) { inp.value = _hbSelectedHabit.icon + ' ' + _hbSelectedHabit.name; habitsAddNew(); }
+  // Switch to tracker tab
+  switchHabitsTab('tracker');
+  document.querySelector('.habits-v2-tab[data-htab="tracker"]')?.click();
+  showToast('Habit added to Tracker →');
+}
+
+function hbSaveDraft() { showToast('Draft saved'); }
+
+/* ── LAUNCHER ────────────────────────────────────────── */
+function hbInitLauncher() {
+  hbTickClock();
+  hbLoadLauncherFromRoutines();
+  hbLoadIdentityFromSettings();
+}
+
+function hbTickClock() {
+  const n = new Date();
+  const h = String(n.getHours()).padStart(2,'0');
+  const m = String(n.getMinutes()).padStart(2,'0');
+  const el = document.getElementById('hb-clock');
+  if (el) el.textContent = h + ':' + m;
+  const days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+  const mos  = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const d = document.getElementById('hb-clockdate');
+  if (d) d.textContent = days[n.getDay()] + ' · ' + mos[n.getMonth()] + ' ' + String(n.getDate()).padStart(2,'0');
+}
+
+function hbLoadLauncherFromRoutines() {
+  const steps = document.getElementById('hb-timeline-steps');
+  if (!steps) return;
+  const morning = _routines?.morning || [];
+  if (!morning.length) {
+    steps.innerHTML = '<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Add steps in the Tracker tab → Morning Routine</div>';
+    _hbDoneCount = 0; _hbTotalSteps = 0;
+    hbUpdateLauncherProgress();
+    return;
+  }
+  _hbTotalSteps = morning.length;
+  const completed = JSON.parse(localStorage.getItem('hb-launcher-done-' + localDateStr(new Date())) || '{}');
+  _hbDoneCount = Object.values(completed).filter(Boolean).length;
+
+  steps.innerHTML = morning.map((step, i) => {
+    const isDone = !!completed[i];
+    const isActive = !isDone && morning.slice(0, i).every((_, j) => !!completed[j]);
+    return `<div class="hb-step ${isActive ? 'hb-step-active' : ''}" onclick="hbExpandStep(this)">
+      <div class="hb-step-left">
+        <div class="hb-step-time">${step.time || ''}</div>
+        <div class="hb-step-check ${isDone ? 'done' : isActive ? 'active' : ''}" data-idx="${i}" onclick="hbToggleStep(event,this)">${isDone ? '✓' : ''}</div>
+        ${i < morning.length - 1 ? `<div class="hb-step-line ${isDone ? 'done' : ''}"></div>` : ''}
+      </div>
+      <div class="hb-step-body">
+        <div class="hb-step-name ${isDone ? 'done' : ''}">${escHtml(step.text || '')}</div>
+        <div class="hb-step-meta">
+          <span class="hb-step-dur">${step.time ? step.time : ''}</span>
+          ${isActive ? '<span class="hb-tag hb-tag-gold">Active Now</span>' : isDone ? '<span class="hb-tag hb-tag-sage">Done</span>' : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  steps.querySelectorAll('.hb-step-check').forEach(el => {
+    el.addEventListener('click', e => hbToggleStep(e, el));
+  });
+
+  hbUpdateLauncherProgress();
+}
+
+function hbToggleStep(e, el) {
+  e.stopPropagation();
+  const idx = el.dataset.idx;
+  const dateKey = 'hb-launcher-done-' + localDateStr(new Date());
+  const completed = JSON.parse(localStorage.getItem(dateKey) || '{}');
+  completed[idx] = !completed[idx];
+  localStorage.setItem(dateKey, JSON.stringify(completed));
+  hbLoadLauncherFromRoutines();
+}
+
+function hbExpandStep(el) {
+  const exp = el.querySelector('.hb-step-expand');
+  if (exp) exp.classList.toggle('open');
+}
+
+function hbUpdateLauncherProgress() {
+  const bar  = document.getElementById('hb-rt-bar');
+  const prog = document.getElementById('hb-rt-progress');
+  const pct  = _hbTotalSteps > 0 ? Math.round(_hbDoneCount / _hbTotalSteps * 100) : 0;
+  if (bar)  bar.style.width = pct + '%';
+  if (prog) prog.textContent = _hbDoneCount + ' of ' + _hbTotalSteps + ' done';
+
+  // Update launch button sub-label
+  const sub = document.getElementById('hb-lb-sub');
+  if (sub) sub.textContent = _hbTotalSteps + ' steps · ' + (pct < 100 ? (100 - pct) + '% remaining' : 'Routine complete ✓');
+}
+
+function hbPickEnergy(el) {
+  document.querySelectorAll('.hb-energy-chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  const mode = el.querySelector('.hb-ec-name')?.textContent || '';
+  const sub = document.getElementById('hb-lb-sub');
+  if (sub) sub.textContent = _hbTotalSteps + ' steps · ' + mode + ' mode';
+}
+
+function hbLaunchDay() {
+  const btn = document.getElementById('hb-launch-btn');
+  if (!btn) return;
+  btn.style.background = 'linear-gradient(135deg,var(--sage) 0%,#2d5a3d 100%)';
+  btn.innerHTML = 'Day started ✓<span class="hb-lb-sub">Routine launched — good luck today</span>';
+  setTimeout(() => {
+    btn.style.background = 'linear-gradient(135deg,var(--gold) 0%,#a88018 100%)';
+    btn.innerHTML = 'Begin the day<span class="hb-lb-sub" id="hb-lb-sub">' + _hbTotalSteps + ' steps ready</span>';
+  }, 2500);
+}
+
+function hbLoadIdentityFromSettings() {
+  const cfg = document.getElementById('hb-cfg-identity')?.value;
+  const idDisplay = document.getElementById('hb-id-display');
+  if (idDisplay && cfg) idDisplay.textContent = '"' + cfg.trim() + '"';
+
+  const season = document.getElementById('hb-cfg-season')?.value;
+  const seasonEl = document.getElementById('hb-season-label');
+  if (seasonEl && season) seasonEl.textContent = season;
+
+  const quote = document.getElementById('hb-cfg-quote')?.value;
+  const quoteEl = document.getElementById('hb-quote-text');
+  if (quoteEl && quote) quoteEl.textContent = quote;
+}
+
+function hbSaveSettings() {
+  // Persist to localStorage
+  const cfg = {
+    identity: document.getElementById('hb-cfg-identity')?.value || '',
+    season:   document.getElementById('hb-cfg-season')?.value || '',
+    quote:    document.getElementById('hb-cfg-quote')?.value || '',
+    customHabits: document.getElementById('hb-cfg-custom-habits')?.value || '',
+  };
+  localStorage.setItem('hb-settings', JSON.stringify(cfg));
+  hbLoadIdentityFromSettings();
+  showToast('Habit settings saved');
+}
+
+function hbLoadSavedSettings() {
+  const saved = localStorage.getItem('hb-settings');
+  if (!saved) return;
+  try {
+    const cfg = JSON.parse(saved);
+    const setVal = (id, val) => { const e = document.getElementById(id); if (e) e.value = val; };
+    if (cfg.identity) setVal('hb-cfg-identity', cfg.identity);
+    if (cfg.season)   setVal('hb-cfg-season', cfg.season);
+    if (cfg.quote)    setVal('hb-cfg-quote', cfg.quote);
+    if (cfg.customHabits) setVal('hb-cfg-custom-habits', cfg.customHabits);
+  } catch(e) {}
+}
+
+/* ── PROGRESS HEATMAP ───────────────────────────────── */
+function hbBuildHeatmap() {
+  const hm = document.getElementById('hb-heatmap');
+  if (!hm || hm.children.length > 0) return; // already built
+  for (let i = 0; i < 91; i++) {
+    const cell = document.createElement('div');
+    const r = Math.random();
+    const l = r > .75 ? 'l4' : r > .5 ? 'l3' : r > .3 ? 'l2' : r > .15 ? 'l1' : '';
+    cell.className = 'hb-hm-cell' + (l ? ' ' + l : '');
+    cell.title = 'Day ' + (i + 1);
+    hm.appendChild(cell);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
