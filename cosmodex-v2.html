@@ -945,7 +945,235 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   transition: var(--ease-fast);
 }
+/* ── Notes / Scribble canvas ───────────────────────────── */
+.scribble-btn {
+  background: none; border: 1px solid var(--border); border-radius: 5px;
+  color: var(--muted); padding: 3px 9px; cursor: pointer;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.07em;
+  min-height: 24px; transition: var(--ease-fast);
+}
+.scribble-btn:hover { border-color: var(--gold); color: var(--cream); }
+.scribble-btn.active { border-color: var(--gold); color: var(--gold); }
+.scribble-swatch {
+  width: 17px; height: 17px; border-radius: 50%; border: 2px solid var(--border);
+  cursor: pointer; flex-shrink: 0; transition: border-color .15s;
+}
+.scribble-swatch.active { border-color: var(--gold); }
+.pen-size-btn {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  color: var(--muted); cursor: pointer; min-height: 24px; min-width: 24px;
+  display: flex; align-items: center; justify-content: center; transition: var(--ease-fast);
+}
+.pen-size-btn:hover, .pen-size-btn.active { border-color: var(--gold); color: var(--gold); }
+
+/* ── Pomodoro / Focus overlay ──────────────────────────── */
+.pomo-layout { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.pomo-col {
+  width: 280px; flex-shrink: 0; border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none;
+}
+.pomo-col::-webkit-scrollbar { display: none; }
+.pomo-body-inner {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  padding: 14px 12px 14px; gap: 10px;
+}
+.pomo-ev-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); text-align: center;
+}
+.pomo-ev-title-el {
+  font-family: var(--font-display); font-size: 16px; font-weight: 300;
+  color: var(--gold); text-align: center; width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pomo-ring-wrap { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+#pomo-ring { position: absolute; inset: 0; }
+.pomo-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; pointer-events: none;
+}
+.pomo-time {
+  font-family: var(--font-display); font-size: 28px; font-weight: 300;
+  font-variant-numeric: tabular-nums; line-height: 1; color: var(--cream);
+}
+.pomo-phase-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  color: var(--muted); text-transform: uppercase; margin-top: 4px;
+}
+.pomo-swipe-section { width: 100%; }
+.pomo-swipe-ctrl {
+  display: flex; align-items: center;
+  background: var(--elevated); border: 1px solid var(--border);
+  border-radius: 6px; overflow: hidden; user-select: none;
+}
+.pomo-swipe-minus, .pomo-swipe-plus {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  padding: 0 10px; height: 40px; font-size: 18px;
+  display: flex; align-items: center; flex-shrink: 0; min-width: 36px; justify-content: center;
+  transition: color .15s;
+}
+.pomo-swipe-minus:hover, .pomo-swipe-plus:hover { color: var(--gold); }
+.pomo-swipe-track {
+  flex: 1; height: 40px; position: relative; overflow: hidden;
+  cursor: ew-resize; touch-action: none;
+}
+.pomo-swipe-inner {
+  width: 100%; height: 100%; display: flex; align-items: center;
+  justify-content: center; flex-direction: column; position: relative;
+}
+.pomo-swipe-val {
+  font-family: var(--font-mono); font-size: 18px; color: var(--gold); line-height: 1;
+}
+.pomo-ticks {
+  position: absolute; bottom: 3px; left: 0; right: 0;
+  display: flex; align-items: flex-end; justify-content: center; gap: 2px; pointer-events: none;
+}
+.pomo-tick { width: 2px; border-radius: 1px; background: var(--border); }
+.pomo-tick.major { height: 9px; }
+.pomo-tick.current { background: var(--gold); width: 3px; }
+.pomo-btns { display: flex; gap: 7px; width: 100%; }
+.pomo-btn {
+  flex: 1; padding: 8px 0; font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  border: 1px solid var(--border); background: none; color: var(--muted);
+  cursor: pointer; border-radius: 6px; min-height: 36px; transition: var(--ease-fast);
+}
+.pomo-btn.pomo-primary { background: rgba(201,162,39,.1); border-color: var(--gold); color: var(--gold); }
+.pomo-btn.pomo-primary:hover { background: rgba(201,162,39,.2); }
+.pomo-btn.pomo-danger { border-color: var(--rust); color: var(--rust); }
+.pomo-btn.pomo-danger:hover { background: rgba(196,92,42,.08); }
+.pomo-sess { display: flex; gap: 5px; }
+.pomo-sess-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(201,162,39,.4); }
+.pomo-sess-dot.done { background: var(--gold); border-color: var(--gold); }
+.pomo-breath-section {
+  display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 0 0;
+}
+.breath-ring-outer {
+  width: 58px; height: 58px; border-radius: 50%;
+  border: 2px solid rgba(201,162,39,.3);
+  display: flex; align-items: center; justify-content: center;
+  animation: cdx-breathing 4s ease-in-out infinite;
+}
+.breath-ring-inner {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1.5px solid rgba(201,162,39,.15);
+  animation: cdx-breathing-inner 4s ease-in-out infinite;
+}
+@keyframes cdx-breathing {
+  0%,100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 0.45; }
+}
+@keyframes cdx-breathing-inner {
+  0%,100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(0.85); opacity: 0.3; }
+}
+.pomo-breath-phase {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--cream);
+}
+.pomo-breath-hint { font-family: var(--font-mono); font-size: 8px; color: var(--muted); }
+.pomo-checklist { width: 100%; border-top: 1px solid var(--border); padding-top: 9px; }
+.pomo-checklist-lbl {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+}
+.pomo-check-items { display: flex; flex-direction: column; gap: 3px; margin-bottom: 5px; }
+.pomo-check-item {
+  display: flex; align-items: center; gap: 7px; padding: 5px 7px;
+  border-radius: 5px; background: var(--elevated); cursor: pointer; transition: background .1s;
+}
+.pomo-check-item.done .pomo-check-txt { text-decoration: line-through; opacity: 0.4; }
+.pomo-check-box {
+  width: 13px; height: 13px; border: 1px solid var(--border); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-size: 9px; color: var(--gold);
+}
+.pomo-check-item.done .pomo-check-box { background: rgba(201,162,39,.2); border-color: var(--gold); }
+.pomo-check-txt { font-family: var(--font-body); font-size: 12px; color: var(--cream); flex: 1; }
+.pomo-check-add { display: flex; gap: 5px; align-items: center; }
+.pomo-check-add input {
+  flex: 1; background: var(--elevated); border: 1px solid var(--border);
+  border-radius: 5px; padding: 5px 8px; font-size: 12px; font-family: var(--font-body);
+  color: var(--cream); outline: none;
+}
+.pomo-check-add input:focus { border-color: var(--gold); }
+.pomo-check-add-btn {
+  background: rgba(201,162,39,.1); border: 1px solid var(--gold);
+  border-radius: 5px; color: var(--gold); cursor: pointer;
+  font-size: 14px; padding: 3px 9px; min-height: 26px; transition: background .15s;
+}
+.pomo-check-add-btn:hover { background: rgba(201,162,39,.2); }
+.pomo-scribble-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.pomo-scribble-header {
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px; flex-shrink: 0; flex-wrap: wrap;
+}
+.pomo-scribble-title {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+#scribble-canvas, #notes-canvas { display: block; touch-action: none; cursor: crosshair; }
+#scribble-canvas { flex: 1; }
+#pomo-lock-msg {
+  position: absolute; inset: 0; display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; z-index: 10;
+  background: rgba(14,12,8,.95); backdrop-filter: blur(8px);
+  border-radius: 19px;
+}
+#pomo-lock-msg.show { display: flex; }
+.pomo-lock-text { font-size: 16px; color: var(--cream); text-align: center; line-height: 1.6; }
+.pomo-lock-withdraw {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.10em; text-transform: uppercase;
+  padding: 9px 22px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--rust); color: var(--rust); background: none; min-height: 36px;
+  transition: background .15s;
+}
+.pomo-lock-withdraw:hover { background: rgba(196,92,42,.1); }
+
 .task-add-cancel:hover { color: var(--rust); border-color: rgba(196,92,42,0.3); }
+
+.task-recur-btn {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 8px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+  cursor: pointer; transition: var(--ease-fast); white-space: nowrap;
+}
+.task-recur-btn:hover { border-color: var(--gold); color: var(--gold-dim, #a88420); }
+.task-recur-btn.active { border-color: var(--gold); color: var(--gold); }
+.task-recur-popover {
+  position: absolute; z-index: 300; top: calc(100% + 4px); left: 0;
+  background: var(--elevated); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.55);
+  padding: 4px 0; min-width: 210px; display: none;
+}
+.task-recur-popover.open { display: block; }
+.task-recur-option {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; font-size: 12px; color: var(--cream);
+  cursor: pointer; transition: background .1s; font-family: var(--font-body);
+}
+.task-recur-option:hover { background: rgba(255,255,255,.05); }
+.task-recur-option.selected { color: var(--gold); }
+.recur-check { font-size: 11px; width: 14px; flex-shrink: 0; }
+.task-recur-custom-days {
+  display: flex; gap: 4px; padding: 6px 14px 10px;
+  border-top: 1px solid var(--border); flex-wrap: nowrap;
+}
+.task-recur-day-btn {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); font-size: 9px; font-family: var(--font-mono);
+  cursor: pointer; transition: var(--ease-fast);
+  display: flex; align-items: center; justify-content: center;
+}
+.task-recur-day-btn.on { background: rgba(201,162,39,.15); border-color: var(--gold); color: var(--gold); }
+.task-recur-badge {
+  font-family: var(--font-mono); font-size: 9px;
+  padding: 1px 6px; border-radius: 100px;
+  background: rgba(201,162,39,.1); border: 1px solid rgba(201,162,39,.25);
+  color: var(--gold); letter-spacing: 0.04em;
+}
 
 /* ── Inline title edit ─────────────────────────────────── */
 .task-inline-input {
@@ -3243,6 +3471,26 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <!-- populated by rebuildCategorySelects() using defaultCategory setting -->
           </select>
           <input class="task-add-date" id="task-add-date" type="date" />
+          <div style="position:relative">
+            <button type="button" class="task-recur-btn" id="task-recur-btn" title="Set recurrence">↻ <span id="task-recur-label">One-time</span></button>
+            <div class="task-recur-popover" id="task-recur-popover">
+              <div class="task-recur-option selected" data-recur=""><span class="recur-check">✓</span>Does not repeat</div>
+              <div class="task-recur-option" data-recur="daily"><span class="recur-check"></span>Daily</div>
+              <div class="task-recur-option" data-recur="weekdays"><span class="recur-check"></span>Every weekday (Mon–Fri)</div>
+              <div class="task-recur-option" data-recur="weekly"><span class="recur-check"></span>Weekly</div>
+              <div class="task-recur-option" data-recur="monthly"><span class="recur-check"></span>Monthly</div>
+              <div class="task-recur-option" data-recur="custom"><span class="recur-check"></span>Custom…</div>
+              <div class="task-recur-custom-days" id="task-recur-custom-days" style="display:none">
+                <button type="button" class="task-recur-day-btn" data-day="Mon">M</button>
+                <button type="button" class="task-recur-day-btn" data-day="Tue">T</button>
+                <button type="button" class="task-recur-day-btn" data-day="Wed">W</button>
+                <button type="button" class="task-recur-day-btn" data-day="Thu">T</button>
+                <button type="button" class="task-recur-day-btn" data-day="Fri">F</button>
+                <button type="button" class="task-recur-day-btn" data-day="Sat">S</button>
+                <button type="button" class="task-recur-day-btn" data-day="Sun">S</button>
+              </div>
+            </div>
+          </div>
           <button class="task-add-confirm" id="task-add-confirm">Add</button>
         </div>
       </div>
@@ -3858,34 +4106,94 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
 <!-- Notes overlay -->
 <div class="overlay" id="notes-overlay">
-  <div class="overlay-panel" style="width:min(560px,92vw)">
-    <div class="overlay-header">
-      <span class="overlay-title">Notes</span>
-      <button class="overlay-close" data-close="notes-overlay">✕</button>
+  <div class="overlay-panel" style="width:min(820px,96vw);max-height:82dvh">
+    <div class="overlay-header" style="padding:10px 16px;gap:8px;flex-wrap:wrap">
+      <span class="overlay-title" style="font-size:15px;flex:none">✎ Notes</span>
+      <div id="notes-pen-bar" style="display:flex;gap:3px;align-items:center"></div>
+      <div id="notes-color-bar" style="display:flex;gap:5px;align-items:center"></div>
+      <button class="scribble-btn" id="notes-eraser-btn">Erase</button>
+      <button class="scribble-btn" id="notes-clear-btn">Clear</button>
+      <button class="scribble-btn" id="notes-save-btn">↓ Save</button>
+      <button class="overlay-close" style="margin-left:auto" data-close="notes-overlay">✕</button>
     </div>
-    <div class="overlay-body">
-      <div class="overlay-placeholder">
-        <div class="overlay-placeholder-icon">✎</div>
-        <div class="overlay-placeholder-text">Quick notes — coming soon</div>
-      </div>
-    </div>
+    <canvas id="notes-canvas" style="width:100%;min-height:440px;background:var(--ink)"></canvas>
   </div>
 </div>
 
 <!-- Focus / Pomodoro overlay -->
 <div class="overlay" id="pomo-overlay" style="z-index:800">
-  <div class="overlay-panel" style="width:min(480px,92vw)">
+  <div class="overlay-panel" style="width:min(820px,96vw);max-height:90dvh">
     <div class="overlay-header">
       <span class="overlay-title">Focus</span>
-      <button class="overlay-close" data-close="pomo-overlay">✕</button>
+      <button class="overlay-close" id="pomo-close">✕</button>
     </div>
-    <div class="overlay-body" style="text-align:center;padding:48px 24px">
-      <div style="font-family:var(--font-display);font-size:72px;font-weight:300;color:var(--gold);line-height:1">25:00</div>
-      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-top:12px">Pomodoro Timer</div>
-      <div style="display:flex;gap:12px;justify-content:center;margin-top:32px">
-        <button class="hdr-btn" style="height:38px;padding:0 20px;font-size:11px">▶ Start</button>
-        <button class="hdr-btn" style="height:38px;padding:0 20px;font-size:11px">↺ Reset</button>
+    <div class="pomo-layout">
+      <!-- Left: Pomodoro timer column -->
+      <div class="pomo-col">
+        <div class="pomo-body-inner">
+          <div class="pomo-ev-label">Focus Session</div>
+          <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
+          <div class="pomo-ring-wrap">
+            <canvas id="pomo-ring" width="130" height="130"></canvas>
+            <div class="pomo-center">
+              <div class="pomo-time" id="pomo-time">25:00</div>
+              <div class="pomo-phase-label" id="pomo-phase">Ready</div>
+            </div>
+          </div>
+          <div class="pomo-swipe-section">
+            <div class="pomo-swipe-ctrl">
+              <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
+              <div class="pomo-swipe-track" id="pomo-sw-track">
+                <div class="pomo-swipe-inner">
+                  <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
+                    <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
+                    <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:9px;color:var(--muted)">min</div>
+                  </div>
+                  <div class="pomo-ticks" id="pomo-ticks"></div>
+                </div>
+              </div>
+              <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
+            </div>
+          </div>
+          <div class="pomo-btns">
+            <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
+            <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
+          </div>
+          <div class="pomo-sess" id="pomo-sess">
+            <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+            <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+          </div>
+          <div class="pomo-breath-section">
+            <div class="breath-ring-outer"><div class="breath-ring-inner"></div></div>
+            <div class="pomo-breath-phase" id="pomo-breath-phase">Breathe in</div>
+            <div class="pomo-breath-hint">Box breathing · 4-4-4-4</div>
+          </div>
+          <div class="pomo-checklist">
+            <div class="pomo-checklist-lbl">Session checklist</div>
+            <div class="pomo-check-items" id="pomo-check-items"></div>
+            <div class="pomo-check-add">
+              <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
+              <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
+            </div>
+          </div>
+        </div>
       </div>
+      <!-- Right: Scribble canvas -->
+      <div class="pomo-scribble-col">
+        <div class="pomo-scribble-header">
+          <span class="pomo-scribble-title">✎ Notes</span>
+          <div id="pomo-pen-bar" style="display:flex;gap:3px;align-items:center"></div>
+          <div id="pomo-color-bar" style="display:flex;gap:5px;align-items:center"></div>
+          <button class="scribble-btn" id="pomo-eraser-btn">Erase</button>
+          <button class="scribble-btn" id="pomo-clear-btn">Clear</button>
+          <button class="scribble-btn" id="pomo-save-btn">↓ Save</button>
+        </div>
+        <canvas id="scribble-canvas"></canvas>
+      </div>
+    </div>
+    <div id="pomo-lock-msg">
+      <div class="pomo-lock-text">Session in progress.<br>Stop the timer to close.</div>
+      <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
     </div>
   </div>
 </div>
@@ -6812,13 +7120,24 @@ function buildTaskRow(task, idx) {
     schedBadge = `<span class="task-cal-badge">◻ ${ts || 'Scheduled'}</span>`;
   }
 
+  let recurBadge = '';
+  if (task.recurrence) {
+    const rl = task.recurrence === 'daily' ? '↻ Daily'
+      : task.recurrence === 'weekdays' ? '↻ Weekdays'
+      : task.recurrence === 'weekly' ? '↻ Weekly'
+      : task.recurrence === 'monthly' ? '↻ Monthly'
+      : task.recurrence.startsWith('custom:') ? `↻ ${task.recurrence.replace('custom:','')}`
+      : `↻ ${task.recurrence}`;
+    recurBadge = `<span class="task-recur-badge">${rl}</span>`;
+  }
+
   const row = document.createElement('div');
   row.className = 'task-row';
   row.draggable = true;
   row.dataset.taskId = task.id;
   row.style.animationDelay = `${idx * 35}ms`;
   row.innerHTML = `
-    <button class="task-expand-btn ${hasSubs ? '' : 'ghost'}" data-expand="${escAttr(task.id)}">›</button>
+    <button class="task-expand-btn ${hasSubs ? 'open' : 'ghost'}" data-expand="${escAttr(task.id)}">›</button>
     <div class="task-check ${task.done ? 'done' : ''}" data-check="${escAttr(task.id)}">${task.done ? '✓' : ''}</div>
     <div class="task-content">
       <span class="task-title ${task.done ? 'done' : ''}" data-edit="${escAttr(task.id)}">${escHtml(task.title)}</span>
@@ -6827,6 +7146,7 @@ function buildTaskRow(task, idx) {
         ${catBadge}
         ${task.dueDate ? `<span class="task-due ${task.dueDate < localDateStr(new Date()) && !task.done ? 'overdue' : ''}">${fmtDate(task.dueDate)}</span>` : ''}
         ${schedBadge}
+        ${recurBadge}
       </div>
     </div>
     <div class="task-actions-group">
@@ -6836,7 +7156,7 @@ function buildTaskRow(task, idx) {
   wrap.appendChild(row);
 
   const subWrap = document.createElement('div');
-  subWrap.className = 'subtasks-wrap';
+  subWrap.className = hasSubs ? 'subtasks-wrap expanded' : 'subtasks-wrap';
   subWrap.dataset.taskId = task.id;
   if (hasSubs) task.subtasks.forEach(sub => subWrap.appendChild(buildSubtaskRow(task.id, sub)));
 
@@ -7021,12 +7341,13 @@ function cancelInlineEdit(input) {
 }
 
 /* ── Firestore CRUD ───────────────────────────────────── */
-async function addTask(title, priority = 'med', dueDate = '', category = '') {
+async function addTask(title, priority = 'med', dueDate = '', category = '', recurrence = '') {
   const { collection, addDoc, serverTimestamp } = window.CDX_FB;
   await addDoc(collection(window.CDX_DB, 'tasks'), {
     title, done: false, priority,
     dueDate: dueDate || null,
     category: category || null,
+    recurrence: recurrence || null,
     calEventId: null, subtasks: [],
     createdAt: serverTimestamp()
   });
@@ -7486,18 +7807,107 @@ function initAddTaskForm() {
   const input   = document.getElementById('task-add-input');
   const confirm = document.getElementById('task-add-confirm');
 
+  // ── Recurrence state ──
+  let _taskRecur = '';
+  let _taskRecurDays = new Set();
+
+  function recurLabel(val) {
+    if (!val) return 'One-time';
+    if (val === 'daily') return 'Daily';
+    if (val === 'weekdays') return 'Weekdays';
+    if (val === 'weekly') return 'Weekly';
+    if (val === 'monthly') return 'Monthly';
+    if (val.startsWith('custom:')) {
+      const days = val.replace('custom:', '');
+      return days || 'Custom';
+    }
+    return val;
+  }
+
+  function setRecur(val, skipClose) {
+    _taskRecur = val;
+    document.getElementById('task-recur-label').textContent = recurLabel(val);
+    const recurBtn = document.getElementById('task-recur-btn');
+    recurBtn.classList.toggle('active', !!val);
+    document.querySelectorAll('#task-recur-popover .task-recur-option').forEach(o => {
+      const match = o.dataset.recur === val || (val.startsWith('custom:') && o.dataset.recur === 'custom');
+      o.querySelector('.recur-check').textContent = match ? '✓' : '';
+      o.classList.toggle('selected', match);
+    });
+    if (!skipClose) {
+      document.getElementById('task-recur-popover').classList.remove('open');
+      recurBtn.classList.remove('active');
+      if (!!val) recurBtn.classList.add('active');
+    }
+  }
+
+  function resetRecur() {
+    _taskRecur = '';
+    _taskRecurDays.clear();
+    document.getElementById('task-recur-label').textContent = 'One-time';
+    document.getElementById('task-recur-btn').classList.remove('active');
+    document.getElementById('task-recur-custom-days').style.display = 'none';
+    document.querySelectorAll('#task-recur-popover .task-recur-day-btn').forEach(b => b.classList.remove('on'));
+    setRecur('');
+  }
+
+  const recurBtn = document.getElementById('task-recur-btn');
+  const recurPopover = document.getElementById('task-recur-popover');
+
+  recurBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    recurPopover.classList.toggle('open');
+  });
+
+  document.addEventListener('click', e => {
+    if (!recurPopover.contains(e.target) && e.target !== recurBtn) {
+      recurPopover.classList.remove('open');
+    }
+  });
+
+  recurPopover.querySelectorAll('.task-recur-option').forEach(opt => {
+    opt.addEventListener('click', e => {
+      e.stopPropagation();
+      const val = opt.dataset.recur;
+      if (val === 'custom') {
+        document.getElementById('task-recur-custom-days').style.display = 'flex';
+        setRecur('custom:', true);
+        return;
+      }
+      document.getElementById('task-recur-custom-days').style.display = 'none';
+      _taskRecurDays.clear();
+      document.querySelectorAll('#task-recur-popover .task-recur-day-btn').forEach(b => b.classList.remove('on'));
+      setRecur(val);
+    });
+  });
+
+  recurPopover.querySelectorAll('.task-recur-day-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      btn.classList.toggle('on');
+      if (btn.classList.contains('on')) _taskRecurDays.add(btn.dataset.day);
+      else _taskRecurDays.delete(btn.dataset.day);
+      const days = [..._taskRecurDays].join(',');
+      _taskRecur = days ? `custom:${days}` : 'custom:';
+      document.getElementById('task-recur-label').textContent = days || 'Custom';
+      recurBtn.classList.toggle('active', !!days);
+    });
+  });
+
+  // ── Submit ──
   async function submit() {
     const title = input.value.trim();
     if (!title) return;
     const priority = document.getElementById('task-add-priority').value;
     const dueDate  = document.getElementById('task-add-date').value;
     const category = document.getElementById('task-add-category').value;
-    await addTask(title, priority, dueDate, category);
+    const recurrence = _taskRecur && _taskRecur !== 'custom:' ? _taskRecur : '';
+    await addTask(title, priority, dueDate, category, recurrence);
     input.value = '';
     document.getElementById('task-add-date').value = '';
-    // Reset category to default
     const catSel = document.getElementById('task-add-category');
     if (catSel && _settings.defaultCategory) catSel.value = _settings.defaultCategory;
+    resetRecur();
     input.focus();
   }
   confirm.addEventListener('click', submit);
@@ -8202,6 +8612,8 @@ function openOverlay(id) {
     habitsSubscribe();
     renderInsights();
   }
+  if (id === 'notes-overlay') initNotesCanvas();
+  if (id === 'pomo-overlay') initPomoOverlay();
 }
 
 function closeOverlay(id) {
@@ -8215,7 +8627,12 @@ document.querySelectorAll('[data-close]').forEach(btn => {
 
 document.querySelectorAll('.overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeOverlay(overlay.id);
+    if (e.target !== overlay) return;
+    if (overlay.id === 'pomo-overlay') {
+      document.getElementById('pomo-close')?.click();
+    } else {
+      closeOverlay(overlay.id);
+    }
   });
 });
 
@@ -8445,6 +8862,352 @@ window.addEventListener('cdx-auth-ready', () => {
     initOrbAddTask();
   });
 }, { once: true });
+
+/* ─────────────────────────────────────────────────────────────
+   NOTES CANVAS
+───────────────────────────────────────────────────────────── */
+(function() {
+  const SCRIB_COLORS = ['#f5f0e8','#c9a227','#6b9fd4','#6b8f5e','#c45c2a','#d4913a','#1a1510'];
+  const SCRIB_SIZES  = [1, 2, 4, 8, 16];
+  let _notesInited = false;
+
+  window.initNotesCanvas = function() {
+    const cv = document.getElementById('notes-canvas');
+    if (!cv) return;
+    const dpr = window.devicePixelRatio || 1;
+    function sizeCanvas() {
+      const rect = cv.getBoundingClientRect();
+      const w = rect.width || cv.offsetWidth || 700;
+      const h = rect.height || cv.offsetHeight || 440;
+      const tmp = document.createElement('canvas');
+      tmp.width = cv.width; tmp.height = cv.height;
+      tmp.getContext('2d').drawImage(cv, 0, 0);
+      cv.width  = Math.round(w * dpr);
+      cv.height = Math.round(h * dpr);
+      cv.style.width  = w + 'px';
+      cv.style.height = h + 'px';
+      const ctx = cv.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.drawImage(tmp, 0, 0, w, h);
+    }
+    if (!_notesInited) {
+      _notesInited = true;
+      requestAnimationFrame(sizeCanvas);
+
+      let color = SCRIB_COLORS[0], penSz = 2, eraser = false, drawing = false, lx = 0, ly = 0;
+
+      // Pen size bar
+      const penBar = document.getElementById('notes-pen-bar');
+      SCRIB_SIZES.forEach(sz => {
+        const b = document.createElement('button');
+        b.className = 'pen-size-btn' + (sz === 2 ? ' active' : '');
+        const dp = Math.min(sz + 4, 18);
+        b.innerHTML = `<span style="width:${dp}px;height:${dp}px;border-radius:50%;background:currentColor;display:inline-block"></span>`;
+        b.addEventListener('click', () => {
+          penSz = sz; eraser = false;
+          penBar.querySelectorAll('.pen-size-btn').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          document.getElementById('notes-eraser-btn').classList.remove('active');
+        });
+        penBar.appendChild(b);
+      });
+
+      // Color swatches
+      const colBar = document.getElementById('notes-color-bar');
+      SCRIB_COLORS.forEach(c => {
+        const s = document.createElement('div');
+        s.className = 'scribble-swatch' + (c === color ? ' active' : '');
+        s.style.background = c;
+        s.addEventListener('click', () => {
+          color = c; eraser = false;
+          colBar.querySelectorAll('.scribble-swatch').forEach(x => x.classList.remove('active'));
+          s.classList.add('active');
+          document.getElementById('notes-eraser-btn').classList.remove('active');
+        });
+        colBar.appendChild(s);
+      });
+
+      document.getElementById('notes-eraser-btn').addEventListener('click', function() {
+        eraser = !eraser; this.classList.toggle('active', eraser);
+      });
+      document.getElementById('notes-clear-btn').addEventListener('click', () => {
+        cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+      });
+      document.getElementById('notes-save-btn').addEventListener('click', () => {
+        const link = document.createElement('a');
+        const today = localDateStr(new Date());
+        link.download = `cosmodex-notes-${today}.png`;
+        const tmp = document.createElement('canvas');
+        tmp.width = cv.width; tmp.height = cv.height;
+        const tc = tmp.getContext('2d');
+        tc.fillStyle = '#0e0c08';
+        tc.fillRect(0, 0, tmp.width, tmp.height);
+        tc.drawImage(cv, 0, 0);
+        link.href = tmp.toDataURL('image/png'); link.click();
+      });
+
+      function getPos(e) {
+        const r = cv.getBoundingClientRect();
+        const sx = cv.width / dpr / r.width, sy = cv.height / dpr / r.height;
+        return [(e.clientX - r.left) * sx, (e.clientY - r.top) * sy];
+      }
+      function startDraw(e) {
+        e.preventDefault(); drawing = true; [lx, ly] = getPos(e);
+        const ctx = cv.getContext('2d');
+        ctx.save();
+        if (eraser) { ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(lx, ly, penSz * 3, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,1)'; ctx.fill(); }
+        else { ctx.beginPath(); ctx.arc(lx, ly, penSz / 2, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); }
+        ctx.restore();
+      }
+      function moveDraw(e) {
+        if (!drawing) return; e.preventDefault();
+        const [x, y] = getPos(e);
+        const ctx = cv.getContext('2d');
+        ctx.save();
+        if (eraser) { ctx.globalCompositeOperation = 'destination-out'; ctx.beginPath(); ctx.arc(x, y, penSz * 3, 0, Math.PI * 2); ctx.fillStyle = 'rgba(0,0,0,1)'; ctx.fill(); }
+        else { ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(x, y); ctx.strokeStyle = color; ctx.lineWidth = penSz; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke(); }
+        ctx.restore(); lx = x; ly = y;
+      }
+      function endDraw() { drawing = false; }
+      cv.addEventListener('pointerdown',  startDraw, { passive: false });
+      cv.addEventListener('pointermove',  moveDraw,  { passive: false });
+      cv.addEventListener('pointerup',    endDraw,   { passive: false });
+      cv.addEventListener('pointercancel',endDraw,   { passive: false });
+    } else {
+      requestAnimationFrame(sizeCanvas);
+    }
+  };
+})();
+
+/* ─────────────────────────────────────────────────────────────
+   FOCUS / POMODORO
+───────────────────────────────────────────────────────────── */
+(function() {
+  const PMIN = 1, PMAX = 90;
+  const SCRIB_COLORS = ['#f5f0e8','#c9a227','#6b9fd4','#6b8f5e','#c45c2a','#d4913a','#1a1510'];
+  const SCRIB_SIZES  = [1, 2, 4, 8, 16];
+
+  let pomoDur = 25;
+  const pomo = { running: false, totalSecs: 25 * 60, remainSecs: 25 * 60, interval: null, sessions: 0, _endTarget: 0 };
+  let _breathInterval = null;
+  const _breathPhases = ['Breathe in ↑', 'Hold', 'Breathe out ↓', 'Hold'];
+  let _breathIdx = 0;
+  let focusChecklist = [];
+  let _scribInited = false;
+
+  function clamp(v) { return Math.max(PMIN, Math.min(PMAX, Math.round(v))); }
+
+  function setDuration(v) {
+    pomoDur = clamp(v);
+    if (!pomo.running) { pomo.totalSecs = pomoDur * 60; pomo.remainSecs = pomoDur * 60; }
+    const el = document.getElementById('pomo-sw-val'); if (el) el.textContent = String(pomoDur);
+    buildTicks(); renderPomo();
+  }
+
+  function buildTicks() {
+    const c = document.getElementById('pomo-ticks'); if (!c) return; c.innerHTML = '';
+    for (let i = -12; i <= 12; i++) {
+      const val = pomoDur + i, el = document.createElement('div');
+      if (val < PMIN || val > PMAX) { el.style.width = '3px'; c.appendChild(el); continue; }
+      el.className = 'pomo-tick' + (i === 0 ? ' current' : val % 5 === 0 ? ' major' : '');
+      el.style.height = i === 0 ? '14px' : val % 5 === 0 ? '9px' : '5px';
+      c.appendChild(el);
+    }
+  }
+
+  function drawPomoRing() {
+    const cv = document.getElementById('pomo-ring'); if (!cv) return;
+    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = 50;
+    ctx.clearRect(0, 0, W, H);
+    const frac = pomo.totalSecs > 0 ? pomo.remainSecs / pomo.totalSecs : 1;
+    const sa = -Math.PI / 2, ea = sa + (1 - frac) * Math.PI * 2;
+    // Track
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(201,162,39,0.10)'; ctx.lineWidth = 10; ctx.stroke();
+    // Progress
+    if (frac < 1) {
+      const col = pomo.running ? '#c45c2a' : pomo.remainSecs < pomo.totalSecs ? '#c9a227' : 'rgba(201,162,39,0.4)';
+      ctx.beginPath(); ctx.arc(cx, cy, R, sa, ea);
+      ctx.strokeStyle = col; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
+    }
+  }
+
+  function renderPomo() {
+    const m = Math.floor(pomo.remainSecs / 60), s = pomo.remainSecs % 60;
+    const tEl = document.getElementById('pomo-time');
+    if (tEl) tEl.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    const phEl = document.getElementById('pomo-phase');
+    if (phEl) phEl.textContent = pomo.running ? 'Focusing' : pomo.remainSecs === 0 ? 'Complete ✓' : pomo.remainSecs < pomo.totalSecs ? 'Paused' : 'Ready';
+    const startBtn = document.getElementById('pomo-start');
+    if (startBtn) startBtn.textContent = pomo.running ? 'Pause' : pomo.remainSecs > 0 && pomo.remainSecs < pomo.totalSecs ? 'Resume' : 'Start';
+    document.querySelectorAll('.pomo-sess-dot').forEach((d, i) => d.classList.toggle('done', i < pomo.sessions));
+    const sw = document.querySelector('.pomo-swipe-section');
+    if (sw) { sw.style.opacity = pomo.running ? '0.4' : '1'; sw.style.pointerEvents = pomo.running ? 'none' : 'auto'; }
+    if (!pomo.running) document.getElementById('pomo-lock-msg')?.classList.remove('show');
+    drawPomoRing();
+  }
+
+  function startBreathing() {
+    _breathIdx = 0;
+    const el = document.getElementById('pomo-breath-phase'); if (el) el.textContent = _breathPhases[0];
+    clearInterval(_breathInterval);
+    _breathInterval = setInterval(() => {
+      _breathIdx = (_breathIdx + 1) % 4;
+      const el = document.getElementById('pomo-breath-phase'); if (el) el.textContent = _breathPhases[_breathIdx];
+    }, 4000);
+  }
+  function stopBreathing() { clearInterval(_breathInterval); _breathInterval = null; }
+
+  function renderFocusChecklist() {
+    const el = document.getElementById('pomo-check-items'); if (!el) return;
+    el.innerHTML = '';
+    focusChecklist.forEach((item, i) => {
+      const div = document.createElement('div');
+      div.className = 'pomo-check-item' + (item.done ? ' done' : '');
+      div.innerHTML = `<div class="pomo-check-box">${item.done ? '✓' : ''}</div><span class="pomo-check-txt">${escHtml(item.text)}</span>`;
+      div.querySelector('.pomo-check-box').addEventListener('click', () => {
+        focusChecklist[i].done = !focusChecklist[i].done; renderFocusChecklist();
+      });
+      el.appendChild(div);
+    });
+  }
+
+  function initScribble() {
+    const oldCv = document.getElementById('scribble-canvas'); if (!oldCv) return;
+    const col = oldCv.parentElement;
+    const cv = oldCv.cloneNode(false);
+    cv.id = 'scribble-canvas';
+    col.replaceChild(cv, oldCv);
+    cv.style.flex = '1'; cv.style.display = 'block';
+    const dpr = window.devicePixelRatio || 1;
+    const w = col.clientWidth || 400, h = col.clientHeight - 44 || 400;
+    cv.width  = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+
+    let activeColor = SCRIB_COLORS[0], penSize = 1, isEraser = false, drawing = false, lastX = 0, lastY = 0;
+
+    const swatchBar = document.getElementById('pomo-color-bar'); swatchBar.innerHTML = '';
+    SCRIB_COLORS.forEach(c => {
+      const s = document.createElement('div');
+      s.className = 'scribble-swatch' + (c === activeColor ? ' active' : '');
+      s.style.background = c;
+      s.addEventListener('click', () => {
+        activeColor = c; isEraser = false;
+        swatchBar.querySelectorAll('.scribble-swatch').forEach(x => x.classList.remove('active'));
+        s.classList.add('active');
+        document.getElementById('pomo-eraser-btn').classList.remove('active');
+      });
+      swatchBar.appendChild(s);
+    });
+    const sizeBar = document.getElementById('pomo-pen-bar'); sizeBar.innerHTML = '';
+    SCRIB_SIZES.forEach(sz => {
+      const btn = document.createElement('button');
+      btn.className = 'pen-size-btn' + (sz === 1 ? ' active' : '');
+      const dp = Math.min(sz + 4, 18);
+      btn.innerHTML = `<span style="display:inline-block;width:${dp}px;height:${dp}px;border-radius:50%;background:currentColor"></span>`;
+      btn.addEventListener('click', () => {
+        penSize = sz; isEraser = false;
+        sizeBar.querySelectorAll('.pen-size-btn').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('pomo-eraser-btn').classList.remove('active');
+      });
+      sizeBar.appendChild(btn);
+    });
+
+    const eraserBtn = document.getElementById('pomo-eraser-btn');
+    eraserBtn.onclick = function() { isEraser = !isEraser; this.classList.toggle('active', isEraser); };
+    eraserBtn.classList.remove('active');
+    document.getElementById('pomo-clear-btn').onclick = () => ctx.clearRect(0, 0, cv.width, cv.height);
+    document.getElementById('pomo-save-btn').onclick = () => {
+      const link = document.createElement('a');
+      link.download = `cosmodex-focus-notes-${localDateStr(new Date())}.png`;
+      const tmp = document.createElement('canvas'); tmp.width = cv.width; tmp.height = cv.height;
+      const tc = tmp.getContext('2d'); tc.fillStyle = '#0e0c08'; tc.fillRect(0, 0, tmp.width, tmp.height); tc.drawImage(cv, 0, 0);
+      link.href = tmp.toDataURL('image/png'); link.click();
+    };
+
+    function getPos(e) { const r = cv.getBoundingClientRect(); const sx = cv.width/dpr/r.width, sy = cv.height/dpr/r.height; return [(e.clientX-r.left)*sx, (e.clientY-r.top)*sy]; }
+    function startDraw(e) { e.preventDefault(); drawing = true; [lastX, lastY] = getPos(e); ctx.save(); if (isEraser) { ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(lastX,lastY,penSize*3,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,1)'; ctx.fill(); } else { ctx.beginPath(); ctx.arc(lastX,lastY,penSize/2,0,Math.PI*2); ctx.fillStyle=activeColor; ctx.fill(); } ctx.restore(); }
+    function moveDraw(e) { if (!drawing) return; e.preventDefault(); const [x,y]=getPos(e); ctx.save(); if (isEraser) { ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(x,y,penSize*3,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,1)'; ctx.fill(); } else { ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.strokeStyle=activeColor; ctx.lineWidth=penSize; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke(); } ctx.restore(); lastX=x; lastY=y; }
+    function endDraw() { drawing = false; }
+    cv.addEventListener('pointerdown', startDraw, { passive: false });
+    cv.addEventListener('pointermove', moveDraw,  { passive: false });
+    cv.addEventListener('pointerup',   endDraw,   { passive: false });
+    cv.addEventListener('pointercancel', endDraw, { passive: false });
+    cv.style.touchAction = 'none';
+  }
+
+  window.initPomoOverlay = function() {
+    buildTicks(); renderPomo(); startBreathing(); renderFocusChecklist(); initScribble();
+  };
+
+  // Duration swipe
+  let swX = null, swDur = null;
+  const swTrack = document.getElementById('pomo-sw-track');
+  if (swTrack) {
+    swTrack.addEventListener('pointerdown', e => { swX = e.clientX; swDur = pomoDur; swTrack.setPointerCapture(e.pointerId); e.preventDefault(); });
+    swTrack.addEventListener('pointermove', e => { if (swX === null) return; setDuration(swDur + Math.round((e.clientX - swX) / 12)); });
+    swTrack.addEventListener('pointerup',   () => swX = null);
+    swTrack.addEventListener('pointercancel', () => swX = null);
+    swTrack.addEventListener('wheel', e => { e.preventDefault(); setDuration(pomoDur + (e.deltaY > 0 ? -1 : 1)); }, { passive: false });
+  }
+  document.getElementById('pomo-sw-minus')?.addEventListener('click', () => setDuration(pomoDur - 1));
+  document.getElementById('pomo-sw-plus')?.addEventListener('click',  () => setDuration(pomoDur + 1));
+
+  // Start / Pause
+  document.getElementById('pomo-start')?.addEventListener('click', () => {
+    if (pomo.running) {
+      clearInterval(pomo.interval); pomo.running = false;
+    } else {
+      if (pomo.remainSecs === 0) { pomo.totalSecs = pomoDur * 60; pomo.remainSecs = pomoDur * 60; }
+      pomo.running = true;
+      pomo._endTarget = Date.now() + pomo.remainSecs * 1000;
+      pomo.interval = setInterval(() => {
+        pomo.remainSecs = Math.max(0, Math.round((pomo._endTarget - Date.now()) / 1000));
+        if (pomo.remainSecs <= 0) {
+          clearInterval(pomo.interval); pomo.running = false; pomo.remainSecs = 0;
+          pomo.sessions = Math.min(4, pomo.sessions + 1);
+          stopBreathing();
+          document.getElementById('pomo-lock-msg')?.classList.remove('show');
+          // Completion chime
+          try { const ac = new (window.AudioContext || window.webkitAudioContext)(); [0, 0.35, 0.7].forEach((t, i) => { const osc = ac.createOscillator(), g = ac.createGain(); osc.connect(g); g.connect(ac.destination); osc.frequency.value = [528,660,792][i]; g.gain.value = 0.18; osc.start(ac.currentTime + t); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + t + 0.9); osc.stop(ac.currentTime + t + 0.9); }); } catch(e) {}
+        }
+        renderPomo();
+      }, 500);
+    }
+    renderPomo();
+  });
+
+  // Reset
+  document.getElementById('pomo-reset')?.addEventListener('click', () => {
+    clearInterval(pomo.interval); pomo.running = false;
+    pomo.totalSecs = pomoDur * 60; pomo.remainSecs = pomoDur * 60;
+    renderPomo();
+  });
+
+  // Close button (with lock check)
+  document.getElementById('pomo-close')?.addEventListener('click', () => {
+    if (pomo.running) { document.getElementById('pomo-lock-msg')?.classList.add('show'); return; }
+    _scribInited = false; stopBreathing(); closeOverlay('pomo-overlay');
+  });
+  document.getElementById('pomo-withdraw')?.addEventListener('click', () => {
+    clearInterval(pomo.interval); pomo.running = false;
+    pomo.totalSecs = pomoDur * 60; pomo.remainSecs = pomoDur * 60;
+    renderPomo(); stopBreathing();
+    document.getElementById('pomo-lock-msg')?.classList.remove('show');
+    closeOverlay('pomo-overlay');
+  });
+
+  // Checklist
+  function addCheckItem() {
+    const inp = document.getElementById('pomo-check-input'); if (!inp) return;
+    const text = inp.value.trim(); if (!text) return;
+    focusChecklist.push({ text, done: false }); inp.value = ''; renderFocusChecklist();
+  }
+  document.getElementById('pomo-check-add-btn')?.addEventListener('click', addCheckItem);
+  document.getElementById('pomo-check-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') addCheckItem(); });
+})();
 
 </script>
 </body>
