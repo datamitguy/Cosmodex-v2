@@ -1276,7 +1276,6 @@ body::after {
   display: none;
   position: fixed; inset: 0;
   background: rgba(10,9,8,0.7);
-  backdrop-filter: blur(4px);
   z-index: 497;
 }
 
@@ -8782,9 +8781,9 @@ async function addTask(title, priority = 'med', dueDate = '', category = '', rec
 }
 
 async function updateTask(taskId, data) {
-  const { doc, updateDoc } = window.CDX_FB;
+  const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
   try {
-    await updateDoc(doc(window.CDX_DB, 'tasks', taskId), data);
+    await updateDoc(doc(window.CDX_DB, 'tasks', taskId), { ...data, updatedAt: serverTimestamp() });
   } catch (err) {
     console.error('updateTask error:', err);
     showToast('Failed to update task', 'error');
@@ -9254,14 +9253,31 @@ function initCalDropZones() {
       const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
       openScheduleModal(localDateStr(_calDate), `${String(h).padStart(2,'0')}:00`, _dragTaskId, _dragSubId);
     });
-    // Click empty slot to create new event
+    // Click empty slot to create new event (or open pomodoro for spanning multi-hour events)
     dayContainer.addEventListener('click', e => {
       if (_dragTaskId) return;
       const slot = e.target.closest('.cal-hour-slot');
       if (!slot) return;
-      if (e.target.closest('.cal-event')) return; // clicking existing event
+      if (e.target.closest('.cal-event')) return; // clicking existing event chip
       const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
-      openQuickCalModal(localDateStr(_calDate), `${String(h).padStart(2,'0')}:00`);
+      const dateStr = localDateStr(_calDate);
+      // Check if a multi-hour event spans this hour (chip only placed in start hour)
+      const coveringEvent = CAL_EVENTS.find(ev => {
+        if (ev.date !== dateStr || !ev.startTime) return false;
+        const [sh, sm] = ev.startTime.split(':').map(Number);
+        const startFrac = sh + sm / 60;
+        const endFrac = startFrac + (ev.duration || 60) / 60;
+        return h >= Math.floor(startFrac) && h < Math.ceil(endFrac);
+      });
+      if (coveringEvent) {
+        openOverlay('pomo-overlay');
+        const titleEl = document.getElementById('pomo-ev-title');
+        if (titleEl) titleEl.textContent = coveringEvent.title;
+        window.setPomoEvent?.(coveringEvent);
+        initPomoOverlay();
+      } else {
+        openQuickCalModal(dateStr, `${String(h).padStart(2,'0')}:00`);
+      }
     });
   }
 
@@ -9681,9 +9697,12 @@ function openOrb() {
   orbBackdrop.classList.add('visible');
   orbDisplay.classList.add('visible');
   orbHeader.classList.add('visible');
-  // redraw at expanded size after CSS transition
-  setTimeout(drawCosmodex, 50);
-  setTimeout(drawCosmodex, 500);
+  // Continuously redraw canvas during the CSS transition (~480ms) to avoid blurry scaling
+  const start = Date.now();
+  (function animRedraw() {
+    drawCosmodex();
+    if (Date.now() - start < 550) requestAnimationFrame(animRedraw);
+  })();
 }
 
 function closeOrb() {
@@ -10183,19 +10202,19 @@ function closeOverlay(id) {
   if (el) el.classList.remove('open');
 }
 
-document.querySelectorAll('[data-close]').forEach(btn => {
-  btn.addEventListener('click', () => closeOverlay(btn.dataset.close));
-});
-
-document.querySelectorAll('.overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target !== overlay) return;
+// Delegated handlers for [data-close] buttons and overlay click-outside — covers
+// elements inserted after script execution (e.g. #quick-cal-modal at end of body)
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-close]');
+  if (btn) { closeOverlay(btn.dataset.close); return; }
+  const overlay = e.target;
+  if (overlay.classList?.contains('overlay') && overlay.classList.contains('open')) {
     if (overlay.id === 'pomo-overlay') {
       document.getElementById('pomo-close')?.click();
     } else {
       closeOverlay(overlay.id);
     }
-  });
+  }
 });
 
 // Header action buttons
