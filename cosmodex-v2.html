@@ -73,6 +73,7 @@
   /* Text */
   --cream:       #e8e0d0;
   --muted:       #8a8070;
+  --muted-readable: #b0a898;  /* secondary text that must be legible */
   --ink:         #0d0c0a;
 
   /* Accents */
@@ -106,6 +107,13 @@
    RESET & BASE
    ═══════════════════════════════════════════════════════════ */
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus:not(:focus-visible) { outline: none; }
 
 html { font-size:16px; -webkit-font-smoothing:antialiased; }
 
@@ -590,7 +598,7 @@ body::after {
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: var(--muted);
+  color: var(--muted-readable);
   padding: 6px 8px 0;
   text-align: right;
   flex-shrink: 0;
@@ -777,7 +785,7 @@ body::after {
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.06em;
-  color: var(--muted);
+  color: var(--muted-readable);
 }
 
 .task-due.overdue { color: var(--rust); }
@@ -806,7 +814,7 @@ body::after {
 .task-row-wrap { display: flex; flex-direction: column; }
 
 .task-expand-btn {
-  width: 14px; min-width: 14px;
+  width: 28px; min-width: 28px;
   background: none; border: none;
   color: var(--muted); font-size: 10px;
   cursor: pointer; padding: 0;
@@ -815,6 +823,7 @@ body::after {
   align-self: flex-start;
   margin-top: 4px;
   line-height: 1;
+  display: flex; align-items: center; justify-content: center;
 }
 .task-expand-btn.open  { transform: rotate(90deg); color: var(--gold); }
 .task-expand-btn.ghost { visibility: hidden; }
@@ -979,7 +988,7 @@ body::after {
 }
 .pomo-ev-label {
   font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--muted); text-align: center;
+  text-transform: uppercase; color: var(--muted-readable); text-align: center;
 }
 .pomo-ev-title-el {
   font-family: var(--font-display); font-size: 16px; font-weight: 300;
@@ -1252,7 +1261,7 @@ body::after {
   display: none;
   align-items: center; justify-content: center;
   font-size: 13px;
-  z-index: 3;
+  z-index: 501;
   transition: var(--ease-fast);
 }
 
@@ -1265,7 +1274,7 @@ body::after {
   position: fixed; inset: 0;
   background: rgba(10,9,8,0.7);
   backdrop-filter: blur(4px);
-  z-index: 499;
+  z-index: 497;
 }
 
 #orb-backdrop.visible { display: block; }
@@ -1310,7 +1319,7 @@ body::after {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   text-align: center;
-  z-index: 2;
+  z-index: 502;
   pointer-events: auto;
   display: none;
   background: linear-gradient(to top, rgba(10,9,8,0.97) 0%, rgba(10,9,8,0.8) 55%, transparent 100%);
@@ -1755,7 +1764,7 @@ body::after {
 
 .mob-nav-label {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -3317,6 +3326,579 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   .hb-routine-grid,.hb-prog-top,.hb-habits-grid,.hb-cue-grid,.hb-why-reward,.hb-insight-layout { grid-template-columns:1fr; }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════ */
+#cdx-toast-container {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+.cdx-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--cream);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  max-width: 320px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.cdx-toast.show { opacity: 1; transform: translateY(0); }
+.cdx-toast.success { border-left: 3px solid var(--sage); }
+.cdx-toast.error   { border-left: 3px solid var(--rust); }
+.cdx-toast.info    { border-left: 3px solid var(--gold); }
+.cdx-toast.warning { border-left: 3px solid var(--amber); }
+.cdx-toast-icon { font-size: 14px; flex-shrink: 0; }
+.cdx-toast-msg { flex: 1; line-height: 1.4; }
+
+/* Task decay bar */
+.task-decay-bar {
+  height: 2px;
+  border-radius: 1px;
+  margin-top: 4px;
+  width: 100%;
+  overflow: hidden;
+  background: var(--elevated);
+}
+.task-decay-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.3s ease;
+}
+.task-decay-fill.fresh  { background: var(--sage);  }
+.task-decay-fill.aging  { background: var(--amber); }
+.task-decay-fill.stale  { background: var(--rust);  }
+.task-decay-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+.task-decay-label.fresh  { color: var(--sage); }
+.task-decay-label.aging  { color: var(--amber); }
+.task-decay-label.stale  { color: var(--rust); }
+
+/* Task energy badge */
+.task-energy-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+.energy-deep    { background: rgba(107,159,212,0.1); border-color: rgba(107,159,212,0.3); color: var(--blue); }
+.energy-admin   { background: rgba(138,128,112,0.1); border-color: rgba(138,128,112,0.3); color: var(--muted-readable); }
+.energy-creative{ background: rgba(201,162,39,0.1);  border-color: rgba(201,162,39,0.3);  color: var(--gold); }
+.energy-quick   { background: rgba(74,124,94,0.1);   border-color: rgba(74,124,94,0.3);   color: var(--sage); }
+
+/* Energy picker pill group */
+.energy-picker {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.energy-pill {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted-readable);
+  cursor: pointer;
+  transition: var(--ease-fast);
+}
+.energy-pill:hover { border-color: var(--gold); color: var(--cream); }
+.energy-pill.active.energy-deep     { background: rgba(107,159,212,0.12); border-color: var(--blue); color: var(--blue); }
+.energy-pill.active.energy-admin    { background: rgba(138,128,112,0.12); border-color: var(--muted); color: var(--muted-readable); }
+.energy-pill.active.energy-creative { background: rgba(201,162,39,0.12);  border-color: var(--gold); color: var(--gold); }
+.energy-pill.active.energy-quick    { background: rgba(74,124,94,0.12);   border-color: var(--sage); color: var(--sage); }
+
+/* ═══════════════════════════════════════════════════════════
+   DAILY RITUAL OVERLAY
+   ═══════════════════════════════════════════════════════════ */
+#ritual-overlay {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+#ritual-overlay.open { opacity: 1; pointer-events: auto; }
+
+.ritual-panel {
+  width: min(480px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 40px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.ritual-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+.ritual-greeting {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--cream);
+  letter-spacing: 0.02em;
+}
+.ritual-date-line {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-readable);
+  margin-top: -16px;
+}
+.ritual-section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 8px;
+}
+.ritual-focus-input {
+  width: 100%;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 300;
+  color: var(--cream);
+  outline: none;
+  resize: none;
+  line-height: 1.5;
+}
+.ritual-focus-input:focus { border-color: var(--gold); }
+.ritual-energy-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.ritual-energy-btn {
+  flex: 1;
+  min-width: 80px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--muted-readable);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: var(--ease-fast);
+  text-align: center;
+}
+.ritual-energy-btn:hover { border-color: var(--gold); color: var(--cream); }
+.ritual-energy-btn.active { background: rgba(201,162,39,0.1); border-color: var(--gold); color: var(--gold); }
+.ritual-momentum-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--elevated);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.ritual-momentum-score {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 300;
+  color: var(--gold);
+  line-height: 1;
+  min-width: 60px;
+}
+.ritual-momentum-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 4px;
+}
+.ritual-momentum-trend {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--muted-readable);
+}
+.ritual-begin-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--gold);
+  border: none;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: var(--ease-fast);
+}
+.ritual-begin-btn:hover { background: var(--gold-hover); transform: translateY(-1px); }
+
+/* Re-entry snapshot */
+#reentry-modal {
+  position: fixed; inset: 0;
+  background: rgba(10,9,8,0.85);
+  backdrop-filter: blur(12px);
+  z-index: 870;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+#reentry-modal.open { opacity: 1; pointer-events: auto; }
+.reentry-panel {
+  width: min(420px, 92vw);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.reentry-title {
+  font-family: var(--font-display);
+  font-size: 18px; font-weight: 300;
+  color: var(--cream);
+}
+.reentry-task-name {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.1em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.reentry-textarea {
+  width: 100%;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: 13px; color: var(--cream);
+  resize: none; outline: none;
+  line-height: 1.5;
+}
+.reentry-textarea:focus { border-color: var(--gold); }
+.reentry-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.reentry-save-btn {
+  padding: 7px 18px; border-radius: 8px;
+  background: var(--gold); border: none;
+  color: var(--ink); font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.08em;
+  cursor: pointer; transition: var(--ease-fast);
+}
+.reentry-save-btn:hover { background: var(--gold-hover); }
+.reentry-skip-btn {
+  padding: 7px 14px; border-radius: 8px;
+  background: none; border: 1px solid var(--border);
+  color: var(--muted-readable); font-family: var(--font-mono);
+  font-size: 10px; cursor: pointer; transition: var(--ease-fast);
+}
+.reentry-skip-btn:hover { border-color: var(--gold); color: var(--cream); }
+
+/* ═══════════════════════════════════════════════════════════
+   COMMIT MODE
+   ═══════════════════════════════════════════════════════════ */
+#commit-overlay {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 950;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 32px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+#commit-overlay.open { opacity: 1; pointer-events: auto; }
+
+.commit-phase-label {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted);
+}
+.commit-task-title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 4vw, 36px);
+  font-weight: 300; color: var(--cream);
+  text-align: center;
+  max-width: 600px;
+  line-height: 1.3;
+}
+.commit-energy-badge {
+  font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.1em;
+  padding: 4px 12px; border-radius: 100px;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+}
+.commit-elapsed {
+  font-family: var(--font-display);
+  font-size: 48px; font-weight: 300;
+  color: var(--gold); font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; line-height: 1;
+}
+.commit-snapshot-area {
+  width: min(480px, 90vw);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.commit-snapshot-area.visible { opacity: 1; }
+.commit-snapshot-hint {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.commit-snapshot-input {
+  width: 100%;
+  background: var(--elevated); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+  font-family: var(--font-body); font-size: 13px; color: var(--cream);
+  outline: none; resize: none;
+}
+.commit-snapshot-input:focus { border-color: var(--gold); }
+.commit-actions { display: flex; gap: 12px; }
+.commit-done-btn {
+  padding: 12px 28px; border-radius: 10px;
+  background: var(--sage); border: none;
+  color: #fff; font-family: var(--font-display);
+  font-size: 15px; font-weight: 400;
+  cursor: pointer; transition: var(--ease-fast);
+}
+.commit-done-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.commit-leave-btn {
+  padding: 12px 20px; border-radius: 10px;
+  background: none; border: 1px solid var(--border);
+  color: var(--muted-readable); font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.06em;
+  cursor: pointer; transition: var(--ease-fast);
+}
+.commit-leave-btn:hover { border-color: var(--rust); color: var(--rust); }
+
+/* Friction modal */
+#friction-modal {
+  position: fixed; inset: 0;
+  background: rgba(10,9,8,0.88);
+  backdrop-filter: blur(14px);
+  z-index: 960;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+#friction-modal.open { opacity: 1; pointer-events: auto; }
+.friction-panel {
+  width: min(400px, 92vw);
+  background: var(--surface);
+  border: 1px solid rgba(196,92,42,0.3);
+  border-radius: 16px;
+  padding: 28px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.friction-header-label {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--rust);
+}
+.friction-title {
+  font-family: var(--font-display);
+  font-size: 20px; font-weight: 300; color: var(--cream);
+}
+.friction-task-name {
+  font-family: var(--font-body);
+  font-size: 13px; color: var(--muted-readable);
+  padding: 8px 10px; background: var(--elevated);
+  border-radius: 6px; border-left: 2px solid var(--rust);
+}
+.friction-options { display: flex; flex-direction: column; gap: 6px; }
+.friction-option-btn {
+  padding: 10px 14px; border-radius: 8px;
+  background: none; border: 1px solid var(--border);
+  color: var(--muted-readable); font-family: var(--font-body);
+  font-size: 12px; text-align: left; cursor: pointer;
+  transition: var(--ease-fast);
+}
+.friction-option-btn:hover {
+  border-color: var(--amber); color: var(--cream);
+  background: rgba(232,160,32,0.05);
+}
+.friction-actions { display: flex; gap: 8px; margin-top: 4px; }
+.friction-kill-btn {
+  flex: 1; padding: 9px; border-radius: 8px;
+  background: rgba(196,92,42,0.08); border: 1px solid rgba(196,92,42,0.3);
+  color: var(--rust); font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.06em; cursor: pointer;
+  transition: var(--ease-fast);
+}
+.friction-kill-btn:hover { background: rgba(196,92,42,0.15); }
+.friction-someday-btn {
+  flex: 1; padding: 9px; border-radius: 8px;
+  background: none; border: 1px solid var(--border);
+  color: var(--muted-readable); font-family: var(--font-mono);
+  font-size: 10px; letter-spacing: 0.06em; cursor: pointer;
+  transition: var(--ease-fast);
+}
+.friction-someday-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ═══════════════════════════════════════════════════════════
+   DONE WALL
+   ═══════════════════════════════════════════════════════════ */
+.done-wall-stats {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  padding: 16px 0; border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.done-stat-card {
+  flex: 1; min-width: 80px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+.done-stat-value {
+  font-family: var(--font-display);
+  font-size: 28px; font-weight: 300; color: var(--gold);
+  line-height: 1;
+}
+.done-stat-label {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); margin-top: 4px;
+}
+.done-filter-bar {
+  display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.done-filter-btn {
+  padding: 5px 12px; border-radius: 100px;
+  border: 1px solid var(--border);
+  background: none; color: var(--muted-readable);
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.1em; cursor: pointer;
+  transition: var(--ease-fast);
+}
+.done-filter-btn:hover { border-color: var(--gold); color: var(--cream); }
+.done-filter-btn.active { background: rgba(201,162,39,0.1); border-color: var(--gold); color: var(--gold); }
+.done-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  overflow-y: auto;
+  max-height: calc(100% - 180px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.done-card {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 6px;
+  position: relative; overflow: hidden;
+}
+.done-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.done-card.type-task::before    { background: var(--sage); }
+.done-card.type-project::before { background: var(--gold); }
+.done-card.type-habit::before   { background: var(--blue); }
+.done-card.type-focus::before   { background: var(--amber); }
+.done-card-type {
+  font-family: var(--font-mono); font-size: 8px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+}
+.done-card-title {
+  font-family: var(--font-body); font-size: 13px; color: var(--cream);
+  line-height: 1.3;
+}
+.done-card-meta {
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted-readable);
+}
+
+/* Life OS narrative & anti-goals */
+.los-narrative {
+  font-family: var(--font-body);
+  font-size: 12px; color: var(--muted-readable);
+  font-style: italic; line-height: 1.5;
+  border-left: 2px solid var(--gold-dim);
+  padding-left: 10px; margin: 8px 0;
+}
+.los-anti-goals { margin-top: 8px; }
+.los-anti-goal-item {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--rust);
+  padding: 2px 0;
+}
+.los-anti-goal-item::before { content: '– '; }
+.los-narrative-input {
+  width: 100%;
+  background: var(--elevated); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 10px;
+  font-family: var(--font-body); font-size: 12px;
+  color: var(--cream); font-style: italic;
+  resize: none; outline: none; margin-top: 4px;
+}
+.los-narrative-input:focus { border-color: var(--gold-dim); }
+
+/* Someday Graveyard */
+.someday-section-header {
+  font-family: var(--font-display);
+  font-size: 14px; font-weight: 300; color: var(--muted-readable);
+  padding: 12px 14px 6px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; user-select: none;
+}
+.someday-section-header:hover { color: var(--cream); }
+.someday-toggle-icon { font-size: 10px; transition: transform 0.2s; }
+.someday-section-header.open .someday-toggle-icon { transform: rotate(90deg); }
+.someday-body { display: none; padding: 0 0 8px; }
+.someday-body.visible { display: block; }
+.someday-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; opacity: 0.6;
+  font-family: var(--font-body); font-size: 12px;
+  color: var(--muted-readable);
+}
+.someday-row:hover { opacity: 0.9; }
+.someday-restore-btn {
+  margin-left: auto; font-size: 10px;
+  background: none; border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 7px;
+  color: var(--muted); cursor: pointer;
+  font-family: var(--font-mono);
+  transition: var(--ease-fast);
+}
+.someday-restore-btn:hover { border-color: var(--gold); color: var(--gold); }
+
 </style>
 </head>
 <body>
@@ -3380,6 +3962,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <div class="nav-item" data-panel="lifeos" id="nav-lifeos">
         <span class="nav-item-icon">◉</span>
         Life OS
+      </div>
+      <div class="nav-item" data-panel="done-wall" id="nav-done-wall">
+        <span class="nav-item-icon">✦</span>
+        Done Wall
       </div>
     </div>
   </div>
@@ -3490,6 +4076,12 @@ textarea.form-input { resize: vertical; min-height: 60px; }
                 <button type="button" class="task-recur-day-btn" data-day="Sun">S</button>
               </div>
             </div>
+          </div>
+          <div class="energy-picker" id="task-energy-picker">
+            <button type="button" class="energy-pill" data-energy="">⚡</button>
+            <button type="button" class="energy-pill energy-deep"    data-energy="deep">Deep</button>
+            <button type="button" class="energy-pill energy-shallow" data-energy="shallow">Shallow</button>
+            <button type="button" class="energy-pill energy-admin"   data-energy="admin">Admin</button>
           </div>
           <button class="task-add-confirm" id="task-add-confirm">Add</button>
         </div>
@@ -4351,6 +4943,14 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <label class="form-label">Notes / Context</label>
         <textarea id="ms-proj-notes" class="form-input" rows="3" placeholder="Background context, goals, constraints…"></textarea>
       </div>
+      <div class="form-group los-narrative-group">
+        <label class="form-label">Mission Brief <span style="font-size:10px;color:var(--muted);font-weight:400">(why this matters)</span></label>
+        <textarea id="ms-proj-mission" class="form-input" rows="2" placeholder="The purpose behind this initiative…"></textarea>
+      </div>
+      <div class="form-group los-narrative-group">
+        <label class="form-label">Anti-Goals <span style="font-size:10px;color:var(--muted);font-weight:400">(what we will NOT do)</span></label>
+        <textarea id="ms-proj-antigoals" class="form-input" rows="2" placeholder="Scope boundaries and explicit non-goals…"></textarea>
+      </div>
       <div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">
         <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--rust);display:none">Delete Initiative</button>
         <div style="display:flex;gap:8px;margin-left:auto">
@@ -4771,6 +5371,12 @@ let CATEGORIES = {
   }
 })();
 
+const ENERGY_TYPES = {
+  deep:    { label: 'Deep',    icon: '🧠', cssClass: 'energy-deep' },
+  shallow: { label: 'Shallow', icon: '💬', cssClass: 'energy-shallow' },
+  admin:   { label: 'Admin',   icon: '📋', cssClass: 'energy-admin' },
+};
+
 const DEFAULT_CATS = ['work','personal','health','learning','creative','admin'];
 const CAT_COLOR_PALETTE = ['#6b9fd4','#c9a227','#4a7c5e','#9b7fd4','#c49a6c','#8a8070','#d46b6b','#6bd4c4','#d4a96b','#a06bd4'];
 let _newCatColor = CAT_COLOR_PALETTE[0];
@@ -4906,8 +5512,9 @@ document.getElementById('hamburger')?.addEventListener('click', () => {
 
 /* ── Nav items ─────────────────────────────────────────── */
 const NAV_OVERLAY_MAP = {
-  insights: 'insights-overlay',
-  lifeos:   'lifeos-overlay',
+  insights:  'insights-overlay',
+  lifeos:    'lifeos-overlay',
+  'done-wall': 'done-wall-overlay',
 };
 
 document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
@@ -6145,10 +6752,12 @@ function _weekPct(dates, habits) {
 /* ══════════════════════════════════════════════════════════
    MILESTONES — FIRESTORE CRUD
    ══════════════════════════════════════════════════════════ */
-async function addMilestoneProject(title, startDate, endDate, color, category='', notes='') {
+async function addMilestoneProject(title, startDate, endDate, color, category='', notes='', missionBrief='', antiGoals='') {
   const { addDoc, collection, serverTimestamp } = window.CDX_FB;
   await addDoc(collection(window.CDX_DB, 'milestoneProjects'),
-    { title, startDate, endDate, color, category: category||null, notes: notes||'', createdAt: serverTimestamp() });
+    { title, startDate, endDate, color, category: category||null, notes: notes||'',
+      missionBrief: missionBrief||null, antiGoals: antiGoals||null,
+      createdAt: serverTimestamp() });
 }
 
 async function updateMilestoneProject(id, data) {
@@ -6508,6 +7117,11 @@ function openMsProjectModal(projId = null) {
   // Populate notes
   const notesEl = document.getElementById('ms-proj-notes');
   if (notesEl) notesEl.value = proj ? (proj.notes || '') : '';
+  // Populate mission brief and anti-goals
+  const missionEl = document.getElementById('ms-proj-mission');
+  if (missionEl) missionEl.value = proj ? (proj.missionBrief || '') : '';
+  const antiEl = document.getElementById('ms-proj-antigoals');
+  if (antiEl) antiEl.value = proj ? (proj.antiGoals || '') : '';
   const delBtn = document.getElementById('ms-proj-delete-btn');
   if (delBtn) delBtn.style.display = proj ? '' : 'none';
   openOverlay('ms-project-modal');
@@ -6602,19 +7216,21 @@ function initMilestonesPanel() {
     document.getElementById('ms-proj-color-val').value = sw.dataset.color;
   });
 
-  // Initiative modal confirm — includes category + notes
+  // Initiative modal confirm — includes category + notes + mission + anti-goals
   document.getElementById('ms-proj-confirm').addEventListener('click', async () => {
-    const title    = document.getElementById('ms-proj-title').value.trim();
-    const start    = document.getElementById('ms-proj-start').value;
-    const end      = document.getElementById('ms-proj-end').value;
-    const color    = document.getElementById('ms-proj-color-val').value || PROJECT_COLORS[0];
-    const category = document.getElementById('ms-proj-category')?.value || '';
-    const notes    = document.getElementById('ms-proj-notes')?.value.trim() || '';
+    const title       = document.getElementById('ms-proj-title').value.trim();
+    const start       = document.getElementById('ms-proj-start').value;
+    const end         = document.getElementById('ms-proj-end').value;
+    const color       = document.getElementById('ms-proj-color-val').value || PROJECT_COLORS[0];
+    const category    = document.getElementById('ms-proj-category')?.value || '';
+    const notes       = document.getElementById('ms-proj-notes')?.value.trim() || '';
+    const missionBrief = document.getElementById('ms-proj-mission')?.value.trim() || '';
+    const antiGoals   = document.getElementById('ms-proj-antigoals')?.value.trim() || '';
     if (!title || !start || !end) return;
     if (_msProjEdit) {
-      await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes });
+      await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes, missionBrief: missionBrief||null, antiGoals: antiGoals||null });
     } else {
-      await addMilestoneProject(title, start, end, color, category, notes);
+      await addMilestoneProject(title, start, end, color, category, notes, missionBrief, antiGoals);
     }
     closeOverlay('ms-project-modal');
   });
@@ -6960,6 +7576,24 @@ function escAttr(s) { return String(s ?? '').replace(/"/g,'&quot;'); }
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+/* ── Toast notifications ─────────────────────────────── */
+function showToast(msg, type = 'info', duration = 3000) {
+  const container = document.getElementById('cdx-toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `cdx-toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('show'));
+  });
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
 function fmtDate(s) {
   if (!s) return '';
   const [,m,d] = s.split('-');
@@ -7083,12 +7717,14 @@ function renderTasks() {
   const visible  = _settings.visibleCategories;
   const filtered = TASKS.filter(t => !t.category || visible.includes(t.category));
   const today    = localDateStr(new Date());
+  // Exclude someday tasks from normal groups
+  const active   = filtered.filter(t => !t.someday);
   const groups   = [
-    { label: 'Overdue',  tasks: filtered.filter(t => !t.done && t.dueDate && t.dueDate < today) },
-    { label: 'Today',    tasks: filtered.filter(t => !t.done && t.dueDate === today) },
-    { label: 'Upcoming', tasks: filtered.filter(t => !t.done && t.dueDate && t.dueDate > today) },
-    { label: 'No date',  tasks: filtered.filter(t => !t.done && !t.dueDate) },
-    { label: 'Done',     tasks: filtered.filter(t =>  t.done) },
+    { label: 'Overdue',  tasks: active.filter(t => !t.done && t.dueDate && t.dueDate < today) },
+    { label: 'Today',    tasks: active.filter(t => !t.done && t.dueDate === today) },
+    { label: 'Upcoming', tasks: active.filter(t => !t.done && t.dueDate && t.dueDate > today) },
+    { label: 'No date',  tasks: active.filter(t => !t.done && !t.dueDate) },
+    { label: 'Done',     tasks: active.filter(t =>  t.done) },
   ];
 
   let rowIdx = 0;
@@ -7100,6 +7736,21 @@ function renderTasks() {
     body.appendChild(labelEl);
     group.tasks.forEach(task => body.appendChild(buildTaskRow(task, rowIdx++)));
   });
+
+  // Someday Graveyard
+  renderSomedaySection(body, filtered.filter(t => t.someday), rowIdx);
+}
+
+/* ── Task Decay helper ───────────────────────────────── */
+function getTaskDecay(task) {
+  if (!task.createdAt) return null;
+  const created = task.createdAt.toDate ? task.createdAt.toDate() : new Date(task.createdAt);
+  const ageMs = Date.now() - created.getTime();
+  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+  const pct = Math.min(100, Math.round((ageDays / 14) * 100)); // 0–100% over 14 days
+  const state = ageDays < 3 ? 'fresh' : ageDays < 7 ? 'aging' : 'stale';
+  const label = ageDays < 1 ? 'new' : ageDays < 3 ? `${Math.floor(ageDays)}d` : ageDays < 7 ? `${Math.floor(ageDays)}d` : ageDays < 14 ? `${Math.floor(ageDays)}d` : '14d+';
+  return { pct, state, label, ageDays };
 }
 
 function buildTaskRow(task, idx) {
@@ -7131,6 +7782,29 @@ function buildTaskRow(task, idx) {
     recurBadge = `<span class="task-recur-badge">${rl}</span>`;
   }
 
+  // Decay bar
+  const decay = !task.done ? getTaskDecay(task) : null;
+  const decayBarHtml = decay
+    ? `<div class="task-decay-bar"><div class="task-decay-fill ${decay.state}" style="width:${decay.pct}%"></div></div>
+       <span class="task-decay-label ${decay.state}">${decay.label}</span>`
+    : '';
+
+  // Energy badge
+  const energyInfo = task.energyType ? ENERGY_TYPES[task.energyType] : null;
+  const energyBadge = energyInfo
+    ? `<span class="task-energy-badge ${energyInfo.cssClass}">${energyInfo.icon} ${energyInfo.label}</span>`
+    : '';
+
+  // Friction indicator
+  const frictionBadge = (task.deferrals >= 3 && !task.done)
+    ? `<span class="task-friction-badge" data-friction="${escAttr(task.id)}" title="Deferred ${task.deferrals} times — click to tag">⚠ Friction</span>`
+    : '';
+
+  // Re-entry snapshot display
+  const snapshotHtml = task.reentrySnapshot
+    ? `<div class="task-snapshot-display">↩ ${escHtml(task.reentrySnapshot)}</div>`
+    : '';
+
   const row = document.createElement('div');
   row.className = 'task-row';
   row.draggable = true;
@@ -7141,15 +7815,20 @@ function buildTaskRow(task, idx) {
     <div class="task-check ${task.done ? 'done' : ''}" data-check="${escAttr(task.id)}">${task.done ? '✓' : ''}</div>
     <div class="task-content">
       <span class="task-title ${task.done ? 'done' : ''}" data-edit="${escAttr(task.id)}">${escHtml(task.title)}</span>
+      ${snapshotHtml}
       <div class="task-meta">
         <div class="task-priority-dot ${task.priority || 'low'}"></div>
         ${catBadge}
         ${task.dueDate ? `<span class="task-due ${task.dueDate < localDateStr(new Date()) && !task.done ? 'overdue' : ''}">${fmtDate(task.dueDate)}</span>` : ''}
         ${schedBadge}
         ${recurBadge}
+        ${energyBadge}
+        ${frictionBadge}
+        ${decayBarHtml}
       </div>
     </div>
     <div class="task-actions-group">
+      ${!task.done ? `<button class="task-action-btn commit" data-commit="${escAttr(task.id)}" title="Enter commit mode">▶</button>` : ''}
       <button class="task-action-btn" data-add-sub="${escAttr(task.id)}" title="Add subtask">⊕</button>
       <button class="task-action-btn danger" data-del="${escAttr(task.id)}" title="Delete task">✕</button>
     </div>`;
@@ -7234,12 +7913,16 @@ document.getElementById('tasks-body').addEventListener('click', e => {
   const editEl   = e.target.closest('[data-edit]');
   const setCat   = e.target.closest('[data-setcat]');
   const confirmSub = e.target.closest('.subtask-add-confirm');
+  const commitBtn  = e.target.closest('[data-commit]');
+  const frictionEl = e.target.closest('[data-friction]');
 
   if (check)    { toggleTask(check.dataset.check); return; }
   if (subCheck) { toggleSubtask(subCheck.dataset.subcheck, subCheck.dataset.sub); return; }
   if (del)      { deleteTask(del.dataset.del); return; }
   if (delSub)   { deleteSubtask(delSub.dataset.delsub, delSub.dataset.sub); return; }
   if (setCat)   { cycleTaskCategory(setCat.dataset.setcat); return; }
+  if (commitBtn) { openCommitMode(commitBtn.dataset.commit); return; }
+  if (frictionEl) { openFrictionModal(frictionEl.dataset.friction); return; }
 
   if (addSub) {
     const taskId  = addSub.dataset.addSub;
@@ -7341,21 +8024,34 @@ function cancelInlineEdit(input) {
 }
 
 /* ── Firestore CRUD ───────────────────────────────────── */
-async function addTask(title, priority = 'med', dueDate = '', category = '', recurrence = '') {
+async function addTask(title, priority = 'med', dueDate = '', category = '', recurrence = '', energyType = '') {
   const { collection, addDoc, serverTimestamp } = window.CDX_FB;
-  await addDoc(collection(window.CDX_DB, 'tasks'), {
-    title, done: false, priority,
-    dueDate: dueDate || null,
-    category: category || null,
-    recurrence: recurrence || null,
-    calEventId: null, subtasks: [],
-    createdAt: serverTimestamp()
-  });
+  try {
+    await addDoc(collection(window.CDX_DB, 'tasks'), {
+      title, done: false, priority,
+      dueDate: dueDate || null,
+      category: category || null,
+      recurrence: recurrence || null,
+      energyType: energyType || null,
+      calEventId: null, subtasks: [],
+      deferrals: 0,
+      createdAt: serverTimestamp()
+    });
+    showToast('Task added', 'success');
+  } catch (err) {
+    console.error('addTask error:', err);
+    showToast('Failed to add task', 'error');
+  }
 }
 
 async function updateTask(taskId, data) {
   const { doc, updateDoc } = window.CDX_FB;
-  await updateDoc(doc(window.CDX_DB, 'tasks', taskId), data);
+  try {
+    await updateDoc(doc(window.CDX_DB, 'tasks', taskId), data);
+  } catch (err) {
+    console.error('updateTask error:', err);
+    showToast('Failed to update task', 'error');
+  }
 }
 
 async function toggleTask(taskId) {
@@ -7367,15 +8063,21 @@ async function deleteTask(taskId) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
   const { doc, deleteDoc } = window.CDX_FB;
-  if (task.calEventId) {
-    try { await deleteDoc(doc(window.CDX_DB, 'calEvents', task.calEventId)); } catch (_) {}
-  }
-  for (const sub of (task.subtasks || [])) {
-    if (sub.calEventId) {
-      try { await deleteDoc(doc(window.CDX_DB, 'calEvents', sub.calEventId)); } catch (_) {}
+  try {
+    if (task.calEventId) {
+      try { await deleteDoc(doc(window.CDX_DB, 'calEvents', task.calEventId)); } catch (_) {}
     }
+    for (const sub of (task.subtasks || [])) {
+      if (sub.calEventId) {
+        try { await deleteDoc(doc(window.CDX_DB, 'calEvents', sub.calEventId)); } catch (_) {}
+      }
+    }
+    await deleteDoc(doc(window.CDX_DB, 'tasks', taskId));
+    showToast('Task deleted', 'info');
+  } catch (err) {
+    console.error('deleteTask error:', err);
+    showToast('Failed to delete task', 'error');
   }
-  await deleteDoc(doc(window.CDX_DB, 'tasks', taskId));
 }
 
 async function addSubtask(taskId, title) {
@@ -7894,6 +8596,27 @@ function initAddTaskForm() {
     });
   });
 
+  // ── Energy type state ──
+  let _taskEnergy = '';
+  const energyPicker = document.getElementById('task-energy-picker');
+  if (energyPicker) {
+    energyPicker.querySelectorAll('.energy-pill').forEach(pill => {
+      pill.addEventListener('click', e => {
+        e.stopPropagation();
+        const val = pill.dataset.energy;
+        if (_taskEnergy === val) {
+          // deselect
+          _taskEnergy = '';
+          energyPicker.querySelectorAll('.energy-pill').forEach(p => p.classList.remove('active'));
+        } else {
+          _taskEnergy = val;
+          energyPicker.querySelectorAll('.energy-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+        }
+      });
+    });
+  }
+
   // ── Submit ──
   async function submit() {
     const title = input.value.trim();
@@ -7902,11 +8625,14 @@ function initAddTaskForm() {
     const dueDate  = document.getElementById('task-add-date').value;
     const category = document.getElementById('task-add-category').value;
     const recurrence = _taskRecur && _taskRecur !== 'custom:' ? _taskRecur : '';
-    await addTask(title, priority, dueDate, category, recurrence);
+    await addTask(title, priority, dueDate, category, recurrence, _taskEnergy);
     input.value = '';
     document.getElementById('task-add-date').value = '';
     const catSel = document.getElementById('task-add-category');
     if (catSel && _settings.defaultCategory) catSel.value = _settings.defaultCategory;
+    // Reset energy
+    _taskEnergy = '';
+    energyPicker?.querySelectorAll('.energy-pill').forEach(p => p.classList.remove('active'));
     resetRecur();
     input.focus();
   }
@@ -8614,6 +9340,7 @@ function openOverlay(id) {
   }
   if (id === 'notes-overlay') initNotesCanvas();
   if (id === 'pomo-overlay') initPomoOverlay();
+  if (id === 'done-wall-overlay') loadDoneWall();
 }
 
 function closeOverlay(id) {
@@ -8844,6 +9571,440 @@ window.addEventListener('cdx-auth-ready', () => {
   dismissSigninOverlay();
 });
 
+/* ═══════════════════════════════════════════════════════════
+   SOMEDAY GRAVEYARD
+═══════════════════════════════════════════════════════════ */
+function renderSomedaySection(body, somedayTasks, startIdx) {
+  if (!somedayTasks.length) return;
+  const stored = localStorage.getItem('cdx_someday_open');
+  const isOpen = stored === 'true';
+
+  const section = document.createElement('div');
+  section.className = 'someday-section';
+
+  const header = document.createElement('div');
+  header.className = 'someday-section-header' + (isOpen ? ' open' : '');
+  header.innerHTML = `<span class="someday-toggle-icon">›</span> Someday — ${somedayTasks.length} task${somedayTasks.length !== 1 ? 's' : ''}`;
+  header.addEventListener('click', () => {
+    header.classList.toggle('open');
+    list.style.display = header.classList.contains('open') ? '' : 'none';
+    localStorage.setItem('cdx_someday_open', header.classList.contains('open'));
+  });
+
+  const list = document.createElement('div');
+  list.className = 'someday-list';
+  list.style.display = isOpen ? '' : 'none';
+
+  let rowIdx = startIdx;
+  somedayTasks.forEach(task => {
+    const row = buildTaskRow(task, rowIdx++);
+    // Add restore button
+    const restoreBtn = document.createElement('button');
+    restoreBtn.className = 'someday-restore-btn';
+    restoreBtn.textContent = '↑ Restore';
+    restoreBtn.title = 'Move back to active tasks';
+    restoreBtn.addEventListener('click', e => { e.stopPropagation(); restoreFromSomeday(task.id); });
+    row.querySelector('.task-actions-group')?.prepend(restoreBtn);
+    list.appendChild(row);
+  });
+
+  section.appendChild(header);
+  section.appendChild(list);
+  body.appendChild(section);
+}
+
+async function restoreFromSomeday(taskId) {
+  await updateTask(taskId, { someday: false });
+  showToast('Task restored to active list', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DAILY RITUAL
+═══════════════════════════════════════════════════════════ */
+function computeMomentumScore() {
+  // Habit streak contribution (up to 50pts)
+  const today = localDateStr(new Date());
+  let habitPts = 0;
+  if (_habits.length > 0) {
+    let streakSum = 0;
+    _habits.forEach(h => {
+      let streak = 0;
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const ds = localDateStr(d);
+        if (_habitLogs[ds]?.completions?.[h.id]) streak++;
+        else break;
+      }
+      streakSum += streak;
+    });
+    habitPts = Math.min(50, Math.round((streakSum / (_habits.length * 7)) * 50));
+  }
+
+  // Task completion today (up to 30pts)
+  const doneTodayCount = TASKS.filter(t => t.done && t.doneDate === today).length;
+  const taskPts = Math.min(30, doneTodayCount * 5);
+
+  // Pending overdue penalty (−5 per overdue, max −20)
+  const overduePenalty = Math.min(20, TASKS.filter(t => !t.done && t.dueDate && t.dueDate < today).length * 5);
+
+  const score = Math.max(0, habitPts + taskPts - overduePenalty);
+  return { score, habitPts, taskPts, overduePenalty };
+}
+
+function openDailyRitual() {
+  const today = localDateStr(new Date());
+  const last = localStorage.getItem('cdx_ritual_date');
+  if (last === today) return; // already shown today
+
+  const overlay = document.getElementById('ritual-overlay');
+  if (!overlay) return;
+
+  // Set date label
+  const dateLabel = document.getElementById('ritual-date-label');
+  if (dateLabel) {
+    const d = new Date();
+    dateLabel.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+
+  // Show momentum score
+  const { score, habitPts, taskPts, overduePenalty } = computeMomentumScore();
+  const mWrap = document.getElementById('ritual-momentum-wrap');
+  const mScore = document.getElementById('ritual-momentum-score');
+  const mSub = document.getElementById('ritual-momentum-sub');
+  if (mWrap && score > 0) {
+    mWrap.style.display = '';
+    if (mScore) mScore.textContent = score;
+    if (mSub) {
+      const parts = [];
+      if (habitPts > 0) parts.push(`+${habitPts} habits`);
+      if (taskPts > 0)  parts.push(`+${taskPts} tasks`);
+      if (overduePenalty > 0) parts.push(`−${overduePenalty} overdue`);
+      mSub.textContent = parts.join('  ·  ');
+    }
+  }
+
+  overlay.classList.add('open');
+  setTimeout(() => document.getElementById('ritual-focus-input')?.focus(), 300);
+}
+
+function initDailyRitual() {
+  const overlay = document.getElementById('ritual-overlay');
+  if (!overlay) return;
+
+  let _ritualEnergy = '';
+
+  // Energy buttons
+  overlay.querySelectorAll('.ritual-energy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      overlay.querySelectorAll('.ritual-energy-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _ritualEnergy = btn.dataset.energy;
+    });
+  });
+
+  function closeRitual() {
+    overlay.classList.remove('open');
+    localStorage.setItem('cdx_ritual_date', localDateStr(new Date()));
+  }
+
+  document.getElementById('ritual-skip-btn')?.addEventListener('click', closeRitual);
+
+  document.getElementById('ritual-start-btn')?.addEventListener('click', () => {
+    const focus = document.getElementById('ritual-focus-input')?.value.trim();
+    if (focus) localStorage.setItem('cdx_daily_focus', focus);
+    if (_ritualEnergy) localStorage.setItem('cdx_daily_energy', _ritualEnergy);
+    closeRitual();
+    showToast('Day started — ' + (focus ? `"${focus}"` : 'good luck!'), 'success', 4000);
+  });
+
+  document.getElementById('ritual-focus-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('ritual-start-btn')?.click();
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RE-ENTRY SNAPSHOT MODAL
+═══════════════════════════════════════════════════════════ */
+let _reentryTaskId = null;
+
+function openReentryModal(taskId) {
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  _reentryTaskId = taskId;
+  const modal = document.getElementById('reentry-modal');
+  if (!modal) return;
+  const label = document.getElementById('reentry-task-label');
+  if (label) label.textContent = task.title;
+  const input = document.getElementById('reentry-snapshot-input');
+  if (input) { input.value = task.reentrySnapshot || ''; input.focus(); }
+  modal.classList.add('open');
+}
+
+function closeReentryModal() {
+  document.getElementById('reentry-modal')?.classList.remove('open');
+  _reentryTaskId = null;
+}
+
+function initReentryModal() {
+  const modal = document.getElementById('reentry-modal');
+  if (!modal) return;
+
+  document.getElementById('reentry-close-btn')?.addEventListener('click', closeReentryModal);
+  document.getElementById('reentry-skip-btn')?.addEventListener('click', closeReentryModal);
+
+  document.getElementById('reentry-save-btn')?.addEventListener('click', async () => {
+    if (!_reentryTaskId) return;
+    const snapshot = document.getElementById('reentry-snapshot-input')?.value.trim();
+    if (snapshot) {
+      await updateTask(_reentryTaskId, { reentrySnapshot: snapshot });
+      showToast('Snapshot saved', 'success');
+    }
+    closeReentryModal();
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMMIT MODE
+═══════════════════════════════════════════════════════════ */
+let _commitTaskId = null;
+let _commitInterval = null;
+let _commitElapsed = 0;
+let _commitSnapshotShown = false;
+
+function openCommitMode(taskId) {
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+
+  _commitTaskId = taskId;
+  _commitElapsed = 0;
+  _commitSnapshotShown = false;
+
+  const overlay = document.getElementById('commit-overlay');
+  if (!overlay) return;
+
+  const titleEl = document.getElementById('commit-task-title');
+  if (titleEl) titleEl.textContent = task.title;
+
+  const timerEl = document.getElementById('commit-timer');
+  if (timerEl) timerEl.textContent = '00:00';
+
+  const promptEl = document.getElementById('commit-snapshot-prompt');
+  if (promptEl) promptEl.style.display = 'none';
+
+  const snapshotInput = document.getElementById('commit-snapshot-input');
+  if (snapshotInput) snapshotInput.value = '';
+
+  overlay.classList.add('open');
+
+  clearInterval(_commitInterval);
+  _commitInterval = setInterval(() => {
+    _commitElapsed++;
+    const m = Math.floor(_commitElapsed / 60);
+    const s = _commitElapsed % 60;
+    if (timerEl) timerEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+    // Show snapshot prompt at 10 minutes
+    if (_commitElapsed === 600 && !_commitSnapshotShown) {
+      _commitSnapshotShown = true;
+      if (promptEl) promptEl.style.display = '';
+    }
+  }, 1000);
+}
+
+function closeCommitMode() {
+  clearInterval(_commitInterval);
+  _commitInterval = null;
+  _commitTaskId = null;
+  document.getElementById('commit-overlay')?.classList.remove('open');
+}
+
+function initCommitMode() {
+  const overlay = document.getElementById('commit-overlay');
+  if (!overlay) return;
+
+  document.getElementById('commit-exit-btn')?.addEventListener('click', () => {
+    if (_commitTaskId) {
+      openReentryModal(_commitTaskId);
+    }
+    closeCommitMode();
+  });
+
+  document.getElementById('commit-pause-btn')?.addEventListener('click', () => {
+    if (_commitTaskId) openReentryModal(_commitTaskId);
+    closeCommitMode();
+  });
+
+  document.getElementById('commit-done-btn')?.addEventListener('click', async () => {
+    if (_commitTaskId) {
+      await toggleTask(_commitTaskId);
+      showToast('Task completed!', 'success');
+    }
+    closeCommitMode();
+  });
+
+  document.getElementById('commit-snapshot-save-btn')?.addEventListener('click', async () => {
+    const snapshot = document.getElementById('commit-snapshot-input')?.value.trim();
+    if (snapshot && _commitTaskId) {
+      await updateTask(_commitTaskId, { reentrySnapshot: snapshot });
+      showToast('Snapshot saved — keep going!', 'success');
+    }
+    const promptEl = document.getElementById('commit-snapshot-prompt');
+    if (promptEl) promptEl.style.display = 'none';
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FRICTION TAGGING MODAL
+═══════════════════════════════════════════════════════════ */
+let _frictionTaskId = null;
+let _frictionReason = '';
+
+function openFrictionModal(taskId) {
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  _frictionTaskId = taskId;
+  _frictionReason = '';
+
+  const modal = document.getElementById('friction-modal');
+  if (!modal) return;
+
+  const label = document.getElementById('friction-task-label');
+  if (label) label.textContent = task.title;
+
+  // Reset reasons
+  modal.querySelectorAll('.friction-reason-btn').forEach(b => b.classList.remove('active'));
+
+  modal.classList.add('open');
+}
+
+function closeFrictionModal() {
+  document.getElementById('friction-modal')?.classList.remove('open');
+  _frictionTaskId = null;
+  _frictionReason = '';
+}
+
+function initFrictionModal() {
+  const modal = document.getElementById('friction-modal');
+  if (!modal) return;
+
+  document.getElementById('friction-close-btn')?.addEventListener('click', closeFrictionModal);
+
+  modal.querySelectorAll('.friction-reason-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modal.querySelectorAll('.friction-reason-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _frictionReason = btn.dataset.reason;
+    });
+  });
+
+  document.getElementById('friction-kill-btn')?.addEventListener('click', async () => {
+    if (!_frictionTaskId) return;
+    if (confirm('Delete this task permanently?')) {
+      await deleteTask(_frictionTaskId);
+      closeFrictionModal();
+    }
+  });
+
+  document.getElementById('friction-someday-btn')?.addEventListener('click', async () => {
+    if (!_frictionTaskId) return;
+    const updates = { someday: true };
+    if (_frictionReason) updates.frictionReason = _frictionReason;
+    await updateTask(_frictionTaskId, updates);
+    showToast('Moved to Someday', 'info');
+    closeFrictionModal();
+  });
+
+  document.getElementById('friction-keep-btn')?.addEventListener('click', async () => {
+    if (!_frictionTaskId) return;
+    // Reset deferral count + tag reason
+    const updates = { deferrals: 0 };
+    if (_frictionReason) updates.frictionReason = _frictionReason;
+    await updateTask(_frictionTaskId, updates);
+    showToast('Friction tagged — you\'ve got this', 'success');
+    closeFrictionModal();
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DONE WALL
+═══════════════════════════════════════════════════════════ */
+let _doneWallFilter = 'all';
+
+function loadDoneWall() {
+  _doneWallFilter = 'all';
+  document.querySelectorAll('.done-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
+  renderDoneWall();
+}
+
+function renderDoneWall() {
+  const today = localDateStr(new Date());
+  const startOfWeek = (() => {
+    const d = new Date(); d.setDate(d.getDate() - d.getDay()); return localDateStr(d);
+  })();
+  const startOfMonth = today.slice(0, 7) + '-01';
+
+  let tasks = TASKS.filter(t => t.done);
+  if (_doneWallFilter === 'today')  tasks = tasks.filter(t => t.doneDate === today);
+  if (_doneWallFilter === 'week')   tasks = tasks.filter(t => t.doneDate >= startOfWeek);
+  if (_doneWallFilter === 'month')  tasks = tasks.filter(t => t.doneDate >= startOfMonth);
+
+  // Stats
+  const statsEl = document.getElementById('done-wall-stats');
+  if (statsEl) {
+    const totalDone = TASKS.filter(t => t.done).length;
+    const todayDone = TASKS.filter(t => t.done && t.doneDate === today).length;
+    const weekDone  = TASKS.filter(t => t.done && t.doneDate >= startOfWeek).length;
+    // Habit streaks: longest active
+    let maxStreak = 0;
+    _habits.forEach(h => {
+      let s = 0;
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        if (_habitLogs[localDateStr(d)]?.completions?.[h.id]) s++;
+        else break;
+      }
+      if (s > maxStreak) maxStreak = s;
+    });
+    statsEl.innerHTML = `
+      <div class="done-stat-card"><div class="done-stat-number">${totalDone}</div><div class="done-stat-label">All time</div></div>
+      <div class="done-stat-card"><div class="done-stat-number">${weekDone}</div><div class="done-stat-label">This week</div></div>
+      <div class="done-stat-card"><div class="done-stat-number">${todayDone}</div><div class="done-stat-label">Today</div></div>
+      <div class="done-stat-card"><div class="done-stat-number">${maxStreak}</div><div class="done-stat-label">Best habit streak</div></div>`;
+  }
+
+  // Grid
+  const grid = document.getElementById('done-grid');
+  if (!grid) return;
+  if (!tasks.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;font-family:var(--font-mono);font-size:12px;color:var(--muted);text-align:center;padding:40px 0">Nothing here yet — go complete something!</div>`;
+    return;
+  }
+  grid.innerHTML = tasks.map(task => {
+    const cat = task.category ? CATEGORIES[task.category] : null;
+    const catBadge = cat
+      ? `<span style="font-size:9px;padding:1px 6px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>`
+      : '';
+    const dateLabel = task.doneDate ? fmtDate(task.doneDate) : '';
+    const energyInfo = task.energyType ? ENERGY_TYPES[task.energyType] : null;
+    const energyBadge = energyInfo ? `<span class="task-energy-badge ${energyInfo.cssClass}" style="font-size:9px">${energyInfo.icon} ${energyInfo.label}</span>` : '';
+    return `<div class="done-card">
+      <div class="done-card-title">✓ ${escHtml(task.title)}</div>
+      <div class="done-card-meta">${catBadge} ${energyBadge}</div>
+      ${dateLabel ? `<div class="done-card-date">${dateLabel}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function initDoneWall() {
+  document.getElementById('done-filter-bar')?.addEventListener('click', e => {
+    const btn = e.target.closest('.done-filter-btn');
+    if (!btn) return;
+    _doneWallFilter = btn.dataset.filter;
+    document.querySelectorAll('.done-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === _doneWallFilter));
+    renderDoneWall();
+  });
+}
+
 /* ── Boot task system after auth ──────────────────────── */
 window.addEventListener('cdx-auth-ready', () => {
   waitForFirebase(() => {
@@ -8860,6 +10021,12 @@ window.addEventListener('cdx-auth-ready', () => {
     initHabitsPage();
     initMilestonesPanel();
     initOrbAddTask();
+    initDailyRitual();
+    initReentryModal();
+    initCommitMode();
+    initFrictionModal();
+    initDoneWall();
+    setTimeout(openDailyRitual, 1200);
   });
 }, { once: true });
 
@@ -8984,8 +10151,6 @@ window.addEventListener('cdx-auth-ready', () => {
 ───────────────────────────────────────────────────────────── */
 (function() {
   const PMIN = 1, PMAX = 90;
-  const SCRIB_COLORS = ['#f5f0e8','#c9a227','#6b9fd4','#6b8f5e','#c45c2a','#d4913a','#1a1510'];
-  const SCRIB_SIZES  = [1, 2, 4, 8, 16];
 
   let pomoDur = 25;
   const pomo = { running: false, totalSecs: 25 * 60, remainSecs: 25 * 60, interval: null, sessions: 0, _endTarget: 0 };
@@ -9210,5 +10375,127 @@ window.addEventListener('cdx-auth-ready', () => {
 })();
 
 </script>
+
+<!-- ── Toast notification container ─────────────────── -->
+<div id="cdx-toast-container"></div>
+
+<!-- ── Daily Ritual Overlay ──────────────────────────── -->
+<div id="ritual-overlay">
+  <div class="ritual-card">
+    <div class="ritual-header">
+      <div class="ritual-icon">◎</div>
+      <div class="ritual-title">Good morning</div>
+      <div class="ritual-subtitle" id="ritual-date-label"></div>
+    </div>
+    <div class="ritual-body">
+      <div class="ritual-section-label">What's your single focus for today?</div>
+      <input class="ritual-focus-input" id="ritual-focus-input" type="text" placeholder="e.g. Finish the proposal draft…" autocomplete="off" maxlength="120">
+      <div class="ritual-section-label" style="margin-top:20px">How are your energy levels right now?</div>
+      <div class="ritual-energy-row" id="ritual-energy-row">
+        <button class="ritual-energy-btn" data-energy="high">⚡ High</button>
+        <button class="ritual-energy-btn" data-energy="med">◎ Medium</button>
+        <button class="ritual-energy-btn" data-energy="low">◌ Low</button>
+      </div>
+      <div class="ritual-momentum" id="ritual-momentum-wrap" style="display:none">
+        <div class="ritual-momentum-label">Momentum score</div>
+        <div class="ritual-momentum-score" id="ritual-momentum-score">0</div>
+        <div class="ritual-momentum-sub" id="ritual-momentum-sub"></div>
+      </div>
+    </div>
+    <div class="ritual-footer">
+      <button class="ritual-skip-btn" id="ritual-skip-btn">Skip for today</button>
+      <button class="ritual-start-btn" id="ritual-start-btn">Start my day →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Re-entry Snapshot Modal ────────────────────────── -->
+<div id="reentry-modal">
+  <div class="reentry-card">
+    <div class="reentry-header">
+      <div class="reentry-title">Pausing — capture where you are</div>
+      <button class="reentry-close-btn" id="reentry-close-btn">✕</button>
+    </div>
+    <div class="reentry-body">
+      <div class="reentry-task-label" id="reentry-task-label"></div>
+      <textarea class="reentry-textarea" id="reentry-snapshot-input" placeholder="Where did you leave off? What's the next action?…" rows="4"></textarea>
+    </div>
+    <div class="reentry-footer">
+      <button class="btn-ghost" id="reentry-skip-btn">Skip</button>
+      <button class="btn-primary" id="reentry-save-btn">Save snapshot</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Commit Mode Overlay ────────────────────────────── -->
+<div id="commit-overlay">
+  <div class="commit-card">
+    <div class="commit-header">
+      <div class="commit-mode-label">COMMIT MODE</div>
+      <button class="commit-exit-btn" id="commit-exit-btn">✕ Exit</button>
+    </div>
+    <div class="commit-task-title" id="commit-task-title">Task</div>
+    <div class="commit-timer" id="commit-timer">00:00</div>
+    <div class="commit-timer-label">elapsed</div>
+    <div class="commit-actions">
+      <button class="commit-action-btn" id="commit-pause-btn">⏸ Pause &amp; snapshot</button>
+      <button class="commit-action-btn done" id="commit-done-btn">✓ Mark done</button>
+    </div>
+    <div class="commit-snapshot-prompt" id="commit-snapshot-prompt" style="display:none">
+      <div class="commit-snapshot-label">10 minutes in — quick snapshot:</div>
+      <textarea class="commit-snapshot-input" id="commit-snapshot-input" placeholder="What have you done so far? Any blockers?…" rows="3"></textarea>
+      <button class="btn-primary" id="commit-snapshot-save-btn" style="margin-top:8px;width:100%">Save &amp; continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Friction Tagging Modal ─────────────────────────── -->
+<div id="friction-modal">
+  <div class="friction-card">
+    <div class="friction-header">
+      <div class="friction-title">This task keeps getting deferred</div>
+      <button class="friction-close-btn" id="friction-close-btn">✕</button>
+    </div>
+    <div class="friction-task-label" id="friction-task-label"></div>
+    <div class="friction-body">
+      <div class="friction-section-label">What's causing the friction?</div>
+      <div class="friction-reasons" id="friction-reasons">
+        <button class="friction-reason-btn" data-reason="unclear">? Unclear next action</button>
+        <button class="friction-reason-btn" data-reason="blocked">⛔ Waiting / blocked</button>
+        <button class="friction-reason-btn" data-reason="energy">⚡ Wrong energy level</button>
+        <button class="friction-reason-btn" data-reason="scary">😬 Feels scary / big</button>
+        <button class="friction-reason-btn" data-reason="boring">😶 Just boring</button>
+        <button class="friction-reason-btn" data-reason="notnow">⏳ Not relevant now</button>
+      </div>
+      <div class="friction-actions">
+        <button class="friction-action-btn kill" id="friction-kill-btn">✕ Delete task</button>
+        <button class="friction-action-btn someday" id="friction-someday-btn">→ Move to Someday</button>
+        <button class="friction-action-btn keep" id="friction-keep-btn">Keep it — I'll do it</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Done Wall Overlay ───────────────────────────────── -->
+<div class="overlay" id="done-wall-overlay" style="z-index:940">
+  <div class="overlay-panel" style="width:min(860px,96vw);max-height:92dvh;display:flex;flex-direction:column">
+    <div class="overlay-header">
+      <span class="overlay-title">Done Wall</span>
+      <button class="overlay-close" data-close="done-wall-overlay">✕</button>
+    </div>
+    <div style="padding:16px 20px 0;border-bottom:1px solid var(--border)">
+      <div class="done-wall-stats" id="done-wall-stats"></div>
+      <div class="done-filter-bar" id="done-filter-bar">
+        <button class="done-filter-btn active" data-filter="all">All</button>
+        <button class="done-filter-btn" data-filter="today">Today</button>
+        <button class="done-filter-btn" data-filter="week">This week</button>
+        <button class="done-filter-btn" data-filter="month">This month</button>
+      </div>
+    </div>
+    <div class="overlay-body" style="overflow-y:auto;flex:1;padding:20px">
+      <div class="done-grid" id="done-grid"></div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
