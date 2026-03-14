@@ -2693,6 +2693,16 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .settings-section:last-child { border-bottom:none; }
 .settings-section-title { font-family:var(--font-display); font-size:16px; font-weight:300; color:var(--cream); margin-bottom:4px; }
 .settings-desc { font-family:var(--font-body); font-size:12px; color:var(--muted); margin-bottom:12px; line-height:1.5; }
+/* Settings two-panel layout */
+.settings-layout { display:flex; gap:0; min-height:380px; }
+.settings-nav { width:148px; flex-shrink:0; border-right:1px solid var(--border); padding:4px 0 4px 0; }
+.settings-nav-item { display:flex; align-items:center; gap:8px; padding:9px 14px; font-size:12px; cursor:pointer; border-radius:var(--r-sm); color:var(--muted); transition:color .15s,background .15s; margin-bottom:2px; }
+.settings-nav-item:hover { color:var(--cream); background:rgba(255,255,255,.04); }
+.settings-nav-item.active { color:var(--gold); background:rgba(201,162,39,.1); }
+.settings-nav-icon { font-size:14px; opacity:.7; }
+.settings-right { flex:1; padding:0 0 0 22px; overflow-y:auto; max-height:520px; }
+.settings-content-panel { display:none; }
+.settings-content-panel.active { display:block; }
 .settings-cat-grid { display:flex; flex-wrap:wrap; gap:8px; }
 .settings-cat-pill {
   display:flex; align-items:center; gap:6px;
@@ -3376,22 +3386,22 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <div class="hb-hero-grid"></div>
             <div class="hb-top">
               <div class="hb-left">
-                <div class="hb-time" id="hb-clock">06:42</div>
-                <div class="hb-date" id="hb-clockdate">SATURDAY · MARCH 15</div>
+                <div class="hb-time" id="hb-clock">--:--</div>
+                <div class="hb-date" id="hb-clockdate">— · —</div>
               </div>
               <div class="hb-right">
-                <div class="hb-season" id="hb-season-label">The Rebuilding · Day 42</div>
+                <div class="hb-season" id="hb-season-label"></div>
               </div>
             </div>
             <div class="hb-quote" style="position:relative;">
-              <span id="hb-quote-text">"We are what we repeatedly do. Excellence, then, is not an act but a habit."</span>
-              <span class="hb-quote-attr">— Aristotle · Your identity today: <em style="color:var(--gold);" id="hb-identity-today">I am someone who builds with intention</em></span>
+              <span id="hb-quote-text"></span>
+              <span class="hb-quote-attr" id="hb-quote-attr"></span>
             </div>
             <div class="hb-stats">
               <div class="hb-stat"><span class="hb-stat-n" id="hb-streak-n">—</span><span class="hb-stat-l">Day Streak</span></div>
               <div class="hb-stat"><span class="hb-stat-n" id="hb-momentum-n">—</span><span class="hb-stat-l">Momentum</span></div>
               <div class="hb-stat"><span class="hb-stat-n" id="hb-done-n">—</span><span class="hb-stat-l">Done Yesterday</span></div>
-              <div class="hb-stat"><span class="hb-stat-n">66d</span><span class="hb-stat-l">Avg to Auto</span></div>
+              <div class="hb-stat"><span class="hb-stat-n" id="hb-avgauto-n">66d</span><span class="hb-stat-l">Avg to Auto</span></div>
             </div>
           </div>
 
@@ -3419,7 +3429,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
                 <div class="hb-ic-label">Today's Identity</div>
                 <div class="hb-identity-card">
                   <div class="hb-id-label">I am someone who…</div>
-                  <div class="hb-id-text" id="hb-id-display">"builds systems, not just tasks — and shows up for my morning before the world asks anything of me."</div>
+                  <div class="hb-id-text" id="hb-id-display"></div>
                 </div>
               </div>
 
@@ -3428,7 +3438,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
                 <div class="hb-ic-label">Today's Non-Negotiable</div>
                 <div class="hb-nonneg">
                   <div class="hb-nonneg-label">If I do only one thing →</div>
-                  <div class="hb-nonneg-text" id="hb-nonneg-text" contenteditable="true" style="outline:none;min-height:20px" placeholder="Write your one thing…">Finalize the Design Council intake form flow and get it reviewed</div>
+                  <div class="hb-nonneg-text" id="hb-nonneg-text" contenteditable="true" style="outline:none;min-height:20px" placeholder="Write your one thing…"></div>
                 </div>
               </div>
 
@@ -3932,94 +3942,26 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <!-- Friction Detector -->
         <div class="hb-insight-card">
           <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
-          <div class="hb-friction-insight">
-            <div class="hb-fi-habit warn">
-              <div class="hb-fi-icon">📓</div>
-              <div class="hb-fi-info">
-                <div class="hb-fi-name">Journaling — skipped 3× last 2 weeks</div>
-                <div class="hb-fi-reason">Pattern: skipped after late nights (past midnight)</div>
-              </div>
-              <div class="hb-fi-action">⚠ Flagged</div>
-            </div>
-            <div style="padding:12px 14px;background:rgba(196,92,42,.04);border:1px solid rgba(196,92,42,.15);border-radius:var(--r-sm);margin-bottom:12px;">
-              <div style="font-size:12px;color:var(--cream);margin-bottom:8px;font-weight:500;">What's blocking it?</div>
-              <div class="hb-fg-opts">
-                <span class="hb-fg-opt on">😴 Too tired at night</span>
-                <span class="hb-fg-opt" onclick="this.classList.toggle('on')">🌫 Unclear what to write</span>
-                <span class="hb-fg-opt" onclick="this.classList.toggle('on')">📱 Phone distracts</span>
-              </div>
-              <div style="margin-top:10px;font-size:12px;color:var(--muted);">💡 Suggestion: reduce to 5-min prompt-based version on days after midnight bedtime</div>
-            </div>
-            <div class="hb-fi-habit ok">
-              <div class="hb-fi-icon">🥛</div>
-              <div class="hb-fi-info">
-                <div class="hb-fi-name">Hydration — 42 day streak</div>
-                <div class="hb-fi-reason">Near automatic · no willpower required</div>
-              </div>
-              <div class="hb-fi-action ok">✓ Locked in</div>
-            </div>
-            <div class="hb-fi-habit ok">
-              <div class="hb-fi-icon">🚶</div>
-              <div class="hb-fi-info">
-                <div class="hb-fi-name">Morning walk — thriving</div>
-                <div class="hb-fi-reason">Consistent context · same time, same route</div>
-              </div>
-              <div class="hb-fi-action ok">✓ Growing</div>
-            </div>
+          <div class="hb-friction-insight" id="ins-friction-list">
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading habit data…</div>
           </div>
           <div class="hb-ai-nudge">
             <div class="hb-an-label">Cosmodex Pattern Insight</div>
-            <div class="hb-an-text">Your habits succeed 89% more on days you complete the morning routine before 7am. On days you skip the walk, journaling drops too — they're behaviourally linked. Protecting the walk protects the chain.</div>
+            <div class="hb-an-text" id="ins-pattern-insight">Analysing your habits…</div>
           </div>
         </div>
 
         <!-- Context Patterns -->
         <div class="hb-insight-card">
           <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Habit Success by Context</div>
-          <div class="hb-pattern-wrap">
-            <div class="hb-pw-item">
-              <div class="hb-pw-top"><div class="hb-pw-name">Weekday mornings (before 7am)</div><div class="hb-pw-score" style="color:var(--sage);">91%</div></div>
-              <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:91%;background:var(--sage);"></div></div>
-              <div class="hb-pw-note">Your best context. Protect this window aggressively.</div>
-            </div>
-            <div class="hb-pw-item">
-              <div class="hb-pw-top"><div class="hb-pw-name">Weekend mornings</div><div class="hb-pw-score" style="color:var(--amber);">64%</div></div>
-              <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:64%;background:var(--amber);"></div></div>
-              <div class="hb-pw-note">Weekend drift is real — routine starts 40 min later on avg.</div>
-            </div>
-            <div class="hb-pw-item">
-              <div class="hb-pw-top"><div class="hb-pw-name">After late nights (&gt;midnight)</div><div class="hb-pw-score" style="color:var(--rust);">28%</div></div>
-              <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:28%;background:var(--rust);"></div></div>
-              <div class="hb-pw-note">Trigger: auto-reduce to 2-step minimal routine next morning.</div>
-            </div>
-            <div class="hb-pw-item">
-              <div class="hb-pw-top"><div class="hb-pw-name">Travel days</div><div class="hb-pw-score" style="color:var(--rust);">22%</div></div>
-              <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:22%;background:var(--rust);"></div></div>
-              <div class="hb-pw-note">Suggestion: activate "Travel Mode" — 3-step survival routine.</div>
-            </div>
+          <div class="hb-pattern-wrap" id="ins-context-list">
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading…</div>
           </div>
         </div>
 
         <!-- Week Debrief -->
-        <div class="hb-week-card">
-          <div class="hb-wc-title">Week Debrief · Mar 8–14</div>
-          <div class="hb-wc-sub">GENERATED AUTOMATICALLY · EVERY SUNDAY</div>
-          <div style="font-size:14px;color:var(--cream);line-height:1.7;margin-bottom:20px;max-width:680px;">
-            You completed 75% of your habits this week — up from 68% last week. Hydration is now fully automatic. Journaling needs attention: 3 skips linked to late nights. Your morning walk protected your energy on 5/7 days.
-          </div>
-          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Habit Performance</div>
-          <div class="hb-wc-habits">
-            <span class="hb-wc-tag win">🥛 Hydration · 7/7</span>
-            <span class="hb-wc-tag win">🚶 Walk · 6/7</span>
-            <span class="hb-wc-tag win">📖 Reading · 6/7</span>
-            <span class="hb-wc-tag partial">📓 Journaling · 4/7</span>
-            <span class="hb-wc-tag partial">🧊 Cold shower · 4/7</span>
-            <span class="hb-wc-tag miss">🧘 Meditation · 2/7</span>
-          </div>
-          <div style="margin-top:20px;padding:16px 18px;background:var(--bg);border-radius:var(--r-md);border-left:2px solid var(--gold);">
-            <div style="font-family:var(--font-display);font-size:16px;font-style:italic;color:var(--gold);margin-bottom:4px;">"Next week's one focus: protect journaling on Tues/Wed evenings."</div>
-            <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);">Set during last Sunday's debrief</div>
-          </div>
+        <div class="hb-week-card" id="ins-week-debrief">
+          <!-- populated by renderInsights() -->
         </div>
 
       </div>
@@ -4237,81 +4179,171 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
 <!-- Settings Overlay (z-index 850) -->
 <div class="overlay" id="settings-overlay" style="z-index:850">
-  <div class="overlay-panel" style="width:min(500px,92vw)">
+  <div class="overlay-panel" style="width:min(780px,96vw)">
     <div class="overlay-header">
       <span class="overlay-title">Settings</span>
       <button class="overlay-close" data-close="settings-overlay">✕</button>
     </div>
-    <div class="overlay-body">
+    <div class="overlay-body" style="padding:0">
+      <div class="settings-layout">
 
-      <!-- Manage categories section -->
-      <div class="settings-section" id="settings-manage-cats-section">
-        <div class="settings-section-title">Manage Categories</div>
-        <div class="settings-desc">Add or remove task and planning categories.</div>
-        <div id="settings-cat-list" style="margin-bottom:14px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center">
-          <input id="new-cat-label" class="sched-input" placeholder="Category name" autocomplete="off">
-          <div id="new-cat-color-picker" style="display:flex;gap:5px;flex-wrap:wrap"></div>
-          <button class="task-add-confirm" id="new-cat-add-btn">Add</button>
+        <!-- Left nav -->
+        <div class="settings-nav">
+          <div class="settings-nav-item active" data-settings-tab="appearance">
+            <span class="settings-nav-icon">◐</span> Appearance
+          </div>
+          <div class="settings-nav-item" data-settings-tab="categories">
+            <span class="settings-nav-icon">◈</span> Categories
+          </div>
+          <div class="settings-nav-item" data-settings-tab="habits">
+            <span class="settings-nav-icon">◉</span> Habits
+          </div>
+          <div class="settings-nav-item" data-settings-tab="calendar">
+            <span class="settings-nav-icon">◻</span> Calendar
+          </div>
+          <div class="settings-nav-item" data-settings-tab="data">
+            <span class="settings-nav-icon">◇</span> Data & Sync
+          </div>
         </div>
-      </div>
 
-      <!-- Default category section -->
-      <div class="settings-section">
-        <div class="settings-section-title">Default Category</div>
-        <div class="settings-desc">Pre-selected category when creating new tasks anywhere in the app.</div>
-        <select id="settings-default-category" class="form-input" style="width:100%;cursor:pointer"></select>
-      </div>
+        <!-- Right content -->
+        <div class="settings-right">
 
-      <!-- Task categories section -->
-      <div class="settings-section">
-        <div class="settings-section-title">Visible Categories</div>
-        <div class="settings-desc">Toggle which categories appear in your task list. To change a task's category, click its coloured badge directly on the task row — it cycles through all categories.</div>
-        <div class="settings-cat-grid" id="settings-cat-filters"></div>
-      </div>
-
-      <!-- Habit Builder Settings -->
-      <div class="settings-section">
-        <div class="settings-section-title">Habit Builder</div>
-        <div class="settings-desc">Configure your identity statement, season name, and quote shown on the Launcher.</div>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <div>
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Identity Statement (shown on Launcher)</div>
-            <textarea class="hb-settings-textarea" id="hb-cfg-identity" rows="2" placeholder="I am someone who builds with intention…">builds systems, not just tasks — and shows up for my morning before the world asks anything of me.</textarea>
+          <!-- ── Appearance ───────────────────── -->
+          <div class="settings-content-panel active" id="st-pane-appearance">
+            <div class="settings-section">
+              <div class="settings-section-title">Theme</div>
+              <div class="settings-desc">Toggle between dark and light mode.</div>
+              <button id="settings-theme-btn" class="btn-secondary" style="font-size:12px;padding:8px 18px;" onclick="document.getElementById('theme-btn')?.click(); this.textContent = document.documentElement.dataset.theme === 'light' ? '☀ Light mode active' : '◐ Dark mode active';">◐ Dark mode active</button>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Firebase Status</div>
+              <div class="settings-desc">Real-time sync connection state.</div>
+              <div id="settings-firebase-status" style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
+                <span id="settings-fb-dot" style="width:8px;height:8px;border-radius:50%;background:var(--sage);display:inline-block;"></span>
+                <span id="settings-fb-label">Connected</span>
+              </div>
+            </div>
           </div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Season / Life Chapter Label</div>
-            <input class="hb-settings-input" id="hb-cfg-season" value="The Rebuilding · Day 42" placeholder="e.g. The Rebuilding · Day 42">
-          </div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Daily Quote</div>
-            <textarea class="hb-settings-textarea" id="hb-cfg-quote" rows="2" placeholder="Your daily quote…">"We are what we repeatedly do. Excellence, then, is not an act but a habit." — Aristotle</textarea>
-          </div>
-          <div>
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Habit Library — Custom Entries</div>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Add custom habits to the builder library (one per line: emoji Name · Duration · Category)</div>
-            <textarea class="hb-settings-textarea" id="hb-cfg-custom-habits" rows="4" placeholder="🧘 Breathwork · 5 min · mind&#10;💧 Cold plunge · 3 min · body"></textarea>
-          </div>
-          <button class="btn-primary" onclick="hbSaveSettings()" style="align-self:flex-start;font-size:11px;padding:8px 16px;">Save Habit Settings</button>
-        </div>
-      </div>
 
-      <!-- Holidays section -->
-      <div class="settings-section">
-        <div class="settings-section-title">Holidays</div>
-        <div class="settings-desc">HK public holidays are pre-loaded. Add your own personal holidays below — they appear highlighted on the calendar.</div>
-        <div id="settings-holidays-list" style="max-height:200px;overflow-y:auto;margin-bottom:14px"></div>
-        <div style="display:grid;grid-template-columns:1fr 2fr auto auto;gap:6px;align-items:center">
-          <input id="holiday-date" type="date" class="sched-input" />
-          <input id="holiday-name" type="text" class="sched-input" placeholder="Holiday name" />
-          <select id="holiday-type" class="task-priority-select">
-            <option value="personal">Personal</option>
-            <option value="public">Public</option>
-          </select>
-          <button class="task-add-confirm" id="holiday-add-btn">Add</button>
-        </div>
-      </div>
+          <!-- ── Categories ──────────────────── -->
+          <div class="settings-content-panel" id="st-pane-categories">
+            <div class="settings-section" id="settings-manage-cats-section">
+              <div class="settings-section-title">Manage Categories</div>
+              <div class="settings-desc">Add or remove task and planning categories.</div>
+              <div id="settings-cat-list" style="margin-bottom:14px"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center">
+                <input id="new-cat-label" class="sched-input" placeholder="Category name" autocomplete="off">
+                <div id="new-cat-color-picker" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+                <button class="task-add-confirm" id="new-cat-add-btn">Add</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Default Category</div>
+              <div class="settings-desc">Pre-selected category when creating new tasks anywhere in the app.</div>
+              <select id="settings-default-category" class="form-input" style="width:100%;cursor:pointer"></select>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Visible Categories</div>
+              <div class="settings-desc">Toggle which categories appear in your task list. To change a task's category, click its coloured badge directly on the task row — it cycles through all categories.</div>
+              <div class="settings-cat-grid" id="settings-cat-filters"></div>
+            </div>
+          </div>
 
+          <!-- ── Habits & Rituals ────────────── -->
+          <div class="settings-content-panel" id="st-pane-habits">
+            <div class="settings-section">
+              <div class="settings-section-title">Identity & Season</div>
+              <div class="settings-desc">These appear on the Habits Launcher and drive the dynamic content on the hero card.</div>
+              <div style="display:flex;flex-direction:column;gap:12px;">
+                <div>
+                  <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Identity Statement</div>
+                  <textarea class="hb-settings-textarea" id="hb-cfg-identity" rows="2" placeholder="I am someone who builds with intention…"></textarea>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                  <div>
+                    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Season / Life Chapter</div>
+                    <input class="hb-settings-input" id="hb-cfg-season" placeholder="e.g. The Rebuilding">
+                  </div>
+                  <div>
+                    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Season Start Date</div>
+                    <input class="hb-settings-input" id="hb-cfg-season-start" type="date">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Daily Quote</div>
+              <div class="settings-desc">Shown on the Launcher hero card each day.</div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div>
+                  <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Quote Text</div>
+                  <textarea class="hb-settings-textarea" id="hb-cfg-quote" rows="2" placeholder="Your daily quote…"></textarea>
+                </div>
+                <div>
+                  <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Quote Author</div>
+                  <input class="hb-settings-input" id="hb-cfg-quote-author" placeholder="e.g. Aristotle">
+                </div>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Default Non-Negotiable</div>
+              <div class="settings-desc">Pre-filled "If I do only one thing" shown on the Launcher. You can edit it live on the Launcher each day.</div>
+              <input class="hb-settings-input" id="hb-cfg-nonneg" placeholder="Your one thing for today…">
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Custom Habit Library</div>
+              <div class="settings-desc">One per line: emoji Name · Duration · Category</div>
+              <textarea class="hb-settings-textarea" id="hb-cfg-custom-habits" rows="5" placeholder="🧘 Breathwork · 5 min · mind&#10;💧 Cold plunge · 3 min · body"></textarea>
+            </div>
+            <button class="btn-primary" onclick="hbSaveSettings()" style="font-size:11px;padding:8px 18px;margin-bottom:8px;">Save Habit Settings</button>
+          </div>
+
+          <!-- ── Calendar ────────────────────── -->
+          <div class="settings-content-panel" id="st-pane-calendar">
+            <div class="settings-section">
+              <div class="settings-section-title">Holidays</div>
+              <div class="settings-desc">HK public holidays are pre-loaded. Add your own personal holidays below — they appear highlighted on the calendar.</div>
+              <div id="settings-holidays-list" style="max-height:260px;overflow-y:auto;margin-bottom:14px"></div>
+              <div style="display:grid;grid-template-columns:1fr 2fr auto auto;gap:6px;align-items:center">
+                <input id="holiday-date" type="date" class="sched-input" />
+                <input id="holiday-name" type="text" class="sched-input" placeholder="Holiday name" />
+                <select id="holiday-type" class="task-priority-select">
+                  <option value="personal">Personal</option>
+                  <option value="public">Public</option>
+                </select>
+                <button class="task-add-confirm" id="holiday-add-btn">Add</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Data & Sync ─────────────────── -->
+          <div class="settings-content-panel" id="st-pane-data">
+            <div class="settings-section">
+              <div class="settings-section-title">Firebase Account</div>
+              <div class="settings-desc">Your data is stored anonymously in Firebase Firestore under this user ID.</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <code id="settings-uid-display" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);background:var(--bg);padding:6px 10px;border-radius:var(--r-sm);flex:1;overflow:hidden;text-overflow:ellipsis;">—</code>
+                <button class="btn-secondary" style="font-size:11px;padding:6px 12px;flex-shrink:0" onclick="navigator.clipboard.writeText(window.CDX_USER?.uid||'').then(()=>showToast('UID copied'))">Copy</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Sync Status</div>
+              <div class="settings-desc">Live connection to Firebase Firestore.</div>
+              <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
+                <span id="settings-fb-dot2" style="width:8px;height:8px;border-radius:50%;background:var(--sage);display:inline-block;"></span>
+                <span id="settings-fb-label2">Connected — real-time sync active</span>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Local Cache</div>
+              <div class="settings-desc">Clear locally cached settings and preferences (does not affect Firebase data).</div>
+              <button class="btn-secondary" style="font-size:11px;padding:8px 16px;color:var(--rust);" onclick="if(confirm('Clear local cache? Firebase data is untouched.')){localStorage.clear();showToast('Local cache cleared');}">Clear Local Cache</button>
+            </div>
+          </div>
+
+        </div><!-- /settings-right -->
+      </div><!-- /settings-layout -->
     </div>
   </div>
 </div>
@@ -4504,11 +4536,13 @@ let _habits        = [];
 let _habitLogs     = {};
 let _routines      = { morning: [], evening: [] };
 let _behav         = { identity: '', keystone: [], notes: '' };
+let _hbSettings    = { season:'', seasonStartDate:'', quote:'', quoteAuthor:'', customHabits:'', nonNegotiable:'' };
 let _habitsTab     = 'habits';
 let _habitsUnsub   = null;
 let _habitLogsUnsub = null;
 let _routinesUnsub = null;
 let _behavUnsub    = null;
+let _hbSettingsUnsub = null;
 let _routinesSaveTimer = null;
 let _behavSaveTimer    = null;
 
@@ -4875,7 +4909,40 @@ function behavSubscribe() {
   _behavUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'behaviours', 'current'), snap => {
     if (snap.exists()) { const d = snap.data(); _behav = { identity: d.identity||'', keystone: d.keystone||[], notes: d.notes||'' }; }
     if (_habitsTab === 'behaviours') renderBehaviours();
+    if (_habitsTab === 'launcher') hbUpdateLauncherDynamic();
   }, err => console.warn('behaviours onSnapshot:', err.message));
+}
+
+function hbSettingsSubscribe() {
+  const uid = getHabitsUid();
+  if (!uid || !window.CDX_DB || _hbSettingsUnsub) return;
+  const { doc, onSnapshot } = window.CDX_FB;
+  _hbSettingsUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'hbSettings', 'config'), snap => {
+    if (snap.exists()) {
+      const d = snap.data();
+      _hbSettings = {
+        season:          d.season          || '',
+        seasonStartDate: d.seasonStartDate || '',
+        quote:           d.quote           || '',
+        quoteAuthor:     d.quoteAuthor     || '',
+        customHabits:    d.customHabits    || '',
+        nonNegotiable:   d.nonNegotiable   || '',
+      };
+    } else {
+      // One-time migration from localStorage
+      const saved = localStorage.getItem('hb-settings');
+      if (saved) {
+        try {
+          const cfg = JSON.parse(saved);
+          _hbSettings = { season: cfg.season||'', seasonStartDate:'', quote: cfg.quote||'', quoteAuthor:'', customHabits: cfg.customHabits||'', nonNegotiable:'' };
+          const { doc: docFn, setDoc, serverTimestamp } = window.CDX_FB;
+          setDoc(docFn(window.CDX_DB, 'users', uid, 'hbSettings', 'config'), { ..._hbSettings, updatedAt: serverTimestamp() }, { merge: true });
+          localStorage.removeItem('hb-settings');
+        } catch(e) {}
+      }
+    }
+    if (_habitsTab === 'launcher') hbUpdateLauncherDynamic();
+  }, err => console.warn('hbSettings onSnapshot:', err.message));
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -4890,7 +4957,7 @@ function switchHabitsTab(tab) {
     if (pane) pane.style.display = t === tab ? 'flex' : 'none';
   });
   if (tab === 'tracker')  { habitsSubscribe(); renderHabits(); routinesSubscribe(); renderRoutines(); behavSubscribe(); renderBehaviours(); }
-  if (tab === 'launcher') { hbInitLauncher(); }
+  if (tab === 'launcher') { habitsSubscribe(); behavSubscribe(); hbSettingsSubscribe(); hbInitLauncher(); }
   if (tab === 'builder')  { hbRenderLibrary(); }
   if (tab === 'progress') { hbBuildHeatmap(); }
 }
@@ -5285,10 +5352,30 @@ function hbAddToTracker() {
 function hbSaveDraft() { showToast('Draft saved'); }
 
 /* ── LAUNCHER ────────────────────────────────────────── */
+let _hbClockInterval = null;
+
 function hbInitLauncher() {
+  // Start live clock
+  if (_hbClockInterval) clearInterval(_hbClockInterval);
   hbTickClock();
+  _hbClockInterval = setInterval(hbTickClock, 1000);
   hbLoadLauncherFromRoutines();
-  hbLoadIdentityFromSettings();
+  hbUpdateLauncherDynamic();
+  // Non-negotiable save on blur
+  const nonnegEl = document.getElementById('hb-nonneg-text');
+  if (nonnegEl && !nonnegEl._cdxBound) {
+    nonnegEl._cdxBound = true;
+    nonnegEl.addEventListener('blur', () => {
+      const val = nonnegEl.textContent.trim();
+      _hbSettings.nonNegotiable = val;
+      const uid = window.CDX_USER?.uid;
+      if (uid) {
+        const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+        setDoc(doc(window.CDX_DB, 'users', uid, 'hbSettings', 'config'),
+          { nonNegotiable: val, updatedAt: serverTimestamp() }, { merge: true });
+      }
+    });
+  }
 }
 
 function hbTickClock() {
@@ -5300,7 +5387,83 @@ function hbTickClock() {
   const days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
   const mos  = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   const d = document.getElementById('hb-clockdate');
-  if (d) d.textContent = days[n.getDay()] + ' · ' + mos[n.getMonth()] + ' ' + String(n.getDate()).padStart(2,'0');
+  if (d) d.textContent = days[n.getDay()] + ' · ' + mos[n.getMonth()] + ' ' + n.getDate();
+}
+
+function hbUpdateLauncherDynamic() {
+  const today = localDateStr(new Date());
+
+  // Season label + day count
+  const seasonEl = document.getElementById('hb-season-label');
+  if (seasonEl) {
+    let label = _hbSettings.season || '';
+    if (label && _hbSettings.seasonStartDate) {
+      const start = new Date(_hbSettings.seasonStartDate);
+      const dayCount = Math.max(1, Math.floor((new Date() - start) / 86400000) + 1);
+      label += ' · Day ' + dayCount;
+    }
+    seasonEl.textContent = label;
+  }
+
+  // Quote
+  const quoteEl = document.getElementById('hb-quote-text');
+  if (quoteEl) quoteEl.textContent = _hbSettings.quote || '';
+
+  // Quote attribution + identity
+  const attrEl = document.getElementById('hb-quote-attr');
+  if (attrEl) {
+    const author = _hbSettings.quoteAuthor ? '— ' + _hbSettings.quoteAuthor + ' · ' : '';
+    const identity = _behav.identity || _hbSettings.identity || '';
+    if (author || identity) {
+      attrEl.innerHTML = author + 'Your identity today: <em style="color:var(--gold);">' + escHtml(identity) + '</em>';
+    } else {
+      attrEl.textContent = '';
+    }
+  }
+
+  // Identity card
+  const idEl = document.getElementById('hb-id-display');
+  const identity = _behav.identity || _hbSettings.identity || '';
+  if (idEl) idEl.textContent = identity ? '"' + identity + '"' : '';
+
+  // Non-negotiable (only update if not currently focused)
+  const nonnegEl = document.getElementById('hb-nonneg-text');
+  if (nonnegEl && document.activeElement !== nonnegEl) {
+    nonnegEl.textContent = _hbSettings.nonNegotiable || '';
+  }
+
+  // Stats from habit logs
+  const yesterday = localDateStr(new Date(Date.now() - 86400000));
+
+  // Day streak: consecutive days ending today where ≥1 habit was completed
+  let streak = 0;
+  const d = new Date(); d.setHours(0,0,0,0);
+  for (let i = 0; i < 365; i++) {
+    const ds = localDateStr(new Date(d - i * 86400000));
+    const log = _habitLogs[ds];
+    const count = log ? Object.values(log.completions || {}).filter(Boolean).length : 0;
+    if (count > 0) streak++;
+    else if (i > 0) break; // allow today to be 0 and still count yesterday
+  }
+  const streakEl = document.getElementById('hb-streak-n');
+  if (streakEl) streakEl.textContent = streak > 0 ? streak + 'd' : '—';
+
+  // Momentum: % completion last 7 days
+  let totalPossible = 0, totalDone = 0;
+  for (let i = 0; i < 7; i++) {
+    const ds = localDateStr(new Date(Date.now() - i * 86400000));
+    const log = _habitLogs[ds];
+    totalPossible += _habits.length;
+    totalDone += log ? Object.values(log.completions || {}).filter(Boolean).length : 0;
+  }
+  const momEl = document.getElementById('hb-momentum-n');
+  if (momEl) momEl.textContent = totalPossible > 0 ? Math.round(totalDone / totalPossible * 100) + '%' : '—';
+
+  // Done yesterday
+  const ytdLog = _habitLogs[yesterday];
+  const ytdCount = ytdLog ? Object.values(ytdLog.completions || {}).filter(Boolean).length : 0;
+  const doneEl = document.getElementById('hb-done-n');
+  if (doneEl) doneEl.textContent = _habits.length > 0 ? ytdCount + '/' + _habits.length : '—';
 }
 
 function hbLoadLauncherFromRoutines() {
@@ -5390,43 +5553,51 @@ function hbLaunchDay() {
 }
 
 function hbLoadIdentityFromSettings() {
-  const cfg = document.getElementById('hb-cfg-identity')?.value;
-  const idDisplay = document.getElementById('hb-id-display');
-  if (idDisplay && cfg) idDisplay.textContent = '"' + cfg.trim() + '"';
-
-  const season = document.getElementById('hb-cfg-season')?.value;
-  const seasonEl = document.getElementById('hb-season-label');
-  if (seasonEl && season) seasonEl.textContent = season;
-
-  const quote = document.getElementById('hb-cfg-quote')?.value;
-  const quoteEl = document.getElementById('hb-quote-text');
-  if (quoteEl && quote) quoteEl.textContent = quote;
+  hbUpdateLauncherDynamic();
 }
 
-function hbSaveSettings() {
-  // Persist to localStorage
-  const cfg = {
-    identity: document.getElementById('hb-cfg-identity')?.value || '',
-    season:   document.getElementById('hb-cfg-season')?.value || '',
-    quote:    document.getElementById('hb-cfg-quote')?.value || '',
-    customHabits: document.getElementById('hb-cfg-custom-habits')?.value || '',
-  };
-  localStorage.setItem('hb-settings', JSON.stringify(cfg));
-  hbLoadIdentityFromSettings();
+async function hbSaveSettings() {
+  const identity       = document.getElementById('hb-cfg-identity')?.value || '';
+  const season         = document.getElementById('hb-cfg-season')?.value || '';
+  const seasonStartDate= document.getElementById('hb-cfg-season-start')?.value || '';
+  const quote          = document.getElementById('hb-cfg-quote')?.value || '';
+  const quoteAuthor    = document.getElementById('hb-cfg-quote-author')?.value || '';
+  const customHabits   = document.getElementById('hb-cfg-custom-habits')?.value || '';
+  const nonNegotiable  = document.getElementById('hb-cfg-nonneg')?.value || '';
+
+  const cfg = { identity, season, seasonStartDate, quote, quoteAuthor, customHabits, nonNegotiable };
+  Object.assign(_hbSettings, cfg);
+
+  const uid = window.CDX_USER?.uid;
+  if (uid) {
+    const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+    await setDoc(doc(window.CDX_DB, 'users', uid, 'hbSettings', 'config'),
+      { ...cfg, updatedAt: serverTimestamp() }, { merge: true });
+    // Keep behaviours identity in sync
+    if (identity) {
+      _behav.identity = identity;
+      await setDoc(doc(window.CDX_DB, 'users', uid, 'behaviours', 'current'),
+        { identity, updatedAt: serverTimestamp() }, { merge: true });
+    }
+  }
+  localStorage.removeItem('hb-settings');
+  hbUpdateLauncherDynamic();
   showToast('Habit settings saved');
 }
 
+function hbLoadSettingsPanel() {
+  const setVal = (id, val) => { const e = document.getElementById(id); if (e && val != null) e.value = val; };
+  setVal('hb-cfg-identity',      _hbSettings.identity || _behav.identity || '');
+  setVal('hb-cfg-season',        _hbSettings.season);
+  setVal('hb-cfg-season-start',  _hbSettings.seasonStartDate);
+  setVal('hb-cfg-quote',         _hbSettings.quote);
+  setVal('hb-cfg-quote-author',  _hbSettings.quoteAuthor);
+  setVal('hb-cfg-custom-habits', _hbSettings.customHabits);
+  setVal('hb-cfg-nonneg',        _hbSettings.nonNegotiable);
+}
+
 function hbLoadSavedSettings() {
-  const saved = localStorage.getItem('hb-settings');
-  if (!saved) return;
-  try {
-    const cfg = JSON.parse(saved);
-    const setVal = (id, val) => { const e = document.getElementById(id); if (e) e.value = val; };
-    if (cfg.identity) setVal('hb-cfg-identity', cfg.identity);
-    if (cfg.season)   setVal('hb-cfg-season', cfg.season);
-    if (cfg.quote)    setVal('hb-cfg-quote', cfg.quote);
-    if (cfg.customHabits) setVal('hb-cfg-custom-habits', cfg.customHabits);
-  } catch(e) {}
+  // Legacy: now handled by hbSettingsSubscribe(). No-op kept for safety.
 }
 
 /* ── PROGRESS HEATMAP ───────────────────────────────── */
@@ -5441,6 +5612,226 @@ function hbBuildHeatmap() {
     cell.title = 'Day ' + (i + 1);
     hm.appendChild(cell);
   }
+}
+
+/* ══════════════════════════════════════════════════════════
+   INSIGHTS — RENDER
+   ══════════════════════════════════════════════════════════ */
+function renderInsights() {
+  const logs    = _habitLogs;   // { dateStr: { date, completions: { habitId: true } } }
+  const habits  = _habits;      // active habits
+
+  // ── Stat cards ──────────────────────────────────────────
+  const allDates   = Object.keys(logs);
+  const today      = localDateStr(new Date());
+  const weekStart  = localDateStr(new Date(Date.now() - 6 * 86400000));
+
+  let totalCompletions = 0, weekCompletions = 0, bestCount = 0, bestDate = '', activeDays = 0;
+
+  allDates.forEach(ds => {
+    const comps = Object.values(logs[ds]?.completions || {}).filter(Boolean);
+    const cnt   = comps.length;
+    if (cnt > 0) { totalCompletions += cnt; activeDays++; }
+    if (ds >= weekStart) weekCompletions += cnt;
+    if (cnt > bestCount) { bestCount = cnt; bestDate = ds; }
+  });
+
+  const setCard = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setCard('ins-total', totalCompletions || '—');
+  setCard('ins-week',  weekCompletions  || '—');
+  setCard('ins-best',  bestCount > 0 ? bestCount + (bestDate ? ' (' + bestDate.slice(5).replace('-','/') + ')' : '') : '—');
+  setCard('ins-days',  activeDays || '—');
+
+  if (!habits.length) {
+    _renderInsightsEmpty();
+    return;
+  }
+
+  // ── Friction Detector ───────────────────────────────────
+  const window28 = 28;
+  const habitStats = habits.map(h => {
+    let possible = 0, done = 0, streak = 0, streakRunning = true;
+    for (let i = 0; i < window28; i++) {
+      const ds  = localDateStr(new Date(Date.now() - i * 86400000));
+      const log = logs[ds];
+      const completed = !!(log?.completions?.[h.id]);
+      possible++;
+      if (completed) done++;
+      if (streakRunning) { if (completed) streak++; else if (i > 0) streakRunning = false; }
+    }
+    const pct = possible > 0 ? Math.round(done / possible * 100) : 0;
+    return { ...h, pct, done, possible, streak };
+  });
+
+  // Sort: worst first (warn), then ok
+  habitStats.sort((a, b) => a.pct - b.pct);
+
+  const frictionEl = document.getElementById('ins-friction-list');
+  if (frictionEl) {
+    frictionEl.innerHTML = habitStats.map(h => {
+      const skipped = h.possible - h.done;
+      if (h.pct < 40) {
+        return `<div class="hb-fi-habit warn">
+          <div class="hb-fi-info">
+            <div class="hb-fi-name">${escHtml(h.name)} — skipped ${skipped}× last 4 weeks (${h.pct}%)</div>
+            <div class="hb-fi-reason">Needs attention — completion below 40%</div>
+          </div>
+          <div class="hb-fi-action">⚠ Flagged</div>
+        </div>`;
+      } else if (h.pct >= 80) {
+        return `<div class="hb-fi-habit ok">
+          <div class="hb-fi-info">
+            <div class="hb-fi-name">${escHtml(h.name)} — ${h.streak > 0 ? h.streak + ' day streak' : h.pct + '% rate'}</div>
+            <div class="hb-fi-reason">${h.pct >= 95 ? 'Near automatic · no willpower required' : 'Consistent performance · building momentum'}</div>
+          </div>
+          <div class="hb-fi-action ok">${h.streak >= 21 ? '✓ Locked in' : '✓ Growing'}</div>
+        </div>`;
+      } else {
+        return `<div class="hb-fi-habit" style="border-left-color:var(--amber)">
+          <div class="hb-fi-info">
+            <div class="hb-fi-name">${escHtml(h.name)} — ${h.pct}% this month</div>
+            <div class="hb-fi-reason">Inconsistent — ${skipped} skips in ${h.possible} days</div>
+          </div>
+          <div class="hb-fi-action" style="color:var(--amber)">~ Watch</div>
+        </div>`;
+      }
+    }).join('');
+    if (!habitStats.length) frictionEl.innerHTML = '<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:20px 0;text-align:center;">No habits tracked yet.</div>';
+  }
+
+  // Pattern insight
+  const insightEl = document.getElementById('ins-pattern-insight');
+  if (insightEl) {
+    const locked = habitStats.filter(h => h.pct >= 80).map(h => h.name);
+    const flagged = habitStats.filter(h => h.pct < 40).map(h => h.name);
+    let msg = '';
+    if (locked.length && flagged.length) {
+      msg = locked.slice(0,2).join(' and ') + (locked.length > 2 ? ' and others are' : ' is') + ' locked in. ' +
+            flagged.slice(0,2).join(' and ') + ' need attention — focus your energy on protecting these next week.';
+    } else if (locked.length) {
+      msg = locked.slice(0,3).join(', ') + (locked.length === 1 ? ' is' : ' are') + ' running on autopilot. Build on this momentum by stacking a new habit.';
+    } else if (flagged.length) {
+      msg = 'Your habits are in an early-building phase. ' + flagged[0] + ' is the most inconsistent — reduce friction by pairing it with a habit you already do.';
+    } else {
+      msg = 'Your habits are developing consistently. Keep showing up — automaticity builds between days 21 and 66.';
+    }
+    insightEl.textContent = msg;
+  }
+
+  // ── Context Patterns (day of week) ──────────────────────
+  const DOW = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const dowStats = Array(7).fill(null).map(() => ({ done: 0, possible: 0 }));
+  const totalDays = Math.min(Object.keys(logs).length, 56); // up to 8 weeks
+
+  for (let i = 0; i < totalDays; i++) {
+    const d  = new Date(Date.now() - i * 86400000);
+    const ds = localDateStr(d);
+    const dow = d.getDay();
+    const log = logs[ds];
+    const cnt = log ? Object.values(log.completions || {}).filter(Boolean).length : 0;
+    dowStats[dow].possible += habits.length;
+    dowStats[dow].done += cnt;
+  }
+
+  // Group into weekday vs weekend
+  const weekdayDone = [1,2,3,4,5].reduce((s,d) => s + dowStats[d].done, 0);
+  const weekdayPoss = [1,2,3,4,5].reduce((s,d) => s + dowStats[d].possible, 0);
+  const weekendDone = [0,6].reduce((s,d) => s + dowStats[d].done, 0);
+  const weekendPoss = [0,6].reduce((s,d) => s + dowStats[d].possible, 0);
+  const weekdayPct  = weekdayPoss > 0 ? Math.round(weekdayDone / weekdayPoss * 100) : null;
+  const weekendPct  = weekendPoss > 0 ? Math.round(weekendDone / weekendPoss * 100) : null;
+
+  // Best and worst individual days
+  const dowRanked = DOW.map((name, i) => {
+    const pct = dowStats[i].possible > 0 ? Math.round(dowStats[i].done / dowStats[i].possible * 100) : null;
+    return { name, pct };
+  }).filter(d => d.pct !== null).sort((a, b) => b.pct - a.pct);
+
+  const makeBar = (label, pct, note) => {
+    const col = pct >= 70 ? 'var(--sage)' : pct >= 40 ? 'var(--amber)' : 'var(--rust)';
+    return `<div class="hb-pw-item">
+      <div class="hb-pw-top"><div class="hb-pw-name">${escHtml(label)}</div><div class="hb-pw-score" style="color:${col};">${pct}%</div></div>
+      <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:${pct}%;background:${col};"></div></div>
+      <div class="hb-pw-note">${escHtml(note)}</div>
+    </div>`;
+  };
+
+  const contextEl = document.getElementById('ins-context-list');
+  if (contextEl) {
+    let html = '';
+    if (weekdayPct !== null) html += makeBar('Weekdays', weekdayPct, weekdayPct >= 70 ? 'Your strongest context — protect weekday mornings.' : weekdayPct >= 40 ? 'Room to improve on workdays.' : 'Weekdays need attention — consider a simpler routine.');
+    if (weekendPct !== null) html += makeBar('Weekends', weekendPct, weekendPct >= 70 ? 'Excellent weekend discipline.' : weekendPct >= 40 ? 'Weekend drift is common — anchor to a fixed time.' : 'Weekend routines are fragile — build a minimal 2-step version.');
+    if (dowRanked.length >= 2) {
+      const best = dowRanked[0];
+      html += makeBar('Best day — ' + best.name, best.pct, 'Leverage this: schedule anchoring habits here.');
+      const worst = dowRanked[dowRanked.length - 1];
+      if (worst.name !== best.name) html += makeBar('Weakest — ' + worst.name, worst.pct, 'Consider a stripped-down routine on ' + worst.name + 's.');
+    }
+    contextEl.innerHTML = html || '<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:20px 0;text-align:center;">Log more days to see patterns.</div>';
+  }
+
+  // ── Week Debrief ────────────────────────────────────────
+  _renderWeekDebrief();
+}
+
+function _renderInsightsEmpty() {
+  const frictionEl = document.getElementById('ins-friction-list');
+  const contextEl  = document.getElementById('ins-context-list');
+  const msg = '<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Add habits in the Tracker tab to see insights.</div>';
+  if (frictionEl) frictionEl.innerHTML = msg;
+  if (contextEl)  contextEl.innerHTML  = msg;
+}
+
+function _renderWeekDebrief() {
+  const debriefEl = document.getElementById('ins-week-debrief');
+  if (!debriefEl) return;
+  const habits = _habits;
+  if (!habits.length) { debriefEl.innerHTML = ''; return; }
+
+  // Compute this week (Mon–today)
+  const now      = new Date();
+  const dow      = now.getDay();
+  const daysBack = (dow === 0) ? 6 : dow - 1; // days since Monday
+  const weekDates = [];
+  for (let i = daysBack; i >= 0; i--) weekDates.push(localDateStr(new Date(Date.now() - i * 86400000)));
+
+  // Previous week
+  const prevWeekDates = [];
+  for (let i = daysBack + 7; i >= daysBack + 1; i--) prevWeekDates.push(localDateStr(new Date(Date.now() - i * 86400000)));
+
+  const weekPct  = _weekPct(weekDates, habits);
+  const prevPct  = _weekPct(prevWeekDates, habits);
+  const delta    = weekPct - prevPct;
+  const deltaStr = delta >= 0 ? '▲ up ' + delta + '%' : '▼ down ' + Math.abs(delta) + '%';
+
+  const startLabel = weekDates[0] ? weekDates[0].slice(5).replace('-','/') : '';
+  const endLabel   = weekDates[weekDates.length-1] ? weekDates[weekDates.length-1].slice(5).replace('-','/') : '';
+
+  const habitTags = habits.map(h => {
+    const doneCount = weekDates.filter(ds => !!_habitLogs[ds]?.completions?.[h.id]).length;
+    const total     = weekDates.length;
+    const cls       = doneCount >= total ? 'win' : doneCount >= Math.ceil(total/2) ? 'partial' : 'miss';
+    return `<span class="hb-wc-tag ${cls}">${escHtml(h.name)} · ${doneCount}/${total}</span>`;
+  }).join('');
+
+  debriefEl.innerHTML = `
+    <div class="hb-wc-title">Week Debrief · ${startLabel}–${endLabel}</div>
+    <div class="hb-wc-sub">UPDATED AUTOMATICALLY · CURRENT WEEK</div>
+    <div style="font-size:14px;color:var(--cream);line-height:1.7;margin-bottom:20px;max-width:680px;">
+      You completed <strong>${weekPct}%</strong> of your habits this week — ${prevPct > 0 ? deltaStr + ' from last week.' : 'keep the momentum going.'}
+    </div>
+    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Habit Performance</div>
+    <div class="hb-wc-habits">${habitTags}</div>
+  `;
+}
+
+function _weekPct(dates, habits) {
+  if (!dates.length || !habits.length) return 0;
+  let done = 0;
+  dates.forEach(ds => {
+    habits.forEach(h => { if (_habitLogs[ds]?.completions?.[h.id]) done++; });
+  });
+  return Math.round(done / (dates.length * habits.length) * 100);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -7248,13 +7639,35 @@ function renderSettingsHolidays() {
   });
 }
 
+function initSettingsNav() {
+  document.querySelectorAll('.settings-nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.settings-nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll('.settings-content-panel').forEach(p => p.classList.remove('active'));
+      item.classList.add('active');
+      const pane = document.getElementById('st-pane-' + item.dataset.settingsTab);
+      if (pane) pane.classList.add('active');
+    });
+  });
+}
+
 function initSettingsPanel() {
+  initSettingsNav();
+
   document.getElementById('settings-btn')?.addEventListener('click', () => {
     renderSettingsCats();
     renderSettingsHolidays();
     renderSettingsCatList();
     renderSettingsDefaultCat();
     initNewCatColorPicker();
+    hbLoadSettingsPanel();
+    // Update UID display
+    const uid = window.CDX_USER?.uid;
+    const uidEl = document.getElementById('settings-uid-display');
+    if (uidEl && uid) uidEl.textContent = uid;
+    // Sync theme button label
+    const themeBtn = document.getElementById('settings-theme-btn');
+    if (themeBtn) themeBtn.textContent = document.documentElement.dataset.theme === 'light' ? '☀ Light mode active' : '◐ Dark mode active';
     document.getElementById('settings-overlay').classList.add('open');
   });
   document.getElementById('settings-default-category')?.addEventListener('change', e => {
@@ -7785,6 +8198,10 @@ document.getElementById('orb-wheel-close')?.addEventListener('click', () => {
 function openOverlay(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add('open');
+  if (id === 'insights-overlay') {
+    habitsSubscribe();
+    renderInsights();
+  }
 }
 
 function closeOverlay(id) {
