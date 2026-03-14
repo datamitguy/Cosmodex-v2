@@ -587,7 +587,8 @@ body::after {
 
 .cal-hour-row {
   display: flex;
-  min-height: 52px;
+  min-height: 60px;
+  height: 60px;
   border-bottom: 1px solid rgba(42,37,32,0.6);
   position: relative;
 }
@@ -607,6 +608,7 @@ body::after {
 .cal-hour-slot {
   flex: 1;
   position: relative;
+  overflow: visible;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -1032,9 +1034,10 @@ body::after {
 }
 .pomo-swipe-val {
   font-family: var(--font-mono); font-size: 18px; color: var(--gold); line-height: 1;
+  margin-bottom: 10px;
 }
 .pomo-ticks {
-  position: absolute; bottom: 3px; left: 0; right: 0;
+  position: absolute; bottom: 1px; left: 0; right: 0;
   display: flex; align-items: flex-end; justify-content: center; gap: 2px; pointer-events: none;
 }
 .pomo-tick { width: 2px; border-radius: 1px; background: var(--border); }
@@ -1058,27 +1061,29 @@ body::after {
   display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 6px 0 0;
 }
 .breath-ring-outer {
-  width: 58px; height: 58px; border-radius: 50%;
-  border: 2px solid rgba(201,162,39,.3);
+  width: 80px; height: 80px; border-radius: 50%;
+  border: 2px solid rgba(107,159,212,0.5);
+  box-shadow: 0 0 20px rgba(107,159,212,0.25), 0 0 40px rgba(107,159,212,0.12);
   display: flex; align-items: center; justify-content: center;
   animation: cdx-breathing 4s ease-in-out infinite;
 }
 .breath-ring-inner {
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 1.5px solid rgba(201,162,39,.15);
+  width: 50px; height: 50px; border-radius: 50%;
+  border: 1.5px solid rgba(74,124,94,0.4);
+  box-shadow: 0 0 12px rgba(74,124,94,0.2);
   animation: cdx-breathing-inner 4s ease-in-out infinite;
 }
 @keyframes cdx-breathing {
   0%,100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.15); opacity: 0.45; }
+  50% { transform: scale(1.25); opacity: 0.45; }
 }
 @keyframes cdx-breathing-inner {
   0%,100% { transform: scale(1); opacity: 0.7; }
-  50% { transform: scale(0.85); opacity: 0.3; }
+  50% { transform: scale(0.8); opacity: 0.3; }
 }
 .pomo-breath-phase {
-  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--cream);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(107,159,212,0.9);
 }
 .pomo-breath-hint { font-family: var(--font-mono); font-size: 8px; color: var(--muted); }
 .pomo-checklist { width: 100%; border-top: 1px solid var(--border); padding-top: 9px; }
@@ -4714,7 +4719,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
 <!-- Focus / Pomodoro overlay -->
 <div class="overlay" id="pomo-overlay" style="z-index:800">
-  <div class="overlay-panel" style="width:min(820px,96vw);max-height:90dvh">
+  <div class="overlay-panel" style="width:min(1100px,98vw);height:96dvh;max-height:96dvh">
     <div class="overlay-header">
       <span class="overlay-title">Focus</span>
       <button class="overlay-close" id="pomo-close">✕</button>
@@ -7011,6 +7016,7 @@ function renderMilestoneTimeline(projId) {
         </div>
         <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
           <button class="ms-edit-proj-btn" data-ms-edit-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--muted)">✎ Edit</button>
+          <button class="ms-edit-proj-btn" data-ms-del-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--rust)">✕ Delete</button>
         </div>
       </div>`;
 
@@ -7203,6 +7209,20 @@ function showMsTaskSearchResults(query, evId, containerEl) {
 }
 
 function initMilestonesPanel() {
+  // Toolbar delegation — catches dynamically-added toolbar buttons
+  document.getElementById('panel-milestones').addEventListener('click', e => {
+    const editProjBtn = e.target.closest('[data-ms-edit-proj]');
+    if (editProjBtn && editProjBtn.dataset.msEditProj) {
+      openMsProjectModal(editProjBtn.dataset.msEditProj);
+      return;
+    }
+    const addEvBtn = e.target.closest('[data-ms-add-event]');
+    if (addEvBtn) {
+      openMsEventModal(addEvBtn.dataset.msAddEvent);
+      return;
+    }
+  });
+
   // Add initiative button
   document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
 
@@ -7269,6 +7289,16 @@ function initMilestonesPanel() {
       const evId = editEvBtn.dataset.msEditEv;
       const ev = MILESTONE_EVENTS.find(ev => ev.id === evId);
       if (ev) openMsEventModal(ev.projectId, evId);
+      return;
+    }
+
+    // ✕ Delete milestone event from timeline card
+    const delEvBtn = e.target.closest('[data-ms-del-ev]');
+    if (delEvBtn) {
+      const evId = delEvBtn.dataset.msDelEv;
+      if (confirm('Delete this milestone?')) {
+        await deleteMilestoneEvent(evId);
+      }
       return;
     }
 
@@ -7430,13 +7460,16 @@ function initMilestonesPanel() {
   });
 
   // Event modal confirm
+  let _msEventSaving = false;
   document.getElementById('ms-event-confirm').addEventListener('click', async () => {
+    if (_msEventSaving) return;
+    _msEventSaving = true;
     const title  = document.getElementById('ms-event-title').value.trim();
     const date   = document.getElementById('ms-event-date').value;
     const desc   = document.getElementById('ms-event-desc').value.trim();
     const projId = document.getElementById('ms-event-project-id').value;
     const evId   = document.getElementById('ms-event-id').value;
-    if (!title || !date) return;
+    if (!title || !date) { _msEventSaving = false; return; }
 
     // For new tasks (taskId=null), create real tasks in Firestore before saving
     const activitiesToSave = await Promise.all(_msNewActivities.map(async a => {
@@ -7459,6 +7492,7 @@ function initMilestonesPanel() {
       await addMilestoneEvent(projId, title, date, desc, activitiesToSave);
     }
     closeOverlay('ms-event-modal');
+    _msEventSaving = false;
   });
 
   // Event detail — activity toggles
@@ -7728,13 +7762,36 @@ function renderTasks() {
   ];
 
   let rowIdx = 0;
+  const collapsibleGroups = ['No date', 'Upcoming'];
   groups.forEach(group => {
     if (!group.tasks.length) return;
+    const isCollapsible = collapsibleGroups.includes(group.label);
+    const storageKey = 'cdx_group_collapsed_' + group.label.replace(' ', '_');
+    const isCollapsed = isCollapsible && localStorage.getItem(storageKey) === 'true';
+
     const labelEl = document.createElement('div');
     labelEl.className = 'tasks-group-label';
-    labelEl.textContent = group.label;
+    labelEl.style.cursor = isCollapsible ? 'pointer' : 'default';
+    labelEl.innerHTML = isCollapsible
+      ? `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;${isCollapsed ? '' : 'transform:rotate(90deg)'}">›</span>${group.label}`
+      : group.label;
+
+    const taskContainer = document.createElement('div');
+    taskContainer.style.display = isCollapsed ? 'none' : '';
+
+    if (isCollapsible) {
+      labelEl.addEventListener('click', () => {
+        const collapsed = taskContainer.style.display === 'none';
+        taskContainer.style.display = collapsed ? '' : 'none';
+        const arrow = labelEl.querySelector('span');
+        if (arrow) arrow.style.transform = collapsed ? 'rotate(90deg)' : '';
+        localStorage.setItem(storageKey, !collapsed);
+      });
+    }
+
     body.appendChild(labelEl);
-    group.tasks.forEach(task => body.appendChild(buildTaskRow(task, rowIdx++)));
+    group.tasks.forEach(task => taskContainer.appendChild(buildTaskRow(task, rowIdx++)));
+    body.appendChild(taskContainer);
   });
 
   // Someday Graveyard
@@ -7767,9 +7824,15 @@ function buildTaskRow(task, idx) {
   let schedBadge = '';
   if (task.calEventId) {
     const ev = CAL_EVENTS.find(e => e.id === task.calEventId);
-    const ts = ev?.startTime ? fmtTimeSched(ev.startTime) : (ev?.startHour != null ? fmtHour(ev.startHour) : '');
-    schedBadge = `<span class="task-cal-badge">◻ ${ts || 'Scheduled'}</span>`;
+    const ts = ev?.startTime ? fmtTimeSched(ev.startTime) : '';
+    const te = ev?.endTime ? fmtTimeSched(ev.endTime) : '';
+    const timeStr = ts && te ? `${ts}–${te}` : ts || 'Scheduled';
+    schedBadge = `<span class="task-cal-badge">◻ ${timeStr}</span>`;
   }
+
+  const PRIORITY_LABELS = { high: 'High', med: 'Med', low: 'Low' };
+  const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority] || '' : '';
+  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:9px;color:${task.priority==='high'?'var(--rust)':task.priority==='med'?'var(--amber)':'var(--muted)'}">${priorityLabel}</span>` : '';
 
   let recurBadge = '';
   if (task.recurrence) {
@@ -7818,6 +7881,7 @@ function buildTaskRow(task, idx) {
       ${snapshotHtml}
       <div class="task-meta">
         <div class="task-priority-dot ${task.priority || 'low'}"></div>
+        ${priorityBadge}
         ${catBadge}
         ${task.dueDate ? `<span class="task-due ${task.dueDate < localDateStr(new Date()) && !task.done ? 'overdue' : ''}">${fmtDate(task.dueDate)}</span>` : ''}
         ${schedBadge}
@@ -8056,7 +8120,10 @@ async function updateTask(taskId, data) {
 
 async function toggleTask(taskId) {
   const task = TASKS.find(t => t.id === taskId);
-  if (task) await updateTask(taskId, { done: !task.done });
+  if (!task) return;
+  const updates = { done: !task.done };
+  if (!task.done) updates.doneDate = localDateStr(new Date());
+  await updateTask(taskId, updates);
 }
 
 async function deleteTask(taskId) {
@@ -8267,16 +8334,33 @@ function renderDayView(date) {
 
   dayEvents.forEach(ev => {
     const startH = ev.startTime ? parseInt(ev.startTime.split(':')[0]) : (ev.startHour || 9);
+    const startM = ev.startTime ? parseInt(ev.startTime.split(':')[1] || '0') : 0;
+    const durationMins = ev.duration || 60;
+    const endTotalMins = startH * 60 + startM + durationMins;
+    const endH = Math.floor(endTotalMins / 60);
+    const endM = endTotalMins % 60;
+    const endTimeStr = `${String(endH).padStart(2,'0')}:${String(endM).padStart(2,'0')}`;
+
     const slot = container.querySelector(`[data-hour="${startH}"] .cal-hour-slot`);
     if (!slot) return;
     const chip = document.createElement('div');
     chip.className = 'cal-event';
     chip.dataset.eventId = ev.id;
     const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
-    chip.style.cssText = `border-left-color:${color};background:${color}18`;
+    // top = startM px (1 minute = 1px), height = durationMins px
+    const topPx = startM;
+    const heightPx = Math.max(durationMins, 20);
+    chip.style.cssText = `border-left-color:${color};background:${color}18;top:${topPx}px;height:${heightPx}px;`;
+    const startTimeStr = fmtTimeSched(ev.startTime || `${String(startH).padStart(2,'0')}:00`);
     chip.innerHTML = `
-      <span class="cal-event-title">${escHtml(ev.title)}</span>
-      <span class="cal-event-time">${fmtTimeSched(ev.startTime || `${String(startH).padStart(2,'0')}:00`)}${ev.duration ? ' · ' + minutesToDuration(ev.duration) : ''}</span>`;
+      <span class="cal-event-title">${escHtml(ev.title)} <span class="cal-event-time" style="display:inline;margin-top:0">${startTimeStr}–${fmtTimeSched(endTimeStr)}</span></span>`;
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      openOverlay('pomo-overlay');
+      const titleEl = document.getElementById('pomo-ev-title');
+      if (titleEl) titleEl.textContent = ev.title;
+      initPomoOverlay();
+    });
     slot.appendChild(chip);
   });
 
@@ -8328,7 +8412,7 @@ function renderWeekView(date) {
       const evs = CAL_EVENTS.filter(ev => ev.date === ds && ev.startTime?.startsWith(hh));
       const chips = evs.map(ev => {
         const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
-        return `<div class="week-event-chip" style="border-left-color:${color};background:${color}18">
+        return `<div class="week-event-chip" data-event-id="${escAttr(ev.id)}" style="border-left-color:${color};background:${color}18">
           <span class="chip-title">${escHtml(ev.title)}</span>
           <span class="chip-time">${fmtTimeSched(ev.startTime)}</span>
         </div>`;
@@ -8338,6 +8422,20 @@ function renderWeekView(date) {
   }
   html += `</div>`;
   weekView.innerHTML = html;
+
+  // Click week-event-chip → open Pomodoro with event pre-loaded
+  weekView.querySelectorAll('.week-event-chip[data-event-id]').forEach(chip => {
+    chip.style.cursor = 'pointer';
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      const ev = CAL_EVENTS.find(ev => ev.id === chip.dataset.eventId);
+      if (!ev) return;
+      openOverlay('pomo-overlay');
+      const titleEl = document.getElementById('pomo-ev-title');
+      if (titleEl) titleEl.textContent = ev.title;
+      initPomoOverlay();
+    });
+  });
 
   // Click header day → switch to day view
   weekView.querySelectorAll('.week-day-header[data-date]').forEach(el => {
@@ -9814,6 +9912,9 @@ function openCommitMode(taskId) {
 function closeCommitMode() {
   clearInterval(_commitInterval);
   _commitInterval = null;
+  if (_commitTaskId && _commitElapsed > 0) {
+    updateTask(_commitTaskId, { timeSpentSeconds: _commitElapsed });
+  }
   _commitTaskId = null;
   document.getElementById('commit-overlay')?.classList.remove('open');
 }
@@ -9836,6 +9937,9 @@ function initCommitMode() {
 
   document.getElementById('commit-done-btn')?.addEventListener('click', async () => {
     if (_commitTaskId) {
+      if (_commitElapsed > 0) {
+        await updateTask(_commitTaskId, { timeSpentSeconds: _commitElapsed, doneDate: localDateStr(new Date()) });
+      }
       await toggleTask(_commitTaskId);
       showToast('Task completed!', 'success');
     }
@@ -10244,11 +10348,13 @@ window.addEventListener('cdx-auth-ready', () => {
     cv.id = 'scribble-canvas';
     col.replaceChild(cv, oldCv);
     cv.style.flex = '1'; cv.style.display = 'block';
+    requestAnimationFrame(() => {
     const dpr = window.devicePixelRatio || 1;
     const w = col.clientWidth || 400, h = col.clientHeight - 44 || 400;
     cv.width  = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     cv.style.width = w + 'px'; cv.style.height = h + 'px';
     const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+    ctx.fillStyle = '#0a0908'; ctx.fillRect(0, 0, cv.width / dpr, cv.height / dpr);
 
     let activeColor = SCRIB_COLORS[0], penSize = 1, isEraser = false, drawing = false, lastX = 0, lastY = 0;
 
@@ -10301,6 +10407,7 @@ window.addEventListener('cdx-auth-ready', () => {
     cv.addEventListener('pointerup',   endDraw,   { passive: false });
     cv.addEventListener('pointercancel', endDraw, { passive: false });
     cv.style.touchAction = 'none';
+    }); // end requestAnimationFrame
   }
 
   window.initPomoOverlay = function() {
