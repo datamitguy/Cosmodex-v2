@@ -908,8 +908,8 @@ body::after {
 /* ── Subtasks ──────────────────────────────────────────── */
 .subtasks-wrap {
   display: none; flex-direction: column;
-  padding-left: 40px; border-left: 1px solid var(--border);
-  margin-left: 20px;
+  padding-left: 22px; border-left: 1px solid var(--border);
+  margin-left: 38px;
 }
 .subtasks-wrap.expanded { display: flex; }
 
@@ -2101,38 +2101,35 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .list-detail-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 9px 8px;
   border-bottom: 1px solid rgba(42,37,32,0.4);
   animation: fadeUp 0.25s forwards;
   opacity: 0;
+  border-radius: 6px;
+  transition: background 0.15s;
 }
 .list-detail-item:last-child { border-bottom: none; }
-.list-detail-item-check {
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  cursor: pointer;
+.list-detail-item:hover { background: rgba(201,162,39,0.03); }
+.list-item-marker {
+  width: 22px; height: 22px;
+  border-radius: 6px;
   flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px;
-  transition: background 0.15s, border-color 0.15s;
-  color: white;
+  font-size: 11px; font-family: var(--font-mono);
 }
-.list-detail-item-check:hover { border-color: var(--gold); }
-.list-detail-item-check.done { background: var(--sage); border-color: var(--sage); }
 .list-detail-item-text {
   flex: 1;
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--cream);
   outline: none;
+  line-height: 1.4;
 }
-.list-detail-item-text.done { color: var(--muted); text-decoration: line-through; }
 .list-detail-item-del {
   color: var(--muted);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   opacity: 0;
   transition: opacity 0.15s;
   padding: 4px 6px;
@@ -4491,6 +4488,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
               <div class="task-recur-option" data-recur="weekdays"><span class="recur-check"></span>Every weekday (Mon–Fri)</div>
               <div class="task-recur-option" data-recur="weekly"><span class="recur-check"></span>Weekly</div>
               <div class="task-recur-option" data-recur="monthly"><span class="recur-check"></span>Monthly</div>
+              <div class="task-recur-option" data-recur="yearly"><span class="recur-check"></span>Yearly</div>
               <div class="task-recur-option" data-recur="custom"><span class="recur-check"></span>Custom…</div>
               <div class="task-recur-custom-days" id="task-recur-custom-days" style="display:none">
                 <button type="button" class="task-recur-day-btn" data-day="Mon">M</button>
@@ -4504,7 +4502,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             </div>
           </div>
           <div class="energy-picker" id="task-energy-picker">
-            <button type="button" class="energy-pill" data-energy="">⚡</button>
+            <button type="button" class="energy-pill energy-quick"   data-energy="quick">⚡ Quick</button>
             <button type="button" class="energy-pill energy-deep"    data-energy="deep">Deep</button>
             <button type="button" class="energy-pill energy-shallow" data-energy="shallow">Shallow</button>
             <button type="button" class="energy-pill energy-admin"   data-energy="admin">Admin</button>
@@ -4638,6 +4636,17 @@ textarea.form-input { resize: vertical; min-height: 60px; }
                 <button id="lists-delete-no" class="btn-ghost" style="font-size:10px;padding:4px 10px">No</button>
               </div>
               <button id="lists-delete-btn" class="task-action-btn danger" title="Delete list" style="opacity:0.5">🗑</button>
+            </div>
+            <!-- Why / Notes meta section -->
+            <div id="lists-meta-section" style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px;flex-shrink:0;background:rgba(20,18,16,0.4)">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <label style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted)">Purpose — why this list exists</label>
+                <textarea id="lists-detail-why" rows="2" placeholder="What's the purpose of this list?" style="resize:none;font-family:var(--font-body);font-size:13px;color:var(--cream);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;padding:4px 0;line-height:1.5;width:100%;transition:border-color 0.2s" onfocus="this.style.borderBottomColor='var(--gold)'" onblur="this.style.borderBottomColor='var(--border)'"></textarea>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <label style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted)">Notes</label>
+                <textarea id="lists-detail-notes" rows="2" placeholder="Any notes, context, or criteria…" style="resize:none;font-family:var(--font-body);font-size:13px;color:var(--cream);background:transparent;border:none;border-bottom:1px solid var(--border);outline:none;padding:4px 0;line-height:1.5;width:100%;transition:border-color 0.2s" onfocus="this.style.borderBottomColor='var(--gold)'" onblur="this.style.borderBottomColor='var(--border)'"></textarea>
+              </div>
             </div>
             <!-- Items -->
             <div id="lists-detail-items" style="flex:1;overflow-y:auto;padding:0 20px;scrollbar-width:thin;scrollbar-color:var(--border) transparent"></div>
@@ -5600,7 +5609,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <div>
         <label class="sched-label">Energy Type</label>
         <div class="energy-picker" id="te-energy-picker" style="flex-wrap:wrap">
-          <button type="button" class="energy-pill" data-energy="">⚡ None</button>
+          <button type="button" class="energy-pill" data-energy="">— None</button>
+          <button type="button" class="energy-pill energy-quick"   data-energy="quick">⚡ Quick</button>
           <button type="button" class="energy-pill energy-deep"    data-energy="deep">🧠 Deep</button>
           <button type="button" class="energy-pill energy-shallow" data-energy="shallow">💬 Shallow</button>
           <button type="button" class="energy-pill energy-admin"   data-energy="admin">📋 Admin</button>
@@ -5927,6 +5937,7 @@ let CATEGORIES = {};
 })();
 
 const ENERGY_TYPES = {
+  quick:   { label: 'Quick',   icon: '⚡', cssClass: 'energy-quick' },
   deep:    { label: 'Deep',    icon: '🧠', cssClass: 'energy-deep' },
   shallow: { label: 'Shallow', icon: '💬', cssClass: 'energy-shallow' },
   admin:   { label: 'Admin',   icon: '📋', cssClass: 'energy-admin' },
@@ -6139,7 +6150,7 @@ async function addList(title) {
   const { addDoc, serverTimestamp } = window.CDX_FB;
   const color = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
   await addDoc(_uc('lists'), {
-    title, color, items: [], createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    title, color, items: [], why: '', notes: '', createdAt: serverTimestamp(), updatedAt: serverTimestamp()
   });
 }
 
@@ -6184,18 +6195,13 @@ function renderLists() {
     return;
   }
   sidebar.innerHTML = LISTS.map(l => {
-    const doneCount = (l.items||[]).filter(i=>i.done).length;
     const total = (l.items||[]).length;
-    const pct = total > 0 ? (doneCount/total)*100 : 0;
     const isActive = _listView === l.id;
     return `
       <div class="list-sidebar-card ${isActive?'active':''}" data-list-id="${escAttr(l.id)}">
         <div class="list-sidebar-card-dot" style="background:${escAttr(l.color)}"></div>
         <span class="list-sidebar-card-name">${escHtml(l.title)}</span>
-        <span class="list-sidebar-card-count">${total > 0 ? `${doneCount}/${total}` : '—'}</span>
-        <div class="list-sidebar-card-progress">
-          <div class="list-sidebar-card-progress-fill" style="width:${pct.toFixed(0)}%;background:${escAttr(l.color)}88"></div>
-        </div>
+        <span class="list-sidebar-card-count">${total > 0 ? `${total} item${total !== 1 ? 's' : ''}` : '—'}</span>
       </div>`;
   }).join('');
   // Re-bind if current list is open
@@ -6217,11 +6223,14 @@ function renderListDetail(listId) {
   const nameEl = document.getElementById('lists-detail-name');
   const countEl = document.getElementById('lists-detail-count');
   const colorEl = document.getElementById('lists-detail-color-strip');
+  const whyEl = document.getElementById('lists-detail-why');
+  const notesEl = document.getElementById('lists-detail-notes');
   if (nameEl) nameEl.textContent = list.title;
   if (colorEl) colorEl.style.background = list.color;
+  if (whyEl && document.activeElement !== whyEl) whyEl.value = list.why || '';
+  if (notesEl && document.activeElement !== notesEl) notesEl.value = list.notes || '';
   const items = list.items || [];
-  const doneCount = items.filter(i=>i.done).length;
-  if (countEl) countEl.textContent = `${doneCount}/${items.length} done`;
+  if (countEl) countEl.textContent = items.length > 0 ? `${items.length} item${items.length !== 1 ? 's' : ''}` : 'empty';
 
   const body = document.getElementById('lists-detail-items');
   if (!body) return;
@@ -6229,12 +6238,11 @@ function renderListDetail(listId) {
     body.innerHTML = '<div style="padding:24px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No items yet — add one below</div>';
     return;
   }
-  // Sort: undone first, done at bottom
-  const sorted = [...items.filter(i=>!i.done), ...items.filter(i=>i.done)];
-  body.innerHTML = sorted.map((item, idx) => `
+  const accentColor = list.color || 'var(--gold)';
+  body.innerHTML = items.map((item, idx) => `
     <div class="list-detail-item" style="animation-delay:${idx*20}ms" data-item-id="${escAttr(item.id)}">
-      <div class="list-detail-item-check ${item.done?'done':''}" data-toggle-item="${escAttr(item.id)}">${item.done?'✓':''}</div>
-      <span class="list-detail-item-text ${item.done?'done':''}" data-item-id="${escAttr(item.id)}">${escHtml(item.text)}</span>
+      <div class="list-item-marker" style="background:${accentColor}18;color:${accentColor};border:1px solid ${accentColor}33">◆</div>
+      <span class="list-detail-item-text" data-item-id="${escAttr(item.id)}">${escHtml(item.text)}</span>
       <span class="list-detail-item-del" data-del-item="${escAttr(item.id)}">✕</span>
     </div>`).join('');
 }
@@ -6308,12 +6316,10 @@ function initListsPage() {
   addBtn?.addEventListener('click', doAddItem);
   inp?.addEventListener('keydown', e => { if (e.key === 'Enter') doAddItem(); });
 
-  // Item toggles + deletes
+  // Item deletes
   document.getElementById('lists-detail-items')?.addEventListener('click', async e => {
-    const toggle = e.target.closest('[data-toggle-item]');
-    const del    = e.target.closest('[data-del-item]');
-    if (toggle && _listView) await toggleListItem(_listView, toggle.dataset.toggleItem);
-    if (del    && _listView) await deleteListItem(_listView, del.dataset.delItem);
+    const del = e.target.closest('[data-del-item]');
+    if (del && _listView) await deleteListItem(_listView, del.dataset.delItem);
   });
 
   // Inline title rename (blur = save)
@@ -6324,6 +6330,14 @@ function initListsPage() {
   document.getElementById('lists-detail-name')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
     if (e.key === 'Escape') { e.target.blur(); }
+  });
+
+  // Why / Notes save on blur
+  document.getElementById('lists-detail-why')?.addEventListener('blur', async e => {
+    if (_listView) await updateList(_listView, { why: e.target.value.trim() });
+  });
+  document.getElementById('lists-detail-notes')?.addEventListener('blur', async e => {
+    if (_listView) await updateList(_listView, { notes: e.target.value.trim() });
   });
 }
 
@@ -8589,14 +8603,20 @@ function initOrbAddTask() {
     row.innerHTML = `<div class="cal-hour-label">${label}</div><div class="cal-hour-slot"></div>`;
     container.appendChild(row);
   }
-  // Position now-line
+  // Position now-line (initial)
+  updateCalNowLine();
+})();
+
+function updateCalNowLine() {
   const now = new Date();
   const minutesSince5am = (now.getHours() - 5) * 60 + now.getMinutes();
   const totalMinutes = 19 * 60;
   const pct = Math.max(0, Math.min(100, (minutesSince5am / totalMinutes) * 100));
   const line = document.getElementById('cal-now-line');
   if (line) line.style.top = pct + '%';
-})();
+}
+// Update every minute so it stays accurate
+setInterval(updateCalNowLine, 60 * 1000);
 
 /* ══════════════════════════════════════════════════════════
    HELPERS
@@ -8856,6 +8876,7 @@ function buildTaskRow(task, idx) {
       : task.recurrence === 'weekdays' ? '↻ Weekdays'
       : task.recurrence === 'weekly' ? '↻ Weekly'
       : task.recurrence === 'monthly' ? '↻ Monthly'
+      : task.recurrence === 'yearly' ? '↻ Yearly'
       : task.recurrence.startsWith('custom:') ? `↻ ${task.recurrence.replace('custom:','')}`
       : `↻ ${task.recurrence}`;
     recurBadge = `<span class="task-recur-badge">${rl}</span>`;
@@ -9901,6 +9922,7 @@ function initAddTaskForm() {
     if (val === 'weekdays') return 'Weekdays';
     if (val === 'weekly') return 'Weekly';
     if (val === 'monthly') return 'Monthly';
+    if (val === 'yearly') return 'Yearly';
     if (val.startsWith('custom:')) {
       const days = val.replace('custom:', '');
       return days || 'Custom';
