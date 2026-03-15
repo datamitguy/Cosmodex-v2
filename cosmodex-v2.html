@@ -14,7 +14,7 @@
   import { initializeApp }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
-    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';+
+    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
@@ -6838,7 +6838,10 @@ function hbLaunchDay() {
   btn.innerHTML = 'Day started ✓<span class="hb-lb-sub">Routine launched — good luck today</span>';
   setTimeout(() => {
     btn.style.background = 'linear-gradient(135deg,var(--gold) 0%,#a88018 100%)';
-    btn.innerHTML = 'Begin the day<span class="hb-lb-sub" id="hb-lb-sub">' + _hbTotalSteps + ' steps ready</span>';
+    btn.innerHTML = 'Begin the day<span class="hb-lb-sub">' + _hbTotalSteps + ' steps ready</span>';
+    // re-fetch the ID'd element that got overwritten
+    const restoredSub = btn.querySelector('.hb-lb-sub');
+    if (restoredSub) restoredSub.id = 'hb-lb-sub';
   }, 2500);
 }
 
@@ -8408,9 +8411,7 @@ function addMinutes(hhmm, mins) {
 function updateNavCounts() {
   const today = localDateStr(new Date());
   const todayEl = document.getElementById('nav-count-today');
-  const taskEl  = document.getElementById('nav-count-tasks');
   if (todayEl) todayEl.textContent = TASKS.filter(t => !t.done && t.dueDate === today).length || '—';
-  if (taskEl)  taskEl.textContent  = TASKS.filter(t => !t.done).length || '—';
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -10469,6 +10470,7 @@ document.querySelectorAll('.view-tab[data-view]').forEach(tab => {
 /* ── Sign-in overlay ──────────────────────────────────── */
 function dismissSigninOverlay() {
   const overlay = document.getElementById('signin-overlay');
+  if (!overlay) return;
   overlay.style.opacity = '0';
   overlay.style.transition = 'opacity 0.4s ease';
   setTimeout(() => { overlay.style.display = 'none'; }, 400);
