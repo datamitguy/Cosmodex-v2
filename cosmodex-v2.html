@@ -642,6 +642,54 @@ body::after {
 .cal-event.blue   { background: rgba(107,159,212,0.12); border-color: var(--blue); }
 .cal-event.rust   { background: rgba(196,92,42,0.12);  border-color: var(--rust); }
 
+/* All-day event row */
+.cal-allday-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-height: 28px;
+  padding: 4px 8px 4px 48px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(201,162,39,0.04);
+}
+.cal-allday-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: rgba(201,162,39,0.15);
+  border: 1px solid rgba(201,162,39,0.35);
+  color: var(--gold);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.week-allday-row {
+  display: grid;
+  border-bottom: 1px solid var(--border);
+  background: rgba(201,162,39,0.04);
+  min-height: 24px;
+}
+.week-allday-cell {
+  padding: 2px 3px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.week-allday-chip {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 100px;
+  background: rgba(201,162,39,0.15);
+  border: 1px solid rgba(201,162,39,0.30);
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Current time line */
 .cal-now-line {
   position: absolute;
@@ -810,6 +858,7 @@ body::after {
   background: rgba(107,159,212,0.1);
   border: 1px solid rgba(107,159,212,0.25);
   color: var(--blue);
+  white-space: nowrap;
 }
 
 /* ── Task row wrappers & expand ────────────────────────── */
@@ -1472,12 +1521,15 @@ body::after {
   -webkit-backdrop-filter: blur(8px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
 }
 
 .overlay.open {
   opacity: 1;
   pointer-events: all;
+  visibility: visible;
+  transition: opacity 0.25s ease, visibility 0s linear 0s;
 }
 
 .overlay-panel {
@@ -3196,13 +3248,19 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .month-day-cell.today { background:rgba(201,162,39,0.04); }
 .month-day-cell.other-month { opacity:0.32; }
 .month-day-cell.holiday { background:rgba(196,92,42,0.04); }
+.month-day-cell.weekend { border-left:2px solid rgba(196,92,42,0.35); }
 .month-day-num { font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:3px; display:block; }
 .month-day-cell.today .month-day-num { color:var(--gold); font-weight:600; }
 .month-holiday-name {
-  font-family:var(--font-mono); font-size:7px; color:var(--rust);
+  font-family:var(--font-mono); font-size:7px;
+  color:#fff; background:var(--rust);
+  border-radius:2px; padding:0 3px;
   letter-spacing:0.04em; white-space:nowrap; overflow:hidden;
   text-overflow:ellipsis; margin-bottom:2px; display:block;
 }
+.week-day-header.weekend { border-top:2px solid var(--rust); }
+.week-cell.weekend { border-left:1px solid rgba(196,92,42,0.20); background:rgba(196,92,42,0.03); }
+.cal-day-view.weekend-day .cal-hours-container { border-left:2px solid var(--rust); }
 .month-spark { display:flex; align-items:flex-end; gap:1px; height:14px; margin:3px 0; }
 .month-spark-bar { width:4px; border-radius:1px; min-height:2px; }
 .month-event-pill {
@@ -3725,6 +3783,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   flex-shrink: 0;
 }
 .energy-deep    { background: rgba(107,159,212,0.1); border-color: rgba(107,159,212,0.3); color: var(--blue); }
+.energy-shallow { background: rgba(232,160,32,0.1);  border-color: rgba(232,160,32,0.3);  color: var(--amber); }
 .energy-admin   { background: rgba(138,128,112,0.1); border-color: rgba(138,128,112,0.3); color: var(--muted-readable); }
 .energy-creative{ background: rgba(201,162,39,0.1);  border-color: rgba(201,162,39,0.3);  color: var(--gold); }
 .energy-quick   { background: rgba(74,124,94,0.1);   border-color: rgba(74,124,94,0.3);   color: var(--sage); }
@@ -3747,10 +3806,11 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   transition: var(--ease-fast);
 }
 .energy-pill:hover { border-color: var(--gold); color: var(--cream); }
-.energy-pill.active.energy-deep     { background: rgba(107,159,212,0.12); border-color: var(--blue); color: var(--blue); }
+.energy-pill.active.energy-deep     { background: rgba(107,159,212,0.12); border-color: var(--blue);  color: var(--blue); }
+.energy-pill.active.energy-shallow  { background: rgba(232,160,32,0.12);  border-color: var(--amber); color: var(--amber); }
 .energy-pill.active.energy-admin    { background: rgba(138,128,112,0.12); border-color: var(--muted); color: var(--muted-readable); }
-.energy-pill.active.energy-creative { background: rgba(201,162,39,0.12);  border-color: var(--gold); color: var(--gold); }
-.energy-pill.active.energy-quick    { background: rgba(74,124,94,0.12);   border-color: var(--sage); color: var(--sage); }
+.energy-pill.active.energy-creative { background: rgba(201,162,39,0.12);  border-color: var(--gold);  color: var(--gold); }
+.energy-pill.active.energy-quick    { background: rgba(74,124,94,0.12);   border-color: var(--sage);  color: var(--sage); }
 
 /* ═══════════════════════════════════════════════════════════
    DAILY RITUAL OVERLAY
@@ -4321,8 +4381,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <div id="panel-calendar">
       <div class="panel-toolbar">
         <div class="view-tabs">
-          <button class="view-tab" data-view="day">Day</button>
-          <button class="view-tab active" data-view="week">Week</button>
+          <button class="view-tab active" data-view="day">Day</button>
+          <button class="view-tab" data-view="week">Week</button>
           <button class="view-tab" data-view="month">Month</button>
         </div>
         <div class="toolbar-sep"></div>
@@ -5034,7 +5094,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <div class="stat-card-grid" style="margin-bottom:20px;">
           <div class="stat-card">
             <span class="stat-card-number" id="ins-total">—</span>
-            <span class="stat-card-label">Total Focus hrs</span>
+            <span class="stat-card-label">Habit completions</span>
           </div>
           <div class="stat-card">
             <span class="stat-card-number" id="ins-week">—</span>
@@ -5048,6 +5108,30 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <span class="stat-card-number" id="ins-days">—</span>
             <span class="stat-card-label">Days active</span>
           </div>
+        </div>
+
+        <!-- Time Investment Summary -->
+        <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Time Investment</div>
+          <div class="stat-card-grid" style="margin-bottom:16px">
+            <div class="stat-card">
+              <span class="stat-card-number" id="ins-time-total">—</span>
+              <span class="stat-card-label">Total hrs logged</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card-number" id="ins-time-week">—</span>
+              <span class="stat-card-label">This week</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card-number" id="ins-time-pomo">—</span>
+              <span class="stat-card-label">Pomodoro</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card-number" id="ins-time-commit">—</span>
+              <span class="stat-card-label">Commit mode</span>
+            </div>
+          </div>
+          <div id="ins-time-breakdown" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
 
         <div class="hb-insight-layout">
@@ -5139,8 +5223,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
 <!-- Notes overlay -->
 <div class="overlay" id="notes-overlay">
-  <div class="overlay-panel" style="width:min(820px,96vw);max-height:82dvh">
-    <div class="overlay-header" style="padding:10px 16px;gap:8px;flex-wrap:wrap">
+  <div class="overlay-panel" style="width:min(1200px,98vw);height:96dvh;max-height:96dvh;display:flex;flex-direction:column">
+    <div class="overlay-header" style="padding:10px 16px;gap:8px;flex-wrap:wrap;flex-shrink:0">
       <span class="overlay-title" style="font-size:15px;flex:none">✎ Notes</span>
       <div id="notes-pen-bar" style="display:flex;gap:3px;align-items:center"></div>
       <div id="notes-color-bar" style="display:flex;gap:5px;align-items:center"></div>
@@ -5149,7 +5233,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <button class="scribble-btn" id="notes-save-btn">↓ Save</button>
       <button class="overlay-close" style="margin-left:auto" data-close="notes-overlay">✕</button>
     </div>
-    <canvas id="notes-canvas" style="width:100%;min-height:440px;background:var(--ink)"></canvas>
+    <canvas id="notes-canvas" style="width:100%;flex:1;background:var(--ink)"></canvas>
   </div>
 </div>
 
@@ -5420,6 +5504,55 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <button data-close="orb-add-task-modal" class="btn-ghost">Cancel</button>
         <button id="orb-add-task-confirm" class="btn-primary">Add to Calendar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Edit Modal -->
+<div class="overlay" id="task-edit-modal" style="z-index:850">
+  <div class="overlay-panel" style="width:min(480px,94vw)">
+    <div class="overlay-header">
+      <span class="overlay-title">Edit Task</span>
+      <button class="overlay-close" data-close="task-edit-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="sched-label">Title</label>
+        <input id="te-title" type="text" class="sched-input" autocomplete="off" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="sched-label">Due Date</label>
+          <input id="te-date" type="date" class="sched-input" />
+        </div>
+        <div>
+          <label class="sched-label">Priority</label>
+          <select id="te-priority" class="sched-input">
+            <option value="low">Low</option>
+            <option value="med">Med</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="sched-label">Category</label>
+        <select id="te-category" class="sched-input"></select>
+      </div>
+      <div>
+        <label class="sched-label">Energy Type</label>
+        <div class="energy-picker" id="te-energy-picker" style="flex-wrap:wrap">
+          <button type="button" class="energy-pill" data-energy="">⚡ None</button>
+          <button type="button" class="energy-pill energy-deep"    data-energy="deep">🧠 Deep</button>
+          <button type="button" class="energy-pill energy-shallow" data-energy="shallow">💬 Shallow</button>
+          <button type="button" class="energy-pill energy-admin"   data-energy="admin">📋 Admin</button>
+          <button type="button" class="energy-pill energy-creative" data-energy="creative">🎨 Creative</button>
+        </div>
+      </div>
+      <div>
+        <label class="sched-label">Notes</label>
+        <textarea id="te-notes" class="sched-input" rows="3" style="resize:vertical;min-height:64px;font-family:var(--font-body);font-size:13px" placeholder="Optional notes…"></textarea>
+      </div>
+      <button class="sched-confirm-btn" id="te-save-btn">Save Changes</button>
     </div>
   </div>
 </div>
@@ -5952,21 +6085,21 @@ function showMainPanel(name) {
    LISTS — FIRESTORE CRUD
    ══════════════════════════════════════════════════════════ */
 async function addList(title) {
-  const { addDoc, collection, serverTimestamp } = window.CDX_FB;
+  const { addDoc, serverTimestamp } = window.CDX_FB;
   const color = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
-  await addDoc(collection(window.CDX_DB, 'lists'), {
+  await addDoc(_uc('lists'), {
     title, color, items: [], createdAt: serverTimestamp(), updatedAt: serverTimestamp()
   });
 }
 
 async function updateList(id, data) {
-  const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
-  await updateDoc(doc(window.CDX_DB, 'lists', id), { ...data, updatedAt: serverTimestamp() });
+  const { updateDoc, serverTimestamp } = window.CDX_FB;
+  await updateDoc(_ud('lists', id), { ...data, updatedAt: serverTimestamp() });
 }
 
 async function deleteList(id) {
-  const { doc, deleteDoc } = window.CDX_FB;
-  await deleteDoc(doc(window.CDX_DB, 'lists', id));
+  const { deleteDoc } = window.CDX_FB;
+  await deleteDoc(_ud('lists', id));
 }
 
 async function addListItem(listId, text) {
@@ -6935,6 +7068,65 @@ function renderInsights() {
   setCard('ins-best',  bestCount > 0 ? bestCount + (bestDate ? ' (' + bestDate.slice(5).replace('-','/') + ')' : '') : '—');
   setCard('ins-days',  activeDays || '—');
 
+  // ── Time Investment consolidation ────────────────────────
+  (function renderTimeInvestment() {
+    const weekAgo = localDateStr(new Date(Date.now() - 6 * 86400000));
+    let totalSecs = 0, weekSecs = 0, pomoSecs = 0, commitSecs = 0;
+    const byCat = {}; // { category: totalSecs }
+
+    TASKS.forEach(task => {
+      const pomo   = task.sessionTimeSecs || 0;    // Pomodoro session time
+      const commit = task.timeSpentSeconds || 0;   // Commit mode time
+      // Avoid double-counting: if both exist, pomo is subset of a session; use max-of-pomo or commit
+      // They track different sessions so sum is correct
+      const taskSecs = pomo + commit;
+      if (taskSecs <= 0) return;
+      totalSecs += taskSecs;
+      pomoSecs  += pomo;
+      commitSecs += commit;
+      const doneDate = task.doneDate || task.dueDate || '';
+      if (doneDate >= weekAgo) weekSecs += taskSecs;
+      const cat = task.category || 'uncategorised';
+      byCat[cat] = (byCat[cat] || 0) + taskSecs;
+    });
+
+    // Calendar events (only events whose linked task has NO time tracking, to avoid duplication)
+    CAL_EVENTS.forEach(ev => {
+      if (ev.allDay || !ev.duration) return;
+      const linkedTask = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : null;
+      if (linkedTask && (linkedTask.sessionTimeSecs || linkedTask.timeSpentSeconds)) return; // already counted
+      const secs = (ev.duration || 0) * 60;
+      totalSecs += secs;
+      if (ev.date >= weekAgo) weekSecs += secs;
+      const cat = (linkedTask?.category) || 'scheduled';
+      byCat[cat] = (byCat[cat] || 0) + secs;
+    });
+
+    const fmtHrs = s => s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s/60)}m` : `${(s/3600).toFixed(1)}h`;
+    setCard('ins-time-total',  totalSecs  > 0 ? fmtHrs(totalSecs)  : '—');
+    setCard('ins-time-week',   weekSecs   > 0 ? fmtHrs(weekSecs)   : '—');
+    setCard('ins-time-pomo',   pomoSecs   > 0 ? fmtHrs(pomoSecs)   : '—');
+    setCard('ins-time-commit', commitSecs > 0 ? fmtHrs(commitSecs) : '—');
+
+    const breakdownEl = document.getElementById('ins-time-breakdown');
+    if (breakdownEl) {
+      const sorted = Object.entries(byCat).sort((a,b) => b[1]-a[1]);
+      const max = sorted[0]?.[1] || 1;
+      breakdownEl.innerHTML = sorted.map(([cat, secs]) => {
+        const pct  = Math.round(secs / max * 100);
+        const color = getCatColor(cat);
+        const catLabel = CATEGORIES[cat]?.label || cat;
+        return `<div style="display:flex;align-items:center;gap:10px">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);width:90px;flex-shrink:0;text-transform:capitalize;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${catLabel}</div>
+          <div style="flex:1;height:6px;background:var(--elevated);border-radius:3px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.4s"></div>
+          </div>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--cream);width:36px;text-align:right;flex-shrink:0">${fmtHrs(secs)}</div>
+        </div>`;
+      }).join('') || `<div style="font-size:11px;color:var(--muted);font-family:var(--font-mono)">No time logged yet — complete tasks via Pomodoro or Commit mode to start tracking.</div>`;
+    }
+  })();
+
   if (!habits.length) {
     _renderInsightsEmpty();
     return;
@@ -7131,22 +7323,22 @@ function _weekPct(dates, habits) {
    MILESTONES — FIRESTORE CRUD
    ══════════════════════════════════════════════════════════ */
 async function addMilestoneProject(title, startDate, endDate, color, category='', notes='', missionBrief='', antiGoals='') {
-  const { addDoc, collection, serverTimestamp } = window.CDX_FB;
-  await addDoc(collection(window.CDX_DB, 'milestoneProjects'),
+  const { addDoc, serverTimestamp } = window.CDX_FB;
+  await addDoc(_uc('milestoneProjects'),
     { title, startDate, endDate, color, category: category||null, notes: notes||'',
       missionBrief: missionBrief||null, antiGoals: antiGoals||null,
       createdAt: serverTimestamp() });
 }
 
 async function updateMilestoneProject(id, data) {
-  const { doc, updateDoc } = window.CDX_FB;
-  await updateDoc(doc(window.CDX_DB, 'milestoneProjects', id), data);
+  const { updateDoc } = window.CDX_FB;
+  await updateDoc(_ud('milestoneProjects', id), data);
 }
 
 async function deleteMilestoneProject(id) {
-  const { doc, deleteDoc, collection, getDocs, query, where } = window.CDX_FB;
+  const { deleteDoc, getDocs, query, where } = window.CDX_FB;
   const evSnap = await getDocs(
-    query(collection(window.CDX_DB, 'milestoneEvents'), where('projectId', '==', id))
+    query(_uc('milestoneEvents'), where('projectId', '==', id))
   );
   // Cascade-delete any tasks linked via activities
   const taskIds = [];
@@ -7155,29 +7347,29 @@ async function deleteMilestoneProject(id) {
   });
   await Promise.all([
     ...evSnap.docs.map(d => deleteDoc(d.ref)),
-    ...taskIds.map(tid => deleteDoc(doc(window.CDX_DB, 'tasks', tid))),
+    ...taskIds.map(tid => deleteDoc(_ud('tasks', tid))),
   ]);
-  await deleteDoc(doc(window.CDX_DB, 'milestoneProjects', id));
+  await deleteDoc(_ud('milestoneProjects', id));
 }
 
 async function addMilestoneEvent(projectId, title, date, description, activities) {
-  const { addDoc, collection, serverTimestamp } = window.CDX_FB;
-  await addDoc(collection(window.CDX_DB, 'milestoneEvents'),
+  const { addDoc, serverTimestamp } = window.CDX_FB;
+  await addDoc(_uc('milestoneEvents'),
     { projectId, title, date, description, activities, createdAt: serverTimestamp() });
 }
 
 async function updateMilestoneEvent(id, data) {
-  const { doc, updateDoc } = window.CDX_FB;
-  await updateDoc(doc(window.CDX_DB, 'milestoneEvents', id), data);
+  const { updateDoc } = window.CDX_FB;
+  await updateDoc(_ud('milestoneEvents', id), data);
 }
 
 async function deleteMilestoneEvent(id) {
-  const { doc, deleteDoc } = window.CDX_FB;
+  const { deleteDoc } = window.CDX_FB;
   const ev = MILESTONE_EVENTS.find(e => e.id === id);
   const taskIds = (ev?.activities || []).filter(a => a.taskId).map(a => a.taskId);
   await Promise.all([
-    deleteDoc(doc(window.CDX_DB, 'milestoneEvents', id)),
-    ...taskIds.map(tid => deleteDoc(doc(window.CDX_DB, 'tasks', tid))),
+    deleteDoc(_ud('milestoneEvents', id)),
+    ...taskIds.map(tid => deleteDoc(_ud('tasks', tid))),
   ]);
 }
 
@@ -7202,8 +7394,8 @@ async function addMilestoneActivity(eventId, text, taskId=null) {
   // If no taskId provided, create a real task
   let realTaskId = taskId;
   if (!taskId && text) {
-    const { collection, addDoc, serverTimestamp } = window.CDX_FB;
-    const ref = await addDoc(collection(window.CDX_DB, 'tasks'), {
+    const { addDoc, serverTimestamp } = window.CDX_FB;
+    const ref = await addDoc(_uc('tasks'), {
       title: text, done: false, priority: 'med',
       dueDate: ev.date || null, category: _settings.defaultCategory || null,
       calEventId: null, subtasks: [],
@@ -7882,8 +8074,8 @@ function initMilestonesPanel() {
     // For new tasks (taskId=null), create real tasks in Firestore before saving
     const activitiesToSave = await Promise.all(_msNewActivities.map(async a => {
       if (!a.taskId && a.text) {
-        const { collection, addDoc, serverTimestamp } = window.CDX_FB;
-        const ref = await addDoc(collection(window.CDX_DB, 'tasks'), {
+        const { addDoc, serverTimestamp } = window.CDX_FB;
+        const ref = await addDoc(_uc('tasks'), {
           title: a.text, done: false, priority: 'med',
           dueDate: date || null, category: null,
           calEventId: null, subtasks: [],
@@ -8299,17 +8491,16 @@ async function confirmOrbAddTask() {
   const time     = document.getElementById('orb-task-time').value;
   const duration = parseInt(document.getElementById('orb-task-duration').value) || 60;
   if (!title || !time) return;
-  const { collection, addDoc, serverTimestamp } = window.CDX_FB;
-  const db = window.CDX_DB;
+  const { addDoc, serverTimestamp } = window.CDX_FB;
   const today = localDateStr(new Date());
   const endTime = addMinutes(time, duration);
   // Create calendar event
-  const evRef = await addDoc(collection(db, 'calEvents'), {
+  const evRef = await addDoc(_uc('calEvents'), {
     title, date: today, startTime: time, endTime, duration,
     color: getCatColor('personal'), createdAt: serverTimestamp()
   });
   // Create linked task
-  await addDoc(collection(db, 'tasks'), {
+  await addDoc(_uc('tasks'), {
     title, done: false, priority: 'med',
     dueDate: today, category: 'personal',
     calEventId: evRef.id, subtasks: [],
@@ -8423,31 +8614,46 @@ function waitForFirebase(fn) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   USER-SCOPED FIRESTORE HELPERS
+   ══════════════════════════════════════════════════════════ */
+function _uc(name) { // user-scoped collection ref
+  const uid = window.CDX_USER?.uid;
+  if (!uid) throw new Error('Not authenticated');
+  return window.CDX_FB.collection(window.CDX_DB, 'users', uid, name);
+}
+function _ud(name, id) { // user-scoped doc ref
+  const uid = window.CDX_USER?.uid;
+  if (!uid) throw new Error('Not authenticated');
+  return window.CDX_FB.doc(window.CDX_DB, 'users', uid, name, id);
+}
+
+/* ══════════════════════════════════════════════════════════
    DATA INIT
    ══════════════════════════════════════════════════════════ */
 function initData() {
-  const { collection, onSnapshot, query, orderBy } = window.CDX_FB;
-  const db = window.CDX_DB;
+  const { onSnapshot, query, orderBy } = window.CDX_FB;
 
-  onSnapshot(query(collection(db, 'tasks'), orderBy('createdAt', 'asc')), snap => {
+  onSnapshot(query(_uc('tasks'), orderBy('createdAt', 'asc')), snap => {
     TASKS = snap.docs.map(d => ({ id: d.id, subtasks: [], ...d.data() }));
     renderTasks(); renderCalendar(); updateNavCounts();
     drawCosmodex(); // immediate orb sync on task change
+    if (_mainPanel === 'insights') renderInsights();
   });
 
-  onSnapshot(query(collection(db, 'calEvents'), orderBy('date', 'asc')), snap => {
+  onSnapshot(query(_uc('calEvents'), orderBy('date', 'asc')), snap => {
     CAL_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTasks(); renderCalendar();
     drawCosmodex(); // immediate orb sync on calendar change
+    if (_mainPanel === 'insights') renderInsights();
   });
 
-  onSnapshot(collection(db, 'holidays'), snap => {
+  onSnapshot(_uc('holidays'), snap => {
     HOLIDAYS = {};
     snap.docs.forEach(d => { HOLIDAYS[d.id] = { docId: d.id, ...d.data() }; });
     renderCalendar(); renderSettingsHolidays();
   });
 
-  onSnapshot(query(collection(db, 'lists'), orderBy('createdAt', 'asc')), snap => {
+  onSnapshot(query(_uc('lists'), orderBy('createdAt', 'asc')), snap => {
     LISTS = snap.docs.map(d => ({ id: d.id, items: [], ...d.data() }));
     if (_mainPanel === 'lists') {
       renderLists();
@@ -8455,12 +8661,12 @@ function initData() {
     }
   });
 
-  onSnapshot(query(collection(db, 'milestoneProjects'), orderBy('startDate', 'asc')), snap => {
+  onSnapshot(query(_uc('milestoneProjects'), orderBy('startDate', 'asc')), snap => {
     MILESTONE_PROJECTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (_mainPanel === 'milestones') renderMilestones();
   });
 
-  onSnapshot(query(collection(db, 'milestoneEvents'), orderBy('date', 'asc')), snap => {
+  onSnapshot(query(_uc('milestoneEvents'), orderBy('date', 'asc')), snap => {
     MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, activities: [], ...d.data() }));
     if (_mainPanel === 'milestones') renderMilestones();
   });
@@ -8472,26 +8678,26 @@ function initData() {
    HOLIDAYS
    ══════════════════════════════════════════════════════════ */
 async function seedHolidays() {
-  const { doc, getDoc, writeBatch } = window.CDX_FB;
+  const { getDoc, writeBatch } = window.CDX_FB;
   const db = window.CDX_DB;
-  const sentinel = doc(db, 'holidays', '_seeded_hk');
+  const sentinel = _ud('holidays', '_seeded_hk');
   const snap = await getDoc(sentinel);
   if (snap.exists()) return;
   const batch = writeBatch(db);
-  HK_HOLIDAYS.forEach(h => batch.set(doc(db, 'holidays', h.date), { name: h.name, type: h.type, date: h.date }));
+  HK_HOLIDAYS.forEach(h => batch.set(_ud('holidays', h.date), { name: h.name, type: h.type, date: h.date }));
   batch.set(sentinel, { seeded: true });
   await batch.commit();
 }
 
 async function addHoliday(date, name, type) {
-  const { doc, setDoc } = window.CDX_FB;
+  const { setDoc } = window.CDX_FB;
   if (!date || !name) return;
-  await setDoc(doc(window.CDX_DB, 'holidays', date), { name, type: type || 'personal', date });
+  await setDoc(_ud('holidays', date), { name, type: type || 'personal', date });
 }
 
 async function deleteHoliday(docId) {
-  const { doc, deleteDoc } = window.CDX_FB;
-  await deleteDoc(doc(window.CDX_DB, 'holidays', docId));
+  const { deleteDoc } = window.CDX_FB;
+  await deleteDoc(_ud('holidays', docId));
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -8652,6 +8858,7 @@ function buildTaskRow(task, idx) {
     </div>
     <div class="task-actions-group">
       ${!task.done ? `<button class="task-action-btn commit" data-commit="${escAttr(task.id)}" title="Enter commit mode">▶</button>` : ''}
+      <button class="task-action-btn" data-task-edit="${escAttr(task.id)}" title="Edit task">✎</button>
       <button class="task-action-btn" data-add-sub="${escAttr(task.id)}" title="Add subtask">⊕</button>
       <button class="task-action-btn danger" data-del="${escAttr(task.id)}" title="Delete task">✕</button>
     </div>`;
@@ -8738,6 +8945,7 @@ document.getElementById('tasks-body').addEventListener('click', e => {
   const confirmSub = e.target.closest('.subtask-add-confirm');
   const commitBtn  = e.target.closest('[data-commit]');
   const frictionEl = e.target.closest('[data-friction]');
+  const taskEditBtn = e.target.closest('[data-task-edit]');
 
   if (check)    { toggleTask(check.dataset.check); return; }
   if (subCheck) { toggleSubtask(subCheck.dataset.subcheck, subCheck.dataset.sub); return; }
@@ -8746,6 +8954,7 @@ document.getElementById('tasks-body').addEventListener('click', e => {
   if (setCat)   { cycleTaskCategory(setCat.dataset.setcat); return; }
   if (commitBtn) { openCommitMode(commitBtn.dataset.commit); return; }
   if (frictionEl) { openFrictionModal(frictionEl.dataset.friction); return; }
+  if (taskEditBtn) { openTaskEditModal(taskEditBtn.dataset.taskEdit); return; }
 
   if (addSub) {
     const taskId  = addSub.dataset.addSub;
@@ -8846,11 +9055,79 @@ function cancelInlineEdit(input) {
   input.replaceWith(span);
 }
 
+/* ── Task Edit Modal ──────────────────────────────────── */
+let _editTaskId = null;
+
+function openTaskEditModal(taskId) {
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  _editTaskId = taskId;
+
+  document.getElementById('te-title').value    = task.title || '';
+  document.getElementById('te-date').value     = task.dueDate || '';
+  document.getElementById('te-priority').value = task.priority || 'med';
+  document.getElementById('te-notes').value    = task.notes || '';
+
+  // Category select
+  const catSel = document.getElementById('te-category');
+  catSel.innerHTML = '<option value="">No category</option>' +
+    Object.entries(CATEGORIES).map(([k,v]) =>
+      `<option value="${escAttr(k)}">${escHtml(v.label)}</option>`).join('');
+  catSel.value = task.category || '';
+
+  // Energy picker
+  const picker = document.getElementById('te-energy-picker');
+  picker.querySelectorAll('.energy-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.energy === (task.energyType || ''));
+  });
+
+  openOverlay('task-edit-modal');
+  setTimeout(() => document.getElementById('te-title')?.focus(), 80);
+}
+
+async function confirmTaskEdit() {
+  if (!_editTaskId) return;
+  const title    = document.getElementById('te-title').value.trim();
+  const dueDate  = document.getElementById('te-date').value || null;
+  const priority = document.getElementById('te-priority').value;
+  const category = document.getElementById('te-category').value || null;
+  const notes    = document.getElementById('te-notes').value.trim() || null;
+  const energyType = document.getElementById('te-energy-picker')
+    .querySelector('.energy-pill.active')?.dataset.energy || null;
+
+  if (!title) { showToast('Title is required', 'error'); return; }
+  await updateTask(_editTaskId, { title, dueDate, priority, category, notes, energyType });
+  closeOverlay('task-edit-modal');
+  _editTaskId = null;
+  showToast('Task updated', 'success');
+}
+
+function initTaskEditModal() {
+  document.getElementById('te-save-btn')?.addEventListener('click', confirmTaskEdit);
+  document.getElementById('te-title')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmTaskEdit();
+  });
+  document.getElementById('te-energy-picker')?.querySelectorAll('.energy-pill').forEach(pill => {
+    pill.addEventListener('click', e => {
+      e.stopPropagation();
+      const val = pill.dataset.energy;
+      const picker = document.getElementById('te-energy-picker');
+      if (picker.querySelector('.energy-pill.active')?.dataset.energy === val) {
+        picker.querySelectorAll('.energy-pill').forEach(p => p.classList.remove('active'));
+        document.querySelector('.energy-pill[data-energy=""]')?.classList.add('active');
+      } else {
+        picker.querySelectorAll('.energy-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+      }
+    });
+  });
+}
+
 /* ── Firestore CRUD ───────────────────────────────────── */
 async function addTask(title, priority = 'med', dueDate = '', category = '', recurrence = '', energyType = '') {
-  const { collection, addDoc, serverTimestamp } = window.CDX_FB;
+  const { addDoc, serverTimestamp } = window.CDX_FB;
   try {
-    await addDoc(collection(window.CDX_DB, 'tasks'), {
+    await addDoc(_uc('tasks'), {
       title, done: false, priority,
       dueDate: dueDate || null,
       category: category || null,
@@ -8868,9 +9145,9 @@ async function addTask(title, priority = 'med', dueDate = '', category = '', rec
 }
 
 async function updateTask(taskId, data) {
-  const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
+  const { updateDoc, serverTimestamp } = window.CDX_FB;
   try {
-    await updateDoc(doc(window.CDX_DB, 'tasks', taskId), { ...data, updatedAt: serverTimestamp() });
+    await updateDoc(_ud('tasks', taskId), { ...data, updatedAt: serverTimestamp() });
   } catch (err) {
     console.error('updateTask error:', err);
     showToast('Failed to update task', 'error');
@@ -8888,17 +9165,17 @@ async function toggleTask(taskId) {
 async function deleteTask(taskId) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
-  const { doc, deleteDoc } = window.CDX_FB;
+  const { deleteDoc } = window.CDX_FB;
   try {
     if (task.calEventId) {
-      try { await deleteDoc(doc(window.CDX_DB, 'calEvents', task.calEventId)); } catch (_) {}
+      try { await deleteDoc(_ud('calEvents', task.calEventId)); } catch (_) {}
     }
     for (const sub of (task.subtasks || [])) {
       if (sub.calEventId) {
-        try { await deleteDoc(doc(window.CDX_DB, 'calEvents', sub.calEventId)); } catch (_) {}
+        try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
       }
     }
-    await deleteDoc(doc(window.CDX_DB, 'tasks', taskId));
+    await deleteDoc(_ud('tasks', taskId));
     showToast('Task deleted', 'info');
   } catch (err) {
     console.error('deleteTask error:', err);
@@ -8926,8 +9203,8 @@ async function deleteSubtask(taskId, subId) {
   if (!task) return;
   const sub = task.subtasks?.find(s => s.id === subId);
   if (sub?.calEventId) {
-    const { doc, deleteDoc } = window.CDX_FB;
-    try { await deleteDoc(doc(window.CDX_DB, 'calEvents', sub.calEventId)); } catch (_) {}
+    const { deleteDoc } = window.CDX_FB;
+    try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
   }
   await updateTask(taskId, { subtasks: task.subtasks.filter(s => s.id !== subId) });
 }
@@ -8962,8 +9239,7 @@ function openScheduleModal(date, startTime, taskId, subId) {
 }
 
 async function confirmSchedule() {
-  const { collection, addDoc, doc, deleteDoc, serverTimestamp } = window.CDX_FB;
-  const db = window.CDX_DB;
+  const { addDoc, deleteDoc, serverTimestamp } = window.CDX_FB;
   const title     = document.getElementById('sched-title').value.trim();
   const date      = document.getElementById('sched-date').value;
   const startTime = document.getElementById('sched-time').value;
@@ -8980,9 +9256,9 @@ async function confirmSchedule() {
     const sub = task.subtasks?.find(s => s.id === subId);
     if (!sub) return;
     if (sub.calEventId) {
-      try { await deleteDoc(doc(db, 'calEvents', sub.calEventId)); } catch (_) {}
+      try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
     }
-    const ref = await addDoc(collection(db, 'calEvents'), {
+    const ref = await addDoc(_uc('calEvents'), {
       title, taskId, subId, date, startTime, endTime, duration, color,
       createdAt: serverTimestamp()
     });
@@ -8991,9 +9267,9 @@ async function confirmSchedule() {
     });
   } else {
     if (task.calEventId) {
-      try { await deleteDoc(doc(db, 'calEvents', task.calEventId)); } catch (_) {}
+      try { await deleteDoc(_ud('calEvents', task.calEventId)); } catch (_) {}
     }
-    const ref = await addDoc(collection(db, 'calEvents'), {
+    const ref = await addDoc(_uc('calEvents'), {
       title, taskId, date, startTime, endTime, duration, color,
       createdAt: serverTimestamp()
     });
@@ -9007,9 +9283,9 @@ async function confirmSchedule() {
       const sub = freshTask?.subtasks?.find(s => s.id === sid);
       if (!sub) continue;
       if (sub.calEventId) {
-        try { await deleteDoc(doc(db, 'calEvents', sub.calEventId)); } catch (_) {}
+        try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
       }
-      const sref = await addDoc(collection(db, 'calEvents'), {
+      const sref = await addDoc(_uc('calEvents'), {
         title: sub.title, taskId, subId: sid, date,
         startTime: st, endTime: addMinutes(st, 30), duration: 30, color,
         createdAt: serverTimestamp()
@@ -9074,7 +9350,22 @@ function renderDayView(date) {
   calPanel.style.display = '';
 
   const dateStr   = localDateStr(date);
-  const dayEvents = CAL_EVENTS.filter(ev => ev.date === dateStr);
+  const dayEvents = CAL_EVENTS.filter(ev => ev.date === dateStr && !ev.allDay);
+  const allDayEvs = CAL_EVENTS.filter(ev => ev.date === dateStr && ev.allDay);
+  const dow = date.getDay(); // 0=Sun, 6=Sat
+  const isWeekend = (dow === 0 || dow === 6);
+  calPanel.style.borderTop = isWeekend ? '2px solid var(--rust)' : '';
+
+  // Render all-day strip
+  let alldayRow = calPanel.querySelector('.cal-allday-row');
+  if (!alldayRow) {
+    alldayRow = document.createElement('div');
+    alldayRow.className = 'cal-allday-row';
+    calPanel.insertBefore(alldayRow, container);
+  }
+  alldayRow.innerHTML = allDayEvs.length
+    ? allDayEvs.map(ev => `<span class="cal-allday-chip" data-event-id="${escAttr(ev.id)}">${escHtml(ev.title)}</span>`).join('')
+    : `<span style="font-size:9px;color:var(--muted);font-family:var(--font-mono)">All-day</span>`;
 
   // Clear old event chips
   container.querySelectorAll('.cal-event').forEach(e => e.remove());
@@ -9155,10 +9446,21 @@ function renderWeekView(date) {
     const d  = new Date(ws); d.setDate(d.getDate() + i);
     const ds = localDateStr(d);
     const isToday = ds === today;
+    const isWeekend = (i === 5 || i === 6); // Sat=5, Sun=6
     const hol = HOLIDAYS[ds];
-    html += `<div class="week-day-header${isToday ? ' today' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:var(--gold)' : ''}">
-      ${DAYS[i]} ${d.getDate()}${hol ? `<br><span style="font-size:7px;color:var(--rust);display:block">${escHtml(hol.name)}</span>` : ''}
+    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:var(--gold)' : ''}">
+      ${DAYS[i]} ${d.getDate()}${hol ? `<br><span style="font-size:7px;color:#fff;background:var(--rust);border-radius:2px;padding:0 2px;display:block">${escHtml(hol.name)}</span>` : ''}
     </div>`;
+  }
+  html += `</div>`;
+  // All-day row
+  const weekCols = `grid-template-columns:48px repeat(7,1fr)`;
+  html += `<div class="week-allday-row" style="${weekCols}"><div class="week-time-label" style="font-size:8px;color:var(--muted)">all-day</div>`;
+  for (let i = 0; i < 7; i++) {
+    const d  = new Date(ws); d.setDate(d.getDate() + i);
+    const ds = localDateStr(d);
+    const adEvs = CAL_EVENTS.filter(ev => ev.date === ds && ev.allDay);
+    html += `<div class="week-allday-cell">${adEvs.map(ev => `<span class="week-allday-chip">${escHtml(ev.title)}</span>`).join('')}</div>`;
   }
   html += `</div><div class="week-body">`;
 
@@ -9168,6 +9470,7 @@ function renderWeekView(date) {
     for (let i = 0; i < 7; i++) {
       const d   = new Date(ws); d.setDate(d.getDate() + i);
       const ds  = localDateStr(d);
+      const isWeekend = (i === 5 || i === 6);
       const hh  = String(h).padStart(2,'0');
       const evs = CAL_EVENTS.filter(ev => ev.date === ds && ev.startTime?.startsWith(hh));
       const chips = evs.map(ev => {
@@ -9177,7 +9480,7 @@ function renderWeekView(date) {
           <span class="chip-time">${fmtTimeSched(ev.startTime)}</span>
         </div>`;
       }).join('');
-      html += `<div class="week-cell" data-date="${ds}" data-hour="${h}">${chips}</div>`;
+      html += `<div class="week-cell${isWeekend ? ' weekend' : ''}" data-date="${ds}" data-hour="${h}">${chips}</div>`;
     }
   }
   html += `</div>`;
@@ -9268,13 +9571,19 @@ function buildMonthCell(dateStr, isCurrentMonth) {
   const day    = parseInt(dateStr.split('-')[2]);
   const hol    = HOLIDAYS[dateStr];
   const evs    = CAL_EVENTS.filter(ev => ev.date === dateStr);
+  const cellDate = new Date(dateStr + 'T00:00:00');
+  const dow = cellDate.getDay(); // 0=Sun, 6=Sat
+  const isWeekend = (dow === 0 || dow === 6);
 
   const classes = ['month-day-cell',
     !isCurrentMonth ? 'other-month' : '',
     dateStr === today ? 'today' : '',
-    hol ? 'holiday' : ''
+    hol ? 'holiday' : '',
+    isWeekend ? 'weekend' : ''
   ].filter(Boolean).join(' ');
 
+  const timedEvs  = evs.filter(ev => !ev.allDay);
+  const allDayEvs = evs.filter(ev => ev.allDay);
   const doneTasks = TASKS.filter(t => t.done && t.dueDate === dateStr);
   const catCounts = {};
   doneTasks.forEach(t => { const c = t.category || 'personal'; catCounts[c] = (catCounts[c]||0) + 1; });
@@ -9286,15 +9595,18 @@ function buildMonthCell(dateStr, isCurrentMonth) {
   const spark = sparkBars ? `<div class="month-spark">${sparkBars}</div>` : '';
 
   const holBadge = hol ? `<span class="month-holiday-name">${escHtml(hol.name)}</span>` : '';
-  const pills = evs.slice(0,2).map(ev => {
+  const adBadges = allDayEvs.slice(0,1).map(ev =>
+    `<span style="font-family:var(--font-mono);font-size:7px;color:#fff;background:var(--sage);border-radius:2px;padding:0 3px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${escHtml(ev.title)}</span>`
+  ).join('');
+  const pills = timedEvs.slice(0,2).map(ev => {
     const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
     return `<span class="month-event-pill" style="background:${color}22;color:${color}">${escHtml(ev.title)}</span>`;
   }).join('');
-  const more = evs.length > 2 ? `<span style="font-size:8px;color:var(--muted);font-family:var(--font-mono)">+${evs.length-2} more</span>` : '';
+  const more = timedEvs.length > 2 ? `<span style="font-size:8px;color:var(--muted);font-family:var(--font-mono)">+${timedEvs.length-2} more</span>` : '';
 
   return `<div class="${classes}" data-date="${dateStr}">
     <span class="month-day-num">${day}</span>
-    ${holBadge}${spark}${pills}${more}
+    ${holBadge}${adBadges}${spark}${pills}${more}
   </div>`;
 }
 
@@ -9397,6 +9709,10 @@ function openQuickCalModal(date, startTime) {
   if (dateEl) dateEl.value = date;
   const timeEl = document.getElementById('qcal-time');
   if (timeEl) timeEl.value = startTime;
+  const allDayEl = document.getElementById('qcal-allday');
+  if (allDayEl) { allDayEl.checked = false; }
+  document.getElementById('qcal-time-wrap').style.display = '';
+  document.getElementById('qcal-dur-wrap').style.display  = '';
   const durEl = document.getElementById('qcal-duration');
   if (durEl) durEl.value = 60;
   const sel = document.getElementById('qcal-category');
@@ -9408,23 +9724,30 @@ function openQuickCalModal(date, startTime) {
 async function confirmQuickCalEvent() {
   const title    = document.getElementById('qcal-title')?.value.trim();
   const date     = document.getElementById('qcal-date')?.value;
-  const startTime= document.getElementById('qcal-time')?.value;
-  const duration = parseInt(document.getElementById('qcal-duration')?.value) || 60;
+  const isAllDay = document.getElementById('qcal-allday')?.checked;
+  const startTime= isAllDay ? null : document.getElementById('qcal-time')?.value;
+  const duration = isAllDay ? null : (parseInt(document.getElementById('qcal-duration')?.value) || 60);
   const category = document.getElementById('qcal-category')?.value || null;
-  if (!title || !date || !startTime) { showToast('Please fill in title, date and time', 'error'); return; }
-  const { collection, addDoc, serverTimestamp } = window.CDX_FB;
-  const db  = window.CDX_DB;
-  const uid = window.CDX_USER?.uid;
-  if (!uid) return;
+  if (!title || !date) { showToast('Please fill in title and date', 'error'); return; }
+  if (!isAllDay && !startTime) { showToast('Please fill in start time', 'error'); return; }
+  const { addDoc, serverTimestamp } = window.CDX_FB;
+  if (!window.CDX_USER?.uid) return;
   try {
-    const taskRef = await addDoc(collection(db, 'tasks'), {
-      uid, title, category, done: false, dueDate: date, createdAt: serverTimestamp()
+    const taskRef = await addDoc(_uc('tasks'), {
+      title, category, done: false, dueDate: date, createdAt: serverTimestamp()
     });
-    const endTime = addMinutes(startTime, duration);
-    await addDoc(collection(db, 'calEvents'), {
-      uid, title, date, startTime, endTime, duration, taskId: taskRef.id,
-      color: getCatColor(category), createdAt: serverTimestamp()
-    });
+    if (isAllDay) {
+      await addDoc(_uc('calEvents'), {
+        title, date, allDay: true, taskId: taskRef.id,
+        color: getCatColor(category), createdAt: serverTimestamp()
+      });
+    } else {
+      const endTime = addMinutes(startTime, duration);
+      await addDoc(_uc('calEvents'), {
+        title, date, startTime, endTime, duration, taskId: taskRef.id,
+        color: getCatColor(category), createdAt: serverTimestamp()
+      });
+    }
     document.getElementById('quick-cal-modal')?.classList.remove('open');
     showToast(`Created "${title}"`, 'success');
   } catch(e) { showToast('Error creating event', 'error'); console.error(e); }
@@ -9433,6 +9756,12 @@ async function confirmQuickCalEvent() {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('qcal-confirm-btn')?.addEventListener('click', confirmQuickCalEvent);
   document.getElementById('qcal-title')?.addEventListener('keydown', e => { if (e.key === 'Enter') confirmQuickCalEvent(); });
+  // Toggle time/duration fields visibility based on all-day checkbox
+  document.getElementById('qcal-allday')?.addEventListener('change', e => {
+    const hide = e.target.checked;
+    document.getElementById('qcal-time-wrap').style.display = hide ? 'none' : '';
+    document.getElementById('qcal-dur-wrap').style.display  = hide ? 'none' : '';
+  });
 });
 
 /* ── Add-task form ────────────────────────────────────── */
@@ -10104,8 +10433,9 @@ function rollDice() {
   const btn = document.getElementById('orb-dice-btn');
   if (!btn || btn.dataset.rolling === '1') return;
 
-  // Pick from non-done tasks
-  const pool = TASKS.filter(t => !t.done);
+  // Pick from shallow/admin energy tasks only (undone)
+  let pool = TASKS.filter(t => !t.done && (t.energyType === 'shallow' || t.energyType === 'admin'));
+  if (pool.length === 0) pool = TASKS.filter(t => !t.done); // fallback to all undone
   if (pool.length === 0) {
     btn.textContent = '⚀';
     btn.title = 'No tasks to roll!';
@@ -10186,19 +10516,7 @@ function drawWheel(canvas, angle) {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Label
-    const midA = a0 + slice / 2;
-    const lx = cx + (r * 0.62) * Math.cos(midA);
-    const ly = cy + (r * 0.62) * Math.sin(midA);
-    ctx.save();
-    ctx.translate(lx, ly);
-    ctx.rotate(midA + Math.PI / 2);
-    ctx.fillStyle = 'rgba(232,224,208,0.85)';
-    ctx.font = '9px "DM Mono", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(wheelTasks[i].title.slice(0, 14), 0, 0);
-    ctx.restore();
+    // No text labels inside slices — winner shown below wheel
   }
 
   // Pointer triangle on the right
@@ -10985,6 +11303,7 @@ window.addEventListener('cdx-auth-ready', () => {
     initCalDropZones();
     initAddTaskForm();
     initScheduleModal();
+    initTaskEditModal();
     initSettingsPanel();
     initCalNav();
     renderCalendar();
@@ -11004,9 +11323,11 @@ window.addEventListener('cdx-auth-ready', () => {
 /* ─────────────────────────────────────────────────────────────
    NOTES CANVAS
 ───────────────────────────────────────────────────────────── */
+// Shared across Notes and Pomo scribble canvases
+const SCRIB_COLORS = ['#f5f0e8','#c9a227','#6b9fd4','#6b8f5e','#c45c2a','#d4913a','#1a1510'];
+const SCRIB_SIZES  = [1, 2, 4, 8, 16];
 (function() {
-  const SCRIB_COLORS = ['#f5f0e8','#c9a227','#6b9fd4','#6b8f5e','#c45c2a','#d4913a','#1a1510'];
-  const SCRIB_SIZES  = [1, 2, 4, 8, 16];
+  // SCRIB_COLORS and SCRIB_SIZES are global (defined above)
   let _notesInited = false;
 
   window.initNotesCanvas = function() {
@@ -11305,8 +11626,8 @@ window.addEventListener('cdx-auth-ready', () => {
       delBtn.onclick = async () => {
         if (!_pomoEvent) return;
         if (!confirm(`Delete event "${_pomoEvent.title}"?`)) return;
-        const { doc, deleteDoc } = window.CDX_FB;
-        try { await deleteDoc(doc(window.CDX_DB, 'calEvents', _pomoEvent.id)); } catch(e) {}
+        const { deleteDoc } = window.CDX_FB;
+        try { await deleteDoc(_ud('calEvents', _pomoEvent.id)); } catch(e) {}
         _pomoEvent = null; delBtn.style.display = 'none';
         showToast('Event deleted', 'success');
       };
@@ -11350,9 +11671,9 @@ window.addEventListener('cdx-auth-ready', () => {
             promptEl.style.display = 'block';
             document.getElementById('pomo-done-yes').onclick = async () => {
               promptEl.style.display = 'none';
-              const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
+              const { updateDoc, serverTimestamp } = window.CDX_FB;
               try {
-                await updateDoc(doc(window.CDX_DB, 'tasks', _pomoEvent.taskId), {
+                await updateDoc(_ud('tasks', _pomoEvent.taskId), {
                   done: true, doneDate: localDateStr(new Date()),
                   sessionTimeSecs: (elapsedSecs || 0)
                 });
@@ -11512,17 +11833,21 @@ window.addEventListener('cdx-auth-ready', () => {
         <label class="sched-label">Title</label>
         <input id="qcal-title" type="text" class="sched-input" placeholder="Event / task title" autocomplete="off" />
       </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+        <input type="checkbox" id="qcal-allday" style="accent-color:var(--gold);width:14px;height:14px" />
+        <label for="qcal-allday" class="sched-label" style="margin:0;cursor:pointer">All-day event</label>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
           <label class="sched-label">Date</label>
           <input id="qcal-date" type="date" class="sched-input" />
         </div>
-        <div>
+        <div id="qcal-time-wrap">
           <label class="sched-label">Time</label>
           <input id="qcal-time" type="time" class="sched-input" />
         </div>
       </div>
-      <div>
+      <div id="qcal-dur-wrap">
         <label class="sched-label">Duration (min)</label>
         <input id="qcal-duration" type="number" class="sched-input" value="60" min="15" step="15" />
       </div>
