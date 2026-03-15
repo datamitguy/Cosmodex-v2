@@ -873,6 +873,7 @@ body::after {
   flex-shrink: 0;
   align-self: flex-start;
   margin-top: 4px;
+  margin-left: 10px;
   line-height: 1;
   display: flex; align-items: center; justify-content: center;
 }
@@ -4394,6 +4395,11 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         </div>
       </div>
 
+      <!-- All-day event strip (fixed above scroll area) -->
+      <div class="cal-allday-row" id="cal-allday-row">
+        <span style="font-size:9px;color:var(--muted);font-family:var(--font-mono)">All-day</span>
+      </div>
+
       <!-- Day view (placeholder with hours) -->
       <div class="cal-day-view" id="cal-day-view">
         <!-- Current time indicator -->
@@ -5853,14 +5859,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* ══════════════════════════════════════════════════════════
    CONSTANTS
    ══════════════════════════════════════════════════════════ */
-let CATEGORIES = {
-  work:     { label:'Work',     color:'#6b9fd4' },
-  personal: { label:'Personal', color:'#c9a227' },
-  health:   { label:'Health',   color:'#4a7c5e' },
-  learning: { label:'Learning', color:'#9b7fd4' },
-  creative: { label:'Creative', color:'#c49a6c' },
-  admin:    { label:'Admin',    color:'#8a8070' },
-};
+let CATEGORIES = {};
 
 // Load saved categories from localStorage
 (function loadSavedCategories() {
@@ -5880,8 +5879,7 @@ const ENERGY_TYPES = {
   admin:   { label: 'Admin',   icon: '📋', cssClass: 'energy-admin' },
 };
 
-const DEFAULT_CATS = ['work','personal','health','learning','creative','admin'];
-const CAT_COLOR_PALETTE = ['#6b9fd4','#c9a227','#4a7c5e','#9b7fd4','#c49a6c','#8a8070','#d46b6b','#6bd4c4','#d4a96b','#a06bd4'];
+const CAT_COLOR_PALETTE = ['#00cfff','#ff6fff','#00ff9f','#bf80ff','#ff9f00','#ff4f7b','#ffff00','#00ffcc','#ff3f3f','#80ff00'];
 let _newCatColor = CAT_COLOR_PALETTE[0];
 
 const LIST_COLORS = [
@@ -8718,7 +8716,7 @@ function renderTasks() {
     { label: 'Today',    tasks: active.filter(t => !t.done && t.dueDate === today) },
     { label: 'Upcoming', tasks: active.filter(t => !t.done && t.dueDate && t.dueDate > today) },
     { label: 'No date',  tasks: active.filter(t => !t.done && !t.dueDate) },
-    { label: 'Done',     tasks: active.filter(t =>  t.done) },
+    { label: 'Done',     tasks: active.filter(t =>  t.done && t.doneDate === today) },
   ];
 
   let rowIdx = 0;
@@ -9357,13 +9355,9 @@ function renderDayView(date) {
   calPanel.style.borderTop = isWeekend ? '2px solid var(--rust)' : '';
 
   // Render all-day strip
-  let alldayRow = calPanel.querySelector('.cal-allday-row');
-  if (!alldayRow) {
-    alldayRow = document.createElement('div');
-    alldayRow.className = 'cal-allday-row';
-    calPanel.insertBefore(alldayRow, container);
-  }
-  alldayRow.innerHTML = allDayEvs.length
+  const alldayRow = document.getElementById('cal-allday-row');
+  if (alldayRow) alldayRow.style.display = '';
+  if (alldayRow) alldayRow.innerHTML = allDayEvs.length
     ? allDayEvs.map(ev => `<span class="cal-allday-chip" data-event-id="${escAttr(ev.id)}">${escHtml(ev.title)}</span>`).join('')
     : `<span style="font-size:9px;color:var(--muted);font-family:var(--font-mono)">All-day</span>`;
 
@@ -9427,6 +9421,7 @@ function renderDayView(date) {
 function renderWeekView(date) {
   const calPanel = document.getElementById('cal-day-view');
   calPanel.style.display = 'none';
+  document.getElementById('cal-allday-row').style.display = 'none';
   document.getElementById('cal-month-view')?.remove();
 
   let weekView = document.getElementById('cal-week-view');
@@ -9517,6 +9512,7 @@ function renderWeekView(date) {
 function renderMonthView(date) {
   const calPanel = document.getElementById('cal-day-view');
   calPanel.style.display = 'none';
+  document.getElementById('cal-allday-row').style.display = 'none';
   document.getElementById('cal-week-view')?.remove();
 
   let monthView = document.getElementById('cal-month-view');
