@@ -14,7 +14,7 @@
   import { initializeApp }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
-    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
+    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';+
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
@@ -1209,15 +1209,15 @@ body::after {
    COSMODEX ORB (floating, bottom-right)
    ═══════════════════════════════════════════════════════════ */
 #cosmodex-orb {
-  position: relative;
+  position: fixed;
+  bottom: 24px; right: 24px;
   width: 88px; height: 88px;
   border-radius: 50%;
   background: #0a0908;
   border: 1px solid rgba(201,162,39,0.3);
   cursor: pointer;
-  z-index: 50;
+  z-index: 498;
   overflow: hidden;
-  margin: 10px auto 6px;
   display: block;
   transition: width 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
               height 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
@@ -2863,6 +2863,44 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   transition: border-color 150ms, color 150ms;
 }
 #plan-add-month-ms:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── Due section (tasks + milestones due this week/month) ── */
+.plan-due-section { margin-top: 16px; }
+.plan-due-section-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.plan-due-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(42,37,32,0.6);
+  font-size: 12px;
+}
+.plan-due-row:last-child { border-bottom: none; }
+.plan-due-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.plan-due-badge.task { background: rgba(107,159,212,0.15); color: var(--cosmo-sky, #6b9fd4); }
+.plan-due-badge.milestone { background: rgba(201,162,39,0.15); color: var(--gold); }
+.plan-due-badge.done { background: rgba(74,124,94,0.15); color: var(--cosmo-sage, #4a7c5e); text-decoration: line-through; }
+.plan-due-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--cream); }
+.plan-due-title.done { color: var(--muted); text-decoration: line-through; }
+.plan-due-date { font-family: var(--font-mono); font-size: 10px; color: var(--muted); flex-shrink: 0; }
+.plan-due-empty { color: var(--muted); font-size: 11px; font-style: italic; padding: 8px 0; }
+
 /* Keep project dot + name classes for banner use */
 .ms-project-dot {
   width: 10px; height: 10px;
@@ -4233,35 +4271,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         Insights
       </div>
       <div class="nav-item" data-panel="planning" id="nav-planning">
-        <span class="nav-item-icon">◳</span>
-        Planning
-      </div>
-      <div class="nav-item" data-panel="lifeos" id="nav-lifeos">
         <span class="nav-item-icon">◉</span>
         Life OS
       </div>
-    </div>
-  </div>
-
-  <!-- Cosmodex Dial -->
-  <div style="padding:4px 16px 4px;text-align:center">
-    <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Cosmodex</div>
-    <div id="cosmodex-orb" title="Open Cosmodex dial">
-      <canvas id="cosmodex-canvas"></canvas>
-      <div id="orb-header">
-        <span class="orb-time-clock" id="orb-clock">--:--:--</span>
-        <span class="orb-date-line" id="orb-date-line">—</span>
-      </div>
-      <div id="orb-time-display">
-        <span class="orb-cosmodex-label">Cosmodex</span>
-        <span class="orb-next-label">Next</span>
-        <span class="orb-next-event" id="orb-next-event">—</span>
-        <div class="orb-gadgets">
-          <button class="orb-gadget-btn" id="orb-dice-btn" title="Roll the dice">⚄</button>
-          <button class="orb-gadget-btn" id="orb-wheel-btn" title="Spin the wheel">◎</button>
-        </div>
-      </div>
-      <button id="orb-close">✕</button>
     </div>
   </div>
 
@@ -4430,6 +4442,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
               <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">
                 <div id="pw-task-grid"></div>
                 <div id="pw-stats"></div>
+                <div id="pw-due-section"></div>
               </div>
             </div>
           </div>
@@ -4461,6 +4474,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
                 <div id="pm-milestones"></div>
                 <button id="plan-add-month-ms">+ Add Milestone</button>
                 <div id="pm-stats"></div>
+                <div id="pm-due-section"></div>
               </div>
             </div>
           </div>
@@ -5071,6 +5085,23 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 <!-- ═══════════════════════════════════════════════════════
      COSMODEX ORB
      ═══════════════════════════════════════════════════════ -->
+<div id="cosmodex-orb" title="Open Cosmodex dial">
+  <canvas id="cosmodex-canvas"></canvas>
+  <div id="orb-header">
+    <span class="orb-time-clock" id="orb-clock">--:--:--</span>
+    <span class="orb-date-line" id="orb-date-line">—</span>
+  </div>
+  <div id="orb-time-display">
+    <span class="orb-cosmodex-label">Cosmodex</span>
+    <span class="orb-next-label">Next</span>
+    <span class="orb-next-event" id="orb-next-event">—</span>
+    <div class="orb-gadgets">
+      <button class="orb-gadget-btn" id="orb-dice-btn" title="Roll the dice">⚄</button>
+      <button class="orb-gadget-btn" id="orb-wheel-btn" title="Spin the wheel">◎</button>
+    </div>
+  </div>
+  <button id="orb-close">✕</button>
+</div>
 <div id="orb-backdrop"></div>
 <!-- Spinning wheel overlay -->
 <div id="orb-wheel-overlay">
@@ -5228,11 +5259,11 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 <!-- Insights full-page panel (inserted into main content area via showMainPanel) -->
 <template id="insights-panel-tpl"><!-- placeholder; actual panel is in #panel-insights --></template>
 
-<!-- Planning overlay -->
+<!-- Life OS overlay -->
 <div class="overlay" id="plan-overlay">
   <div class="overlay-panel" style="width:min(820px,92vw)">
     <div class="overlay-header">
-      <span class="overlay-title">Planning</span>
+      <span class="overlay-title">Life OS</span>
       <div class="view-tabs" style="margin-left:auto">
         <button class="view-tab active" data-plan-tab="week">Week</button>
         <button class="view-tab" data-plan-tab="month">Month</button>
@@ -5243,22 +5274,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <div class="overlay-placeholder">
         <div class="overlay-placeholder-icon">◳</div>
         <div class="overlay-placeholder-text">Weekly intention · Top 3 priorities · Task grid · Monthly milestones</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Life OS overlay -->
-<div class="overlay" id="lifeos-overlay" style="z-index:830">
-  <div class="overlay-panel" style="width:min(820px,92vw)">
-    <div class="overlay-header">
-      <span class="overlay-title">Life OS</span>
-      <button class="overlay-close" data-close="lifeos-overlay">✕</button>
-    </div>
-    <div class="overlay-body">
-      <div class="overlay-placeholder">
-        <div class="overlay-placeholder-icon">◉</div>
-        <div class="overlay-placeholder-text">Project manager — PIN protected</div>
       </div>
     </div>
   </div>
@@ -5669,10 +5684,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       Insights
     </div>
     <div class="drawer-item" data-open="plan-overlay">
-      <span class="drawer-item-icon">◳</span>
-      Planning
-    </div>
-    <div class="drawer-item" data-open="lifeos-overlay">
       <span class="drawer-item-icon">◉</span>
       Life OS
     </div>
@@ -5870,9 +5881,7 @@ document.getElementById('hamburger')?.addEventListener('click', () => {
 });
 
 /* ── Nav items ─────────────────────────────────────────── */
-const NAV_OVERLAY_MAP = {
-  lifeos:    'lifeos-overlay',
-};
+const NAV_OVERLAY_MAP = {};
 
 document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
   item.addEventListener('click', () => {
@@ -5930,7 +5939,7 @@ function showMainPanel(name) {
   document.getElementById('panel-habits').style.display      = name === 'habits' ? 'flex' : 'none';
   document.getElementById('panel-insights').style.display    = name === 'insights' ? 'flex' : 'none';
   _mainPanel = name;
-  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights' };
+  const titles = { default:'Today', milestones:'Life OS', lists:'Lists', habits:'Habits & Routines', insights:'Insights' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
@@ -8049,6 +8058,7 @@ function initMilestonesPanel() {
       <div class="plan-stat-bar-label"><span>Tasks Done</span><span>${done}/${total}</span></div>
       <div class="plan-stat-bar-track"><div class="plan-stat-bar-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div>
     </div>`;
+    renderWeekDueSection(days);
   }
 
   async function buildMonthPlan() {
@@ -8099,6 +8109,82 @@ function initMilestonesPanel() {
     if (stats) stats.innerHTML = `<div class="plan-stat-bar" style="margin-top:12px">
       <div class="plan-stat-bar-label"><span>Tasks Done</span><span>${done}/${total}</span></div>
       <div class="plan-stat-bar-track"><div class="plan-stat-bar-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div>
+    </div>`;
+    renderMonthDueSection(key);
+  }
+
+  function renderWeekDueSection(days) {
+    const el = document.getElementById('pw-due-section');
+    if (!el) return;
+    // Tasks due this week (not sub-tasks)
+    const tasks = TASKS.filter(t => !t._parent && days.includes(t.dueDate||t.due))
+      .sort((a,b) => (a.dueDate||a.due||'').localeCompare(b.dueDate||b.due||''));
+    // Milestone events due this week
+    const msEvents = (typeof MILESTONE_EVENTS !== 'undefined' ? MILESTONE_EVENTS : [])
+      .filter(e => days.includes(e.date));
+
+    if (!tasks.length && !msEvents.length) {
+      el.innerHTML = '';
+      return;
+    }
+    const fmtDate = ds => new Date(ds+'T00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'});
+    let rows = '';
+    msEvents.forEach(e => {
+      rows += `<div class="plan-due-row">
+        <span class="plan-due-badge milestone">Milestone</span>
+        <span class="plan-due-title" title="${escAttr(e.title||'')}">${escHtml(e.title||'Untitled')}</span>
+        <span class="plan-due-date">${e.date ? fmtDate(e.date) : ''}</span>
+      </div>`;
+    });
+    tasks.forEach(t => {
+      const d = t.dueDate||t.due||'';
+      rows += `<div class="plan-due-row">
+        <span class="plan-due-badge task${t.done?' done':''}">Task</span>
+        <span class="plan-due-title${t.done?' done':''}" title="${escAttr(t.title||'')}">${escHtml(t.title||'Untitled')}</span>
+        <span class="plan-due-date">${d ? fmtDate(d) : ''}</span>
+      </div>`;
+    });
+    el.innerHTML = `<div class="plan-due-section">
+      <div class="plan-due-section-title">Due this week</div>
+      ${rows}
+    </div>`;
+  }
+
+  function renderMonthDueSection(key) {
+    const el = document.getElementById('pm-due-section');
+    if (!el) return;
+    // Tasks due this month (not sub-tasks)
+    const tasks = TASKS.filter(t => !t._parent && (t.dueDate||t.due||'').startsWith(key))
+      .sort((a,b) => (a.dueDate||a.due||'').localeCompare(b.dueDate||b.due||''));
+    // Milestone events due this month
+    const msEvents = (typeof MILESTONE_EVENTS !== 'undefined' ? MILESTONE_EVENTS : [])
+      .filter(e => e.date && e.date.startsWith(key))
+      .sort((a,b) => (a.date||'').localeCompare(b.date||''));
+
+    if (!tasks.length && !msEvents.length) {
+      el.innerHTML = '';
+      return;
+    }
+    const fmtDate = ds => new Date(ds+'T00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    let rows = '';
+    msEvents.forEach(e => {
+      rows += `<div class="plan-due-row">
+        <span class="plan-due-badge milestone">Milestone</span>
+        <span class="plan-due-title" title="${escAttr(e.title||'')}">${escHtml(e.title||'Untitled')}</span>
+        <span class="plan-due-date">${e.date ? fmtDate(e.date) : ''}</span>
+      </div>`;
+    });
+    tasks.forEach(t => {
+      const d = t.dueDate||t.due||'';
+      rows += `<div class="plan-due-row">
+        <span class="plan-due-badge task${t.done?' done':''}">Task</span>
+        <span class="plan-due-title${t.done?' done':''}" title="${escAttr(t.title||'')}">${escHtml(t.title||'Untitled')}</span>
+        <span class="plan-due-date">${d ? fmtDate(d) : ''}</span>
+      </div>`;
+    });
+    el.innerHTML = `<div class="plan-due-section">
+      <div class="plan-due-section-title">Due this month</div>
+      ${rows}
     </div>`;
   }
 
@@ -10236,8 +10322,7 @@ const CMD_COMMANDS = [
   { label: 'Insights',         icon: '◈', action: () => showMainPanel('insights'), keys: '' },
   { label: 'Habits',           icon: '◎', action: () => showMainPanel('habits'), keys: '' },
   { label: 'Lists',            icon: '▤', action: () => showMainPanel('lists'), keys: '' },
-  { label: 'Planning',         icon: '◳', action: () => showMainPanel('milestones'), keys: '' },
-  { label: 'Life OS',          icon: '◉', action: () => openOverlay('lifeos-overlay'), keys: '' },
+  { label: 'Life OS',          icon: '◉', action: () => showMainPanel('milestones'), keys: '' },
   { label: 'Toggle Theme',     icon: '◑', action: toggleTheme, keys: '' },
 ];
 
