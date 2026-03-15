@@ -1167,17 +1167,21 @@ body::after {
   font-size: 14px; padding: 3px 9px; min-height: 26px; transition: background .15s;
 }
 .pomo-check-add-btn:hover { background: rgba(201,162,39,.2); }
-.pomo-scribble-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-.pomo-scribble-header {
-  padding: 8px 12px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 7px; flex-shrink: 0; flex-wrap: wrap;
+.pomo-cosmo-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; border-left: 1px solid var(--border); }
+.pomo-cosmo-header {
+  padding: 9px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
 }
-.pomo-scribble-title {
-  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--muted);
+.pomo-cosmo-clock { font-family: var(--font-mono); font-size: 13px; color: var(--gold); letter-spacing: 0.08em; }
+.pomo-cosmo-date  { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 0.05em; }
+#pomo-cosmo-canvas { flex: 1; display: block; }
+.pomo-cosmo-footer {
+  padding: 10px 16px; border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 3px; flex-shrink: 0;
 }
-#scribble-canvas, #notes-canvas { display: block; touch-action: none; cursor: crosshair; }
-#scribble-canvas { flex: 1; }
+.pomo-cosmo-next-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.pomo-cosmo-next-event { font-family: var(--font-body); font-size: 12px; color: var(--cream); }
+#notes-canvas { display: block; touch-action: none; cursor: crosshair; }
 #pomo-lock-msg {
   position: absolute; inset: 0; display: none; flex-direction: column;
   align-items: center; justify-content: center; gap: 14px; z-index: 10;
@@ -4284,6 +4288,55 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 .someday-restore-btn:hover { border-color: var(--gold); color: var(--gold); }
 
+/* ── Event Action Modal ───────────────────────────────── */
+#event-action-modal {
+  position: fixed; z-index: 1200;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; min-width: 248px; max-width: 300px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6); display: none; flex-direction: column; gap: 11px;
+}
+#event-action-modal.open { display: flex; }
+.eam-title {
+  font-family: var(--font-display); font-size: 14px; font-weight: 300;
+  color: var(--gold); padding-right: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.eam-close {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 2px;
+}
+.eam-close:hover { color: var(--cream); }
+.eam-section-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 5px;
+}
+.eam-time-row { display: flex; gap: 6px; align-items: center; }
+.eam-time-input, .eam-dur-input {
+  background: var(--elevated); border: 1px solid var(--border); color: var(--cream);
+  border-radius: 6px; padding: 5px 8px; font-family: var(--font-mono); font-size: 12px; outline: none;
+}
+.eam-time-input:focus, .eam-dur-input:focus { border-color: var(--gold); }
+.eam-time-input { width: 78px; } .eam-dur-input { width: 52px; }
+.eam-dur-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.eam-save-btn {
+  background: rgba(201,162,39,.1); border: 1px solid var(--gold); color: var(--gold);
+  border-radius: 6px; padding: 5px 12px; font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.08em; cursor: pointer; text-transform: uppercase; transition: background .15s;
+}
+.eam-save-btn:hover { background: rgba(201,162,39,.2); }
+.eam-actions { display: flex; gap: 7px; }
+.eam-delete-btn {
+  flex: 1; background: none; border: 1px solid var(--rust); color: var(--rust);
+  border-radius: 6px; padding: 8px 0; font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.08em; cursor: pointer; text-transform: uppercase; transition: background .15s;
+}
+.eam-delete-btn:hover { background: rgba(196,92,42,.1); }
+.eam-play-btn {
+  flex: 2; background: rgba(201,162,39,.1); border: 1px solid var(--gold); color: var(--gold);
+  border-radius: 6px; padding: 8px 0; font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.08em; cursor: pointer; text-transform: uppercase; transition: background .15s;
+}
+.eam-play-btn:hover { background: rgba(201,162,39,.2); }
+
 </style>
 </head>
 <body>
@@ -5310,17 +5363,17 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           </div>
         </div>
       </div>
-      <!-- Right: Scribble canvas -->
-      <div class="pomo-scribble-col">
-        <div class="pomo-scribble-header">
-          <span class="pomo-scribble-title">✎ Notes</span>
-          <div id="pomo-pen-bar" style="display:flex;gap:3px;align-items:center"></div>
-          <div id="pomo-color-bar" style="display:flex;gap:5px;align-items:center"></div>
-          <button class="scribble-btn" id="pomo-eraser-btn">Erase</button>
-          <button class="scribble-btn" id="pomo-clear-btn">Clear</button>
-          <button class="scribble-btn" id="pomo-save-btn">↓ Save</button>
+      <!-- Right: Cosmodex orb column -->
+      <div class="pomo-cosmo-col">
+        <div class="pomo-cosmo-header">
+          <span class="pomo-cosmo-clock" id="pomo-cosmo-clock">--:--:--</span>
+          <span class="pomo-cosmo-date" id="pomo-cosmo-date">—</span>
         </div>
-        <canvas id="scribble-canvas"></canvas>
+        <canvas id="pomo-cosmo-canvas"></canvas>
+        <div class="pomo-cosmo-footer">
+          <span class="pomo-cosmo-next-label" id="pomo-cosmo-next-label">Next</span>
+          <span class="pomo-cosmo-next-event" id="pomo-cosmo-next">—</span>
+        </div>
       </div>
     </div>
     <div id="pomo-lock-msg">
@@ -9400,11 +9453,7 @@ function renderDayView(date) {
       <span class="cal-event-title">${escHtml(ev.title)} <span class="cal-event-time" style="display:inline;margin-top:0">${startTimeStr}–${fmtTimeSched(endTimeStr)}</span></span>`;
     chip.addEventListener('click', e => {
       e.stopPropagation();
-      openOverlay('pomo-overlay');
-      const titleEl = document.getElementById('pomo-ev-title');
-      if (titleEl) titleEl.textContent = ev.title;
-      window.setPomoEvent?.(ev);
-      initPomoOverlay();
+      showEventModal(ev, e.clientX, e.clientY);
     });
     slot.appendChild(chip);
   });
@@ -9481,18 +9530,14 @@ function renderWeekView(date) {
   html += `</div>`;
   weekView.innerHTML = html;
 
-  // Click week-event-chip → open Pomodoro with event pre-loaded
+  // Click week-event-chip → show event action modal
   weekView.querySelectorAll('.week-event-chip[data-event-id]').forEach(chip => {
     chip.style.cursor = 'pointer';
     chip.addEventListener('click', e => {
       e.stopPropagation();
       const ev = CAL_EVENTS.find(ev => ev.id === chip.dataset.eventId);
       if (!ev) return;
-      openOverlay('pomo-overlay');
-      const titleEl = document.getElementById('pomo-ev-title');
-      if (titleEl) titleEl.textContent = ev.title;
-      window.setPomoEvent?.(ev);
-      initPomoOverlay();
+      showEventModal(ev, e.clientX, e.clientY);
     });
   });
 
@@ -9551,6 +9596,15 @@ function renderMonthView(date) {
   html += `</div>`;
   monthView.innerHTML = html;
 
+  monthView.querySelectorAll('.month-event-pill[data-event-id]').forEach(pill => {
+    pill.addEventListener('click', e => {
+      e.stopPropagation();
+      const ev = CAL_EVENTS.find(ev => ev.id === pill.dataset.eventId);
+      if (!ev) return;
+      showEventModal(ev, e.clientX, e.clientY);
+    });
+  });
+
   monthView.querySelectorAll('.month-day-cell[data-date]').forEach(cell => {
     cell.addEventListener('click', () => {
       _calDate = new Date(cell.dataset.date + 'T00:00:00');
@@ -9596,7 +9650,7 @@ function buildMonthCell(dateStr, isCurrentMonth) {
   ).join('');
   const pills = timedEvs.slice(0,2).map(ev => {
     const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
-    return `<span class="month-event-pill" style="background:${color}22;color:${color}">${escHtml(ev.title)}</span>`;
+    return `<span class="month-event-pill" data-event-id="${escAttr(ev.id)}" style="background:${color}22;color:${color};cursor:pointer">${escHtml(ev.title)}</span>`;
   }).join('');
   const more = timedEvs.length > 2 ? `<span style="font-size:8px;color:var(--muted);font-family:var(--font-mono)">+${timedEvs.length-2} more</span>` : '';
 
@@ -9604,6 +9658,82 @@ function buildMonthCell(dateStr, isCurrentMonth) {
     <span class="month-day-num">${day}</span>
     ${holBadge}${adBadges}${spark}${pills}${more}
   </div>`;
+}
+
+/* ── Event Action Modal ───────────────────────────────── */
+let _eamEvent = null;
+
+function showEventModal(ev, clientX, clientY) {
+  _eamEvent = ev;
+  const modal = document.getElementById('event-action-modal');
+  if (!modal) return;
+  document.getElementById('eam-title').textContent = ev.title;
+  document.getElementById('eam-start').value = ev.startTime || '';
+  document.getElementById('eam-dur').value   = ev.duration  || 60;
+  modal.classList.add('open');
+  // Position near click, keep within viewport
+  const mW = 268, mH = 170;
+  const vW = window.innerWidth, vH = window.innerHeight;
+  let x = clientX + 14, y = clientY - 14;
+  if (x + mW > vW - 8) x = clientX - mW - 14;
+  if (y + mH > vH - 8) y = vH - mH - 8;
+  if (y < 8) y = 8;
+  modal.style.left = x + 'px';
+  modal.style.top  = y + 'px';
+}
+
+function hideEventModal() {
+  document.getElementById('event-action-modal')?.classList.remove('open');
+  _eamEvent = null;
+}
+
+function initEventModal() {
+  const { updateDoc, deleteDoc } = window.CDX_FB || {};
+
+  document.getElementById('eam-close')?.addEventListener('click', hideEventModal);
+
+  document.getElementById('eam-save')?.addEventListener('click', async () => {
+    if (!_eamEvent || !updateDoc) return;
+    const startTime = document.getElementById('eam-start').value;
+    const duration  = parseInt(document.getElementById('eam-dur').value) || 60;
+    if (!startTime) return;
+    const [h, m] = startTime.split(':').map(Number);
+    const endMins = h * 60 + m + duration;
+    const endTime = `${String(Math.floor(endMins/60) % 24).padStart(2,'0')}:${String(endMins%60).padStart(2,'0')}`;
+    try {
+      await updateDoc(_ud('calEvents', _eamEvent.id), { startTime, endTime, duration });
+      hideEventModal();
+      showToast('Event updated', 'success');
+    } catch(e) { showToast('Could not update event', 'error'); }
+  });
+
+  document.getElementById('eam-delete')?.addEventListener('click', async () => {
+    if (!_eamEvent || !deleteDoc) return;
+    if (!confirm(`Delete "${_eamEvent.title}"?`)) return;
+    try {
+      await deleteDoc(_ud('calEvents', _eamEvent.id));
+      hideEventModal();
+      showToast('Event deleted', 'success');
+    } catch(e) { showToast('Could not delete event', 'error'); }
+  });
+
+  document.getElementById('eam-play')?.addEventListener('click', () => {
+    if (!_eamEvent) return;
+    const ev = _eamEvent;
+    hideEventModal();
+    openOverlay('pomo-overlay');
+    const titleEl = document.getElementById('pomo-ev-title');
+    if (titleEl) titleEl.textContent = ev.title;
+    window.setPomoEvent?.(ev);
+    initPomoOverlay();
+  });
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    const modal = document.getElementById('event-action-modal');
+    if (!modal || !modal.classList.contains('open')) return;
+    if (!modal.contains(e.target)) hideEventModal();
+  }, true);
 }
 
 /* ── Calendar nav ─────────────────────────────────────── */
@@ -9665,11 +9795,7 @@ function initCalDropZones() {
         return h >= Math.floor(startFrac) && h < Math.ceil(endFrac);
       });
       if (coveringEvent) {
-        openOverlay('pomo-overlay');
-        const titleEl = document.getElementById('pomo-ev-title');
-        if (titleEl) titleEl.textContent = coveringEvent.title;
-        window.setPomoEvent?.(coveringEvent);
-        initPomoOverlay();
+        showEventModal(coveringEvent, e.clientX, e.clientY);
       } else {
         openQuickCalModal(dateStr, `${String(h).padStart(2,'0')}:00`);
       }
@@ -10149,29 +10275,14 @@ orbClose.addEventListener('click', e => { e.stopPropagation(); closeOrb(); });
 orbBackdrop.addEventListener('click', closeOrb);
 
 /* ── Radial chronodex canvas draw ─────────────────────── */
-function drawCosmodex() {
-  const canvas = document.getElementById('cosmodex-canvas');
-  if (!canvas) return;
 
-  const expanded = orb.classList.contains('expanded');
-  const dpr = window.devicePixelRatio || 1;
-  const W   = orb.offsetWidth;
-  const H   = orb.offsetHeight;
-  if (W < 4) return;
-
-  canvas.width  = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
-
-  const ctx = canvas.getContext('2d');
+// Core drawing — pure canvas ops, no DOM side effects. Returns { cx, cy, maxR }.
+function _cosmodexDrawCore(ctx, W, H, expanded, dpr) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
 
   const cx = W / 2;
-  // When expanded: shift centre up slightly to leave room for header (≈90px) and footer (≈120px)
   const cy = expanded ? H / 2 - 10 : H / 2;
-  // When expanded: constrain radius so chart stays between header and footer
   const maxR = expanded
     ? Math.min(W * 0.46, (H - 230) / 2)
     : Math.min(W, H) / 2 * 0.93;
@@ -10181,23 +10292,6 @@ function drawCosmodex() {
 
   const today  = localDateStr(new Date());
   const now    = new Date();
-
-  // Store geometry for petal click detection
-  if (expanded) {
-    _orbGeometry = { cx, cy, innerR: maxR * 0.14, eventR: maxR * 0.70 };
-  } else {
-    _orbGeometry = null;
-  }
-
-  // Update date line in orb header
-  if (expanded) {
-    const dateLine = document.getElementById('orb-date-line');
-    if (dateLine) {
-      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      dateLine.textContent = `${days[now.getDay()]} · ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
-    }
-  }
   const curH   = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
   const TWO_PI = Math.PI * 2;
   const GAP    = (TWO_PI / 24) * 0.06;
@@ -10213,34 +10307,27 @@ function drawCosmodex() {
     const a0 = (h / 24)       * TWO_PI - Math.PI / 2 + GAP;
     const a1 = ((h + 1) / 24) * TWO_PI - Math.PI / 2 - GAP;
 
-    const hStr = String(h).padStart(2, '0');
-    // Match events that overlap this hour
     const evs  = CAL_EVENTS.filter(ev => {
       if (ev.date !== today || !ev.startTime) return false;
       const [eh, em] = ev.startTime.split(':').map(Number);
       const startFrac = eh + em / 60;
-      const dur = ev.duration || 60;
-      const endFrac = startFrac + dur / 60;
+      const endFrac = startFrac + (ev.duration || 60) / 60;
       return h >= Math.floor(startFrac) && h < Math.ceil(endFrac);
     });
     const hasEv  = evs.length > 0;
     const isCur  = Math.floor(curH) === h;
     const isPast = h < Math.floor(curH);
 
-    // Rest/context tints
-    const isNight = h < 5 || h >= 23;   // deep night (dim)
-    const isRest  = h >= 5 && h < 7;    // early morning (warm)
-    const isEve   = h >= 20 && h < 23;  // evening wind-down
+    const isNight = h < 5 || h >= 23;
+    const isRest  = h >= 5 && h < 7;
+    const isEve   = h >= 20 && h < 23;
 
-    // Petal outer radius
     const segR = hasEv ? eventR : baseR;
 
-    // Fill colour
     let fill;
     if (hasEv) {
       const t = TASKS.find(t => t.id === evs[0].taskId);
-      const c = getCatColor(t?.category);
-      fill = c + (expanded ? 'cc' : 'bb');
+      fill = getCatColor(t?.category) + (expanded ? 'cc' : 'bb');
     } else if (isCur) {
       fill = 'rgba(201,162,39,0.28)';
     } else if (isPast) {
@@ -10252,7 +10339,6 @@ function drawCosmodex() {
       else              fill = 'rgba(232,224,208,0.04)';
     }
 
-    // Draw petal segment
     ctx.beginPath();
     ctx.arc(cx, cy, innerR, a0, a1);
     ctx.arc(cx, cy, segR,   a1, a0, true);
@@ -10260,7 +10346,6 @@ function drawCosmodex() {
     ctx.fillStyle = fill;
     ctx.fill();
 
-    // Stroke for event segments
     if (hasEv) {
       const t = TASKS.find(t => t.id === evs[0].taskId);
       ctx.strokeStyle = getCatColor(t?.category) + '55';
@@ -10268,7 +10353,6 @@ function drawCosmodex() {
       ctx.stroke();
     }
 
-    // Elapsed sub-fill for current hour
     if (isCur && !hasEv) {
       const frac = curH - Math.floor(curH);
       const aElapsed = a0 + (a1 - a0) * frac;
@@ -10280,7 +10364,6 @@ function drawCosmodex() {
       ctx.fill();
     }
 
-    // Boundary dots (expanded only)
     if (expanded) {
       const boundA = (h / 24) * TWO_PI - Math.PI / 2;
       const isQuarter = h % 6 === 0;
@@ -10292,34 +10375,28 @@ function drawCosmodex() {
       ctx.fill();
     }
 
-    // Hour labels at exact boundary (expanded, every 3h)
     if (expanded && h % 3 === 0) {
-      const boundA = (h / 24) * TWO_PI - Math.PI / 2; // FIXED: boundary, not midpoint
+      const boundA = (h / 24) * TWO_PI - Math.PI / 2;
       const labelDist = eventR + (h % 6 === 0 ? 22 : 19);
       ctx.fillStyle = isCur ? 'rgba(201,162,39,0.95)' : 'rgba(138,128,112,0.7)';
       ctx.font = `${h % 6 === 0 ? 14 : 11}px "DM Mono", monospace`;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(String(h),
-        cx + labelDist * Math.cos(boundA),
-        cy + labelDist * Math.sin(boundA));
+      ctx.fillText(String(h), cx + labelDist * Math.cos(boundA), cy + labelDist * Math.sin(boundA));
     }
 
-    // Event title labels — along the petal radius (inner → outer, readable from outside)
     if (hasEv && evs[0].title && segR > baseR) {
       const midA   = ((h + 0.5) / 24) * TWO_PI - Math.PI / 2;
       const isLeft = Math.cos(midA) < 0;
-      // For left-side petals: start at outer edge, rotate inward (stays readable from outside)
       const startDist = isLeft ? eventR - 2 : innerR + 2;
       const sx = cx + startDist * Math.cos(midA);
       const sy = cy + startDist * Math.sin(midA);
-      const fontSize = expanded ? 8 : 6;
       const maxPx = eventR - innerR - 4;
       ctx.save();
       ctx.translate(sx, sy);
       ctx.rotate(isLeft ? midA + Math.PI : midA);
       ctx.fillStyle = 'rgba(232,224,208,0.95)';
-      ctx.font = `${fontSize}px "DM Mono", monospace`;
+      ctx.font = `${expanded ? 8 : 6}px "DM Mono", monospace`;
       ctx.textAlign    = 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(evs[0].title, 0, 0, maxPx);
@@ -10330,20 +10407,16 @@ function drawCosmodex() {
   // Red current-time needle
   const tAngle = (curH / 24) * TWO_PI - Math.PI / 2;
   ctx.beginPath();
-  ctx.moveTo(cx + (innerR + 2) * Math.cos(tAngle),
-             cy + (innerR + 2) * Math.sin(tAngle));
-  ctx.lineTo(cx + (eventR + 5) * Math.cos(tAngle),
-             cy + (eventR + 5) * Math.sin(tAngle));
+  ctx.moveTo(cx + (innerR + 2) * Math.cos(tAngle), cy + (innerR + 2) * Math.sin(tAngle));
+  ctx.lineTo(cx + (eventR + 5) * Math.cos(tAngle), cy + (eventR + 5) * Math.sin(tAngle));
   ctx.strokeStyle = '#e05550';
   ctx.lineWidth   = expanded ? 2 : 1.5;
   ctx.lineCap     = 'round';
   ctx.stroke();
 
-  // Needle tip dot (expanded)
   if (expanded) {
     ctx.beginPath();
-    ctx.arc(cx + (eventR + 5) * Math.cos(tAngle),
-            cy + (eventR + 5) * Math.sin(tAngle), 2.5, 0, TWO_PI);
+    ctx.arc(cx + (eventR + 5) * Math.cos(tAngle), cy + (eventR + 5) * Math.sin(tAngle), 2.5, 0, TWO_PI);
     ctx.fillStyle = '#e05550';
     ctx.fill();
   }
@@ -10357,7 +10430,6 @@ function drawCosmodex() {
   ctx.lineWidth   = 1;
   ctx.stroke();
 
-  // Tiny gold dot at centre (replaces time text — time shown in header instead)
   if (!expanded) {
     const hh2 = String(now.getHours()).padStart(2, '0');
     const mm2 = String(now.getMinutes()).padStart(2, '0');
@@ -10368,33 +10440,61 @@ function drawCosmodex() {
     ctx.textBaseline = 'middle';
     ctx.fillText(`${hh2}:${mm2}`, cx, cy);
   } else {
-    // In expanded mode: small pulsing dot + tap hint
     ctx.beginPath();
     ctx.arc(cx, cy, 3, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(201,162,39,0.6)';
     ctx.fill();
   }
 
-  // Update the info strip below orb (expanded only)
+  return { cx, cy, maxR };
+}
+
+function drawCosmodex() {
+  const canvas = document.getElementById('cosmodex-canvas');
+  if (!canvas) return;
+
+  const expanded = orb.classList.contains('expanded');
+  const dpr = window.devicePixelRatio || 1;
+  const W = orb.offsetWidth, H = orb.offsetHeight;
+  if (W < 4) return;
+
+  canvas.width  = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+
+  const geo = _cosmodexDrawCore(canvas.getContext('2d'), W, H, expanded, dpr);
+
+  // Store geometry for petal click detection
   if (expanded) {
+    _orbGeometry = { cx: geo.cx, cy: geo.cy, innerR: geo.maxR * 0.14, eventR: geo.maxR * 0.70 };
+  } else {
+    _orbGeometry = null;
+  }
+
+  const now = new Date();
+  const today = localDateStr(now);
+
+  // Update date line in orb header
+  if (expanded) {
+    const dateLine = document.getElementById('orb-date-line');
+    if (dateLine) {
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      dateLine.textContent = `${days[now.getDay()]} · ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    }
     const hh2 = String(now.getHours()).padStart(2, '0');
     const mm2 = String(now.getMinutes()).padStart(2, '0');
     const ss2 = String(now.getSeconds()).padStart(2, '0');
     const clockEl = document.getElementById('orb-clock');
     if (clockEl) clockEl.textContent = `${hh2}:${mm2}:${ss2}`;
 
-    // Better "Next" display
     const nowMins = now.getHours() * 60 + now.getMinutes();
     const upcoming = CAL_EVENTS
       .filter(ev => ev.date === today && ev.startTime)
-      .map(ev => {
-        const [eh, em] = ev.startTime.split(':').map(Number);
-        return { ...ev, evMins: eh * 60 + em };
-      })
+      .map(ev => { const [eh, em] = ev.startTime.split(':').map(Number); return { ...ev, evMins: eh * 60 + em }; })
       .filter(ev => ev.evMins > nowMins)
       .sort((a, b) => a.evMins - b.evMins);
 
-    const nextEl      = document.getElementById('orb-next-event');
+    const nextEl = document.getElementById('orb-next-event');
     const nextLabelEl = document.querySelector('.orb-next-label');
     if (nextEl) {
       if (upcoming.length === 0) {
@@ -10404,15 +10504,52 @@ function drawCosmodex() {
         if (nextLabelEl) nextLabelEl.textContent = 'Next';
         const next = upcoming[0];
         const diff = next.evMins - nowMins;
-        let timeStr;
-        if (diff <= 0)       timeStr = 'Now';
-        else if (diff < 60)  timeStr = `In ${diff}m`;
-        else {
-          const dh = Math.floor(diff / 60), dm = diff % 60;
-          timeStr = dm > 0 ? `In ${dh}h ${dm}m` : `In ${dh}h`;
+        const timeStr = diff <= 0 ? 'Now' : diff < 60 ? `In ${diff}m` : (() => { const dh = Math.floor(diff/60), dm = diff%60; return dm > 0 ? `In ${dh}h ${dm}m` : `In ${dh}h`; })();
+        nextEl.innerHTML = `${timeStr}&thinsp;·&thinsp;<em>${escHtml(next.title)}</em>&thinsp;<span style="color:var(--muted);font-size:0.85em">${next.startTime}</span>`;
+      }
+    }
+  }
+
+  // Also draw to pomo canvas if focus overlay is open
+  const pomoCanvas = document.getElementById('pomo-cosmo-canvas');
+  if (pomoCanvas && document.getElementById('pomo-overlay')?.classList.contains('open')) {
+    const pW = pomoCanvas.offsetWidth, pH = pomoCanvas.offsetHeight;
+    if (pW > 4) {
+      pomoCanvas.width = pW * dpr; pomoCanvas.height = pH * dpr;
+      pomoCanvas.style.width = pW + 'px'; pomoCanvas.style.height = pH + 'px';
+      _cosmodexDrawCore(pomoCanvas.getContext('2d'), pW, pH, true, dpr);
+
+      // Update pomo cosmo info strip
+      const hh2 = String(now.getHours()).padStart(2, '0');
+      const mm2 = String(now.getMinutes()).padStart(2, '0');
+      const ss2 = String(now.getSeconds()).padStart(2, '0');
+      const clockEl = document.getElementById('pomo-cosmo-clock');
+      const dateEl  = document.getElementById('pomo-cosmo-date');
+      if (clockEl) clockEl.textContent = `${hh2}:${mm2}:${ss2}`;
+      if (dateEl) {
+        const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        dateEl.textContent = `${days[now.getDay()]} · ${now.getDate()} ${months[now.getMonth()]}`;
+      }
+      const nowMins2 = now.getHours() * 60 + now.getMinutes();
+      const upcoming2 = CAL_EVENTS
+        .filter(ev => ev.date === today && ev.startTime)
+        .map(ev => { const [eh, em] = ev.startTime.split(':').map(Number); return { ...ev, evMins: eh * 60 + em }; })
+        .filter(ev => ev.evMins > nowMins2)
+        .sort((a, b) => a.evMins - b.evMins);
+      const nextEl2 = document.getElementById('pomo-cosmo-next');
+      const nextLabelEl2 = document.getElementById('pomo-cosmo-next-label');
+      if (nextEl2) {
+        if (upcoming2.length === 0) {
+          if (nextLabelEl2) nextLabelEl2.textContent = 'Schedule';
+          nextEl2.textContent = 'Nothing planned today';
+        } else {
+          if (nextLabelEl2) nextLabelEl2.textContent = 'Next';
+          const next2 = upcoming2[0];
+          const diff2 = next2.evMins - nowMins2;
+          const ts2 = diff2 <= 0 ? 'Now' : diff2 < 60 ? `In ${diff2}m` : (() => { const dh=Math.floor(diff2/60),dm=diff2%60; return dm>0?`In ${dh}h ${dm}m`:`In ${dh}h`; })();
+          nextEl2.innerHTML = `${ts2}&thinsp;·&thinsp;<em>${escHtml(next2.title)}</em>&thinsp;<span style="color:var(--muted);font-size:0.85em">${next2.startTime}</span>`;
         }
-        nextEl.innerHTML =
-          `${timeStr}&thinsp;·&thinsp;<em>${escHtml(next.title)}</em>&thinsp;<span style="color:var(--muted);font-size:0.85em">${next.startTime}</span>`;
       }
     }
   }
@@ -11297,6 +11434,7 @@ window.addEventListener('cdx-auth-ready', () => {
     rebuildCategorySelects();
     initData();
     initCalDropZones();
+    initEventModal();
     initAddTaskForm();
     initScheduleModal();
     initTaskEditModal();
@@ -11446,7 +11584,6 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   const _breathPhases = ['Breathe in ↑', 'Hold', 'Breathe out ↓', 'Hold'];
   let _breathIdx = 0;
   let focusChecklist = [];
-  let _scribInited = false;
 
   function clamp(v) { return Math.max(PMIN, Math.min(PMAX, Math.round(v))); }
 
@@ -11525,75 +11662,6 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     });
   }
 
-  function initScribble() {
-    const oldCv = document.getElementById('scribble-canvas'); if (!oldCv) return;
-    const col = oldCv.parentElement;
-    const cv = oldCv.cloneNode(false);
-    cv.id = 'scribble-canvas';
-    col.replaceChild(cv, oldCv);
-    cv.style.flex = '1'; cv.style.display = 'block';
-    requestAnimationFrame(() => {
-    const dpr = window.devicePixelRatio || 1;
-    const w = col.clientWidth || 400, h = col.clientHeight - 44 || 400;
-    cv.width  = Math.round(w * dpr); cv.height = Math.round(h * dpr);
-    cv.style.width = w + 'px'; cv.style.height = h + 'px';
-    const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
-    ctx.fillStyle = '#0a0908'; ctx.fillRect(0, 0, cv.width / dpr, cv.height / dpr);
-
-    let activeColor = SCRIB_COLORS[0], penSize = 1, isEraser = false, drawing = false, lastX = 0, lastY = 0;
-
-    const swatchBar = document.getElementById('pomo-color-bar'); swatchBar.innerHTML = '';
-    SCRIB_COLORS.forEach(c => {
-      const s = document.createElement('div');
-      s.className = 'scribble-swatch' + (c === activeColor ? ' active' : '');
-      s.style.background = c;
-      s.addEventListener('click', () => {
-        activeColor = c; isEraser = false;
-        swatchBar.querySelectorAll('.scribble-swatch').forEach(x => x.classList.remove('active'));
-        s.classList.add('active');
-        document.getElementById('pomo-eraser-btn').classList.remove('active');
-      });
-      swatchBar.appendChild(s);
-    });
-    const sizeBar = document.getElementById('pomo-pen-bar'); sizeBar.innerHTML = '';
-    SCRIB_SIZES.forEach(sz => {
-      const btn = document.createElement('button');
-      btn.className = 'pen-size-btn' + (sz === 1 ? ' active' : '');
-      const dp = Math.min(sz + 4, 18);
-      btn.innerHTML = `<span style="display:inline-block;width:${dp}px;height:${dp}px;border-radius:50%;background:currentColor"></span>`;
-      btn.addEventListener('click', () => {
-        penSize = sz; isEraser = false;
-        sizeBar.querySelectorAll('.pen-size-btn').forEach(x => x.classList.remove('active'));
-        btn.classList.add('active');
-        document.getElementById('pomo-eraser-btn').classList.remove('active');
-      });
-      sizeBar.appendChild(btn);
-    });
-
-    const eraserBtn = document.getElementById('pomo-eraser-btn');
-    eraserBtn.onclick = function() { isEraser = !isEraser; this.classList.toggle('active', isEraser); };
-    eraserBtn.classList.remove('active');
-    document.getElementById('pomo-clear-btn').onclick = () => ctx.clearRect(0, 0, cv.width, cv.height);
-    document.getElementById('pomo-save-btn').onclick = () => {
-      const link = document.createElement('a');
-      link.download = `cosmodex-focus-notes-${localDateStr(new Date())}.png`;
-      const tmp = document.createElement('canvas'); tmp.width = cv.width; tmp.height = cv.height;
-      const tc = tmp.getContext('2d'); tc.fillStyle = '#0e0c08'; tc.fillRect(0, 0, tmp.width, tmp.height); tc.drawImage(cv, 0, 0);
-      link.href = tmp.toDataURL('image/png'); link.click();
-    };
-
-    function getPos(e) { const r = cv.getBoundingClientRect(); const sx = cv.width/dpr/r.width, sy = cv.height/dpr/r.height; return [(e.clientX-r.left)*sx, (e.clientY-r.top)*sy]; }
-    function startDraw(e) { e.preventDefault(); drawing = true; [lastX, lastY] = getPos(e); ctx.save(); if (isEraser) { ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(lastX,lastY,penSize*3,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,1)'; ctx.fill(); } else { ctx.beginPath(); ctx.arc(lastX,lastY,penSize/2,0,Math.PI*2); ctx.fillStyle=activeColor; ctx.fill(); } ctx.restore(); }
-    function moveDraw(e) { if (!drawing) return; e.preventDefault(); const [x,y]=getPos(e); ctx.save(); if (isEraser) { ctx.globalCompositeOperation='destination-out'; ctx.beginPath(); ctx.arc(x,y,penSize*3,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,1)'; ctx.fill(); } else { ctx.beginPath(); ctx.moveTo(lastX,lastY); ctx.lineTo(x,y); ctx.strokeStyle=activeColor; ctx.lineWidth=penSize; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke(); } ctx.restore(); lastX=x; lastY=y; }
-    function endDraw() { drawing = false; }
-    cv.addEventListener('pointerdown', startDraw, { passive: false });
-    cv.addEventListener('pointermove', moveDraw,  { passive: false });
-    cv.addEventListener('pointerup',   endDraw,   { passive: false });
-    cv.addEventListener('pointercancel', endDraw, { passive: false });
-    cv.style.touchAction = 'none';
-    }); // end requestAnimationFrame
-  }
-
   let _pomoEvent = null; // active calendar event (set when opened from calendar)
 
   window.setPomoEvent = function(ev) {
@@ -11611,7 +11679,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   };
 
   window.initPomoOverlay = function() {
-    buildTicks(); renderPomo(); startBreathing(); renderFocusChecklist(); initScribble();
+    buildTicks(); renderPomo(); startBreathing(); renderFocusChecklist();
     // Reset completion prompt
     const prompt = document.getElementById('pomo-complete-prompt');
     if (prompt) prompt.style.display = 'none';
@@ -11695,7 +11763,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   // Close button (with lock check)
   document.getElementById('pomo-close')?.addEventListener('click', () => {
     if (pomo.running) { document.getElementById('pomo-lock-msg')?.classList.add('show'); return; }
-    _scribInited = false; stopBreathing(); closeOverlay('pomo-overlay');
+    stopBreathing(); closeOverlay('pomo-overlay');
   });
   document.getElementById('pomo-withdraw')?.addEventListener('click', () => {
     clearInterval(pomo.interval); pomo.running = false;
@@ -11853,6 +11921,25 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
       </div>
       <button class="sched-confirm-btn" id="qcal-confirm-btn">Create Event + Task</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Event Action Modal ──────────────────────────────── -->
+<div id="event-action-modal" style="position:fixed">
+  <button class="eam-close" id="eam-close">✕</button>
+  <div class="eam-title" id="eam-title">—</div>
+  <div>
+    <div class="eam-section-label">Edit Time</div>
+    <div class="eam-time-row">
+      <input type="time" class="eam-time-input" id="eam-start" />
+      <input type="number" class="eam-dur-input" id="eam-dur" min="5" max="480" step="5" />
+      <span class="eam-dur-label">min</span>
+      <button class="eam-save-btn" id="eam-save">Save</button>
+    </div>
+  </div>
+  <div class="eam-actions">
+    <button class="eam-delete-btn" id="eam-delete">✕ Delete</button>
+    <button class="eam-play-btn" id="eam-play">▶ Focus</button>
   </div>
 </div>
 </body>
