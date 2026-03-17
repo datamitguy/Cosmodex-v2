@@ -4291,6 +4291,33 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 .los-narrative-input:focus { border-color: var(--gold-dim); }
 
+/* Articles pane */
+.articles-filter-btn {
+  font-family: var(--font-mono);
+  font-size: 9px; letter-spacing: 0.08em;
+  background: none; border: 1px solid var(--border);
+  color: var(--muted); border-radius: 100px;
+  cursor: pointer; transition: color 120ms, border-color 120ms;
+}
+.articles-filter-btn.active { color: var(--gold); border-color: var(--gold-dim); }
+.articles-filter-btn:hover:not(.active) { color: var(--cream); border-color: var(--muted); }
+.article-card {
+  display: block; text-decoration: none;
+  background: var(--elevated); border: 1px solid var(--border);
+  border-left: 3px solid var(--art-color, var(--gold));
+  border-radius: 6px; padding: 12px 14px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.article-card:hover { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.12); }
+.article-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.article-cat-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; padding: 1px 8px; border-radius: 100px; }
+.article-source { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+.article-title { font-family: var(--font-display); font-size: 13px; font-weight: 400; color: var(--cream); margin-bottom: 4px; }
+.article-summary { font-family: var(--font-body); font-size: 11px; color: var(--muted-readable); line-height: 1.5; }
+
+/* ms-archive button */
+.ms-archive-btn:hover { color: var(--sage) !important; border-color: var(--sage) !important; }
+
 /* Someday Graveyard */
 .someday-section-header {
   font-family: var(--font-display);
@@ -4421,7 +4448,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       </div>
       <div class="nav-item" data-panel="planning" id="nav-planning">
         <span class="nav-item-icon">◉</span>
-        Life OS
+        Planning
       </div>
     </div>
   </div>
@@ -4564,7 +4591,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <!-- Left: initiative cards (30%) -->
         <div class="planning-left">
           <div class="panel-toolbar" style="height:46px;padding:0 16px;flex-shrink:0">
-            <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Initiatives</span>
+            <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Planning</span>
             <div style="margin-left:auto">
               <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:6px 12px">+ New</button>
             </div>
@@ -4576,6 +4603,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <div class="planning-right-tabs">
             <button class="planning-right-tab active" data-ptab="week">Week</button>
             <button class="planning-right-tab" data-ptab="month">Month</button>
+            <button class="planning-right-tab" data-ptab="articles">Articles</button>
           </div>
           <!-- Week pane -->
           <div id="plan-right-week" class="planning-right-body">
@@ -4636,6 +4664,19 @@ textarea.form-input { resize: vertical; min-height: 60px; }
                 <div id="pm-due-section"></div>
               </div>
             </div>
+          </div>
+          <!-- Articles pane -->
+          <div id="plan-right-articles" class="planning-right-body" style="display:none;flex-direction:column;gap:0;padding:0">
+            <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px">
+              <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Reading</span>
+              <div style="margin-left:auto;display:flex;gap:6px" id="articles-filter-btns">
+                <button class="articles-filter-btn active" data-cat="all" style="font-size:9px;padding:3px 10px">All</button>
+                <button class="articles-filter-btn" data-cat="pm" style="font-size:9px;padding:3px 10px">Product</button>
+                <button class="articles-filter-btn" data-cat="biz" style="font-size:9px;padding:3px 10px">Business</button>
+                <button class="articles-filter-btn" data-cat="psych" style="font-size:9px;padding:3px 10px">Psychology</button>
+              </div>
+            </div>
+            <div id="articles-list" style="flex:1;overflow-y:auto;padding:12px 20px;display:flex;flex-direction:column;gap:8px"></div>
           </div>
         </div>
       </div>
@@ -6241,7 +6282,7 @@ function showMainPanel(name) {
   document.getElementById('panel-habits').style.display      = name === 'habits' ? 'flex' : 'none';
   document.getElementById('panel-insights').style.display    = name === 'insights' ? 'flex' : 'none';
   _mainPanel = name;
-  const titles = { default:'Today', milestones:'Life OS', lists:'Lists', habits:'Habits & Routines', insights:'Insights' };
+  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
@@ -7612,7 +7653,7 @@ function updateMilestoneToolbar() {
   const toolbar = document.querySelector('#panel-milestones .panel-toolbar');
   if (!toolbar) return;
   toolbar.innerHTML = `
-    <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Initiatives</span>
+    <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Planning</span>
     <div style="margin-left:auto">
       <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:6px 12px">+ New</button>
     </div>`;
@@ -7625,15 +7666,20 @@ function renderMilestoneDashboard() {
   const body = document.getElementById('milestones-body');
   if (!body) return;
 
+  const activeProjs   = MILESTONE_PROJECTS.filter(p => !p.isArchived);
+  const archivedProjs = MILESTONE_PROJECTS.filter(p => p.isArchived);
+
   if (!MILESTONE_PROJECTS.length) {
     body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:60px">No initiatives yet.<br><br>Click "+ Initiative" to start.</div>`;
     return;
   }
 
+  body.innerHTML = '';
+
   const grid = document.createElement('div');
   grid.className = 'ms-dash-grid';
 
-  MILESTONE_PROJECTS.forEach(proj => {
+  activeProjs.forEach(proj => {
     const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
     const allActs = events.flatMap(e => e.activities || []);
     const doneActs = allActs.filter(a => a.done).length;
@@ -7686,16 +7732,60 @@ function renderMilestoneDashboard() {
             <div class="ms-dash-pct-label" style="color:${isComplete ? 'var(--sage)' : proj.color}">${pct}%</div>
             <div class="ms-dash-acts-label">${doneActs} / ${totalActs} tasks done</div>
           </div>
-          <div style="text-align:right">
+          <div style="text-align:right;display:flex;align-items:center;gap:8px">
             <div class="ms-dash-milestones-count">${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
+            <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
           </div>
         </div>
       </div>`;
     grid.appendChild(outer);
   });
 
-  body.innerHTML = '';
-  body.appendChild(grid);
+  if (activeProjs.length) body.appendChild(grid);
+  else body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">All initiatives archived.</div>`;
+
+  // Archived section
+  if (archivedProjs.length) {
+    const archSection = document.createElement('div');
+    archSection.id = 'ms-archived-section';
+    let archOpen = false;
+    const archHeader = document.createElement('div');
+    archHeader.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 4px;cursor:pointer;border-top:1px solid var(--border);margin-top:16px';
+    archHeader.innerHTML = `<span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">▶ Archived (${archivedProjs.length})</span>`;
+    const archGrid = document.createElement('div');
+    archGrid.className = 'ms-dash-grid';
+    archGrid.style.display = 'none';
+    archHeader.addEventListener('click', () => {
+      archOpen = !archOpen;
+      archGrid.style.display = archOpen ? '' : 'none';
+      archHeader.querySelector('span').textContent = `${archOpen ? '▼' : '▶'} Archived (${archivedProjs.length})`;
+    });
+    archivedProjs.forEach(proj => {
+      const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
+      const allActs = events.flatMap(e => e.activities || []);
+      const doneActs = allActs.filter(a => a.done).length;
+      const totalActs = allActs.length;
+      const pct = totalActs > 0 ? Math.round(doneActs / totalActs * 100) : 0;
+      const outer = document.createElement('div');
+      outer.className = 'ms-dash-card-outer';
+      outer.style.cssText = `background:var(--border);opacity:0.6`;
+      outer.dataset.msDashCard = proj.id;
+      outer.innerHTML = `<div class="ms-dash-card-inner">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="ms-dash-card-title" style="flex:1">${escHtml(proj.title)}</div>
+          <span style="font-family:var(--font-mono);font-size:9px;color:var(--sage)">✓ done</span>
+        </div>
+        <div class="ms-dash-card-footer" style="margin-top:8px">
+          <div class="ms-dash-acts-label">${doneActs}/${totalActs} tasks · ${events.length} milestones</div>
+          <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
+        </div>
+      </div>`;
+      archGrid.appendChild(outer);
+    });
+    archSection.appendChild(archHeader);
+    archSection.appendChild(archGrid);
+    body.appendChild(archSection);
+  }
 
   // Card click → open timeline in right panel
   grid.querySelectorAll('[data-ms-dash-card]').forEach(card => {
@@ -7711,9 +7801,10 @@ function renderMilestoneDashboard() {
 function showPlanningTimeline(projId) {
   const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
   if (!proj) return;
-  // Hide week/month panes and tabs; show timeline container
-  document.getElementById('plan-right-week').style.display  = 'none';
-  document.getElementById('plan-right-month').style.display = 'none';
+  // Hide week/month/articles panes and tabs; show timeline container
+  document.getElementById('plan-right-week').style.display     = 'none';
+  document.getElementById('plan-right-month').style.display    = 'none';
+  document.getElementById('plan-right-articles').style.display = 'none';
   document.querySelector('.planning-right-tabs').style.display = 'none';
   const tl = document.getElementById('plan-right-timeline');
   tl.style.display = 'flex';
@@ -7731,8 +7822,9 @@ function showPlanningTimeline(projId) {
       document.querySelector('.planning-right-tabs').style.display = '';
       // Restore the active tab pane
       const activeTab = document.querySelector('.planning-right-tab.active')?.dataset.ptab || 'week';
-      document.getElementById('plan-right-week').style.display  = activeTab === 'week'  ? '' : 'none';
-      document.getElementById('plan-right-month').style.display = activeTab === 'month' ? '' : 'none';
+      document.getElementById('plan-right-week').style.display     = activeTab === 'week'     ? '' : 'none';
+      document.getElementById('plan-right-month').style.display    = activeTab === 'month'    ? '' : 'none';
+      document.getElementById('plan-right-articles').style.display = activeTab === 'articles' ? 'flex' : 'none';
     };
   }
   renderMilestoneTimeline(projId);
@@ -8075,6 +8167,25 @@ function initMilestonesPanel() {
   const msBody = document.getElementById('milestones-body');
 
   msBody.addEventListener('click', async e => {
+    // Archive (mark done) button
+    const archBtn = e.target.closest('[data-ms-archive]');
+    if (archBtn) {
+      const projId = archBtn.dataset.msArchive;
+      const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
+      if (proj && confirm(`Mark "${proj.title}" as done and archive it?`)) {
+        await window.CDX_FB.updateDoc(_ud('milestoneProjects', projId), { isArchived: true });
+      }
+      return;
+    }
+
+    // Unarchive (restore) button
+    const unarchBtn = e.target.closest('[data-ms-unarchive]');
+    if (unarchBtn) {
+      const projId = unarchBtn.dataset.msUnarchive;
+      await window.CDX_FB.updateDoc(_ud('milestoneProjects', projId), { isArchived: false });
+      return;
+    }
+
     // Pip click — open event modal (do NOT bubble to bar click)
     const pip = e.target.closest('[data-ms-pip]');
     if (pip) { e.stopPropagation(); return; }
@@ -8406,12 +8517,68 @@ function initMilestonesPanel() {
     return mon;
   }
 
+  // ── Articles / Reading pane ─────────────────────────────
+  const ARTICLES = [
+    // Product Management
+    { cat:'pm', title:'Shape Up: Stop Running in Circles', source:'Basecamp / Ryan Singer', url:'https://basecamp.com/shapeup', summary:'Full methodology for product teams who want to ship meaningful work on a fixed schedule.' },
+    { cat:'pm', title:'Inspired: How to Create Tech Products Customers Love', source:'Marty Cagan', url:'https://www.svpg.com/inspired-how-to-create-products-customers-love/', summary:'The definitive guide to building empowered product teams with outcome-oriented thinking.' },
+    { cat:'pm', title:'Good Strategy / Bad Strategy', source:'Richard Rumelt', url:'https://www.mckinsey.com/capabilities/strategy-and-corporate-finance/our-insights/the-perils-of-bad-strategy', summary:'Explains why most strategies fail and what a coherent kernel of good strategy looks like.' },
+    { cat:'pm', title:'The Lean Startup', source:'Eric Ries', url:'https://theleanstartup.com/', summary:'Build-measure-learn loops and validated learning as a foundation for product development.' },
+    { cat:'pm', title:'Continuous Discovery Habits', source:'Teresa Torres', url:'https://www.producttalk.org/2021/05/continuous-discovery-habits/', summary:'Weekly touchpoints with customers woven into the regular product development cycle.' },
+    { cat:'pm', title:'Jobs to Be Done Theory', source:'Clayton Christensen', url:'https://hbr.org/2016/09/know-your-customers-jobs-to-be-done', summary:'Customers hire products to do a job — frame every feature around the job, not the persona.' },
+    { cat:'pm', title:'Competing Against Luck', source:'Christensen, Hall, Dillon, Duncan', url:'https://www.harpercollins.com/products/competing-against-luck-clayton-m-christensenhall-taddy-dillon-david', summary:'Deep dive into JTBD with case studies showing how to find causal mechanisms in customer choices.' },
+    { cat:'pm', title:'The Mom Test', source:'Rob Fitzpatrick', url:'http://momtestbook.com/', summary:'How to talk to customers and learn if your business is a good idea when everyone is lying to you.' },
+    // Business
+    { cat:'biz', title:'Zero to One', source:'Peter Thiel', url:'https://zerotoonebook.com/', summary:'Building companies that create new things — the power of monopolies, secrets, and definite optimism.' },
+    { cat:'biz', title:'The Hard Thing About Hard Things', source:'Ben Horowitz', url:'https://www.harpercollins.com/products/the-hard-thing-about-hard-things-ben-horowitz', summary:'Straight-talk on the brutal realities of building and running a startup — no silver bullets.' },
+    { cat:'biz', title:'High Output Management', source:'Andy Grove', url:'https://www.penguinrandomhouse.com/books/74765/high-output-management-by-andrew-s-grove/', summary:'OKRs, 1-on-1s, leverage — the operational bible for managing knowledge-worker teams.' },
+    { cat:'biz', title:'Playing to Win', source:'Roger Martin & A.G. Lafley', url:'https://rogerlmartin.com/lets-read/playing-to-win', summary:'Strategy as cascading choices — winning aspiration, where to play, how to win.' },
+    { cat:'biz', title:'Seven Powers', source:'Hamilton Helmer', url:'https://7powers.com/', summary:'The seven durable sources of business power and how to build them into a strategy.' },
+    { cat:'biz', title:'Measure What Matters', source:'John Doerr', url:'https://www.whatmatters.com/the-book/', summary:'How OKRs help organisations set audacious goals and align teams around what actually matters.' },
+    { cat:'biz', title:'No Rules Rules (Netflix Culture)', source:'Reed Hastings & Erin Meyer', url:'https://www.norulesrules.com/', summary:'Radical transparency, talent density, and freedom with responsibility at Netflix.' },
+    // Psychology
+    { cat:'psych', title:'Thinking, Fast and Slow', source:'Daniel Kahneman', url:'https://us.macmillan.com/books/9780374533557/thinkingfastandslow', summary:'System 1 vs System 2 thinking — the cognitive biases that shape every decision we make.' },
+    { cat:'psych', title:'Influence: The Psychology of Persuasion', source:'Robert Cialdini', url:'https://www.influenceatwork.com/', summary:'Six universal principles of influence — reciprocity, commitment, social proof, authority, liking, scarcity.' },
+    { cat:'psych', title:'Drive: The Surprising Truth About What Motivates Us', source:'Daniel Pink', url:'https://www.danpink.com/books/drive/', summary:'Autonomy, mastery, and purpose outperform carrot-and-stick for knowledge workers.' },
+    { cat:'psych', title:'Mindset: The New Psychology of Success', source:'Carol Dweck', url:'https://www.penguinrandomhouse.com/books/44330/mindset-by-carol-s-dweck-phd/', summary:'Fixed vs growth mindset — how beliefs about ability shape achievement and resilience.' },
+    { cat:'psych', title:'Atomic Habits', source:'James Clear', url:'https://jamesclear.com/atomic-habits', summary:'1% improvements compound — the four-step loop (cue, craving, response, reward) for lasting change.' },
+    { cat:'psych', title:'The Power of Now', source:'Eckhart Tolle', url:'https://www.eckharttolle.com/books/', summary:'Separating identity from thought and finding stillness as the foundation for effective action.' },
+    { cat:'psych', title:'Stolen Focus', source:'Johann Hari', url:'https://stolenfocusbook.com/', summary:'Why our attention is collapsing and twelve environmental interventions to reclaim deep focus.' },
+  ];
+
+  let _articlesFilter = 'all';
+
+  function renderArticlesPane() {
+    const list = document.getElementById('articles-list');
+    if (!list) return;
+    const filtered = _articlesFilter === 'all' ? ARTICLES : ARTICLES.filter(a => a.cat === _articlesFilter);
+    const catColors = { pm:'#6b9fd4', biz:'#c9a227', psych:'#4a7c5e' };
+    const catLabels = { pm:'Product', biz:'Business', psych:'Psychology' };
+    list.innerHTML = filtered.map(a => `
+      <a href="${a.url}" target="_blank" rel="noopener" class="article-card" style="--art-color:${catColors[a.cat]||'var(--gold)'}">
+        <div class="article-card-top">
+          <span class="article-cat-badge" style="background:${catColors[a.cat]}22;color:${catColors[a.cat]};border:1px solid ${catColors[a.cat]}44">${catLabels[a.cat]||a.cat}</span>
+          <span class="article-source">${escHtml(a.source)}</span>
+        </div>
+        <div class="article-title">${escHtml(a.title)}</div>
+        <div class="article-summary">${escHtml(a.summary)}</div>
+      </a>`).join('');
+
+    // Filter buttons
+    document.querySelectorAll('.articles-filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.cat === _articlesFilter);
+      btn.onclick = () => { _articlesFilter = btn.dataset.cat; renderArticlesPane(); };
+    });
+  }
+
   function switchPlanRightTab(tab) {
     document.querySelectorAll('.planning-right-tab').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
-    document.getElementById('plan-right-week').style.display  = tab === 'week'  ? '' : 'none';
-    document.getElementById('plan-right-month').style.display = tab === 'month' ? '' : 'none';
-    if (tab === 'week')  buildWeekPlan();
-    if (tab === 'month') buildMonthPlan();
+    document.getElementById('plan-right-week').style.display     = tab === 'week'     ? '' : 'none';
+    document.getElementById('plan-right-month').style.display    = tab === 'month'    ? '' : 'none';
+    document.getElementById('plan-right-articles').style.display = tab === 'articles' ? 'flex' : 'none';
+    if (tab === 'week')     buildWeekPlan();
+    if (tab === 'month')    buildMonthPlan();
+    if (tab === 'articles') renderArticlesPane();
   }
 
   async function buildWeekPlan() {
@@ -11208,7 +11375,7 @@ const CMD_COMMANDS_BASE = [
   { label: 'Insights',         icon: '◈', action: () => showMainPanel('insights'), keys: '' },
   { label: 'Habits',           icon: '◎', action: () => showMainPanel('habits'), keys: '' },
   { label: 'Lists',            icon: '▤', action: () => showMainPanel('lists'), keys: '' },
-  { label: 'Life OS',          icon: '◉', action: () => showMainPanel('milestones'), keys: '' },
+  { label: 'Planning',         icon: '◉', action: () => showMainPanel('milestones'), keys: '' },
   { label: 'Toggle Theme',     icon: '◑', action: toggleTheme, keys: '' },
 ];
 
@@ -11221,7 +11388,7 @@ function getCmdCommands() {
     _personColor: p.color,
     _personInitials: p.initials,
   }));
-  const initiativeCmds = MILESTONE_PROJECTS.map(proj => ({
+  const initiativeCmds = MILESTONE_PROJECTS.filter(p => !p.isArchived).map(proj => ({
     label: `◉ ${proj.title} — tasks`,
     icon: '◉',
     action: () => showInitiativeTasks(proj),
