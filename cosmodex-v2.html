@@ -3790,6 +3790,16 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .energy-creative{ background: rgba(201,162,39,0.1);  border-color: rgba(201,162,39,0.3);  color: var(--gold); }
 .energy-quick   { background: rgba(74,124,94,0.1);   border-color: rgba(74,124,94,0.3);   color: var(--sage); }
 
+/* Time-to-complete popover */
+.time-opt-btn {
+  font-family: var(--font-mono); font-size: 11px;
+  padding: 4px 10px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted-readable); cursor: pointer; transition: var(--ease-fast);
+}
+.time-opt-btn:hover { border-color: var(--gold); color: var(--gold); }
+.time-opt-btn.active { background: rgba(201,162,39,0.12); border-color: var(--gold); color: var(--gold); }
+
 /* @mention dropdown & people badges */
 .mention-item {
   display: flex; align-items: center; gap: 8px;
@@ -5884,6 +5894,28 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         </div><!-- /settings-right -->
       </div><!-- /settings-layout -->
     </div>
+  </div>
+</div>
+
+<!-- Time-to-complete popover (shown when ticking a task done) -->
+<div id="task-time-popover" style="display:none;position:fixed;z-index:950;background:var(--elevated);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,0.5);min-width:230px">
+  <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Time to complete</div>
+  <div id="task-time-options" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+    <button class="time-opt-btn" data-mins="5">5m</button>
+    <button class="time-opt-btn" data-mins="15">15m</button>
+    <button class="time-opt-btn" data-mins="30">30m</button>
+    <button class="time-opt-btn" data-mins="60">1h</button>
+    <button class="time-opt-btn" data-mins="90">1h 30m</button>
+    <button class="time-opt-btn" data-mins="120">2h</button>
+    <button class="time-opt-btn" data-mins="180">3h</button>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px">
+    <input id="task-time-custom" type="number" min="1" max="999" placeholder="Custom (min)" class="form-input" style="font-size:12px;padding:5px 8px;width:100%;flex:1">
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap">min</span>
+  </div>
+  <div style="display:flex;gap:6px;justify-content:flex-end">
+    <button id="task-time-skip" class="btn-ghost" style="font-size:11px;padding:6px 12px">Skip</button>
+    <button id="task-time-confirm" class="btn-primary" style="font-size:11px;padding:6px 14px">Done</button>
   </div>
 </div>
 
@@ -8723,7 +8755,7 @@ function updateCalNowLine() {
     if (!lbl) {
       lbl = document.createElement('span');
       lbl.className = 'cal-now-time-lbl';
-      lbl.style.cssText = 'position:absolute;left:40px;top:-9px;font-family:var(--font-mono);font-size:9px;color:var(--gold);white-space:nowrap;opacity:0.8;pointer-events:none';
+      lbl.style.cssText = 'position:absolute;right:8px;bottom:4px;font-family:var(--font-mono);font-size:9px;color:var(--gold);white-space:nowrap;opacity:0.8;pointer-events:none';
       line.appendChild(lbl);
     }
     lbl.textContent = timeStr;
@@ -9009,6 +9041,11 @@ function buildTaskRow(task, idx) {
     ? `<span class="task-energy-badge ${energyInfo.cssClass}">${energyInfo.icon} ${energyInfo.label}</span>`
     : '';
 
+  // Time-spent badge
+  const timeBadge = (task.done && task.timeSpentMinutes)
+    ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
+    : '';
+
   // Friction indicator
   const frictionBadge = (task.deferrals >= 3 && !task.done)
     ? `<span class="task-friction-badge" data-friction="${escAttr(task.id)}" title="Deferred ${task.deferrals} times — click to tag">⚠ Friction</span>`
@@ -9049,6 +9086,7 @@ function buildTaskRow(task, idx) {
         ${recurBadge}
         ${energyBadge}
         ${frictionBadge}
+        ${timeBadge}
         ${peopleBadgesHtml}
         ${decayBarHtml}
       </div>
@@ -9144,7 +9182,7 @@ document.getElementById('tasks-body').addEventListener('click', e => {
   const frictionEl = e.target.closest('[data-friction]');
   const taskEditBtn = e.target.closest('[data-task-edit]');
 
-  if (check)    { toggleTask(check.dataset.check); return; }
+  if (check)    { handleCheckClick(check.dataset.check, e); return; }
   if (subCheck) { toggleSubtask(subCheck.dataset.subcheck, subCheck.dataset.sub); return; }
   if (del)      { deleteTask(del.dataset.del); return; }
   if (delSub)   { deleteSubtask(delSub.dataset.delsub, delSub.dataset.sub); return; }
@@ -9352,12 +9390,84 @@ async function updateTask(taskId, data) {
   }
 }
 
-async function toggleTask(taskId) {
+async function toggleTask(taskId, timeSpentMinutes = null) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
   const updates = { done: !task.done };
-  if (!task.done) updates.doneDate = localDateStr(new Date());
+  if (!task.done) {
+    updates.doneDate = localDateStr(new Date());
+    if (timeSpentMinutes != null) updates.timeSpentMinutes = timeSpentMinutes;
+  }
   await updateTask(taskId, updates);
+}
+
+/* ── Time-to-complete popover ─────────────────────────── */
+let _timePickerTaskId = null;
+let _timePickerMins   = null;
+
+function handleCheckClick(taskId, clickEvent) {
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  // Un-completing: no popover needed
+  if (task.done) { toggleTask(taskId); return; }
+  // Completing: show time picker near the checkbox
+  _timePickerTaskId = taskId;
+  _timePickerMins   = null;
+  const pop = document.getElementById('task-time-popover');
+  // Reset state
+  pop.querySelectorAll('.time-opt-btn').forEach(b => b.classList.remove('active'));
+  const customInp = document.getElementById('task-time-custom');
+  if (customInp) customInp.value = '';
+  // Position near click
+  const rect = clickEvent.target.getBoundingClientRect();
+  const popW = 250, popH = 180;
+  let left = rect.left;
+  let top  = rect.bottom + 8;
+  if (left + popW > window.innerWidth - 12) left = window.innerWidth - popW - 12;
+  if (top + popH > window.innerHeight - 12) top = rect.top - popH - 8;
+  pop.style.left = left + 'px';
+  pop.style.top  = top + 'px';
+  pop.style.display = 'block';
+}
+
+function initTimePickerPopover() {
+  const pop = document.getElementById('task-time-popover');
+
+  pop.querySelectorAll('.time-opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pop.querySelectorAll('.time-opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _timePickerMins = parseInt(btn.dataset.mins, 10);
+      const customInp = document.getElementById('task-time-custom');
+      if (customInp) customInp.value = '';
+    });
+  });
+
+  document.getElementById('task-time-custom')?.addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10);
+    pop.querySelectorAll('.time-opt-btn').forEach(b => b.classList.remove('active'));
+    _timePickerMins = isNaN(v) || v <= 0 ? null : v;
+  });
+
+  document.getElementById('task-time-confirm')?.addEventListener('click', async () => {
+    pop.style.display = 'none';
+    if (_timePickerTaskId) await toggleTask(_timePickerTaskId, _timePickerMins);
+    _timePickerTaskId = null;
+  });
+
+  document.getElementById('task-time-skip')?.addEventListener('click', async () => {
+    pop.style.display = 'none';
+    if (_timePickerTaskId) await toggleTask(_timePickerTaskId, null);
+    _timePickerTaskId = null;
+  });
+
+  // Close on outside click
+  document.addEventListener('click', e => {
+    if (pop.style.display !== 'none' && !pop.contains(e.target) && !e.target.closest('[data-check]')) {
+      pop.style.display = 'none';
+      _timePickerTaskId = null;
+    }
+  }, true);
 }
 
 async function deleteTask(taskId) {
@@ -11094,7 +11204,56 @@ function getCmdCommands() {
     _personColor: p.color,
     _personInitials: p.initials,
   }));
-  return [...CMD_COMMANDS_BASE, ...personCmds];
+  const initiativeCmds = MILESTONE_PROJECTS.map(proj => ({
+    label: `◉ ${proj.title} — tasks`,
+    icon: '◉',
+    action: () => showInitiativeTasks(proj),
+    keys: '',
+    _projColor: proj.color,
+  }));
+  return [...CMD_COMMANDS_BASE, ...personCmds, ...initiativeCmds];
+}
+
+function showInitiativeTasks(proj) {
+  // Collect all task IDs linked via milestone event activities
+  const linkedEvents = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
+  const taskIds = new Set();
+  linkedEvents.forEach(ev => {
+    (ev.activities || []).forEach(a => { if (a.taskId) taskIds.add(a.taskId); });
+  });
+  const tasks = TASKS.filter(t => taskIds.has(t.id));
+
+  const titleEl = document.getElementById('person-tasks-title');
+  const listEl  = document.getElementById('person-tasks-list');
+  if (titleEl) {
+    titleEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px">
+      <span style="width:20px;height:20px;border-radius:6px;background:${proj.color};display:inline-flex;align-items:center;justify-content:center;font-size:10px;color:#0d0c0a">◉</span>
+      Tasks in ${escHtml(proj.title)}
+    </span>`;
+  }
+  if (listEl) {
+    if (!tasks.length) {
+      listEl.innerHTML = `<div style="padding:20px 16px;font-size:13px;color:var(--muted)">No tasks linked to <strong>${escHtml(proj.title)}</strong> yet. Link tasks via milestone activities in Life OS.</div>`;
+    } else {
+      const open = tasks.filter(t => !t.done);
+      const done = tasks.filter(t => t.done);
+      const renderGroup = (arr, label) => arr.length ? `
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
+        ${arr.map(t => {
+          const cat = t.category ? CATEGORIES[t.category] : null;
+          const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:9px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
+          return `
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">
+            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--ink)">${t.done?'✓':''}</div>
+            <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
+            ${catBadge}
+            ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
+          </div>`;
+        }).join('')}` : '';
+      listEl.innerHTML = renderGroup(open, 'Open') + renderGroup(done, 'Done');
+    }
+  }
+  document.getElementById('person-tasks-overlay').classList.add('open');
 }
 
 function showPersonTasks(person) {
@@ -11153,7 +11312,9 @@ function renderCmdResults(query) {
     <div class="cmd-result-item ${i===0?'selected':''}" data-cmd="${i}">
       ${c._personColor
         ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:${c._personColor};font-size:7px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(c._personInitials)}</span>`
-        : `<span class="cmd-result-icon">${c.icon}</span>`}
+        : c._projColor
+          ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:${c._projColor};font-size:9px;color:#0d0c0a;flex-shrink:0">◉</span>`
+          : `<span class="cmd-result-icon">${c.icon}</span>`}
       ${escHtml(c.label)}
       ${c.keys ? `<span class="cmd-result-keys">${c.keys}</span>` : ''}
     </div>`).join('');
@@ -11168,6 +11329,29 @@ function renderCmdResults(query) {
 
 document.getElementById('cmd-input')?.addEventListener('input', e => {
   renderCmdResults(e.target.value);
+});
+
+document.getElementById('cmd-input')?.addEventListener('keydown', e => {
+  const items = document.querySelectorAll('#cmd-results .cmd-result-item');
+  if (!items.length) return;
+  const selIdx = [...items].findIndex(i => i.classList.contains('selected'));
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    items[selIdx]?.classList.remove('selected');
+    const next = items[(selIdx + 1) % items.length];
+    next?.classList.add('selected');
+    next?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    items[selIdx]?.classList.remove('selected');
+    const prev = items[(selIdx - 1 + items.length) % items.length];
+    prev?.classList.add('selected');
+    prev?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    const sel = document.querySelector('#cmd-results .cmd-result-item.selected');
+    if (sel) sel.click();
+  }
 });
 
 document.getElementById('cmd-palette')?.addEventListener('click', e => {
@@ -11800,6 +11984,7 @@ window.addEventListener('cdx-auth-ready', () => {
     initCalDropZones();
     initEventModal();
     initAddTaskForm();
+    initTimePickerPopover();
     initScheduleModal();
     initTaskEditModal();
     initSettingsPanel();
@@ -12102,8 +12287,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
               const { updateDoc, serverTimestamp } = window.CDX_FB;
               try {
                 await updateDoc(_ud('tasks', _pomoEvent.taskId), {
-                  done: true, doneDate: localDateStr(new Date()),
-                  sessionTimeSecs: (elapsedSecs || 0)
+                  done: true, doneDate: localDateStr(new Date())
                 });
                 showToast('Task marked done ✓', 'success', 3000);
               } catch(e) { showToast('Could not update task', 'error'); }
