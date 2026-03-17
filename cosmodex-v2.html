@@ -3673,7 +3673,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .hb-an-label::before { content:'◈'; font-size:10px; }
 .hb-an-text { font-size:13px; color:var(--cream); line-height:1.6; }
 
-.hb-week-card { background:var(--elevated); border:1px solid var(--border); border-radius:var(--r-lg); padding:28px; grid-column:1/-1; }
+.hb-week-card { background:var(--elevated); border:1px solid var(--border); border-radius:var(--r-lg); padding:28px; }
 .hb-wc-title { font-family:var(--font-display); font-size:24px; font-weight:300; color:var(--cream); margin-bottom:4px; }
 .hb-wc-sub { font-family:var(--font-mono); font-size:10px; color:var(--muted); letter-spacing:0.08em; margin-bottom:20px; }
 .hb-wc-habits { display:flex; gap:12px; flex-wrap:wrap; }
@@ -4199,7 +4199,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
    DONE WALL
    ═══════════════════════════════════════════════════════════ */
 .done-wall-stats {
-  display: flex; gap: 16px; flex-wrap: wrap;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
   padding: 16px 0; border-bottom: 1px solid var(--border);
   margin-bottom: 16px;
 }
@@ -4234,40 +4234,36 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .done-filter-btn:hover { border-color: var(--gold); color: var(--cream); }
 .done-filter-btn.active { background: rgba(201,162,39,0.1); border-color: var(--gold); color: var(--gold); }
 .done-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
-  overflow-y: auto;
-  max-height: calc(100% - 180px);
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 .done-card {
-  background: var(--elevated);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px;
-  display: flex; flex-direction: column; gap: 6px;
-  position: relative; overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  border-left: 2px solid transparent;
+  transition: background 0.15s;
 }
-.done-card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 2px;
-}
-.done-card.type-task::before    { background: var(--sage); }
-.done-card.type-project::before { background: var(--gold); }
-.done-card.type-habit::before   { background: var(--blue); }
-.done-card.type-focus::before   { background: var(--amber); }
-.done-card-type {
-  font-family: var(--font-mono); font-size: 8px;
-  letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
-}
+.done-card:hover { background: rgba(201,162,39,0.03); }
+.done-card.type-task    { border-left-color: var(--sage); }
+.done-card.type-project { border-left-color: var(--gold); }
+.done-card.type-habit   { border-left-color: var(--blue); }
+.done-card.type-focus   { border-left-color: var(--amber); }
 .done-card-title {
-  font-family: var(--font-body); font-size: 13px; color: var(--cream);
-  line-height: 1.3;
+  flex: 1;
+  font-family: var(--font-body); font-size: 12px; color: var(--muted-readable);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .done-card-meta {
-  font-family: var(--font-mono); font-size: 9px; color: var(--muted-readable);
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.done-card-date {
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+  flex-shrink: 0;
 }
 
 /* Life OS narrative & anti-goals */
@@ -5193,40 +5189,68 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <div id="panel-insights" style="display:none;flex:1;flex-direction:column;overflow:hidden">
       <div style="flex:1;overflow-y:auto;padding:24px 32px 40px">
 
-        <!-- 1. Week Debrief — top-level current-week summary -->
-        <div style="margin-bottom:28px">
-          <div class="hb-week-card" id="ins-week-debrief">
-            <!-- populated by renderInsights() -->
+        <!-- Row 1: Time Investment (left) | Completed Tasks summary (right) -->
+        <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:0;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+
+          <!-- Left: Time Investment -->
+          <div style="padding-right:24px">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Time Investment</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+              <div class="stat-card"><span class="stat-card-number" id="ins-time-total">—</span><span class="stat-card-label">Total logged</span></div>
+              <div class="stat-card"><span class="stat-card-number" id="ins-time-week">—</span><span class="stat-card-label">This week</span></div>
+              <div class="stat-card"><span class="stat-card-number" id="ins-time-pomo">—</span><span class="stat-card-label">Pomodoro</span></div>
+              <div class="stat-card"><span class="stat-card-number" id="ins-time-commit">—</span><span class="stat-card-label">Commit mode</span></div>
+            </div>
+            <div id="ins-time-breakdown" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+
+          <!-- Center divider line -->
+          <div style="background:var(--border);width:1px;margin:0 0"></div>
+
+          <!-- Right: Completed Tasks summary -->
+          <div style="padding-left:24px">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Completed Tasks</div>
+            <div class="done-wall-stats" id="done-wall-stats" style="padding:0;border:none;margin-bottom:14px;gap:8px"></div>
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Filter</div>
+            <div class="done-filter-bar" id="done-filter-bar">
+              <button class="done-filter-btn active" data-filter="all">All</button>
+              <button class="done-filter-btn" data-filter="today">Today</button>
+              <button class="done-filter-btn" data-filter="week">This week</button>
+              <button class="done-filter-btn" data-filter="month">This month</button>
+            </div>
           </div>
         </div>
 
-        <!-- 2. Habit completions & pattern analysis -->
+        <!-- Row 2: Week Debrief (left) | Habit stats (right) -->
+        <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:0;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+          <div style="padding-right:24px">
+            <div id="ins-week-debrief"><!-- populated by renderInsights() --></div>
+          </div>
+          <div style="background:var(--border);width:1px"></div>
+          <div style="padding-left:24px">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Habit Insights</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="stat-card"><span class="stat-card-number" id="ins-total">—</span><span class="stat-card-label">Habit completions</span></div>
+              <div class="stat-card"><span class="stat-card-number" id="ins-week">—</span><span class="stat-card-label">This week</span></div>
+              <div class="stat-card"><span class="stat-card-number" id="ins-best">—</span><span class="stat-card-label">Best day</span></div>
+              <div class="stat-card"><span class="stat-card-number" id="ins-days">—</span><span class="stat-card-label">Days active</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Done wall — compact list, collapsible -->
         <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Habit Insights</div>
-          <div style="font-family:var(--font-display);font-size:22px;font-weight:300;color:var(--cream);margin-bottom:4px;">What's actually happening</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Friction detection, pattern analysis, and contextual nudges — not generic reminders.</div>
-          <div class="stat-card-grid" style="margin-bottom:0">
-            <div class="stat-card">
-              <span class="stat-card-number" id="ins-total">—</span>
-              <span class="stat-card-label">Habit completions</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-card-number" id="ins-week">—</span>
-              <span class="stat-card-label">This week</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-card-number" id="ins-best">—</span>
-              <span class="stat-card-label">Best day</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-card-number" id="ins-days">—</span>
-              <span class="stat-card-label">Days active</span>
-            </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:pointer;user-select:none" id="done-wall-header">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">Task Log</div>
+            <button id="done-wall-fold-btn" style="background:none;border:1px solid var(--border);border-radius:100px;padding:2px 10px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted);cursor:pointer;transition:var(--ease-fast)">▲ fold</button>
+          </div>
+          <div id="done-grid-wrap">
+            <div class="done-grid" id="done-grid"></div>
           </div>
         </div>
 
-        <!-- 3. Friction Detector + Context Patterns -->
-        <div class="hb-insight-layout" style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+        <!-- Row 4: Friction Detector + Context Patterns (bottom) -->
+        <div class="hb-insight-layout">
           <div class="hb-insight-card">
             <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
             <div class="hb-friction-insight" id="ins-friction-list">
@@ -5243,43 +5267,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
               <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading…</div>
             </div>
           </div>
-        </div>
-
-        <!-- 4. Time Investment -->
-        <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Time Investment</div>
-          <div class="stat-card-grid" style="margin-bottom:16px">
-            <div class="stat-card">
-              <span class="stat-card-number" id="ins-time-total">—</span>
-              <span class="stat-card-label">Total hrs logged</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-card-number" id="ins-time-week">—</span>
-              <span class="stat-card-label">This week</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-card-number" id="ins-time-pomo">—</span>
-              <span class="stat-card-label">Pomodoro</span>
-            </div>
-            <div class="stat-card">
-              <span class="stat-card-number" id="ins-time-commit">—</span>
-              <span class="stat-card-label">Commit mode</span>
-            </div>
-          </div>
-          <div id="ins-time-breakdown" style="display:flex;flex-direction:column;gap:8px"></div>
-        </div>
-
-        <!-- 5. Done Wall — historical archive at bottom -->
-        <div>
-          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Completed Tasks</div>
-          <div class="done-wall-stats" id="done-wall-stats"></div>
-          <div class="done-filter-bar" id="done-filter-bar" style="margin-top:10px">
-            <button class="done-filter-btn active" data-filter="all">All</button>
-            <button class="done-filter-btn" data-filter="today">Today</button>
-            <button class="done-filter-btn" data-filter="week">This week</button>
-            <button class="done-filter-btn" data-filter="month">This month</button>
-          </div>
-          <div class="done-grid" id="done-grid" style="margin-top:14px"></div>
         </div>
 
       </div>
@@ -7830,6 +7817,30 @@ function renderMilestoneTimeline(projId) {
     </div>`;
   }).join('');
 
+  // Build initiative metadata section (notes, mission, anti-goals)
+  const metaHtml = (() => {
+    const parts = [];
+    if (proj.notes) parts.push(`
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Notes & Context</div>
+        <div style="font-size:12px;color:var(--muted-readable);line-height:1.6;white-space:pre-wrap">${escHtml(proj.notes)}</div>
+      </div>`);
+    if (proj.missionBrief) parts.push(`
+      <div style="margin-bottom:12px">
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Mission Brief</div>
+        <div class="los-narrative">${escHtml(proj.missionBrief)}</div>
+      </div>`);
+    if (proj.antiGoals) {
+      const lines = proj.antiGoals.split('\n').map(l => l.trim()).filter(Boolean);
+      parts.push(`
+        <div style="margin-bottom:12px">
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
+          <div class="los-anti-goals">${lines.map(l => `<div class="los-anti-goal-item">${escHtml(l)}</div>`).join('')}</div>
+        </div>`);
+    }
+    return parts.length ? `<div style="padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(201,162,39,0.02)">${parts.join('')}</div>` : '';
+  })();
+
   body.innerHTML = `
     <div class="ms-alt-timeline-wrap">
       <div class="ms-alt-project-header">
@@ -7846,6 +7857,7 @@ function renderMilestoneTimeline(projId) {
           <span>${Math.round(elapsedPct)}% elapsed</span>
         </div>
       </div>
+      ${metaHtml}
       ${events.length ? `
         <div class="ms-alt-entries">
           <div class="ms-alt-center-line"></div>
@@ -11930,21 +11942,23 @@ function renderDoneWall() {
   const grid = document.getElementById('done-grid');
   if (!grid) return;
   if (!tasks.length) {
-    grid.innerHTML = `<div style="grid-column:1/-1;font-family:var(--font-mono);font-size:12px;color:var(--muted);text-align:center;padding:40px 0">Nothing here yet — go complete something!</div>`;
+    grid.innerHTML = `<div style="font-family:var(--font-mono);font-size:12px;color:var(--muted);text-align:center;padding:40px 0">Nothing here yet — go complete something!</div>`;
     return;
   }
   grid.innerHTML = tasks.map(task => {
     const cat = task.category ? CATEGORIES[task.category] : null;
     const catBadge = cat
-      ? `<span style="font-size:9px;padding:1px 6px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>`
+      ? `<span style="font-family:var(--font-mono);font-size:9px;padding:1px 6px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;white-space:nowrap">${cat.label}</span>`
       : '';
     const dateLabel = task.doneDate ? fmtDate(task.doneDate) : '';
-    const energyInfo = task.energyType ? ENERGY_TYPES[task.energyType] : null;
-    const energyBadge = energyInfo ? `<span class="task-energy-badge ${energyInfo.cssClass}" style="font-size:9px">${energyInfo.icon} ${energyInfo.label}</span>` : '';
+    const timeBadge = task.timeSpentMinutes
+      ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
+      : '';
     return `<div class="done-card">
-      <div class="done-card-title">✓ ${escHtml(task.title)}</div>
-      <div class="done-card-meta">${catBadge} ${energyBadge}</div>
-      ${dateLabel ? `<div class="done-card-date">${dateLabel}</div>` : ''}
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);flex-shrink:0">✓</span>
+      <span class="done-card-title">${escHtml(task.title)}</span>
+      <div class="done-card-meta">${catBadge}${timeBadge}</div>
+      ${dateLabel ? `<span class="done-card-date">${dateLabel}</span>` : ''}
     </div>`;
   }).join('');
 }
@@ -11957,6 +11971,19 @@ function initDoneWall() {
     document.querySelectorAll('.done-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === _doneWallFilter));
     renderDoneWall();
   });
+
+  // Fold/unfold toggle
+  let _doneWallFolded = false;
+  const foldBtn = document.getElementById('done-wall-fold-btn');
+  const wrap    = document.getElementById('done-grid-wrap');
+  const header  = document.getElementById('done-wall-header');
+  const toggle  = () => {
+    _doneWallFolded = !_doneWallFolded;
+    if (wrap) wrap.style.display = _doneWallFolded ? 'none' : '';
+    if (foldBtn) foldBtn.textContent = _doneWallFolded ? '▼ unfold' : '▲ fold';
+  };
+  foldBtn?.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+  header?.addEventListener('click', toggle);
 }
 
 /* ── Boot task system after auth ──────────────────────── */
