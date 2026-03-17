@@ -9013,8 +9013,9 @@ function _tdDraw() {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   if (!W || !H) return;
-  const cx = W / 2, cy = H / 2;
+  const cx = W / 2;
 
+  /* background */
   ctx.fillStyle = '#060504';
   ctx.fillRect(0, 0, W, H);
 
@@ -9046,121 +9047,144 @@ function _tdDraw() {
   const minPct   = (sc + ms / 1000) / 60;
   const secPct   = ms / 1000;
 
-  /* ── ring layout ── */
-  const maxR   = Math.min(cx, cy) * 0.93;
-  const outerR = maxR;
-  const innerR = maxR * 0.33;
+  /* ── half-dial layout: arcs centered at bottom-center ── */
+  // cy is the pivot — arcs sweep upward from it as semicircles
+  const cy    = H * 0.97;
+  const maxR  = Math.min(cx * 0.95, cy * 0.97);
+  const minR  = maxR * 0.18;
   const NRINGS = 7;
-  const gap    = (outerR - innerR) / (NRINGS - 1);
+  const gap   = (maxR - minR) / (NRINGS - 1);
 
   const MO_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const DAY_ABBR = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   const ringDefs = [
-    { label:'YEAR',  pct:yearPct,  divs:12,          majorEvery:3, numEvery:1,
+    { label:'YEAR',  pct: yearPct,  divs: 12,          majorEvery: 3, numEvery: 1,
       numFmt: i => MO_NAMES[i] },
-    { label:'MONTH', pct:monthPct, divs:daysInMonth,  majorEvery:7, numEvery:7,
+    { label:'MONTH', pct: monthPct, divs: daysInMonth,  majorEvery: 7, numEvery: 7,
       numFmt: i => String(i + 1) },
-    { label:'WEEK',  pct:weekPct,  divs:7,            majorEvery:1, numEvery:1,
+    { label:'WEEK',  pct: weekPct,  divs: 7,            majorEvery: 1, numEvery: 1,
       numFmt: i => DAY_ABBR[i] },
-    { label:'DAY',   pct:dayPct,   divs:24,           majorEvery:6, numEvery:6,
+    { label:'DAY',   pct: dayPct,   divs: 24,           majorEvery: 6, numEvery: 6,
       numFmt: i => String(i).padStart(2,'0') },
-    { label:'HOUR',  pct:hourPct,  divs:60,           majorEvery:5, numEvery:15,
+    { label:'HOUR',  pct: hourPct,  divs: 60,           majorEvery: 5, numEvery: 15,
       numFmt: i => String(i).padStart(2,'0') },
-    { label:'MIN',   pct:minPct,   divs:60,           majorEvery:5, numEvery:15,
+    { label:'MIN',   pct: minPct,   divs: 60,           majorEvery: 5, numEvery: 15,
       numFmt: i => String(i).padStart(2,'0') },
-    { label:'SEC',   pct:secPct,   divs:60,           majorEvery:5, numEvery:15,
+    { label:'SEC',   pct: secPct,   divs: 60,           majorEvery: 5, numEvery: 15,
       numFmt: i => String(i).padStart(2,'0') },
   ];
 
   ringDefs.forEach((ring, i) => {
-    ring.r       = outerR - i * gap;
-    ring.opacity = 1 - (i / (NRINGS - 1)) * 0.55; // 1.0 → 0.45
+    ring.r       = maxR - i * gap;
+    ring.opacity = 1 - (i / (NRINGS - 1)) * 0.50; // 1.0 → 0.50
     ring.trackW  = Math.max(ring.r * 0.016, 1.5);
-    ring.numDist = ring.r - gap * 0.44;
   });
 
-  ringDefs.forEach(ring => _tdDrawRing(ctx, cx, cy, ring));
+  ringDefs.forEach(ring => _tdDrawHalfDial(ctx, cx, cy, ring, gap));
 
-  /* ── center clock ── */
-  const centerR = innerR - gap * 0.35;
-  const fMain   = Math.max(centerR * 0.38, 11);
-  const fSub    = fMain * 0.38;
+  /* ── current time display — inside the innermost arc ── */
+  const innerR = ringDefs[NRINGS - 1].r;
+  const dispY  = cy - innerR * 0.52;
+  const fMain  = Math.max(innerR * 0.44, 13);
+  const fSub   = fMain * 0.42;
   ctx.save();
   ctx.textAlign    = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle    = 'rgba(255,255,255,0.88)';
   ctx.font         = `300 ${fMain}px 'DM Mono', monospace`;
-  ctx.fillText(`${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}:${String(sc).padStart(2,'0')}`, cx, cy - fMain * 0.22);
-  ctx.fillStyle = 'rgba(255,255,255,0.32)';
+  ctx.fillText(`${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}:${String(sc).padStart(2,'0')}`, cx, dispY);
+  ctx.fillStyle = 'rgba(255,255,255,0.30)';
   ctx.font      = `300 ${fSub}px 'Instrument Sans', system-ui, sans-serif`;
-  ctx.fillText(new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:tz}).format(now), cx, cy + fMain * 0.58);
+  ctx.fillText(
+    new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:tz}).format(now),
+    cx, dispY + fMain * 0.82
+  );
   ctx.restore();
 }
 
-function _tdDrawRing(ctx, cx, cy, ring) {
-  const { r, pct, divs, majorEvery, numEvery, numFmt, opacity, trackW, numDist } = ring;
-  const TAU   = Math.PI * 2;
-  const START = -Math.PI / 2; // 12 o'clock
+function _tdDrawHalfDial(ctx, cx, cy, ring, gap) {
+  const { r, pct, divs, majorEvery, numEvery, numFmt, opacity, trackW, label } = ring;
+  // Half-dial: upper semicircle. Center at (cx, cy) with cy near bottom of canvas.
+  // Arc sweeps clockwise from π (left) → 3π/2 (top) → 2π/0 (right).
+  // Progress goes left-to-right: endAngle = π + pct * π
+  const ARC_START = Math.PI;       // left endpoint  (9 o'clock)
+  const ARC_END   = 0;             // right endpoint (3 o'clock)
 
   ctx.save();
 
-  /* faint track */
+  /* faint track — full upper semicircle */
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, TAU);
-  ctx.strokeStyle = `rgba(255,255,255,${(opacity * 0.12).toFixed(3)})`;
+  ctx.arc(cx, cy, r, ARC_START, ARC_END, false);
+  ctx.strokeStyle = `rgba(255,255,255,${(opacity * 0.10).toFixed(3)})`;
   ctx.lineWidth   = trackW;
   ctx.lineCap     = 'butt';
   ctx.stroke();
 
-  /* progress arc */
+  /* progress arc — from left to current position */
   if (pct > 0.0005) {
+    const endAngle = ARC_START + pct * Math.PI;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, START, START + pct * TAU);
-    ctx.strokeStyle = `rgba(255,255,255,${(opacity * 0.82).toFixed(3)})`;
+    ctx.arc(cx, cy, r, ARC_START, endAngle, false);
+    ctx.strokeStyle = `rgba(255,255,255,${(opacity * 0.88).toFixed(3)})`;
     ctx.lineWidth   = trackW;
     ctx.lineCap     = 'round';
     ctx.stroke();
   }
 
-  /* tick marks + numbers */
+  /* tick marks + numbers along the semicircle */
   ctx.lineCap = 'butt';
-  for (let i = 0; i < divs; i++) {
-    const angle   = START + (i / divs) * TAU;
+  for (let i = 0; i <= divs; i++) {
+    const angle   = ARC_START + (i / divs) * Math.PI;
     const isMajor = (i % majorEvery === 0);
-    const tLen    = isMajor ? r * 0.055 : r * 0.028;
+    const tLen    = isMajor ? r * 0.050 : r * 0.024;
     const cos     = Math.cos(angle), sin = Math.sin(angle);
 
     ctx.beginPath();
     ctx.moveTo(cx + (r - tLen) * cos, cy + (r - tLen) * sin);
-    ctx.lineTo(cx + (r + tLen * 0.4) * cos, cy + (r + tLen * 0.4) * sin);
-    ctx.strokeStyle = `rgba(255,255,255,${(opacity * (isMajor ? 0.55 : 0.18)).toFixed(3)})`;
-    ctx.lineWidth   = isMajor ? 1.5 : 0.75;
+    ctx.lineTo(cx + (r + tLen * 0.45) * cos, cy + (r + tLen * 0.45) * sin);
+    ctx.strokeStyle = `rgba(255,255,255,${(opacity * (isMajor ? 0.52 : 0.15)).toFixed(3)})`;
+    ctx.lineWidth   = isMajor ? 1.2 : 0.6;
     ctx.stroke();
 
-    if (numEvery && i % numEvery === 0 && numFmt) {
+    /* numbers on major divisions, outside the arc track */
+    if (i < divs && numEvery && i % numEvery === 0 && numFmt) {
       const txt = numFmt(i);
       if (txt != null) {
-        const fSize = Math.max(numDist * 0.075, 8);
-        ctx.font         = `${fSize}px 'DM Mono', monospace`;
-        ctx.fillStyle    = `rgba(255,255,255,${(opacity * 0.62).toFixed(3)})`;
+        const numR  = r + gap * 0.54;
+        const fSize = Math.max(numR * 0.060, 7);
+        ctx.font         = `300 ${fSize}px 'DM Mono', monospace`;
+        ctx.fillStyle    = `rgba(255,255,255,${(opacity * 0.48).toFixed(3)})`;
         ctx.textAlign    = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(txt, cx + numDist * cos, cy + numDist * sin);
+        ctx.fillText(txt, cx + numR * cos, cy + numR * sin);
       }
     }
   }
 
+  /* ring label — inside arc, near the left end */
+  {
+    const lblAngle = ARC_START + 0.18; // slightly past left endpoint going clockwise (upward)
+    const lblR     = r - gap * 0.50;
+    const lcos     = Math.cos(lblAngle), lsin = Math.sin(lblAngle);
+    const fSize    = Math.max(r * 0.055, 7);
+    ctx.font         = `400 ${fSize}px 'Instrument Sans', system-ui, sans-serif`;
+    ctx.fillStyle    = `rgba(255,255,255,${(opacity * 0.28).toFixed(3)})`;
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, cx + lblR * lcos, cy + lblR * lsin);
+  }
+
   /* glowing dot at current position */
-  const dotAngle = START + pct * TAU;
+  const dotAngle = ARC_START + pct * Math.PI;
   const dotCx    = cx + r * Math.cos(dotAngle);
   const dotCy    = cy + r * Math.sin(dotAngle);
-  const dotR     = trackW * 2.5;
+  const dotR     = trackW * 2.4;
   const grd      = ctx.createRadialGradient(dotCx, dotCy, 0, dotCx, dotCy, dotR);
-  grd.addColorStop(0,   `rgba(255,255,255,${opacity.toFixed(3)})`);
-  grd.addColorStop(1,   'rgba(255,255,255,0)');
+  grd.addColorStop(0, `rgba(255,255,255,${opacity.toFixed(3)})`);
+  grd.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.beginPath();
-  ctx.arc(dotCx, dotCy, dotR, 0, TAU);
+  ctx.arc(dotCx, dotCy, dotR, 0, Math.PI * 2);
   ctx.fillStyle = grd;
   ctx.fill();
 
