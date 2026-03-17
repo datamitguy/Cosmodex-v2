@@ -591,6 +591,7 @@ body::after {
   height: 60px;
   border-bottom: 1px solid rgba(42,37,32,0.6);
   position: relative;
+  background: var(--bg);
 }
 
 .cal-hour-label {
@@ -5191,43 +5192,60 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <!-- Insights full-page panel -->
     <div id="panel-insights" style="display:none;flex:1;flex-direction:column;overflow:hidden">
       <div style="flex:1;overflow-y:auto;padding:24px 32px 40px">
-        <!-- Done Wall section -->
+
+        <!-- 1. Week Debrief — top-level current-week summary -->
+        <div style="margin-bottom:28px">
+          <div class="hb-week-card" id="ins-week-debrief">
+            <!-- populated by renderInsights() -->
+          </div>
+        </div>
+
+        <!-- 2. Habit completions & pattern analysis -->
         <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Completed Tasks</div>
-          <div class="done-wall-stats" id="done-wall-stats"></div>
-          <div class="done-filter-bar" id="done-filter-bar" style="margin-top:10px">
-            <button class="done-filter-btn active" data-filter="all">All</button>
-            <button class="done-filter-btn" data-filter="today">Today</button>
-            <button class="done-filter-btn" data-filter="week">This week</button>
-            <button class="done-filter-btn" data-filter="month">This month</button>
-          </div>
-          <div class="done-grid" id="done-grid" style="margin-top:14px"></div>
-        </div>
-
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Habit Insights</div>
-        <div style="font-family:var(--font-display);font-size:22px;font-weight:300;color:var(--cream);margin-bottom:4px;">What's actually happening</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Friction detection, pattern analysis, and contextual nudges — not generic reminders.</div>
-
-        <div class="stat-card-grid" style="margin-bottom:20px;">
-          <div class="stat-card">
-            <span class="stat-card-number" id="ins-total">—</span>
-            <span class="stat-card-label">Habit completions</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card-number" id="ins-week">—</span>
-            <span class="stat-card-label">This week</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card-number" id="ins-best">—</span>
-            <span class="stat-card-label">Best day</span>
-          </div>
-          <div class="stat-card">
-            <span class="stat-card-number" id="ins-days">—</span>
-            <span class="stat-card-label">Days active</span>
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Habit Insights</div>
+          <div style="font-family:var(--font-display);font-size:22px;font-weight:300;color:var(--cream);margin-bottom:4px;">What's actually happening</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:20px;">Friction detection, pattern analysis, and contextual nudges — not generic reminders.</div>
+          <div class="stat-card-grid" style="margin-bottom:0">
+            <div class="stat-card">
+              <span class="stat-card-number" id="ins-total">—</span>
+              <span class="stat-card-label">Habit completions</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card-number" id="ins-week">—</span>
+              <span class="stat-card-label">This week</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card-number" id="ins-best">—</span>
+              <span class="stat-card-label">Best day</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card-number" id="ins-days">—</span>
+              <span class="stat-card-label">Days active</span>
+            </div>
           </div>
         </div>
 
-        <!-- Time Investment Summary -->
+        <!-- 3. Friction Detector + Context Patterns -->
+        <div class="hb-insight-layout" style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
+          <div class="hb-insight-card">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
+            <div class="hb-friction-insight" id="ins-friction-list">
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading habit data…</div>
+            </div>
+            <div class="hb-ai-nudge">
+              <div class="hb-an-label">Cosmodex Pattern Insight</div>
+              <div class="hb-an-text" id="ins-pattern-insight">Analysing your habits…</div>
+            </div>
+          </div>
+          <div class="hb-insight-card">
+            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Habit Success by Context</div>
+            <div class="hb-pattern-wrap" id="ins-context-list">
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Time Investment -->
         <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
           <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Time Investment</div>
           <div class="stat-card-grid" style="margin-bottom:16px">
@@ -5251,32 +5269,19 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <div id="ins-time-breakdown" style="display:flex;flex-direction:column;gap:8px"></div>
         </div>
 
-        <div class="hb-insight-layout">
-          <!-- Friction Detector -->
-          <div class="hb-insight-card">
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
-            <div class="hb-friction-insight" id="ins-friction-list">
-              <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading habit data…</div>
-            </div>
-            <div class="hb-ai-nudge">
-              <div class="hb-an-label">Cosmodex Pattern Insight</div>
-              <div class="hb-an-text" id="ins-pattern-insight">Analysing your habits…</div>
-            </div>
+        <!-- 5. Done Wall — historical archive at bottom -->
+        <div>
+          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Completed Tasks</div>
+          <div class="done-wall-stats" id="done-wall-stats"></div>
+          <div class="done-filter-bar" id="done-filter-bar" style="margin-top:10px">
+            <button class="done-filter-btn active" data-filter="all">All</button>
+            <button class="done-filter-btn" data-filter="today">Today</button>
+            <button class="done-filter-btn" data-filter="week">This week</button>
+            <button class="done-filter-btn" data-filter="month">This month</button>
           </div>
-
-          <!-- Context Patterns -->
-          <div class="hb-insight-card">
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Habit Success by Context</div>
-            <div class="hb-pattern-wrap" id="ins-context-list">
-              <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading…</div>
-            </div>
-          </div>
-
-          <!-- Week Debrief -->
-          <div class="hb-week-card" id="ins-week-debrief">
-            <!-- populated by renderInsights() -->
-          </div>
+          <div class="done-grid" id="done-grid" style="margin-top:14px"></div>
         </div>
+
       </div>
     </div><!-- /panel-insights -->
 
@@ -11215,13 +11220,10 @@ function getCmdCommands() {
 }
 
 function showInitiativeTasks(proj) {
-  // Collect all task IDs linked via milestone event activities
-  const linkedEvents = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
-  const taskIds = new Set();
-  linkedEvents.forEach(ev => {
-    (ev.activities || []).forEach(a => { if (a.taskId) taskIds.add(a.taskId); });
-  });
-  const tasks = TASKS.filter(t => taskIds.has(t.id));
+  // Sort milestone events by date (calendar order)
+  const linkedEvents = MILESTONE_EVENTS
+    .filter(e => e.projectId === proj.id)
+    .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
   const titleEl = document.getElementById('person-tasks-title');
   const listEl  = document.getElementById('person-tasks-list');
@@ -11232,26 +11234,37 @@ function showInitiativeTasks(proj) {
     </span>`;
   }
   if (listEl) {
-    if (!tasks.length) {
-      listEl.innerHTML = `<div style="padding:20px 16px;font-size:13px;color:var(--muted)">No tasks linked to <strong>${escHtml(proj.title)}</strong> yet. Link tasks via milestone activities in Life OS.</div>`;
-    } else {
-      const open = tasks.filter(t => !t.done);
-      const done = tasks.filter(t => t.done);
-      const renderGroup = (arr, label) => arr.length ? `
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
-        ${arr.map(t => {
-          const cat = t.category ? CATEGORIES[t.category] : null;
-          const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:9px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
-          return `
-          <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">
-            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--ink)">${t.done?'✓':''}</div>
-            <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
-            ${catBadge}
-            ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
-          </div>`;
-        }).join('')}` : '';
-      listEl.innerHTML = renderGroup(open, 'Open') + renderGroup(done, 'Done');
+    const renderTask = t => {
+      const cat = t.category ? CATEGORIES[t.category] : null;
+      const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:9px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px 9px 28px;border-bottom:1px solid var(--border)">
+        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--ink)">${t.done?'✓':''}</div>
+        <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
+        ${catBadge}
+        ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
+      </div>`;
+    };
+
+    let html = '';
+    let totalTasks = 0;
+    linkedEvents.forEach(ev => {
+      const evTaskIds = (ev.activities || []).filter(a => a.taskId).map(a => a.taskId);
+      const evTasks = TASKS.filter(t => evTaskIds.includes(t.id));
+      if (!evTasks.length) return;
+      totalTasks += evTasks.length;
+      const dateLabel = ev.date ? fmtDate(ev.date) : '';
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:10px 16px 7px;border-bottom:1px solid var(--border);background:var(--elevated);position:sticky;top:0;z-index:1">
+        <span style="width:7px;height:7px;border-radius:50%;background:${proj.color};flex-shrink:0"></span>
+        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--cream);font-weight:500;flex:1">${escHtml(ev.title || 'Milestone')}</span>
+        ${dateLabel ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${dateLabel}</span>` : ''}
+      </div>`;
+      evTasks.forEach(t => { html += renderTask(t); });
+    });
+
+    if (!totalTasks) {
+      html = `<div style="padding:20px 16px;font-size:13px;color:var(--muted)">No tasks linked to <strong>${escHtml(proj.title)}</strong> yet. Link tasks via milestone activities in Life OS.</div>`;
     }
+    listEl.innerHTML = html;
   }
   document.getElementById('person-tasks-overlay').classList.add('open');
 }
