@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
@@ -3790,6 +3790,37 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .energy-creative{ background: rgba(201,162,39,0.1);  border-color: rgba(201,162,39,0.3);  color: var(--gold); }
 .energy-quick   { background: rgba(74,124,94,0.1);   border-color: rgba(74,124,94,0.3);   color: var(--sage); }
 
+/* @mention dropdown & people badges */
+.mention-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; cursor: pointer;
+  font-family: var(--font-body); font-size: 12px; color: var(--cream);
+  transition: background 0.12s;
+}
+.mention-item:hover, .mention-item.selected { background: rgba(201,162,39,0.1); color: var(--gold); }
+.mention-avatar {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 600; color: #0d0c0a; flex-shrink: 0;
+}
+.task-people-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 7px 2px 5px; border-radius: 100px;
+  background: rgba(201,162,39,0.1); border: 1px solid rgba(201,162,39,0.3);
+  color: var(--gold); cursor: default;
+}
+.task-people-pill .pill-remove {
+  cursor: pointer; opacity: 0.6; font-size: 10px; line-height: 1;
+  background: none; border: none; color: inherit; padding: 0; margin-left: 2px;
+}
+.task-people-pill .pill-remove:hover { opacity: 1; }
+.task-person-badge {
+  font-family: var(--font-mono); font-size: 9px;
+  padding: 1px 6px; border-radius: 100px; border: 1px solid;
+  flex-shrink: 0;
+}
+
 /* Energy picker pill group */
 .energy-picker {
   display: flex;
@@ -4468,8 +4499,12 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <!-- Tasks Panel -->
     <div id="panel-tasks">
       <!-- Always-visible quick-add form -->
-      <div class="task-add-form" id="task-add-form">
-        <input class="task-add-input" id="task-add-input" type="text" placeholder="Add a task…" autocomplete="off" />
+      <div class="task-add-form" id="task-add-form" style="position:relative">
+        <input class="task-add-input" id="task-add-input" type="text" placeholder="Add a task… (type @ to mention people)" autocomplete="off" />
+        <!-- @mention dropdown -->
+        <div id="task-mention-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--elevated);border:1px solid var(--border);border-radius:8px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.4);padding:4px 0;max-height:200px;overflow-y:auto"></div>
+        <!-- Selected people pills -->
+        <div id="task-people-pills" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px"></div>
         <div class="task-add-meta">
           <select class="task-priority-select" id="task-add-priority">
             <option value="low">Low</option>
@@ -4611,6 +4646,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
               <input id="lists-new-title" class="form-input" placeholder="New list name…" autocomplete="off" style="font-size:13px;padding:7px 10px">
               <button id="lists-create-btn" class="btn-primary" style="white-space:nowrap;font-size:10px;padding:7px 12px">+ Create</button>
             </div>
+          </div>
+          <!-- Search lists -->
+          <div style="padding:8px 12px 0;flex-shrink:0">
+            <input id="lists-search" class="form-input" placeholder="Search lists…" autocomplete="off" style="font-size:12px;padding:6px 10px;width:100%">
           </div>
           <!-- List tiles (vertical cards in sidebar) -->
           <div id="lists-sidebar-items" style="flex:1;overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent"></div>
@@ -5688,6 +5727,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <div class="settings-nav-item" data-settings-tab="data">
             <span class="settings-nav-icon">◇</span> Data & Sync
           </div>
+          <div class="settings-nav-item" data-settings-tab="people">
+            <span class="settings-nav-icon">◎</span> People
+          </div>
         </div>
 
         <!-- Right content -->
@@ -5826,9 +5868,33 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             </div>
           </div>
 
+          <!-- ── People ──────────────────────── -->
+          <div class="settings-content-panel" id="st-pane-people">
+            <div class="settings-section">
+              <div class="settings-section-title">People</div>
+              <div class="settings-desc">Add teammates, collaborators, or contacts. Type <code style="font-family:var(--font-mono);font-size:11px;background:var(--elevated);padding:1px 5px;border-radius:3px">@</code> in the task input to link them to tasks.</div>
+              <div id="settings-people-list" style="margin-bottom:14px"></div>
+              <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
+                <input id="people-name-input" type="text" class="sched-input" placeholder="Full name (e.g. Sarah Chen)" autocomplete="off" />
+                <button class="task-add-confirm" id="people-add-btn">Add</button>
+              </div>
+            </div>
+          </div>
+
         </div><!-- /settings-right -->
       </div><!-- /settings-layout -->
     </div>
+  </div>
+</div>
+
+<!-- Person Tasks Overlay -->
+<div class="overlay" id="person-tasks-overlay" style="z-index:900">
+  <div class="overlay-box" style="max-width:520px;width:90vw">
+    <div class="overlay-header">
+      <span class="overlay-title" id="person-tasks-title">Tasks</span>
+      <button class="overlay-close" data-close="person-tasks-overlay">✕</button>
+    </div>
+    <div id="person-tasks-list" style="max-height:420px;overflow-y:auto;padding:4px 0"></div>
   </div>
 </div>
 
@@ -5935,6 +6001,23 @@ let CATEGORIES = {};
     } catch(e) {}
   }
 })();
+
+// People (collaborators / contacts for @mention)
+let PEOPLE = [];
+(function loadSavedPeople() {
+  try { PEOPLE = JSON.parse(localStorage.getItem('cdx_people') || '[]'); } catch(e) {}
+})();
+function savePeople() {
+  localStorage.setItem('cdx_people', JSON.stringify(PEOPLE));
+  const user = window.CDX_USER;
+  if (!user || !window.CDX_FB || !window.CDX_DB) return;
+  const { doc, setDoc } = window.CDX_FB;
+  setDoc(doc(window.CDX_DB, 'users', user.uid, 'config', 'people'),
+    { people: PEOPLE }, { merge: false }
+  ).catch(e => console.warn('People Firestore save failed:', e));
+}
+
+const PEOPLE_COLORS = ['#c9a227','#4a7c5e','#6b9fd4','#c45c2a','#9b7fd4','#e8a020','#4a9b7f','#d46b9f'];
 
 const ENERGY_TYPES = {
   quick:   { label: 'Quick',   icon: '⚡', cssClass: 'energy-quick' },
@@ -6190,11 +6273,17 @@ async function deleteListItem(listId, itemId) {
 function renderLists() {
   const sidebar = document.getElementById('lists-sidebar-items');
   if (!sidebar) return;
+  const q = (document.getElementById('lists-search')?.value || '').toLowerCase().trim();
+  const visible = q ? LISTS.filter(l => l.title.toLowerCase().includes(q)) : LISTS;
   if (!LISTS.length) {
     sidebar.innerHTML = '<div style="padding:16px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No lists yet</div>';
     return;
   }
-  sidebar.innerHTML = LISTS.map(l => {
+  if (!visible.length) {
+    sidebar.innerHTML = '<div style="padding:16px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No match</div>';
+    return;
+  }
+  sidebar.innerHTML = visible.map(l => {
     const total = (l.items||[]).length;
     const isActive = _listView === l.id;
     return `
@@ -6278,6 +6367,9 @@ function initListsPage() {
       if (card) openListDetail(card.dataset.listId);
     });
   }
+
+  // Search lists
+  document.getElementById('lists-search')?.addEventListener('input', () => renderLists());
 
   // Create new list — NO prompt(), inline input
   const createBtn = document.getElementById('lists-create-btn');
@@ -8609,11 +8701,33 @@ function initOrbAddTask() {
 
 function updateCalNowLine() {
   const now = new Date();
-  const minutesSince5am = (now.getHours() - 5) * 60 + now.getMinutes();
+  // Use Intl to read hours/minutes in the browser's local IANA timezone
+  // (handles any OS timezone correctly, including HKT UTC+8)
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric', minute: 'numeric', hour12: false, timeZone: tz
+  }).formatToParts(now);
+  const h = parseInt(parts.find(p => p.type === 'hour').value, 10);
+  const m = parseInt(parts.find(p => p.type === 'minute').value, 10);
+  const minutesSince5am = (h - 5) * 60 + m;
   const totalMinutes = 19 * 60;
   const pct = Math.max(0, Math.min(100, (minutesSince5am / totalMinutes) * 100));
   const line = document.getElementById('cal-now-line');
-  if (line) line.style.top = pct + '%';
+  if (line) {
+    line.style.top = pct + '%';
+    // Show local time + timezone as tooltip
+    const timeStr = `${String(h % 24).padStart(2,'0')}:${String(m).padStart(2,'0')} ${tz}`;
+    line.title = timeStr;
+    // Small time label riding beside the dot
+    let lbl = line.querySelector('.cal-now-time-lbl');
+    if (!lbl) {
+      lbl = document.createElement('span');
+      lbl.className = 'cal-now-time-lbl';
+      lbl.style.cssText = 'position:absolute;left:40px;top:-9px;font-family:var(--font-mono);font-size:9px;color:var(--gold);white-space:nowrap;opacity:0.8;pointer-events:none';
+      line.appendChild(lbl);
+    }
+    lbl.textContent = timeStr;
+  }
 }
 // Update every minute so it stays accurate
 setInterval(updateCalNowLine, 60 * 1000);
@@ -8900,6 +9014,16 @@ function buildTaskRow(task, idx) {
     ? `<span class="task-friction-badge" data-friction="${escAttr(task.id)}" title="Deferred ${task.deferrals} times — click to tag">⚠ Friction</span>`
     : '';
 
+  // People badges
+  const peopleBadgesHtml = (task.people && task.people.length)
+    ? task.people.map(id => {
+        const p = PEOPLE.find(p => p.id === id);
+        if (!p) return '';
+        return `<span class="task-person-badge" style="background:${p.color}18;border-color:${p.color}44;color:${p.color}" title="${escAttr(p.name)}">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:50%;background:${p.color};font-size:6px;font-weight:600;color:#0d0c0a;margin-right:3px">${escHtml(p.initials)}</span>@${escHtml(p.name)}</span>`;
+      }).join('')
+    : '';
+
   // Re-entry snapshot display
   const snapshotHtml = task.reentrySnapshot
     ? `<div class="task-snapshot-display">↩ ${escHtml(task.reentrySnapshot)}</div>`
@@ -8925,6 +9049,7 @@ function buildTaskRow(task, idx) {
         ${recurBadge}
         ${energyBadge}
         ${frictionBadge}
+        ${peopleBadgesHtml}
         ${decayBarHtml}
       </div>
     </div>
@@ -9196,7 +9321,7 @@ function initTaskEditModal() {
 }
 
 /* ── Firestore CRUD ───────────────────────────────────── */
-async function addTask(title, priority = 'med', dueDate = '', category = '', recurrence = '', energyType = '') {
+async function addTask(title, priority = 'med', dueDate = '', category = '', recurrence = '', energyType = '', people = []) {
   const { addDoc, serverTimestamp } = window.CDX_FB;
   try {
     await addDoc(_uc('tasks'), {
@@ -9205,6 +9330,7 @@ async function addTask(title, priority = 'med', dueDate = '', category = '', rec
       category: category || null,
       recurrence: recurrence || null,
       energyType: energyType || null,
+      people: people.length ? people : null,
       calEventId: null, subtasks: [],
       deferrals: 0,
       createdAt: serverTimestamp()
@@ -10000,6 +10126,120 @@ function initAddTaskForm() {
     });
   });
 
+  // ── @mention people state ──
+  let _taskPeople = []; // array of person IDs
+  let _mentionQuery = null; // null = not in mention mode; string = current query
+  const mentionDropdown = document.getElementById('task-mention-dropdown');
+  const peoplePillsRow  = document.getElementById('task-people-pills');
+
+  function renderPeoplePills() {
+    if (!_taskPeople.length) { peoplePillsRow.style.display = 'none'; return; }
+    peoplePillsRow.style.display = 'flex';
+    peoplePillsRow.innerHTML = _taskPeople.map(id => {
+      const p = PEOPLE.find(p => p.id === id);
+      if (!p) return '';
+      return `<span class="task-people-pill" style="background:${p.color}18;border-color:${p.color}44;color:${p.color}">
+        <span class="mention-avatar" style="background:${p.color};width:14px;height:14px;font-size:7px">${escHtml(p.initials)}</span>
+        @${escHtml(p.name)}
+        <button class="pill-remove" data-remove-person="${escAttr(p.id)}" tabindex="-1">✕</button>
+      </span>`;
+    }).join('');
+    peoplePillsRow.querySelectorAll('[data-remove-person]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        _taskPeople = _taskPeople.filter(id => id !== btn.dataset.removePerson);
+        renderPeoplePills();
+      });
+    });
+  }
+
+  function showMentionDropdown(query) {
+    const matches = PEOPLE.filter(p =>
+      p.name.toLowerCase().includes(query.toLowerCase()) && !_taskPeople.includes(p.id)
+    );
+    if (!matches.length) { hideMentionDropdown(); return; }
+    mentionDropdown.style.display = 'block';
+    mentionDropdown.innerHTML = matches.map((p, i) => `
+      <div class="mention-item${i===0?' selected':''}" data-mention-id="${escAttr(p.id)}">
+        <div class="mention-avatar" style="background:${p.color}">${escHtml(p.initials)}</div>
+        ${escHtml(p.name)}
+      </div>`).join('');
+    mentionDropdown.querySelectorAll('.mention-item').forEach(item => {
+      item.addEventListener('mousedown', e => {
+        e.preventDefault(); // prevent blur
+        selectMentionPerson(item.dataset.mentionId);
+      });
+    });
+  }
+
+  function hideMentionDropdown() {
+    mentionDropdown.style.display = 'none';
+    _mentionQuery = null;
+  }
+
+  function selectMentionPerson(personId) {
+    const p = PEOPLE.find(p => p.id === personId);
+    if (!p) return;
+    if (!_taskPeople.includes(personId)) _taskPeople.push(personId);
+    // Remove the @query from the input text
+    const val = input.value;
+    const cursor = input.selectionStart;
+    const before = val.slice(0, cursor);
+    const atIdx = before.lastIndexOf('@');
+    if (atIdx >= 0) {
+      input.value = val.slice(0, atIdx) + val.slice(cursor);
+      input.setSelectionRange(atIdx, atIdx);
+    }
+    hideMentionDropdown();
+    renderPeoplePills();
+    input.focus();
+  }
+
+  function resetPeople() {
+    _taskPeople = [];
+    _mentionQuery = null;
+    hideMentionDropdown();
+    renderPeoplePills();
+  }
+
+  input.addEventListener('input', () => {
+    const val = input.value;
+    const cursor = input.selectionStart;
+    const before = val.slice(0, cursor);
+    const atMatch = before.match(/@(\w*)$/);
+    if (atMatch) {
+      _mentionQuery = atMatch[1];
+      showMentionDropdown(_mentionQuery);
+    } else {
+      hideMentionDropdown();
+    }
+  });
+
+  input.addEventListener('keydown', e => {
+    if (mentionDropdown.style.display === 'none') return;
+    const items = mentionDropdown.querySelectorAll('.mention-item');
+    const selIdx = [...items].findIndex(i => i.classList.contains('selected'));
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items[selIdx]?.classList.remove('selected');
+      items[(selIdx + 1) % items.length]?.classList.add('selected');
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[selIdx]?.classList.remove('selected');
+      items[(selIdx - 1 + items.length) % items.length]?.classList.add('selected');
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      const sel = mentionDropdown.querySelector('.mention-item.selected');
+      if (sel) { e.preventDefault(); selectMentionPerson(sel.dataset.mentionId); }
+    } else if (e.key === 'Escape') {
+      hideMentionDropdown();
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    // Delay to allow mousedown on dropdown items to fire first
+    setTimeout(hideMentionDropdown, 150);
+  });
+
   // ── Energy type state ──
   let _taskEnergy = '';
   const energyPicker = document.getElementById('task-energy-picker');
@@ -10029,7 +10269,7 @@ function initAddTaskForm() {
     const dueDate  = document.getElementById('task-add-date').value;
     const category = document.getElementById('task-add-category').value;
     const recurrence = _taskRecur && _taskRecur !== 'custom:' ? _taskRecur : '';
-    await addTask(title, priority, dueDate, category, recurrence, _taskEnergy);
+    await addTask(title, priority, dueDate, category, recurrence, _taskEnergy, [..._taskPeople]);
     input.value = '';
     document.getElementById('task-add-date').value = '';
     const catSel = document.getElementById('task-add-category');
@@ -10038,6 +10278,7 @@ function initAddTaskForm() {
     _taskEnergy = '';
     energyPicker?.querySelectorAll('.energy-pill').forEach(p => p.classList.remove('active'));
     resetRecur();
+    resetPeople();
     input.focus();
   }
   confirm.addEventListener('click', submit);
@@ -10190,6 +10431,48 @@ function renderSettingsHolidays() {
   });
 }
 
+/* ── People Management ────────────────────────────────── */
+function renderSettingsPeople() {
+  const list = document.getElementById('settings-people-list');
+  if (!list) return;
+  if (!PEOPLE.length) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:8px 0">No people added yet.</div>`;
+    return;
+  }
+  list.innerHTML = PEOPLE.map(p => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(42,37,32,0.4)">
+      <div style="width:26px;height:26px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(p.initials)}</div>
+      <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(p.name)}</span>
+      <button class="task-action-btn danger" data-del-person="${escAttr(p.id)}" title="Remove">✕</button>
+    </div>`).join('');
+  list.querySelectorAll('[data-del-person]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      PEOPLE = PEOPLE.filter(p => p.id !== btn.dataset.delPerson);
+      savePeople();
+      renderSettingsPeople();
+    });
+  });
+}
+
+function initPeopleSettings() {
+  document.getElementById('people-add-btn')?.addEventListener('click', addPersonFromInput);
+  document.getElementById('people-name-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addPersonFromInput();
+  });
+}
+
+function addPersonFromInput() {
+  const input = document.getElementById('people-name-input');
+  const name = input?.value.trim();
+  if (!name) return;
+  const initials = name.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const color = PEOPLE_COLORS[PEOPLE.length % PEOPLE_COLORS.length];
+  PEOPLE.push({ id: crypto.randomUUID(), name, initials, color });
+  savePeople();
+  renderSettingsPeople();
+  if (input) { input.value = ''; input.focus(); }
+}
+
 function initSettingsNav() {
   document.querySelectorAll('.settings-nav-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -10204,6 +10487,7 @@ function initSettingsNav() {
 
 function initSettingsPanel() {
   initSettingsNav();
+  initPeopleSettings();
 
   document.getElementById('settings-btn')?.addEventListener('click', () => {
     renderSettingsCats();
@@ -10212,6 +10496,7 @@ function initSettingsPanel() {
     renderSettingsDefaultCat();
     initNewCatColorPicker();
     hbLoadSettingsPanel();
+    renderSettingsPeople();
     // Update UID display
     const uid = window.CDX_USER?.uid;
     const uidEl = document.getElementById('settings-uid-display');
@@ -10786,7 +11071,7 @@ document.getElementById('btn-cosmos')?.addEventListener('click', () => openOverl
 document.getElementById('cmd-btn')?.addEventListener('click', openCmdPalette);
 
 /* ── Command Palette ──────────────────────────────────── */
-const CMD_COMMANDS = [
+const CMD_COMMANDS_BASE = [
   { label: 'Today',            icon: '◈', action: () => {}, keys: '' },
   { label: 'Open Calendar',    icon: '◻', action: () => {}, keys: '' },
   { label: 'New Task',         icon: '+', action: () => {}, keys: 'N' },
@@ -10799,6 +11084,48 @@ const CMD_COMMANDS = [
   { label: 'Life OS',          icon: '◉', action: () => showMainPanel('milestones'), keys: '' },
   { label: 'Toggle Theme',     icon: '◑', action: toggleTheme, keys: '' },
 ];
+
+function getCmdCommands() {
+  const personCmds = PEOPLE.map(p => ({
+    label: `@${p.name} — tasks`,
+    icon: '◎',
+    action: () => showPersonTasks(p),
+    keys: '',
+    _personColor: p.color,
+    _personInitials: p.initials,
+  }));
+  return [...CMD_COMMANDS_BASE, ...personCmds];
+}
+
+function showPersonTasks(person) {
+  const tasks = TASKS.filter(t => t.people && t.people.includes(person.id));
+  const titleEl = document.getElementById('person-tasks-title');
+  const listEl  = document.getElementById('person-tasks-list');
+  if (titleEl) {
+    titleEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px">
+      <span style="width:20px;height:20px;border-radius:50%;background:${person.color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:#0d0c0a">${escHtml(person.initials)}</span>
+      Tasks linked to @${escHtml(person.name)}
+    </span>`;
+  }
+  if (listEl) {
+    if (!tasks.length) {
+      listEl.innerHTML = `<div style="padding:20px 16px;font-size:13px;color:var(--muted)">No tasks linked to @${escHtml(person.name)} yet.</div>`;
+    } else {
+      const open = tasks.filter(t => !t.done);
+      const done = tasks.filter(t => t.done);
+      const renderGroup = (arr, label) => arr.length ? `
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
+        ${arr.map(t => `
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">
+            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--ink)">${t.done?'✓':''}</div>
+            <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
+            ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
+          </div>`).join('')}` : '';
+      listEl.innerHTML = renderGroup(open, 'Open') + renderGroup(done, 'Done');
+    }
+  }
+  document.getElementById('person-tasks-overlay').classList.add('open');
+}
 
 function openCmdPalette() {
   const pal = document.getElementById('cmd-palette');
@@ -10814,7 +11141,8 @@ function closeCmdPalette() {
 
 function renderCmdResults(query) {
   const container = document.getElementById('cmd-results');
-  const filtered = CMD_COMMANDS.filter(c =>
+  const commands = getCmdCommands();
+  const filtered = commands.filter(c =>
     c.label.toLowerCase().includes(query.toLowerCase())
   );
   if (!filtered.length) {
@@ -10823,8 +11151,10 @@ function renderCmdResults(query) {
   }
   container.innerHTML = filtered.map((c, i) => `
     <div class="cmd-result-item ${i===0?'selected':''}" data-cmd="${i}">
-      <span class="cmd-result-icon">${c.icon}</span>
-      ${c.label}
+      ${c._personColor
+        ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:${c._personColor};font-size:7px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(c._personInitials)}</span>`
+        : `<span class="cmd-result-icon">${c.icon}</span>`}
+      ${escHtml(c.label)}
       ${c.keys ? `<span class="cmd-result-keys">${c.keys}</span>` : ''}
     </div>`).join('');
 
@@ -11451,6 +11781,18 @@ window.addEventListener('cdx-auth-ready', () => {
           }
         }
       }, err => console.warn('Categories snapshot error:', err));
+
+      // Subscribe to people config
+      onSnapshot(doc(window.CDX_DB, 'users', _catUser.uid, 'config', 'people'), snap => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (Array.isArray(data?.people)) {
+            PEOPLE = data.people;
+            localStorage.setItem('cdx_people', JSON.stringify(PEOPLE));
+            renderSettingsPeople?.();
+          }
+        }
+      }, err => console.warn('People snapshot error:', err));
     }
     // Rebuild selects with any custom categories loaded from localStorage
     rebuildCategorySelects();
