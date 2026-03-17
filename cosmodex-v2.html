@@ -4460,8 +4460,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <button class="nav-footer-btn" id="settings-btn" title="Settings">
       <span>⚙</span>
     </button>
-    <button class="nav-footer-btn" id="cmd-btn" title="Ctrl+K">
-      <span style="letter-spacing:0.06em">⌘K</span>
+    <button class="nav-footer-btn" id="cmd-btn" title="Ctrl+Space">
+      <span style="letter-spacing:0.06em">⌘␣</span>
     </button>
   </div>
 </nav>
@@ -9899,12 +9899,8 @@ function renderDayView(date) {
     slot.appendChild(chip);
   });
 
-  // Now-line position
-  const now = new Date();
-  const mins = (now.getHours() - 5) * 60 + now.getMinutes();
-  const pct  = Math.max(0, Math.min(100, (mins / (19 * 60)) * 100));
-  const line = document.getElementById('cal-now-line');
-  if (line) line.style.top = pct + '%';
+  // Now-line position — delegate to updateCalNowLine so timezone is consistent
+  updateCalNowLine();
 }
 
 /* ── Week view ─────────────────────────────────────────── */
@@ -11557,8 +11553,8 @@ document.addEventListener('keydown', e => {
     document.getElementById('task-add-input')?.focus();
     return;
   }
-  // Cmd/Ctrl+K — command palette
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+  // Cmd/Ctrl+Space — command palette
+  if ((e.metaKey || e.ctrlKey) && e.key === ' ') {
     e.preventDefault();
     const pal = document.getElementById('cmd-palette');
     pal.classList.contains('open') ? closeCmdPalette() : openCmdPalette();
