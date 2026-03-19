@@ -4741,7 +4741,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         </div>
       </div>
       <!-- Bottom 50%: day timeline -->
-      <div id="td-bottom" style="flex:1;display:flex;flex-direction:column;">
+      <div id="td-bottom" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
         <canvas id="td-tl-cvs" style="display:block;flex:1;width:100%;min-height:0;"></canvas>
       </div>
     </div>
@@ -9095,7 +9095,7 @@ function _tdDrawTimeline(now){
   const W=cssW, H=cssH;
   const PAD=52;
   const TW=W-PAD*2;
-  const RULE_Y=Math.round(H*0.60);
+  const RULE_Y=Math.round(H*0.50);
 
   const todayStr=localDateStr(now);
   const nowMins=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
@@ -9105,8 +9105,8 @@ function _tdDrawTimeline(now){
   // ── Horizontal rule ──────────────────────────────────────
   const rg=ctx.createLinearGradient(PAD,0,PAD+TW,0);
   rg.addColorStop(0,'rgba(255,255,255,0)');
-  rg.addColorStop(0.15,'rgba(255,255,255,0.10)');
-  rg.addColorStop(0.85,'rgba(255,255,255,0.10)');
+  rg.addColorStop(0.15,'rgba(255,255,255,0.18)');
+  rg.addColorStop(0.85,'rgba(255,255,255,0.18)');
   rg.addColorStop(1,'rgba(255,255,255,0)');
   ctx.beginPath(); ctx.moveTo(PAD,RULE_Y); ctx.lineTo(PAD+TW,RULE_Y);
   ctx.strokeStyle=rg; ctx.lineWidth=0.7; ctx.stroke();
@@ -9194,12 +9194,12 @@ function _tdDrawTimeline(now){
     const x=PAD+(h/24)*TW;
     const isEven=h%2===0;
     ctx.beginPath(); ctx.moveTo(x,RULE_Y); ctx.lineTo(x,RULE_Y+(isEven?11:5));
-    ctx.strokeStyle=isEven?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.09)';
+    ctx.strokeStyle=isEven?'rgba(255,255,255,0.28)':'rgba(255,255,255,0.12)';
     ctx.lineWidth=isEven?0.8:0.4; ctx.stroke();
     if(isEven){
       ctx.font="300 10px 'DM Mono',monospace";
       ctx.textAlign='center';
-      ctx.fillStyle='rgba(255,255,255,0.26)';
+      ctx.fillStyle='rgba(255,255,255,0.38)';
       ctx.fillText(String(h).padStart(2,'0'),x,RULE_Y+26);
     }
   }
