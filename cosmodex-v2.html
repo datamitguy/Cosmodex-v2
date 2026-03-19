@@ -223,13 +223,8 @@ body::after {
 }
 
 .nav-avatar {
-  width: 28px; height: 28px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+  width: 34px; height: 34px;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono);
-  font-size: 10px; font-weight: 500;
-  color: var(--ink);
   flex-shrink: 0;
 }
 
@@ -237,10 +232,11 @@ body::after {
 
 .nav-brand-name {
   font-family: var(--font-display);
-  font-size: 14px; font-weight: 300;
-  letter-spacing: 0.08em;
+  font-size: 18px; font-weight: 300;
+  letter-spacing: 0.14em;
   color: var(--gold);
   display: block;
+  text-shadow: 0 0 14px rgba(255,255,255,0.18);
 }
 
 .nav-plan-label {
@@ -4431,10 +4427,40 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 <nav id="left-nav">
 
   <div class="nav-workspace">
-    <div class="nav-avatar" id="nav-avatar">A</div>
+    <div class="nav-avatar" id="nav-avatar">
+      <svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="nav-orb-glow" x="-120%" y="-120%" width="340%" height="340%">
+            <feGaussianBlur stdDeviation="1.4" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="nav-axis-glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="0.8" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g transform="translate(17,17)">
+          <!-- Bottom arcs (bright side) -->
+          <path d="M -13,0 A 13,13 0 0,1 13,0" fill="none" stroke="rgba(255,255,255,0.32)" stroke-width="0.8"/>
+          <path d="M -8.5,0 A 8.5,8.5 0 0,1 8.5,0" fill="none" stroke="rgba(255,255,255,0.50)" stroke-width="0.8"/>
+          <path d="M -4.5,0 A 4.5,4.5 0 0,1 4.5,0" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="0.8"/>
+          <!-- Top arcs (dim side) -->
+          <path d="M 13,0 A 13,13 0 0,1 -13,0" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+          <path d="M 8.5,0 A 8.5,8.5 0 0,1 -8.5,0" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="0.5"/>
+          <path d="M 4.5,0 A 4.5,4.5 0 0,1 -4.5,0" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="0.5"/>
+          <!-- Vertical axis -->
+          <line x1="0" y1="-15" x2="0" y2="15" stroke="rgba(255,255,255,0.65)" stroke-width="0.5" filter="url(#nav-axis-glow)"/>
+          <!-- Tick marks at ring crossings (bottom) -->
+          <line x1="0" y1="12" x2="0" y2="14.5" stroke="rgba(255,255,255,0.85)" stroke-width="1.0"/>
+          <line x1="0" y1="7.5" x2="0" y2="9.5" stroke="rgba(255,255,255,0.65)" stroke-width="0.8"/>
+          <line x1="0" y1="3.5" x2="0" y2="5.5" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <!-- Central orb -->
+          <circle cx="0" cy="0" r="2.2" fill="rgba(255,255,255,0.92)" filter="url(#nav-orb-glow)"/>
+        </g>
+      </svg>
+    </div>
     <div class="nav-brand-block">
-      <span class="nav-brand-name">Cosmodex</span>
-      <span class="nav-plan-label">Personal</span>
+      <span class="nav-brand-name">COSMODEX</span>
     </div>
   </div>
 
@@ -4710,8 +4736,12 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <svg id="td-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible"></svg>
         </div>
       </div>
-      <!-- Bottom 50%: reserved for future content -->
-      <div id="td-bottom" style="flex:1;"></div>
+      <!-- Bottom 50%: day timeline -->
+      <div id="td-bottom" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;">
+        <div id="td-tl-wrap" style="padding:0 32px 24px;">
+          <canvas id="td-tl-cvs" style="display:block;width:100%;"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- Lists Panel (full page) -->
@@ -9026,10 +9056,136 @@ const TD_RINGS = [
 let _tdSvg=null, _tdElYear=null, _tdElTime=null, _tdElDate=null;
 let _tdRingGroups={}, _tdRaf=null, _tdResizeObs=null, _tdInitialized=false;
 let _tdAnimT0=null;
+let _tdTlCvs=null, _tdTlCtx=null;
+
+function _tdInitTimeline(){
+  _tdTlCvs=document.getElementById('td-tl-cvs');
+  if(!_tdTlCvs) return;
+  _tdTlCtx=_tdTlCvs.getContext('2d');
+}
+
+function _tdDrawTimeline(now){
+  if(!_tdTlCvs||!_tdTlCtx) return;
+  const cvs=_tdTlCvs, ctx=_tdTlCtx;
+  const dpr=window.devicePixelRatio||1;
+  const wrap=cvs.parentElement;
+  const cssW=Math.max(1, wrap.clientWidth - 0); // full wrap width
+  const cssH=68;
+  // Always reset transform + resize if needed
+  if(cvs.dataset.cw!==String(cssW)||cvs.dataset.ch!==String(cssH)){
+    cvs.width=cssW*dpr; cvs.height=cssH*dpr;
+    cvs.style.width=cssW+'px'; cvs.style.height=cssH+'px';
+    cvs.dataset.cw=String(cssW); cvs.dataset.ch=String(cssH);
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+
+  const W=cssW, H=cssH;
+  const todayStr=localDateStr(now);
+  const nowMins=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+  const nowFrac=nowMins/(24*60);
+  const nowX=nowFrac*W;
+  const RULE_Y=38; // y of horizontal rule
+
+  // ── Blue past-time fill ──────────────────────────────────
+  if(nowX>0){
+    const bFill=ctx.createLinearGradient(0,0,nowX,0);
+    bFill.addColorStop(0,'rgba(61,184,255,0.02)');
+    bFill.addColorStop(0.6,'rgba(61,184,255,0.06)');
+    bFill.addColorStop(1,'rgba(61,184,255,0.13)');
+    ctx.fillStyle=bFill;
+    ctx.fillRect(0,0,nowX,H);
+    // Glowing bottom edge along past zone
+    const bLine=ctx.createLinearGradient(0,0,nowX,0);
+    bLine.addColorStop(0,'rgba(61,184,255,0.0)');
+    bLine.addColorStop(0.5,'rgba(61,184,255,0.40)');
+    bLine.addColorStop(1,'rgba(61,184,255,0.70)');
+    ctx.beginPath(); ctx.moveTo(0,H-1.5); ctx.lineTo(nowX,H-1.5);
+    ctx.strokeStyle=bLine; ctx.lineWidth=1.5; ctx.stroke();
+    // soft glow layer above bottom edge
+    ctx.beginPath(); ctx.moveTo(0,H-4); ctx.lineTo(nowX,H-4);
+    ctx.strokeStyle='rgba(61,184,255,0.08)'; ctx.lineWidth=4; ctx.stroke();
+  }
+
+  // ── Horizontal rule ──────────────────────────────────────
+  ctx.beginPath(); ctx.moveTo(0,RULE_Y); ctx.lineTo(W,RULE_Y);
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.5; ctx.stroke();
+
+  // ── Event blocks (above rule) ────────────────────────────
+  const todayEvts=(window.CAL_EVENTS||[]).filter(e=>
+    e.date===todayStr && e.startTime && !e.allDay
+  );
+  todayEvts.forEach(ev=>{
+    const [sh,sm]=(ev.startTime||'0:0').split(':').map(Number);
+    const sFrac=(sh*60+sm)/(24*60);
+    const sx=sFrac*W;
+    const isPast=sFrac<nowFrac;
+    // Duration fill
+    if(ev.endTime){
+      const [eh,em]=(ev.endTime||'0:0').split(':').map(Number);
+      const eFrac=(eh*60+em)/(24*60);
+      const ex=eFrac*W;
+      ctx.fillStyle=isPast?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.08)';
+      ctx.fillRect(sx+1,4,Math.max(2,ex-sx-1),RULE_Y-4);
+    }
+    // Start edge line
+    ctx.beginPath(); ctx.moveTo(sx,2); ctx.lineTo(sx,RULE_Y);
+    ctx.strokeStyle=isPast?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.55)';
+    ctx.lineWidth=1; ctx.stroke();
+    // Small dot at top
+    ctx.beginPath(); ctx.arc(sx,3,1.5,0,Math.PI*2);
+    ctx.fillStyle=isPast?'rgba(255,255,255,0.30)':'rgba(255,255,255,0.65)';
+    ctx.fill();
+  });
+
+  // ── Hour ticks and labels ────────────────────────────────
+  for(let h=0;h<=24;h++){
+    const x=(h/24)*W;
+    const isEven=h%2===0;
+    const isPast=(h/24)<nowFrac;
+    // Tick below rule
+    ctx.beginPath(); ctx.moveTo(x,RULE_Y); ctx.lineTo(x,RULE_Y+(isEven?10:5));
+    ctx.strokeStyle=isPast?'rgba(61,184,255,0.45)':'rgba(255,255,255,0.18)';
+    ctx.lineWidth=isEven?0.8:0.4; ctx.stroke();
+    // Label at even hours
+    if(isEven){
+      ctx.font="300 9px 'DM Mono',monospace";
+      ctx.textAlign='center';
+      ctx.fillStyle=isPast?'rgba(61,184,255,0.55)':'rgba(255,255,255,0.22)';
+      ctx.fillText(String(h).padStart(2,'0'),x,RULE_Y+22);
+    }
+  }
+
+  // ── Current time line ────────────────────────────────────
+  // Glow halos
+  [[10,0.03],[5,0.05],[2,0.08]].forEach(([w,a])=>{
+    ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
+    ctx.strokeStyle=`rgba(255,255,255,${a})`; ctx.lineWidth=w; ctx.stroke();
+  });
+  // Sharp line
+  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
+  ctx.strokeStyle='rgba(255,255,255,0.82)'; ctx.lineWidth=1; ctx.stroke();
+  // Time label (white, above rule)
+  const hStr=String(now.getHours()).padStart(2,'0');
+  const mStr=String(now.getMinutes()).padStart(2,'0');
+  const tLabel=`${hStr}:${mStr}`;
+  const labelX=Math.min(Math.max(nowX,18),W-18);
+  // label background pill
+  ctx.font="300 9px 'DM Mono',monospace";
+  const tw=ctx.measureText(tLabel).width;
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.beginPath();
+  ctx.roundRect(labelX-tw/2-4, RULE_Y+10, tw+8, 14, 3);
+  ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.textAlign='center';
+  ctx.fillText(tLabel,labelX,RULE_Y+20);
+}
 
 function _tdInit(){
   if(_tdInitialized) return;
   _tdInitialized=true;
+  _tdInitTimeline();
   _tdSvg=document.getElementById('td-svg');
   if(!_tdSvg) return;
   while(_tdSvg.firstChild) _tdSvg.removeChild(_tdSvg.firstChild);
@@ -9187,6 +9343,7 @@ function _tdFrame(){
   const animEase=1-Math.pow(1-progress,3);
   Object.values(_tdRingGroups).forEach(info=>_tdUpdateRing(info,now,animEase));
   _tdUpdateCenter(now);
+  _tdDrawTimeline(now);
   _tdRaf=requestAnimationFrame(_tdFrame);
 }
 
