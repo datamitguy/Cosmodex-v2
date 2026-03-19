@@ -4721,15 +4721,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
     <!-- Timedrift Panel -->
     <div id="panel-timedrift" style="display:none;flex:1;flex-direction:column;overflow:hidden;position:relative;background:#080706">
-      <!-- Top 50%: timedrift visualization -->
-      <div id="td-top" style="position:relative;height:50%;overflow:hidden;flex-shrink:0;">
-        <div id="td-stage" style="position:absolute;left:50%;transform:translateX(-50%);top:0;">
-          <svg id="td-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible"></svg>
-        </div>
-        <div class="td-vline"></div>
+      <div id="td-stage" style="position:absolute;left:50%;transform:translateX(-50%);top:0;">
+        <svg id="td-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible"></svg>
       </div>
-      <!-- Bottom 50%: reserved for future content -->
-      <div id="td-bottom" style="flex:1;"></div>
+      <div class="td-vline"></div>
     </div>
 
     <!-- Lists Panel (full page) -->
@@ -9019,36 +9014,36 @@ const _tdWa = a => `rgba(255,255,255,${+a.toFixed(3)})`;
 const _tdLerp2 = (a,b,t) => a+(b-a)*t;
 
 const TD_RINGS = [
-  { id:'yr',  r:108, bw:34,
+  { id:'yr',  r:60, bw:18,
     items:['2023','2024','2025','2026','2027'],
     cur:d=>_tdClamp(d.getFullYear()-2023,0,4),
     sub:d=>{const s=new Date(d.getFullYear(),0,1),e=new Date(d.getFullYear()+1,0,1);return(d-s)/(e-s);},
-    maj:1,th:13,tm:13,fs:11,lr:89,bandFill:'rgba(255,255,255,0.07)',bandStroke:'rgba(255,255,255,0.18)',dimA:0.35 },
-  { id:'mon', r:152, bw:32,
+    maj:1,th:10,tm:10,fs:8,lr:51,bandFill:'rgba(255,255,255,0.05)',bandStroke:'rgba(255,255,255,0.14)',dimA:0.28 },
+  { id:'mon', r:90, bw:22,
     items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     cur:d=>d.getMonth(),
     sub:d=>{const dm=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();return(d.getDate()-1+d.getHours()/24)/dm;},
-    maj:1,th:13,tm:13,fs:11.5,lr:133,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.32 },
-  { id:'dow', r:196, bw:32,
+    maj:1,th:11,tm:11,fs:8.5,lr:79,bandFill:'rgba(255,255,255,0.06)',bandStroke:'rgba(255,255,255,0.16)',dimA:0.26 },
+  { id:'dow', r:122, bw:22,
     items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     cur:d=>d.getDay(),
     sub:d=>(d.getHours()*3600+d.getMinutes()*60+d.getSeconds())/86400,
-    maj:1,th:14,tm:14,fs:12,lr:176,bandFill:'rgba(255,255,255,0.11)',bandStroke:'rgba(255,255,255,0.22)',dimA:0.30 },
-  { id:'hr',  r:240, bw:32,
+    maj:1,th:11,tm:11,fs:9,lr:111,bandFill:'rgba(255,255,255,0.07)',bandStroke:'rgba(255,255,255,0.18)',dimA:0.24 },
+  { id:'hr',  r:157, bw:25,
     items:Array.from({length:24},(_,i)=>String(i)),
     cur:d=>d.getHours(),
     sub:d=>(d.getMinutes()*60+d.getSeconds())/3600,
-    maj:1,th:12,tm:5,fs:10.5,lr:220,bandFill:'rgba(255,255,255,0.13)',bandStroke:'rgba(255,255,255,0.24)',dimA:0.26 },
-  { id:'min', r:284, bw:32,
+    maj:1,th:10,tm:4,fs:9,lr:144,bandFill:'rgba(255,255,255,0.08)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.21 },
+  { id:'min', r:196, bw:28,
     items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getMinutes(),
     sub:d=>d.getSeconds()/60,
-    maj:5,th:11,tm:4,fs:9.5,lr:263,bandFill:'rgba(255,255,255,0.15)',bandStroke:'rgba(255,255,255,0.26)',dimA:0.22 },
-  { id:'sec', r:328, bw:32,
+    maj:5,th:9,tm:3,fs:8,lr:182,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.22)',dimA:0.18 },
+  { id:'sec', r:238, bw:32,
     items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getSeconds(),
     sub:d=>d.getMilliseconds()/1000,
-    maj:5,th:11,tm:4,fs:9,lr:307,bandFill:'rgba(255,255,255,0.17)',bandStroke:'rgba(255,255,255,0.28)',dimA:0.18 },
+    maj:5,th:9,tm:3,fs:7.5,lr:217,bandFill:'rgba(255,255,255,0.10)',bandStroke:'rgba(255,255,255,0.24)',dimA:0.15 },
 ];
 
 let _tdSvg=null, _tdElTime=null, _tdElDate=null;
@@ -9117,6 +9112,11 @@ function _tdInit(){
     const ci=_tdMk('circle');
     ci.setAttribute('cx',_TD_CX); ci.setAttribute('cy',_TD_CY); ci.setAttribute('r',String(ri));
     ci.setAttribute('fill','none'); ci.setAttribute('stroke',ring.bandStroke); ci.setAttribute('stroke-width','0.4'); gBg.appendChild(ci);
+    // Dashed separator at inner edge
+    const cd=_tdMk('circle');
+    cd.setAttribute('cx',_TD_CX); cd.setAttribute('cy',_TD_CY); cd.setAttribute('r',String(ri));
+    cd.setAttribute('fill','none'); cd.setAttribute('stroke','rgba(255,255,255,0.22)');
+    cd.setAttribute('stroke-width','0.8'); cd.setAttribute('stroke-dasharray','2 4'); gBg.appendChild(cd);
   });
 
   // Centre clock text
@@ -9172,12 +9172,12 @@ function _tdInit(){
 }
 
 function _tdLayout(){
-  const container=document.getElementById('td-top');
+  const container=document.getElementById('panel-timedrift');
   if(!container||!_tdSvg) return;
   const vw=container.clientWidth||window.innerWidth;
   const scale=vw/1000*1.04;
-  // Crop at CY=500: show bottom half of rings where current item appears
-  const CROP=498, VBH=845-CROP;
+  // Show top portion of rings: current item at 12 o'clock (top). outermost r=238, top edge ~Y=262
+  const CROP=240, VBH=310;
   const pw=Math.round(1000*scale), ph=Math.round(VBH*scale);
   _tdSvg.setAttribute('viewBox',`0 ${CROP} 1000 ${VBH}`);
   _tdSvg.style.width=pw+'px'; _tdSvg.style.height=ph+'px';
@@ -9189,8 +9189,8 @@ function _tdUpdateRing(info,now){
   const {g,ring,textEls}=info;
   const n=ring.items.length;
   const cur=ring.cur(now), frac=ring.sub(now), exact=cur+frac;
-  // rot=180 puts current item at 6 o'clock (bottom of ring = bottom of viewport crop)
-  const rot=180-(exact/n)*360;
+  // rot=0 - fraction*360 puts current item at 12 o'clock (top of ring = top of viewport)
+  const rot=-(exact/n)*360;
   g.setAttribute('transform',`rotate(${rot},${_TD_CX},${_TD_CY})`);
   // Counter-rotate text so labels stay upright
   textEls.forEach(txt=>{
@@ -9243,8 +9243,8 @@ function startTimedrift(){
   _tdLayout();
   if(!_tdResizeObs){
     _tdResizeObs=new ResizeObserver(()=>_tdLayout());
-    const top=document.getElementById('td-top');
-    if(top) _tdResizeObs.observe(top);
+    const panel=document.getElementById('panel-timedrift');
+    if(panel) _tdResizeObs.observe(panel);
   }
   if(!_tdRaf) _tdFrame();
 }
