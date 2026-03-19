@@ -9043,23 +9043,23 @@ const TD_RINGS = [
   { id:'mon', r:74, bw:32, items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     cur:d=>d.getMonth(),
     sub:d=>0,
-    maj:1,th:5.2,tm:5.2,fs:4.6,lr:67,bandFill:'rgba(255,255,255,0.18)',bandStroke:'rgba(255,255,255,0.18)',dimA:0.32 },
+    maj:1,th:5.2,tm:5.2,fs:4.6,lr:67,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.12)',dimA:0.32 },
   { id:'dow', r:106, bw:32, items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     cur:d=>d.getDay(),
     sub:d=>0,
-    maj:1,th:5.6,tm:5.6,fs:4.8,lr:99,bandFill:'rgba(255,255,255,0.12)',bandStroke:'rgba(255,255,255,0.12)',dimA:0.30 },
+    maj:1,th:5.6,tm:5.6,fs:4.8,lr:99,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.10)',dimA:0.30 },
   { id:'hr',  r:138, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
     cur:d=>d.getHours(),
     sub:d=>_tdHrSnapFrac,
-    maj:1,th:4.8,tm:2.0,fs:4.2,lr:131,bandFill:'rgba(255,255,255,0.20)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.26 },
+    maj:1,th:4.8,tm:2.0,fs:4.2,lr:131,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.10)',dimA:0.26 },
   { id:'min', r:170, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getMinutes(),
     sub:d=>_tdMinSnapFrac,
-    maj:1,th:4.4,tm:1.6,fs:3.8,lr:163,bandFill:'rgba(255,255,255,0.10)',bandStroke:'rgba(255,255,255,0.10)',dimA:0.22 },
+    maj:1,th:4.4,tm:1.6,fs:3.8,lr:163,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.08)',dimA:0.22 },
   { id:'sec', r:202, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getSeconds(),
     sub:d=>d.getMilliseconds()/1000,
-    maj:1,th:4.4,tm:1.6,fs:3.6,lr:195,bandFill:'rgba(255,255,255,0.02)',bandStroke:'rgba(255,255,255,0.02)',dimA:0.18 },
+    maj:1,th:4.4,tm:1.6,fs:3.6,lr:195,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.06)',dimA:0.18 },
 ];
 
 let _tdSvg=null, _tdElYear=null, _tdElTime=null, _tdElDate=null;
@@ -9293,9 +9293,9 @@ function _tdInit(){
       const cosA=Math.cos(aRad), sinA=Math.sin(aRad);
       const ig=_tdMk('g'); ig.setAttribute('class','td-ri'); ig.dataset.i=i; ig.dataset.maj=isMaj?'1':'0';
       const ox=_TD_CX+ring.r*cosA, oy=_TD_CY+ring.r*sinA;
-      const ix=_TD_CX+(ring.r-tH)*cosA, iy=_TD_CY+(ring.r-tH)*sinA;
+      const ox2=_TD_CX+(ring.r+tH)*cosA, oy2=_TD_CY+(ring.r+tH)*sinA;
       const tk=_tdMk('line');
-      tk.setAttribute('x1',ox); tk.setAttribute('y1',oy); tk.setAttribute('x2',ix); tk.setAttribute('y2',iy);
+      tk.setAttribute('x1',ox); tk.setAttribute('y1',oy); tk.setAttribute('x2',ox2); tk.setAttribute('y2',oy2);
       tk.setAttribute('stroke',_tdWa(ring.dimA)); tk.setAttribute('stroke-width',isMaj?'0.9':'0.4');
       tk.setAttribute('class','td-tk'); ig.appendChild(tk);
       const showLabel=true;
