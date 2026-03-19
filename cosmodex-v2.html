@@ -9178,7 +9178,7 @@ function _tdDrawTimeline(now){
         else{ctx.lineTo(wx,RULE_Y+wy);}
       }
       ctx.strokeStyle=isPast?'rgba(53,249,47,0.22)':'rgba(53,249,47,0.58)';
-      ctx.lineWidth=0.9; ctx.stroke();
+      ctx.lineWidth=2.2; ctx.stroke();
     }
 
     // Pill label above line
@@ -9215,7 +9215,7 @@ function _tdDrawTimeline(now){
       ctx.font="300 10px 'DM Mono',monospace";
       ctx.textAlign='center';
       ctx.fillStyle='rgba(255,255,255,0.38)';
-      ctx.shadowColor='rgba(255,255,255,0.6)'; ctx.shadowBlur=6;
+      ctx.shadowColor='rgba(255,255,255,0.9)'; ctx.shadowBlur=14;
       ctx.fillText(String(h).padStart(2,'0'),x,RULE_Y-15);
       ctx.shadowBlur=0;
     }
@@ -9228,60 +9228,29 @@ function _tdDrawTimeline(now){
     }
   }
 
-  // ── Blue current-time needle (starts at RULE_Y, goes up, halved) ──
-  const needleLen=Math.round(RULE_Y*0.5);
-  const needleTop=RULE_Y-needleLen;
+  // ── Blue current-time needle (starts at RULE_Y, goes down) ──
+  const needleLen=Math.round((H-RULE_Y)*0.85);
+  const needleBottom=RULE_Y+needleLen;
   // Soft ambient glow
-  const b1=ctx.createLinearGradient(0,needleTop,0,RULE_Y);
-  b1.addColorStop(0,'rgba(41,182,246,0)');
-  b1.addColorStop(1,'rgba(41,182,246,0.06)');
-  ctx.beginPath(); ctx.moveTo(nowX,needleTop); ctx.lineTo(nowX,RULE_Y);
+  const b1=ctx.createLinearGradient(0,RULE_Y,0,needleBottom);
+  b1.addColorStop(0,'rgba(41,182,246,0.06)');
+  b1.addColorStop(1,'rgba(41,182,246,0)');
+  ctx.beginPath(); ctx.moveTo(nowX,RULE_Y); ctx.lineTo(nowX,needleBottom);
   ctx.strokeStyle=b1; ctx.lineWidth=8; ctx.stroke();
   // Mid glow
-  const b2=ctx.createLinearGradient(0,needleTop,0,RULE_Y);
-  b2.addColorStop(0,'rgba(41,182,246,0)');
-  b2.addColorStop(1,'rgba(41,182,246,0.18)');
-  ctx.beginPath(); ctx.moveTo(nowX,needleTop); ctx.lineTo(nowX,RULE_Y);
+  const b2=ctx.createLinearGradient(0,RULE_Y,0,needleBottom);
+  b2.addColorStop(0,'rgba(41,182,246,0.18)');
+  b2.addColorStop(1,'rgba(41,182,246,0)');
+  ctx.beginPath(); ctx.moveTo(nowX,RULE_Y); ctx.lineTo(nowX,needleBottom);
   ctx.strokeStyle=b2; ctx.lineWidth=3; ctx.stroke();
   // Core needle
-  const b3=ctx.createLinearGradient(0,needleTop,0,RULE_Y);
-  b3.addColorStop(0,'rgba(41,182,246,0)');
-  b3.addColorStop(0.45,'rgba(41,182,246,0.55)');
-  b3.addColorStop(1,'rgba(41,182,246,0.90)');
-  ctx.beginPath(); ctx.moveTo(nowX,needleTop); ctx.lineTo(nowX,RULE_Y);
+  const b3=ctx.createLinearGradient(0,RULE_Y,0,needleBottom);
+  b3.addColorStop(0,'rgba(41,182,246,0.90)');
+  b3.addColorStop(0.55,'rgba(41,182,246,0.55)');
+  b3.addColorStop(1,'rgba(41,182,246,0)');
+  ctx.beginPath(); ctx.moveTo(nowX,RULE_Y); ctx.lineTo(nowX,needleBottom);
   ctx.strokeStyle=b3; ctx.lineWidth=1.5; ctx.stroke();
 
-  // Glowing dot at rule
-  ctx.beginPath(); ctx.arc(nowX,RULE_Y,4,0,Math.PI*2);
-  ctx.fillStyle='rgba(41,182,246,1)';
-  ctx.shadowColor='rgba(41,182,246,0.9)'; ctx.shadowBlur=14;
-  ctx.fill(); ctx.shadowBlur=0;
-
-  // ── Time label pill ──────────────────────────────────────
-  const hStr=String(now.getHours()).padStart(2,'0');
-  const mStr=String(now.getMinutes()).padStart(2,'0');
-  const sStr=String(now.getSeconds()).padStart(2,'0');
-  const tLabel=`${hStr}:${mStr}:${sStr}`;
-  const labelY=RULE_Y+20;
-  const labelX=Math.min(Math.max(nowX,PAD+22),PAD+TW-22);
-  ctx.font="300 11px 'DM Mono',monospace";
-  const tlw2=ctx.measureText(tLabel).width;
-  ctx.fillStyle='rgba(0,6,16,0.82)';
-  ctx.beginPath(); ctx.roundRect(labelX-tlw2/2-7,labelY-13,tlw2+14,17,4); ctx.fill();
-  ctx.strokeStyle='rgba(41,182,246,0.38)';
-  ctx.lineWidth=0.6;
-  ctx.beginPath(); ctx.roundRect(labelX-tlw2/2-7,labelY-13,tlw2+14,17,4); ctx.stroke();
-  ctx.fillStyle='rgba(41,182,246,0.95)';
-  ctx.textAlign='center';
-  ctx.shadowColor='rgba(41,182,246,0.80)'; ctx.shadowBlur=9;
-  ctx.fillText(tLabel,labelX,labelY);
-  ctx.shadowBlur=0;
-
-  // ── Date label ───────────────────────────────────────────
-  ctx.font="300 10px 'DM Mono',monospace";
-  ctx.fillStyle='rgba(255,255,255,0.16)';
-  ctx.textAlign='right';
-  ctx.fillText(todayStr,PAD+TW,28);
 }
 
 function _tdInit(){
