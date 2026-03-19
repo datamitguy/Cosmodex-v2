@@ -4311,13 +4311,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .td-vline {
   position: absolute; left: 50%; top: 0; bottom: 0; width: 1px;
   transform: translateX(-50%); pointer-events: none; z-index: 30;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%, rgba(255,255,255,0.0) 8%,
-    rgba(255,255,255,0.20) 28%, rgba(255,255,255,0.55) 45%,
-    rgba(255,255,255,0.55) 55%, rgba(255,255,255,0.20) 72%,
-    rgba(255,255,255,0.0) 92%, transparent 100%
-  );
+  background: rgba(255,255,255,0.35);
 }
 .td-vline::before {
   content: ''; position: absolute; inset: 0 -5px;
@@ -9022,11 +9016,11 @@ const TD_RINGS = [
   { id:'mon', r:74, bw:32, items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     cur:d=>d.getMonth(),
     sub:d=>0,
-    maj:1,th:5.2,tm:5.2,fs:4.6,lr:67,bandFill:'rgba(255,255,255,0.50)',bandStroke:'rgba(255,255,255,0.50)',dimA:0.32 },
+    maj:1,th:5.2,tm:5.2,fs:4.6,lr:67,bandFill:'rgba(255,255,255,0.18)',bandStroke:'rgba(255,255,255,0.18)',dimA:0.32 },
   { id:'dow', r:106, bw:32, items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     cur:d=>d.getDay(),
     sub:d=>0,
-    maj:1,th:5.6,tm:5.6,fs:4.8,lr:99,bandFill:'rgba(255,255,255,0.40)',bandStroke:'rgba(255,255,255,0.40)',dimA:0.30 },
+    maj:1,th:5.6,tm:5.6,fs:4.8,lr:99,bandFill:'rgba(255,255,255,0.12)',bandStroke:'rgba(255,255,255,0.12)',dimA:0.30 },
   { id:'hr',  r:138, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
     cur:d=>d.getHours(),
     sub:d=>(d.getMinutes()*60+d.getSeconds())/3600,
@@ -9085,11 +9079,11 @@ function _tdInit(){
 
   // Year text in center hub
   _tdElYear=_tdMk('text');
-  _tdElYear.setAttribute('x',_TD_CX); _tdElYear.setAttribute('y',String(_TD_CY+62));
+  _tdElYear.setAttribute('x',_TD_CX); _tdElYear.setAttribute('y',String(_TD_CY+42));
   _tdElYear.setAttribute('text-anchor','middle'); _tdElYear.setAttribute('dominant-baseline','middle');
   _tdElYear.setAttribute('font-family',"'DM Mono',monospace");
-  _tdElYear.setAttribute('font-size','15'); _tdElYear.setAttribute('font-weight','300');
-  _tdElYear.setAttribute('fill','rgba(255,255,255,0.75)'); _tdElYear.setAttribute('letter-spacing','1.5');
+  _tdElYear.setAttribute('font-size','9'); _tdElYear.setAttribute('font-weight','300');
+  _tdElYear.setAttribute('fill','rgba(255,255,255,0.50)'); _tdElYear.setAttribute('letter-spacing','1.5');
   _tdElYear.textContent=String(new Date().getFullYear());
   gOver.appendChild(_tdElYear);
 
