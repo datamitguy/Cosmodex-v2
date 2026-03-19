@@ -4734,18 +4734,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
     <!-- Timedrift Panel -->
     <div id="panel-timedrift" style="display:none;flex:1;flex-direction:column;overflow:hidden;position:relative;background:#000000">
-      <!-- Top 50%: timedrift visualization -->
-      <div id="td-top" style="position:relative;height:50%;overflow:hidden;flex-shrink:0;">
-        <div id="td-stage" style="position:absolute;left:50%;transform:translateX(-50%);top:0;">
-          <svg id="td-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible"></svg>
-        </div>
-      </div>
-      <!-- Bottom 50%: day timeline -->
-      <div id="td-bottom" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;">
-        <div id="td-tl-wrap" style="padding:0 32px 24px;">
-          <canvas id="td-tl-cvs" style="display:block;width:100%;"></canvas>
-        </div>
-      </div>
+      <canvas id="td-tl-cvs" style="display:block;flex:1;width:100%;min-height:0;"></canvas>
     </div>
 
     <!-- Lists Panel (full page) -->
@@ -9084,8 +9073,8 @@ function _tdDrawTimeline(now){
   const cvs=_tdTlCvs, ctx=_tdTlCtx;
   const dpr=window.devicePixelRatio||1;
   const wrap=cvs.parentElement;
-  const cssW=Math.max(1, wrap.clientWidth - 0);
-  const cssH=76; // extra height for bottom time label
+  const cssW=Math.max(1, wrap.clientWidth);
+  const cssH=Math.max(1, wrap.clientHeight);
   if(cvs.dataset.cw!==String(cssW)||cvs.dataset.ch!==String(cssH)){
     cvs.width=cssW*dpr; cvs.height=cssH*dpr;
     cvs.style.width=cssW+'px'; cvs.style.height=cssH+'px';
@@ -9095,130 +9084,170 @@ function _tdDrawTimeline(now){
   ctx.clearRect(0,0,cssW,cssH);
 
   const W=cssW, H=cssH;
+  const PAD=52;
+  const TW=W-PAD*2;
+  const RULE_Y=Math.round(H*0.60);
+
   const todayStr=localDateStr(now);
   const nowMins=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
   const nowFrac=nowMins/(24*60);
-  const nowX=nowFrac*W;
-  const RULE_Y=40;
+  const nowX=PAD+nowFrac*TW;
 
   // ── Horizontal rule ──────────────────────────────────────
-  ctx.beginPath(); ctx.moveTo(0,RULE_Y); ctx.lineTo(W,RULE_Y);
-  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.5; ctx.stroke();
+  const rg=ctx.createLinearGradient(PAD,0,PAD+TW,0);
+  rg.addColorStop(0,'rgba(255,255,255,0)');
+  rg.addColorStop(0.15,'rgba(255,255,255,0.10)');
+  rg.addColorStop(0.85,'rgba(255,255,255,0.10)');
+  rg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.beginPath(); ctx.moveTo(PAD,RULE_Y); ctx.lineTo(PAD+TW,RULE_Y);
+  ctx.strokeStyle=rg; ctx.lineWidth=0.7; ctx.stroke();
 
-  // ── Event green start lines + glass bubble labels ────────
+  // ── Event markers ────────────────────────────────────────
   const todayEvts=(CAL_EVENTS||[]).filter(e=>
     e.date===todayStr && e.startTime && !e.allDay
   );
+  const phase=performance.now()*0.001;
   todayEvts.forEach(ev=>{
     const [sh,sm]=(ev.startTime||'0:0').split(':').map(Number);
     const sFrac=(sh*60+sm)/(24*60);
-    const sx=sFrac*W;
+    const sx=PAD+sFrac*TW;
     const isPast=sFrac<nowFrac;
-    // Duration fill — subtle green tint
+    const lineTop=Math.max(36,RULE_Y-Math.round(H*0.28));
+
+    // Duration fill
     if(ev.endTime){
       const [eh,em]=(ev.endTime||'0:0').split(':').map(Number);
       const eFrac=(eh*60+em)/(24*60);
-      const ex=eFrac*W;
-      ctx.fillStyle=isPast?'rgba(53,249,47,0.03)':'rgba(53,249,47,0.06)';
-      ctx.fillRect(sx+1,16,Math.max(2,ex-sx-1),RULE_Y-16);
+      const ex=PAD+eFrac*TW;
+      ctx.fillStyle=isPast?'rgba(53,249,47,0.025)':'rgba(53,249,47,0.05)';
+      ctx.fillRect(sx,lineTop,Math.max(2,ex-sx),RULE_Y-lineTop);
     }
-    // Outer subtle glow
-    const ge1=ctx.createLinearGradient(0,0,0,RULE_Y);
-    ge1.addColorStop(0,isPast?'rgba(53,249,47,0.04)':'rgba(53,249,47,0.07)');
-    ge1.addColorStop(0.7,'rgba(53,249,47,0.02)');
+
+    // Wide glow
+    const ge1=ctx.createLinearGradient(0,lineTop,0,RULE_Y);
+    ge1.addColorStop(0,isPast?'rgba(53,249,47,0.05)':'rgba(53,249,47,0.10)');
     ge1.addColorStop(1,'rgba(53,249,47,0)');
-    ctx.beginPath(); ctx.moveTo(sx,16); ctx.lineTo(sx,RULE_Y);
-    ctx.strokeStyle=ge1; ctx.lineWidth=7; ctx.stroke();
-    // Core green line (30% thicker than original 1px)
-    const ge2=ctx.createLinearGradient(0,0,0,RULE_Y);
-    ge2.addColorStop(0,isPast?'rgba(53,249,47,0.45)':'rgba(53,249,47,0.90)');
-    ge2.addColorStop(0.75,isPast?'rgba(53,249,47,0.18)':'rgba(53,249,47,0.45)');
+    ctx.beginPath(); ctx.moveTo(sx,lineTop); ctx.lineTo(sx,RULE_Y);
+    ctx.strokeStyle=ge1; ctx.lineWidth=9; ctx.stroke();
+
+    // Core line
+    const ge2=ctx.createLinearGradient(0,lineTop,0,RULE_Y);
+    ge2.addColorStop(0,isPast?'rgba(53,249,47,0.50)':'rgba(53,249,47,1.0)');
+    ge2.addColorStop(0.7,isPast?'rgba(53,249,47,0.20)':'rgba(53,249,47,0.50)');
     ge2.addColorStop(1,'rgba(53,249,47,0)');
-    ctx.beginPath(); ctx.moveTo(sx,16); ctx.lineTo(sx,RULE_Y);
-    ctx.strokeStyle=ge2; ctx.lineWidth=1.3; ctx.stroke();
-    // Dot at top of line (30% larger than original r=1.5)
-    ctx.beginPath(); ctx.arc(sx,16,2.0,0,Math.PI*2);
-    ctx.fillStyle=isPast?'rgba(53,249,47,0.45)':'rgba(53,249,47,0.90)';
-    ctx.fill();
-    // Glass bubble event label
+    ctx.beginPath(); ctx.moveTo(sx,lineTop); ctx.lineTo(sx,RULE_Y);
+    ctx.strokeStyle=ge2; ctx.lineWidth=1.2; ctx.stroke();
+
+    // Top dot
+    ctx.beginPath(); ctx.arc(sx,lineTop,2.4,0,Math.PI*2);
+    ctx.fillStyle=isPast?'rgba(53,249,47,0.50)':'rgba(53,249,47,1.0)';
+    if(!isPast){ ctx.shadowColor='rgba(53,249,47,0.7)'; ctx.shadowBlur=6; }
+    ctx.fill(); ctx.shadowBlur=0;
+
+    // Animated waveform ripple at rule intersection
+    const wW=44;
+    ctx.beginPath();
+    for(let dx=-wW;dx<=wW;dx+=0.5){
+      const t=Math.abs(dx)/wW;
+      const decay=Math.pow(1-t,2.2);
+      const wy=Math.sin(dx*0.42+phase*2.8)*3.8*decay;
+      const px=sx+dx, py=RULE_Y+wy;
+      dx===-wW ? ctx.moveTo(px,py) : ctx.lineTo(px,py);
+    }
+    ctx.strokeStyle=isPast?'rgba(53,249,47,0.22)':'rgba(53,249,47,0.58)';
+    ctx.lineWidth=0.9; ctx.stroke();
+
+    // Pill label above line
     if(ev.title){
       ctx.save();
-      ctx.font="300 8.5px 'DM Mono',monospace";
-      const labelStr=ev.title.length>16?ev.title.slice(0,15)+'…':ev.title;
-      const tw=ctx.measureText(labelStr).width;
-      const pH=5, bh=14;
-      const bw=tw+pH*2;
-      // Center bubble on line, clamp to canvas edges
-      const bx=Math.min(Math.max(sx-bw/2, 2), W-bw-2);
-      const by=2;
-      // Frosted glass background
-      ctx.fillStyle=isPast?'rgba(8,12,8,0.55)':'rgba(8,14,8,0.68)';
-      ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,4); ctx.fill();
-      // Glass border — subtle green tint
-      ctx.strokeStyle=isPast?'rgba(53,249,47,0.18)':'rgba(53,249,47,0.35)';
+      ctx.font="300 9.5px 'DM Mono',monospace";
+      const labelStr=ev.title.length>18?ev.title.slice(0,17)+'…':ev.title;
+      const tlw=ctx.measureText(labelStr).width;
+      const pH=6, bh=16, bw=tlw+pH*2;
+      const bx=Math.min(Math.max(sx-bw/2,PAD+2),PAD+TW-bw-2);
+      const by=lineTop-22;
+      ctx.fillStyle=isPast?'rgba(4,10,4,0.62)':'rgba(4,12,4,0.78)';
+      ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,5); ctx.fill();
+      ctx.strokeStyle=isPast?'rgba(53,249,47,0.20)':'rgba(53,249,47,0.42)';
       ctx.lineWidth=0.5;
-      ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,4); ctx.stroke();
-      // Top highlight shimmer
-      ctx.fillStyle=isPast?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.08)';
-      ctx.beginPath(); ctx.roundRect(bx+1,by+1,bw-2,5,3); ctx.fill();
-      // Label text
-      ctx.fillStyle=isPast?'rgba(255,255,255,0.42)':'rgba(255,255,255,0.82)';
+      ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,5); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.07)';
+      ctx.beginPath(); ctx.roundRect(bx+1,by+1,bw-2,6,4); ctx.fill();
+      ctx.fillStyle=isPast?'rgba(255,255,255,0.44)':'rgba(255,255,255,0.90)';
       ctx.textAlign='left';
-      ctx.fillText(labelStr, bx+pH, by+10);
+      ctx.fillText(labelStr,bx+pH,by+11.5);
       ctx.restore();
     }
   });
 
   // ── Hour ticks and labels ────────────────────────────────
   for(let h=0;h<=24;h++){
-    const x=(h/24)*W;
+    const x=PAD+(h/24)*TW;
     const isEven=h%2===0;
-    ctx.beginPath(); ctx.moveTo(x,RULE_Y); ctx.lineTo(x,RULE_Y+(isEven?10:5));
-    ctx.strokeStyle='rgba(255,255,255,0.18)';
+    ctx.beginPath(); ctx.moveTo(x,RULE_Y); ctx.lineTo(x,RULE_Y+(isEven?11:5));
+    ctx.strokeStyle=isEven?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.09)';
     ctx.lineWidth=isEven?0.8:0.4; ctx.stroke();
     if(isEven){
-      ctx.font="300 9px 'DM Mono',monospace";
+      ctx.font="300 10px 'DM Mono',monospace";
       ctx.textAlign='center';
-      ctx.fillStyle='rgba(255,255,255,0.22)';
-      ctx.fillText(String(h).padStart(2,'0'),x,RULE_Y+22);
+      ctx.fillStyle='rgba(255,255,255,0.26)';
+      ctx.fillText(String(h).padStart(2,'0'),x,RULE_Y+26);
     }
   }
 
-  // ── Blue current-time line ───────────────────────────────
-  const b1=ctx.createLinearGradient(0,0,0,H);
-  b1.addColorStop(0,'rgba(41,182,246,0.08)'); b1.addColorStop(0.55,'rgba(41,182,246,0.03)'); b1.addColorStop(1,'rgba(41,182,246,0)');
-  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
-  ctx.strokeStyle=b1; ctx.lineWidth=12; ctx.stroke();
-  const b2=ctx.createLinearGradient(0,0,0,H);
-  b2.addColorStop(0,'rgba(41,182,246,0.30)'); b2.addColorStop(0.60,'rgba(41,182,246,0.10)'); b2.addColorStop(1,'rgba(41,182,246,0)');
-  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
+  // ── Blue current-time needle ─────────────────────────────
+  // Wide ambient glow
+  const b1=ctx.createLinearGradient(0,0,0,RULE_Y+50);
+  b1.addColorStop(0,'rgba(41,182,246,0.10)');
+  b1.addColorStop(0.7,'rgba(41,182,246,0.04)');
+  b1.addColorStop(1,'rgba(41,182,246,0)');
+  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,RULE_Y+50);
+  ctx.strokeStyle=b1; ctx.lineWidth=18; ctx.stroke();
+  // Mid glow
+  const b2=ctx.createLinearGradient(0,0,0,RULE_Y+20);
+  b2.addColorStop(0,'rgba(41,182,246,0.38)');
+  b2.addColorStop(1,'rgba(41,182,246,0)');
+  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,RULE_Y+20);
   ctx.strokeStyle=b2; ctx.lineWidth=5; ctx.stroke();
-  const b3=ctx.createLinearGradient(0,0,0,H);
-  b3.addColorStop(0,'rgba(41,182,246,1)'); b3.addColorStop(0.65,'rgba(41,182,246,0.55)'); b3.addColorStop(1,'rgba(41,182,246,0)');
-  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
+  // Core needle
+  const b3=ctx.createLinearGradient(0,0,0,RULE_Y);
+  b3.addColorStop(0,'rgba(41,182,246,1.0)');
+  b3.addColorStop(0.85,'rgba(41,182,246,0.75)');
+  b3.addColorStop(1,'rgba(41,182,246,0.30)');
+  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,RULE_Y);
   ctx.strokeStyle=b3; ctx.lineWidth=1.5; ctx.stroke();
 
-  // ── Time label — bottom of canvas, glowing blue ──────────
+  // Glowing dot at rule
+  ctx.beginPath(); ctx.arc(nowX,RULE_Y,4,0,Math.PI*2);
+  ctx.fillStyle='rgba(41,182,246,1)';
+  ctx.shadowColor='rgba(41,182,246,0.9)'; ctx.shadowBlur=14;
+  ctx.fill(); ctx.shadowBlur=0;
+
+  // ── Time label pill ──────────────────────────────────────
   const hStr=String(now.getHours()).padStart(2,'0');
   const mStr=String(now.getMinutes()).padStart(2,'0');
-  const tLabel=`${hStr}:${mStr}`;
-  const labelX=Math.min(Math.max(nowX,18),W-18);
-  ctx.font="300 9px 'DM Mono',monospace";
-  const tw=ctx.measureText(tLabel).width;
-  // Dark pill bg
-  ctx.fillStyle='rgba(0,8,18,0.70)';
-  ctx.beginPath(); ctx.roundRect(labelX-tw/2-4,H-15,tw+8,12,3); ctx.fill();
-  // Blue border
-  ctx.strokeStyle='rgba(41,182,246,0.28)';
-  ctx.lineWidth=0.5;
-  ctx.beginPath(); ctx.roundRect(labelX-tw/2-4,H-15,tw+8,12,3); ctx.stroke();
-  // Glowing blue text
+  const sStr=String(now.getSeconds()).padStart(2,'0');
+  const tLabel=`${hStr}:${mStr}:${sStr}`;
+  const labelY=RULE_Y+46;
+  const labelX=Math.min(Math.max(nowX,PAD+22),PAD+TW-22);
+  ctx.font="300 11px 'DM Mono',monospace";
+  const tlw2=ctx.measureText(tLabel).width;
+  ctx.fillStyle='rgba(0,6,16,0.82)';
+  ctx.beginPath(); ctx.roundRect(labelX-tlw2/2-7,labelY-13,tlw2+14,17,4); ctx.fill();
+  ctx.strokeStyle='rgba(41,182,246,0.38)';
+  ctx.lineWidth=0.6;
+  ctx.beginPath(); ctx.roundRect(labelX-tlw2/2-7,labelY-13,tlw2+14,17,4); ctx.stroke();
   ctx.fillStyle='rgba(41,182,246,0.95)';
   ctx.textAlign='center';
-  ctx.shadowColor='rgba(41,182,246,0.75)';
-  ctx.shadowBlur=7;
-  ctx.fillText(tLabel,labelX,H-6);
+  ctx.shadowColor='rgba(41,182,246,0.80)'; ctx.shadowBlur=9;
+  ctx.fillText(tLabel,labelX,labelY);
   ctx.shadowBlur=0;
+
+  // ── Date label ───────────────────────────────────────────
+  ctx.font="300 10px 'DM Mono',monospace";
+  ctx.fillStyle='rgba(255,255,255,0.16)';
+  ctx.textAlign='right';
+  ctx.fillText(todayStr,PAD+TW,28);
 }
 
 function _tdInit(){
@@ -9401,11 +9430,12 @@ function _tdFrame(){
 
 function startTimedrift(){
   _tdInit();
-  _tdLayout();
   if(!_tdResizeObs){
-    _tdResizeObs=new ResizeObserver(()=>_tdLayout());
-    const top=document.getElementById('td-top');
-    if(top) _tdResizeObs.observe(top);
+    _tdResizeObs=new ResizeObserver(()=>{
+      if(_tdTlCvs){_tdTlCvs.dataset.cw='';_tdTlCvs.dataset.ch='';}
+    });
+    const panel=document.getElementById('panel-timedrift');
+    if(panel) _tdResizeObs.observe(panel);
   }
   if(!_tdRaf){ _tdAnimT0=null; _tdFrame(); }
 }
