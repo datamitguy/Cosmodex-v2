@@ -4734,7 +4734,16 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
     <!-- Timedrift Panel -->
     <div id="panel-timedrift" style="display:none;flex:1;flex-direction:column;overflow:hidden;position:relative;background:#000000">
-      <canvas id="td-tl-cvs" style="display:block;flex:1;width:100%;min-height:0;"></canvas>
+      <!-- Top 50%: timedrift visualization -->
+      <div id="td-top" style="position:relative;height:50%;overflow:hidden;flex-shrink:0;">
+        <div id="td-stage" style="position:absolute;left:50%;transform:translateX(-50%);top:0;">
+          <svg id="td-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible"></svg>
+        </div>
+      </div>
+      <!-- Bottom 50%: day timeline -->
+      <div id="td-bottom" style="flex:1;display:flex;flex-direction:column;">
+        <canvas id="td-tl-cvs" style="display:block;flex:1;width:100%;min-height:0;"></canvas>
+      </div>
     </div>
 
     <!-- Lists Panel (full page) -->
@@ -9430,12 +9439,14 @@ function _tdFrame(){
 
 function startTimedrift(){
   _tdInit();
+  _tdLayout();
   if(!_tdResizeObs){
     _tdResizeObs=new ResizeObserver(()=>{
+      _tdLayout();
       if(_tdTlCvs){_tdTlCvs.dataset.cw='';_tdTlCvs.dataset.ch='';}
     });
-    const panel=document.getElementById('panel-timedrift');
-    if(panel) _tdResizeObs.observe(panel);
+    const top=document.getElementById('td-top');
+    if(top) _tdResizeObs.observe(top);
   }
   if(!_tdRaf){ _tdAnimT0=null; _tdFrame(); }
 }
@@ -9443,6 +9454,7 @@ function startTimedrift(){
 function stopTimedrift(){
   if(_tdRaf){ cancelAnimationFrame(_tdRaf); _tdRaf=null; }
   if(_tdResizeObs){ _tdResizeObs.disconnect(); _tdResizeObs=null; }
+  _tdInitialized=false;
 }
 
 
@@ -12682,6 +12694,9 @@ window.addEventListener('cdx-auth-ready', () => {
     }
     // Rebuild selects with any custom categories loaded from localStorage
     rebuildCategorySelects();
+    // Show orb as floating mini button
+    const _orbEl = document.getElementById('cosmodex-orb');
+    if (_orbEl) _orbEl.style.display = 'block';
     initData();
     initCalDropZones();
     initEventModal();
