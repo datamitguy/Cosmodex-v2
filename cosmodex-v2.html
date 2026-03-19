@@ -1287,7 +1287,7 @@ body::after {
   cursor: pointer;
   z-index: 498;
   overflow: hidden;
-  display: block;
+  display: none;
   transition: width 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
               height 0.48s cubic-bezier(0.25,0.46,0.45,0.94),
               border-radius 0.48s ease;
@@ -4496,6 +4496,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <span class="nav-item-icon">◌</span>
         Timedrift
       </div>
+      <div class="nav-item" data-panel="cosmodex-bubble" id="nav-cosmodex-bubble">
+        <span class="nav-item-icon">◎</span>
+        Cosmodex Bubble
+      </div>
     </div>
   </div>
 
@@ -6329,6 +6333,11 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       showMainPanel('timedrift');
+      return;
+    }
+    // Cosmodex Bubble → open orb modal
+    if (panel === 'cosmodex-bubble') {
+      openOrb();
       return;
     }
     // Workspace panels (today, calendar, tasks) → restore default layout
@@ -9069,9 +9078,8 @@ function _tdDrawTimeline(now){
   const cvs=_tdTlCvs, ctx=_tdTlCtx;
   const dpr=window.devicePixelRatio||1;
   const wrap=cvs.parentElement;
-  const cssW=Math.max(1, wrap.clientWidth - 0); // full wrap width
-  const cssH=68;
-  // Always reset transform + resize if needed
+  const cssW=Math.max(1, wrap.clientWidth - 0);
+  const cssH=76; // extra height for bottom time label
   if(cvs.dataset.cw!==String(cssW)||cvs.dataset.ch!==String(cssH)){
     cvs.width=cssW*dpr; cvs.height=cssH*dpr;
     cvs.style.width=cssW+'px'; cvs.style.height=cssH+'px';
@@ -9085,13 +9093,13 @@ function _tdDrawTimeline(now){
   const nowMins=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
   const nowFrac=nowMins/(24*60);
   const nowX=nowFrac*W;
-  const RULE_Y=38; // y of horizontal rule
+  const RULE_Y=40;
 
   // ── Horizontal rule ──────────────────────────────────────
   ctx.beginPath(); ctx.moveTo(0,RULE_Y); ctx.lineTo(W,RULE_Y);
   ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.5; ctx.stroke();
 
-  // ── Event blocks (above rule) ────────────────────────────
+  // ── Event green start lines + glass bubble labels ────────
   const todayEvts=(CAL_EVENTS||[]).filter(e=>
     e.date===todayStr && e.startTime && !e.allDay
   );
@@ -9100,32 +9108,57 @@ function _tdDrawTimeline(now){
     const sFrac=(sh*60+sm)/(24*60);
     const sx=sFrac*W;
     const isPast=sFrac<nowFrac;
-    // Duration fill
+    // Duration fill — subtle green tint
     if(ev.endTime){
       const [eh,em]=(ev.endTime||'0:0').split(':').map(Number);
       const eFrac=(eh*60+em)/(24*60);
       const ex=eFrac*W;
-      ctx.fillStyle=isPast?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.08)';
-      ctx.fillRect(sx+1,10,Math.max(2,ex-sx-1),RULE_Y-10);
+      ctx.fillStyle=isPast?'rgba(53,249,47,0.03)':'rgba(53,249,47,0.06)';
+      ctx.fillRect(sx+1,16,Math.max(2,ex-sx-1),RULE_Y-16);
     }
-    // Start edge line
-    ctx.beginPath(); ctx.moveTo(sx,8); ctx.lineTo(sx,RULE_Y);
-    ctx.strokeStyle=isPast?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.55)';
-    ctx.lineWidth=1; ctx.stroke();
-    // Small dot at top of edge
-    ctx.beginPath(); ctx.arc(sx,8,1.5,0,Math.PI*2);
-    ctx.fillStyle=isPast?'rgba(255,255,255,0.30)':'rgba(255,255,255,0.70)';
+    // Outer subtle glow
+    const ge1=ctx.createLinearGradient(0,0,0,RULE_Y);
+    ge1.addColorStop(0,isPast?'rgba(53,249,47,0.04)':'rgba(53,249,47,0.07)');
+    ge1.addColorStop(0.7,'rgba(53,249,47,0.02)');
+    ge1.addColorStop(1,'rgba(53,249,47,0)');
+    ctx.beginPath(); ctx.moveTo(sx,16); ctx.lineTo(sx,RULE_Y);
+    ctx.strokeStyle=ge1; ctx.lineWidth=7; ctx.stroke();
+    // Core green line (30% thicker than original 1px)
+    const ge2=ctx.createLinearGradient(0,0,0,RULE_Y);
+    ge2.addColorStop(0,isPast?'rgba(53,249,47,0.45)':'rgba(53,249,47,0.90)');
+    ge2.addColorStop(0.75,isPast?'rgba(53,249,47,0.18)':'rgba(53,249,47,0.45)');
+    ge2.addColorStop(1,'rgba(53,249,47,0)');
+    ctx.beginPath(); ctx.moveTo(sx,16); ctx.lineTo(sx,RULE_Y);
+    ctx.strokeStyle=ge2; ctx.lineWidth=1.3; ctx.stroke();
+    // Dot at top of line (30% larger than original r=1.5)
+    ctx.beginPath(); ctx.arc(sx,16,2.0,0,Math.PI*2);
+    ctx.fillStyle=isPast?'rgba(53,249,47,0.45)':'rgba(53,249,47,0.90)';
     ctx.fill();
-    // Event title label above edge line
+    // Glass bubble event label
     if(ev.title){
       ctx.save();
       ctx.font="300 8.5px 'DM Mono',monospace";
+      const labelStr=ev.title.length>16?ev.title.slice(0,15)+'…':ev.title;
+      const tw=ctx.measureText(labelStr).width;
+      const pH=5, bh=14;
+      const bw=tw+pH*2;
+      // Center bubble on line, clamp to canvas edges
+      const bx=Math.min(Math.max(sx-bw/2, 2), W-bw-2);
+      const by=2;
+      // Frosted glass background
+      ctx.fillStyle=isPast?'rgba(8,12,8,0.55)':'rgba(8,14,8,0.68)';
+      ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,4); ctx.fill();
+      // Glass border — subtle green tint
+      ctx.strokeStyle=isPast?'rgba(53,249,47,0.18)':'rgba(53,249,47,0.35)';
+      ctx.lineWidth=0.5;
+      ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,4); ctx.stroke();
+      // Top highlight shimmer
+      ctx.fillStyle=isPast?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.08)';
+      ctx.beginPath(); ctx.roundRect(bx+1,by+1,bw-2,5,3); ctx.fill();
+      // Label text
+      ctx.fillStyle=isPast?'rgba(255,255,255,0.42)':'rgba(255,255,255,0.82)';
       ctx.textAlign='left';
-      ctx.fillStyle=isPast?'rgba(255,255,255,0.28)':'rgba(255,255,255,0.60)';
-      // Clamp label so it doesn't overflow right edge
-      const labelStr=ev.title.length>14?ev.title.slice(0,13)+'…':ev.title;
-      const lx=Math.min(sx+3, W-ctx.measureText(labelStr).width-4);
-      ctx.fillText(labelStr, lx, 6);
+      ctx.fillText(labelStr, bx+pH, by+10);
       ctx.restore();
     }
   });
@@ -9134,11 +9167,9 @@ function _tdDrawTimeline(now){
   for(let h=0;h<=24;h++){
     const x=(h/24)*W;
     const isEven=h%2===0;
-    // Tick below rule
     ctx.beginPath(); ctx.moveTo(x,RULE_Y); ctx.lineTo(x,RULE_Y+(isEven?10:5));
     ctx.strokeStyle='rgba(255,255,255,0.18)';
     ctx.lineWidth=isEven?0.8:0.4; ctx.stroke();
-    // Label at even hours
     if(isEven){
       ctx.font="300 9px 'DM Mono',monospace";
       ctx.textAlign='center';
@@ -9147,39 +9178,41 @@ function _tdDrawTimeline(now){
     }
   }
 
-  // ── Current time line — green, fading to transparent at bottom ───
-  const greenTop='rgba(53,249,47,1)';
-  const greenMid='rgba(53,249,47,0.55)';
-  const greenBot='rgba(53,249,47,0)';
-  // Outer wide glow
-  const g1=ctx.createLinearGradient(0,0,0,H);
-  g1.addColorStop(0,'rgba(53,249,47,0.10)'); g1.addColorStop(0.55,'rgba(53,249,47,0.06)'); g1.addColorStop(1,'rgba(53,249,47,0)');
+  // ── Blue current-time line ───────────────────────────────
+  const b1=ctx.createLinearGradient(0,0,0,H);
+  b1.addColorStop(0,'rgba(41,182,246,0.08)'); b1.addColorStop(0.55,'rgba(41,182,246,0.03)'); b1.addColorStop(1,'rgba(41,182,246,0)');
   ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
-  ctx.strokeStyle=g1; ctx.lineWidth=12; ctx.stroke();
-  // Mid glow
-  const g2=ctx.createLinearGradient(0,0,0,H);
-  g2.addColorStop(0,'rgba(53,249,47,0.25)'); g2.addColorStop(0.60,'rgba(53,249,47,0.10)'); g2.addColorStop(1,'rgba(53,249,47,0)');
+  ctx.strokeStyle=b1; ctx.lineWidth=12; ctx.stroke();
+  const b2=ctx.createLinearGradient(0,0,0,H);
+  b2.addColorStop(0,'rgba(41,182,246,0.30)'); b2.addColorStop(0.60,'rgba(41,182,246,0.10)'); b2.addColorStop(1,'rgba(41,182,246,0)');
   ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
-  ctx.strokeStyle=g2; ctx.lineWidth=5; ctx.stroke();
-  // Sharp core line
-  const g3=ctx.createLinearGradient(0,0,0,H);
-  g3.addColorStop(0,greenTop); g3.addColorStop(0.65,greenMid); g3.addColorStop(1,greenBot);
+  ctx.strokeStyle=b2; ctx.lineWidth=5; ctx.stroke();
+  const b3=ctx.createLinearGradient(0,0,0,H);
+  b3.addColorStop(0,'rgba(41,182,246,1)'); b3.addColorStop(0.65,'rgba(41,182,246,0.55)'); b3.addColorStop(1,'rgba(41,182,246,0)');
   ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
-  ctx.strokeStyle=g3; ctx.lineWidth=1.5; ctx.stroke();
-  // Time label — green, above rule
+  ctx.strokeStyle=b3; ctx.lineWidth=1.5; ctx.stroke();
+
+  // ── Time label — bottom of canvas, glowing blue ──────────
   const hStr=String(now.getHours()).padStart(2,'0');
   const mStr=String(now.getMinutes()).padStart(2,'0');
   const tLabel=`${hStr}:${mStr}`;
   const labelX=Math.min(Math.max(nowX,18),W-18);
   ctx.font="300 9px 'DM Mono',monospace";
   const tw=ctx.measureText(tLabel).width;
-  ctx.fillStyle='rgba(0,0,0,0.60)';
-  ctx.beginPath();
-  ctx.roundRect(labelX-tw/2-4, RULE_Y+10, tw+8, 14, 3);
-  ctx.fill();
-  ctx.fillStyle='rgba(53,249,47,0.90)';
+  // Dark pill bg
+  ctx.fillStyle='rgba(0,8,18,0.70)';
+  ctx.beginPath(); ctx.roundRect(labelX-tw/2-4,H-15,tw+8,12,3); ctx.fill();
+  // Blue border
+  ctx.strokeStyle='rgba(41,182,246,0.28)';
+  ctx.lineWidth=0.5;
+  ctx.beginPath(); ctx.roundRect(labelX-tw/2-4,H-15,tw+8,12,3); ctx.stroke();
+  // Glowing blue text
+  ctx.fillStyle='rgba(41,182,246,0.95)';
   ctx.textAlign='center';
-  ctx.fillText(tLabel,labelX,RULE_Y+20);
+  ctx.shadowColor='rgba(41,182,246,0.75)';
+  ctx.shadowBlur=7;
+  ctx.fillText(tLabel,labelX,H-6);
+  ctx.shadowBlur=0;
 }
 
 function _tdInit(){
@@ -11243,6 +11276,7 @@ const orbDisplay  = document.getElementById('orb-time-display');
 const orbHeader   = document.getElementById('orb-header');
 
 function openOrb() {
+  orb.style.display = 'block';
   orb.classList.add('expanded');
   orbClose.classList.add('visible');
   orbBackdrop.classList.add('visible');
@@ -11262,7 +11296,7 @@ function closeOrb() {
   orbBackdrop.classList.remove('visible');
   orbDisplay.classList.remove('visible');
   orbHeader.classList.remove('visible');
-  setTimeout(drawCosmodex, 500);
+  setTimeout(() => { orb.style.display = 'none'; drawCosmodex(); }, 500);
 }
 
 orb.addEventListener('click', e => {
