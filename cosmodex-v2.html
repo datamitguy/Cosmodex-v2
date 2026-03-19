@@ -9087,32 +9087,12 @@ function _tdDrawTimeline(now){
   const nowX=nowFrac*W;
   const RULE_Y=38; // y of horizontal rule
 
-  // ── Blue past-time fill ──────────────────────────────────
-  if(nowX>0){
-    const bFill=ctx.createLinearGradient(0,0,nowX,0);
-    bFill.addColorStop(0,'rgba(61,184,255,0.02)');
-    bFill.addColorStop(0.6,'rgba(61,184,255,0.06)');
-    bFill.addColorStop(1,'rgba(61,184,255,0.13)');
-    ctx.fillStyle=bFill;
-    ctx.fillRect(0,0,nowX,H);
-    // Glowing bottom edge along past zone
-    const bLine=ctx.createLinearGradient(0,0,nowX,0);
-    bLine.addColorStop(0,'rgba(61,184,255,0.0)');
-    bLine.addColorStop(0.5,'rgba(61,184,255,0.40)');
-    bLine.addColorStop(1,'rgba(61,184,255,0.70)');
-    ctx.beginPath(); ctx.moveTo(0,H-1.5); ctx.lineTo(nowX,H-1.5);
-    ctx.strokeStyle=bLine; ctx.lineWidth=1.5; ctx.stroke();
-    // soft glow layer above bottom edge
-    ctx.beginPath(); ctx.moveTo(0,H-4); ctx.lineTo(nowX,H-4);
-    ctx.strokeStyle='rgba(61,184,255,0.08)'; ctx.lineWidth=4; ctx.stroke();
-  }
-
   // ── Horizontal rule ──────────────────────────────────────
   ctx.beginPath(); ctx.moveTo(0,RULE_Y); ctx.lineTo(W,RULE_Y);
   ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.5; ctx.stroke();
 
   // ── Event blocks (above rule) ────────────────────────────
-  const todayEvts=(window.CAL_EVENTS||[]).filter(e=>
+  const todayEvts=(CAL_EVENTS||[]).filter(e=>
     e.date===todayStr && e.startTime && !e.allDay
   );
   todayEvts.forEach(ev=>{
@@ -9126,58 +9106,78 @@ function _tdDrawTimeline(now){
       const eFrac=(eh*60+em)/(24*60);
       const ex=eFrac*W;
       ctx.fillStyle=isPast?'rgba(255,255,255,0.04)':'rgba(255,255,255,0.08)';
-      ctx.fillRect(sx+1,4,Math.max(2,ex-sx-1),RULE_Y-4);
+      ctx.fillRect(sx+1,10,Math.max(2,ex-sx-1),RULE_Y-10);
     }
     // Start edge line
-    ctx.beginPath(); ctx.moveTo(sx,2); ctx.lineTo(sx,RULE_Y);
+    ctx.beginPath(); ctx.moveTo(sx,8); ctx.lineTo(sx,RULE_Y);
     ctx.strokeStyle=isPast?'rgba(255,255,255,0.22)':'rgba(255,255,255,0.55)';
     ctx.lineWidth=1; ctx.stroke();
-    // Small dot at top
-    ctx.beginPath(); ctx.arc(sx,3,1.5,0,Math.PI*2);
-    ctx.fillStyle=isPast?'rgba(255,255,255,0.30)':'rgba(255,255,255,0.65)';
+    // Small dot at top of edge
+    ctx.beginPath(); ctx.arc(sx,8,1.5,0,Math.PI*2);
+    ctx.fillStyle=isPast?'rgba(255,255,255,0.30)':'rgba(255,255,255,0.70)';
     ctx.fill();
+    // Event title label above edge line
+    if(ev.title){
+      ctx.save();
+      ctx.font="300 8.5px 'DM Mono',monospace";
+      ctx.textAlign='left';
+      ctx.fillStyle=isPast?'rgba(255,255,255,0.28)':'rgba(255,255,255,0.60)';
+      // Clamp label so it doesn't overflow right edge
+      const labelStr=ev.title.length>14?ev.title.slice(0,13)+'…':ev.title;
+      const lx=Math.min(sx+3, W-ctx.measureText(labelStr).width-4);
+      ctx.fillText(labelStr, lx, 6);
+      ctx.restore();
+    }
   });
 
   // ── Hour ticks and labels ────────────────────────────────
   for(let h=0;h<=24;h++){
     const x=(h/24)*W;
     const isEven=h%2===0;
-    const isPast=(h/24)<nowFrac;
     // Tick below rule
     ctx.beginPath(); ctx.moveTo(x,RULE_Y); ctx.lineTo(x,RULE_Y+(isEven?10:5));
-    ctx.strokeStyle=isPast?'rgba(61,184,255,0.45)':'rgba(255,255,255,0.18)';
+    ctx.strokeStyle='rgba(255,255,255,0.18)';
     ctx.lineWidth=isEven?0.8:0.4; ctx.stroke();
     // Label at even hours
     if(isEven){
       ctx.font="300 9px 'DM Mono',monospace";
       ctx.textAlign='center';
-      ctx.fillStyle=isPast?'rgba(61,184,255,0.55)':'rgba(255,255,255,0.22)';
+      ctx.fillStyle='rgba(255,255,255,0.22)';
       ctx.fillText(String(h).padStart(2,'0'),x,RULE_Y+22);
     }
   }
 
-  // ── Current time line ────────────────────────────────────
-  // Glow halos
-  [[10,0.03],[5,0.05],[2,0.08]].forEach(([w,a])=>{
-    ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
-    ctx.strokeStyle=`rgba(255,255,255,${a})`; ctx.lineWidth=w; ctx.stroke();
-  });
-  // Sharp line
+  // ── Current time line — green, fading to transparent at bottom ───
+  const greenTop='rgba(53,249,47,1)';
+  const greenMid='rgba(53,249,47,0.55)';
+  const greenBot='rgba(53,249,47,0)';
+  // Outer wide glow
+  const g1=ctx.createLinearGradient(0,0,0,H);
+  g1.addColorStop(0,'rgba(53,249,47,0.10)'); g1.addColorStop(0.55,'rgba(53,249,47,0.06)'); g1.addColorStop(1,'rgba(53,249,47,0)');
   ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
-  ctx.strokeStyle='rgba(255,255,255,0.82)'; ctx.lineWidth=1; ctx.stroke();
-  // Time label (white, above rule)
+  ctx.strokeStyle=g1; ctx.lineWidth=12; ctx.stroke();
+  // Mid glow
+  const g2=ctx.createLinearGradient(0,0,0,H);
+  g2.addColorStop(0,'rgba(53,249,47,0.25)'); g2.addColorStop(0.60,'rgba(53,249,47,0.10)'); g2.addColorStop(1,'rgba(53,249,47,0)');
+  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
+  ctx.strokeStyle=g2; ctx.lineWidth=5; ctx.stroke();
+  // Sharp core line
+  const g3=ctx.createLinearGradient(0,0,0,H);
+  g3.addColorStop(0,greenTop); g3.addColorStop(0.65,greenMid); g3.addColorStop(1,greenBot);
+  ctx.beginPath(); ctx.moveTo(nowX,0); ctx.lineTo(nowX,H);
+  ctx.strokeStyle=g3; ctx.lineWidth=1.5; ctx.stroke();
+  // Time label — green, above rule
   const hStr=String(now.getHours()).padStart(2,'0');
   const mStr=String(now.getMinutes()).padStart(2,'0');
   const tLabel=`${hStr}:${mStr}`;
   const labelX=Math.min(Math.max(nowX,18),W-18);
-  // label background pill
   ctx.font="300 9px 'DM Mono',monospace";
   const tw=ctx.measureText(tLabel).width;
-  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.fillStyle='rgba(0,0,0,0.60)';
   ctx.beginPath();
   ctx.roundRect(labelX-tw/2-4, RULE_Y+10, tw+8, 14, 3);
   ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.fillStyle='rgba(53,249,47,0.90)';
   ctx.textAlign='center';
   ctx.fillText(tLabel,labelX,RULE_Y+20);
 }
