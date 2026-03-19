@@ -1011,7 +1011,7 @@ body::after {
   background: var(--gold); border: none;
   color: var(--ink); font-family: var(--font-mono);
   font-size: 10px; letter-spacing: 0.08em;
-  cursor: pointer; transition: var(--ease-fast); margin-left: auto;
+  cursor: pointer; transition: var(--ease-fast); white-space: nowrap; flex-shrink: 0;
 }
 .task-add-confirm:hover { background: var(--gold-hover); }
 
@@ -1655,6 +1655,16 @@ body::after {
 #signin-crystal-bg {
   position: absolute; inset: 0; width: 100%; height: 100%;
   pointer-events: none;
+  z-index: 0;
+}
+
+#signin-overlay .signin-bg-glow,
+#signin-overlay .signin-logo,
+#signin-overlay .signin-sub,
+#signin-overlay .signin-btn,
+#signin-overlay #signin-error {
+  position: relative;
+  z-index: 1;
 }
 
 #signin-overlay .signin-bg-glow {
@@ -1666,12 +1676,16 @@ body::after {
 
 .signin-logo {
   font-family: var(--font-display);
-  font-size: 42px;
+  font-size: 64px;
   font-weight: 300;
   color: var(--gold);
   letter-spacing: 0.08em;
   margin-bottom: 8px;
   position: relative;
+}
+
+.signin-logo strong {
+  font-weight: 700;
 }
 
 .signin-logo em {
@@ -2633,6 +2647,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   border-radius: 2px;
   transform: translateX(-50%);
   pointer-events: none;
+  box-shadow: 0 0 8px rgba(53,249,47,0.8), 0 0 24px rgba(53,249,47,0.4);
 }
 
 /* Each milestone row */
@@ -4588,7 +4603,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <div id="panel-tasks">
       <!-- Always-visible quick-add form -->
       <div class="task-add-form" id="task-add-form" style="position:relative">
-        <input class="task-add-input" id="task-add-input" type="text" placeholder="Add a task… (type @ to mention people)" autocomplete="off" />
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="task-add-input" id="task-add-input" type="text" placeholder="Add a task… (type @ to mention people)" autocomplete="off" style="flex:1" />
+          <button class="task-add-confirm" id="task-add-confirm">Add</button>
+        </div>
         <!-- @mention dropdown -->
         <div id="task-mention-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--elevated);border:1px solid var(--border);border-radius:8px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.4);padding:4px 0;max-height:200px;overflow-y:auto"></div>
         <!-- Selected people pills -->
@@ -4630,7 +4648,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <button type="button" class="energy-pill energy-shallow" data-energy="shallow">Shallow</button>
             <button type="button" class="energy-pill energy-admin"   data-energy="admin">Admin</button>
           </div>
-          <button class="task-add-confirm" id="task-add-confirm">Add</button>
         </div>
       </div>
 
@@ -5426,7 +5443,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 <div id="signin-overlay">
   <canvas id="signin-crystal-bg"></canvas>
   <div class="signin-bg-glow"></div>
-  <div class="signin-logo">Cosmo<em>dex</em></div>
+  <div class="signin-logo"><strong>Cosmo</strong><em>dex</em></div>
   <div class="signin-sub">Your intelligent time companion</div>
   <button class="signin-btn" id="signin-btn" style="background:#fff;color:#1a1a1a;gap:12px">
     <svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0">
@@ -7943,7 +7960,7 @@ function renderMilestoneTimeline(projId) {
     const doneCount = acts.filter(a => a.done).length;
     const isPast = new Date(ev.date) < new Date();
     const dotColor = doneCount === acts.length && acts.length > 0
-      ? '#4a7c5e' : (isPast ? proj.color : 'var(--border)');
+      ? 'rgb(53,249,47)' : (isPast ? proj.color : 'var(--border)');
 
     const actItems = acts.map(a => {
       const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
@@ -7981,9 +7998,9 @@ function renderMilestoneTimeline(projId) {
 
     const dotCol = `
       <div class="ms-alt-dot-col">
-        <div class="ms-alt-dot" style="background:${dotColor}"></div>
+        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(53,249,47,0.9),0 0 20px rgba(53,249,47,0.5)':''}"></div>
         <div class="ms-alt-date-badge">${escHtml(fmtDate(ev.date))}</div>
-        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:8px;color:${doneCount===acts.length?'var(--sage)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
+        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:8px;color:${doneCount===acts.length?'rgb(53,249,47)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
       </div>`;
 
     // Alternate: even idx → card on left, odd → card on right
@@ -8027,8 +8044,8 @@ function renderMilestoneTimeline(projId) {
       </div>
       <div class="ms-alt-progress-wrap">
         <div class="ms-alt-progress-bar" data-proj-bar="${escAttr(proj.id)}">
-          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:${proj.color};opacity:0.35"></div>
-          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:${proj.color};opacity:0.75;transition:width 0.4s;border-radius:3px"></div>
+          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(53,249,47);opacity:0.25"></div>
+          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(53,249,47);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(53,249,47,0.7),0 0 20px rgba(53,249,47,0.3)"></div>
         </div>
         <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px">
           <span>${pct}% complete · ${doneActs}/${totalActs} tasks</span>
@@ -8039,7 +8056,7 @@ function renderMilestoneTimeline(projId) {
       ${events.length ? `
         <div class="ms-alt-entries">
           <div class="ms-alt-center-line"></div>
-          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:${proj.color}88"></div>
+          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(53,249,47)"></div>
           <div class="ms-alt-cap">
             <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
             <div class="ms-alt-cap-label">Start · ${escHtml(fmtDate(proj.startDate))}</div>
