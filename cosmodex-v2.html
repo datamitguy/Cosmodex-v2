@@ -9050,11 +9050,11 @@ const TD_RINGS = [
     maj:1,th:5.6,tm:5.6,fs:4.8,lr:99,bandFill:'rgba(255,255,255,0.12)',bandStroke:'rgba(255,255,255,0.12)',dimA:0.30 },
   { id:'hr',  r:138, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
     cur:d=>d.getHours(),
-    sub:d=>(d.getMinutes()*60+d.getSeconds())/3600,
+    sub:d=>_tdHrSnapFrac,
     maj:1,th:4.8,tm:2.0,fs:4.2,lr:131,bandFill:'rgba(255,255,255,0.20)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.26 },
   { id:'min', r:170, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getMinutes(),
-    sub:d=>d.getSeconds()/60,
+    sub:d=>_tdMinSnapFrac,
     maj:1,th:4.4,tm:1.6,fs:3.8,lr:163,bandFill:'rgba(255,255,255,0.10)',bandStroke:'rgba(255,255,255,0.10)',dimA:0.22 },
   { id:'sec', r:202, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getSeconds(),
@@ -9065,6 +9065,8 @@ const TD_RINGS = [
 let _tdSvg=null, _tdElYear=null, _tdElTime=null, _tdElDate=null;
 let _tdRingGroups={}, _tdRaf=null, _tdResizeObs=null, _tdInitialized=false;
 let _tdAnimT0=null;
+let _tdMinSnapT0=-Infinity, _tdLastMin=-1, _tdMinSnapFrac=0;
+let _tdHrSnapT0=-Infinity, _tdLastHr=-1, _tdHrSnapFrac=0;
 let _tdTlCvs=null, _tdTlCtx=null;
 
 function _tdInitTimeline(){
@@ -9351,15 +9353,9 @@ function _tdUpdateRing(info,now,animEase){
       if(tk){tk.setAttribute('stroke','rgba(255,255,255,1)');tk.setAttribute('stroke-width','1.0');tk.setAttribute('filter','url(#td-wglow)');}
       if(rl){rl.setAttribute('fill','rgba(255,255,255,1)');rl.setAttribute('font-weight','500');rl.setAttribute('font-size',String(ring.fs*1.22));rl.setAttribute('filter','url(#td-wglow)');}
       item.style.opacity='1';
-    } else if(abs<3.5){
-      const t=_tdClamp(1-(abs-0.45)/3.05,0,1);
-      const a=_tdLerp2(ring.dimA,0.82,t);
-      if(tk){tk.setAttribute('stroke',_tdWa(a));tk.setAttribute('stroke-width',String(maj?_tdLerp2(0.36,0.8,t):_tdLerp2(0.16,0.36,t)));tk.removeAttribute('filter');}
-      if(rl){rl.setAttribute('fill',_tdWa(a));rl.setAttribute('font-weight','300');rl.setAttribute('font-size',String(ring.fs*_tdLerp2(1,1.12,t)));rl.removeAttribute('filter');}
-      item.style.opacity=String(_tdClamp(Math.max(opac,t*0.92),0,1));
     } else {
-      if(tk){tk.setAttribute('stroke',_tdWa(ring.dimA));tk.setAttribute('stroke-width',maj?'0.36':'0.16');tk.removeAttribute('filter');}
-      if(rl){rl.setAttribute('fill',_tdWa(ring.dimA));rl.setAttribute('font-weight','300');rl.setAttribute('font-size',String(ring.fs));rl.removeAttribute('filter');}
+      if(tk){tk.setAttribute('stroke','rgba(255,255,255,0.28)');tk.setAttribute('stroke-width',maj?'0.5':'0.22');tk.removeAttribute('filter');}
+      if(rl){rl.setAttribute('fill','rgba(255,255,255,0.28)');rl.setAttribute('font-weight','300');rl.setAttribute('font-size',String(ring.fs));rl.removeAttribute('filter');}
       item.style.opacity=opac<0.02?'0':String(opac);
     }
   });
@@ -9372,8 +9368,21 @@ function _tdUpdateCenter(now){
 function _tdFrame(){
   const now=new Date();
   if(!_tdAnimT0) _tdAnimT0=performance.now();
-  const progress=Math.min(1,(performance.now()-_tdAnimT0)/900);
+  const t0=performance.now();
+  const progress=Math.min(1,(t0-_tdAnimT0)/900);
   const animEase=1-Math.pow(1-progress,3);
+  // Minute snap animation: ring jumps to new minute with ease-out over 400ms
+  const curMin=now.getMinutes();
+  if(_tdLastMin!==-1 && curMin!==_tdLastMin) _tdMinSnapT0=t0;
+  _tdLastMin=curMin;
+  const minAge=t0-_tdMinSnapT0;
+  _tdMinSnapFrac=(minAge<400) ? -(1-Math.pow(1-minAge/400,3)) : 0;
+  // Hour snap animation: ring jumps to new hour with ease-out over 500ms
+  const curHr=now.getHours();
+  if(_tdLastHr!==-1 && curHr!==_tdLastHr) _tdHrSnapT0=t0;
+  _tdLastHr=curHr;
+  const hrAge=t0-_tdHrSnapT0;
+  _tdHrSnapFrac=(hrAge<500) ? -(1-Math.pow(1-hrAge/500,3)) : 0;
   Object.values(_tdRingGroups).forEach(info=>_tdUpdateRing(info,now,animEase));
   _tdUpdateCenter(now);
   _tdDrawTimeline(now);
