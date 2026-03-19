@@ -9022,23 +9022,23 @@ const TD_RINGS = [
   { id:'mon', r:74, bw:32, items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     cur:d=>d.getMonth(),
     sub:d=>0,
-    maj:1,th:5.2,tm:5.2,fs:4.6,lr:67,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.32 },
+    maj:1,th:5.2,tm:5.2,fs:4.6,lr:67,bandFill:'rgba(255,255,255,0.50)',bandStroke:'rgba(255,255,255,0.50)',dimA:0.32 },
   { id:'dow', r:106, bw:32, items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     cur:d=>d.getDay(),
     sub:d=>0,
-    maj:1,th:5.6,tm:5.6,fs:4.8,lr:99,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.30 },
+    maj:1,th:5.6,tm:5.6,fs:4.8,lr:99,bandFill:'rgba(255,255,255,0.40)',bandStroke:'rgba(255,255,255,0.40)',dimA:0.30 },
   { id:'hr',  r:138, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
     cur:d=>d.getHours(),
     sub:d=>(d.getMinutes()*60+d.getSeconds())/3600,
-    maj:1,th:4.8,tm:2.0,fs:4.2,lr:131,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.26 },
+    maj:1,th:4.8,tm:2.0,fs:4.2,lr:131,bandFill:'rgba(255,255,255,0.20)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.26 },
   { id:'min', r:170, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getMinutes(),
     sub:d=>d.getSeconds()/60,
-    maj:1,th:4.4,tm:1.6,fs:3.8,lr:163,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.22 },
+    maj:1,th:4.4,tm:1.6,fs:3.8,lr:163,bandFill:'rgba(255,255,255,0.10)',bandStroke:'rgba(255,255,255,0.10)',dimA:0.22 },
   { id:'sec', r:202, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getSeconds(),
     sub:d=>d.getMilliseconds()/1000,
-    maj:1,th:4.4,tm:1.6,fs:3.6,lr:195,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.18 },
+    maj:1,th:4.4,tm:1.6,fs:3.6,lr:195,bandFill:'rgba(255,255,255,0.02)',bandStroke:'rgba(255,255,255,0.02)',dimA:0.18 },
 ];
 
 let _tdSvg=null, _tdElYear=null, _tdElTime=null, _tdElDate=null;
@@ -9085,7 +9085,7 @@ function _tdInit(){
 
   // Year text in center hub
   _tdElYear=_tdMk('text');
-  _tdElYear.setAttribute('x',_TD_CX); _tdElYear.setAttribute('y',String(_TD_CY+10));
+  _tdElYear.setAttribute('x',_TD_CX); _tdElYear.setAttribute('y',String(_TD_CY+62));
   _tdElYear.setAttribute('text-anchor','middle'); _tdElYear.setAttribute('dominant-baseline','middle');
   _tdElYear.setAttribute('font-family',"'DM Mono',monospace");
   _tdElYear.setAttribute('font-size','15'); _tdElYear.setAttribute('font-weight','300');
@@ -9101,10 +9101,10 @@ function _tdInit(){
     p.setAttribute('fill',ring.bandFill); p.setAttribute('fill-rule','evenodd'); gBg.appendChild(p);
     const c=_tdMk('circle');
     c.setAttribute('cx',_TD_CX); c.setAttribute('cy',_TD_CY); c.setAttribute('r',String(ro));
-    c.setAttribute('fill','none'); c.setAttribute('stroke',ring.bandStroke); c.setAttribute('stroke-width','0.7'); gBg.appendChild(c);
+    c.setAttribute('fill','none'); c.setAttribute('stroke',ring.bandStroke); c.setAttribute('stroke-width','0.4'); c.setAttribute('stroke-dasharray','3,4'); gBg.appendChild(c);
     const ci=_tdMk('circle');
     ci.setAttribute('cx',_TD_CX); ci.setAttribute('cy',_TD_CY); ci.setAttribute('r',String(ri));
-    ci.setAttribute('fill','none'); ci.setAttribute('stroke',ring.bandStroke); ci.setAttribute('stroke-width','0.4'); gBg.appendChild(ci);
+    ci.setAttribute('fill','none'); ci.setAttribute('stroke',ring.bandStroke); ci.setAttribute('stroke-width','0.3'); ci.setAttribute('stroke-dasharray','2,5'); gBg.appendChild(ci);
   });
 
 
@@ -9161,7 +9161,7 @@ function _tdUpdateRing(info,now,animEase){
   const n=ring.items.length;
   const cur=ring.cur(now), frac=ring.sub(now), exact=cur+frac;
   const rot=180-(exact/n)*360;
-  const animRot = animEase < 1 ? rot - 90*(1-animEase) : rot;
+  const animRot = animEase < 1 ? rot + 90*(1-animEase) : rot;
   g.setAttribute('transform',`rotate(${animRot},${_TD_CX},${_TD_CY})`);
   // Counter-rotate text so labels stay upright
   textEls.forEach(txt=>{
