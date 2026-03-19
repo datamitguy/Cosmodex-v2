@@ -709,9 +709,9 @@ body::after {
 .cal-now-line {
   position: absolute;
   left: 48px; right: 0;
-  height: 2px;
+  height: 1px;
   background: rgba(53,249,47,0.85);
-  box-shadow: 0 0 8px rgba(53,249,47,0.8), 0 0 18px rgba(53,249,47,0.4);
+  box-shadow: 0 0 4px rgba(53,249,47,0.6);
   z-index: 5;
 }
 
@@ -4569,9 +4569,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       <!-- Day view (placeholder with hours) -->
       <div class="cal-day-view" id="cal-day-view">
         <!-- Current time indicator -->
-        <div class="cal-now-line" id="cal-now-line" style="top:55%">
-          <div class="cal-now-dot"></div>
-        </div>
+        <div class="cal-now-line" id="cal-now-line"></div>
 
         <!-- Hour rows (5am–midnight) -->
         <!-- JS will build these; placeholders below for skeleton -->
@@ -9002,11 +9000,10 @@ function updateCalNowLine() {
   const h = now.getHours();
   const m = now.getMinutes();
   const minutesSince5am = (h - 5) * 60 + m;
-  const totalMinutes = 19 * 60;
-  const pct = Math.max(0, Math.min(100, (minutesSince5am / totalMinutes) * 100));
+  const px = Math.max(0, minutesSince5am); // 1 hour = 60px, so 1 min = 1px
   const line = document.getElementById('cal-now-line');
   if (line) {
-    line.style.top = pct + '%';
+    line.style.top = px + 'px';
   }
 }
 // Update every minute so it stays accurate
