@@ -2482,28 +2482,63 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   opacity: 0.5;
 }
 
-/* Outer wrapper carries the conic-gradient progress border */
+/* Outer wrapper — liquid glass bubble */
 .ms-dash-card-outer {
-  padding: 3px;
-  border-radius: 18px;
+  padding: 1px;
+  border-radius: 22px;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
   position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.18) 0%,
+    rgba(255,255,255,0.04) 45%,
+    rgba(255,255,255,0.10) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.55),
+    0 2px 8px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.08);
 }
 .ms-dash-card-outer:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  transform: translateY(-5px);
+  box-shadow:
+    0 20px 56px rgba(0,0,0,0.65),
+    0 4px 16px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .ms-dash-card-inner {
-  background: var(--surface);
-  border-radius: 16px;
+  background: rgba(4, 4, 6, 0.82);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 21px;
   padding: 20px 20px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   height: 100%;
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+/* Specular sheen across the top edge */
+.ms-dash-card-inner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  pointer-events: none;
+}
+/* Subtle inner ambient glow */
+.ms-dash-card-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 21px;
+  background: radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.04) 0%, transparent 60%);
+  pointer-events: none;
 }
 
 .ms-dash-card-title {
@@ -2545,7 +2580,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   justify-content: space-between;
   margin-top: 4px;
   padding-top: 10px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255,255,255,0.07);
 }
 
 .ms-dash-pct-label {
@@ -2565,10 +2600,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .ms-dash-milestones-count {
   font-family: var(--font-mono);
   font-size: 9px;
-  color: var(--muted);
+  color: rgba(255,255,255,0.4);
   letter-spacing: 0.08em;
-  background: var(--elevated);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 100px;
   padding: 3px 8px;
 }
@@ -4501,6 +4536,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
     <div class="nav-section">
       <div class="nav-section-label">Life OS</div>
+      <div class="nav-item" data-panel="planning" id="nav-planning">
+        <span class="nav-item-icon">◉</span>
+        Planning
+      </div>
       <div class="nav-item" data-panel="habits" id="nav-habits">
         <span class="nav-item-icon">◎</span>
         Habits
@@ -4509,17 +4548,13 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <span class="nav-item-icon">◈</span>
         Insights
       </div>
-      <div class="nav-item" data-panel="planning" id="nav-planning">
-        <span class="nav-item-icon">◉</span>
-        Planning
+      <div class="nav-item" data-panel="cosmodex-bubble" id="nav-cosmodex-bubble">
+        <span class="nav-item-icon">◎</span>
+        Cosmodex Bubble
       </div>
       <div class="nav-item" data-panel="timedrift" id="nav-timedrift">
         <span class="nav-item-icon">◌</span>
         Timedrift
-      </div>
-      <div class="nav-item" data-panel="cosmodex-bubble" id="nav-cosmodex-bubble">
-        <span class="nav-item-icon">◎</span>
-        Cosmodex Bubble
       </div>
     </div>
   </div>
@@ -4705,13 +4740,23 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             </div>
           </div>
           <!-- Timeline pane (shown when card clicked) -->
-          <div id="plan-right-timeline" style="display:none;flex:1;overflow-y:auto;flex-direction:column">
-            <div id="plan-tl-header" style="display:flex;align-items:center;padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0;gap:10px">
-              <button id="plan-tl-back" class="btn-ghost" style="font-size:10px;padding:5px 12px">← Back</button>
-              <span id="plan-tl-title" style="font-family:var(--font-display);font-size:15px;font-weight:300;color:var(--cream);flex:1"></span>
-              <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:6px 12px">+ Milestone</button>
+          <div id="plan-right-timeline" style="display:none;flex:1;flex-direction:row;overflow:hidden">
+            <!-- Main timeline column -->
+            <div id="plan-tl-main" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+              <div id="plan-tl-header" style="display:flex;align-items:center;padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0;gap:10px">
+                <button id="plan-tl-back" class="btn-ghost" style="font-size:10px;padding:5px 12px">← Back</button>
+                <span id="plan-tl-title" style="font-family:var(--font-display);font-size:15px;font-weight:300;color:var(--cream);flex:1"></span>
+                <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:6px 12px">+ Milestone</button>
+              </div>
+              <div id="plan-tl-body" style="flex:1;overflow-y:auto"></div>
             </div>
-            <div id="plan-tl-body" style="flex:1;overflow-y:auto"></div>
+            <!-- Lists side panel -->
+            <div id="plan-tl-lists" style="width:230px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
+              <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+                <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">Lists</span>
+              </div>
+              <div id="plan-tl-lists-body" style="flex:1;overflow-y:auto;padding:10px 10px 16px"></div>
+            </div>
           </div>
           <!-- Month pane -->
           <div id="plan-right-month" class="planning-right-body" style="display:none">
@@ -6266,6 +6311,7 @@ let _orbClickHour = 9;    // hour of last petal click
 // Milestones state
 let MILESTONE_PROJECTS = [];
 let MILESTONE_EVENTS   = [];
+let MILESTONE_LISTS    = [];
 let _msProjEdit        = null;
 let _msEventEdit       = null;
 let _msNewActivities   = [];
@@ -7698,6 +7744,18 @@ async function deleteMilestoneEvent(id) {
   ]);
 }
 
+/* ── Milestone Lists ────────────────────────────────────── */
+async function linkListToMilestone(projectId, listId) {
+  if (MILESTONE_LISTS.some(ml => ml.projectId === projectId && ml.listId === listId)) return;
+  const { addDoc, serverTimestamp } = window.CDX_FB;
+  await addDoc(_uc('milestone_lists'), { projectId, listId, createdAt: serverTimestamp() });
+}
+
+async function unlinkListFromMilestone(id) {
+  const { deleteDoc } = window.CDX_FB;
+  await deleteDoc(_ud('milestone_lists', id));
+}
+
 async function toggleMilestoneActivity(eventId, actId) {
   const ev = MILESTONE_EVENTS.find(e => e.id === eventId);
   if (!ev) return;
@@ -7791,13 +7849,8 @@ function renderMilestoneDashboard() {
     const isComplete = pct === 100;
     const cat = proj.category ? CATEGORIES[proj.category] : null;
 
-    // Conic-gradient progress border: sweep clockwise from top
-    const deg = Math.round(pct * 3.6);
-    const borderBg = `conic-gradient(${proj.color} 0deg ${deg}deg, var(--border) ${deg}deg 360deg)`;
-
     const outer = document.createElement('div');
     outer.className = 'ms-dash-card-outer';
-    outer.style.background = borderBg;
     outer.dataset.msDashCard = proj.id;
     // Build milestone + task detail section
     const visibleEvents = events.sort((a,b) => a.date.localeCompare(b.date)).slice(0, 4);
@@ -7805,7 +7858,7 @@ function renderMilestoneDashboard() {
       <div class="ms-card-milestones">
         ${visibleEvents.map(ev => {
           const evDone = (ev.activities||[]).length > 0 && (ev.activities||[]).every(a => a.done);
-          const dotColor = evDone ? 'var(--sage)' : (new Date(ev.date) < new Date() ? 'var(--rust)' : proj.color);
+          const dotColor = evDone ? 'rgb(53,249,47)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
           const linkedTasks = (ev.activities||[]).filter(a => a.taskId).slice(0,3)
             .map(a => { const t = TASKS.find(t => t.id === a.taskId); return t ? { title: t.title, done: t.done } : { title: a.text, done: a.done }; });
           return `<div>
@@ -7826,13 +7879,13 @@ function renderMilestoneDashboard() {
       <div class="ms-dash-card-inner">
         <div class="ms-dash-card-title">${escHtml(proj.title)}</div>
         <div class="ms-dash-card-meta">
-          ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px">${cat.label}</span>` : ''}
+          ${cat ? `<span style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.12);padding:1px 7px;border-radius:100px">${cat.label}</span>` : ''}
           <span>${escHtml(fmtDate(proj.startDate))} – ${escHtml(fmtDate(proj.endDate))}</span>
         </div>
         ${msListHtml}
         <div class="ms-dash-card-footer">
           <div>
-            <div class="ms-dash-pct-label" style="color:${isComplete ? 'var(--sage)' : proj.color}">${pct}%</div>
+            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
             <div class="ms-dash-acts-label">${doneActs} / ${totalActs} tasks done</div>
           </div>
           <div style="text-align:right;display:flex;align-items:center;gap:8px">
@@ -7885,6 +7938,14 @@ function renderMilestoneDashboard() {
       </div>`;
       archGrid.appendChild(outer);
     });
+    archGrid.querySelectorAll('[data-ms-dash-card]').forEach(card => {
+      card.addEventListener('click', e => {
+        if (e.target.closest('button')) return;
+        _msView = 'timeline';
+        _msFocusProj = card.dataset.msDashCard;
+        showPlanningTimeline(_msFocusProj);
+      });
+    });
     archSection.appendChild(archHeader);
     archSection.appendChild(archGrid);
     body.appendChild(archSection);
@@ -7931,6 +7992,105 @@ function showPlanningTimeline(projId) {
     };
   }
   renderMilestoneTimeline(projId);
+  renderMilestoneListsPanel(projId);
+}
+
+/* ── Milestone Lists Panel ──────────────────────────────── */
+function renderMilestoneListsPanel(projId) {
+  const body = document.getElementById('plan-tl-lists-body');
+  if (!body) return;
+
+  const linkedEntries = MILESTONE_LISTS.filter(ml => ml.projectId === projId);
+  const linkedLists = linkedEntries
+    .map(ml => ({ entry: ml, list: LISTS.find(l => l.id === ml.listId) }))
+    .filter(x => x.list);
+
+  let html = '';
+
+  for (const { entry, list } of linkedLists) {
+    const items = list.items || [];
+    const doneCount = items.filter(i => i.done).length;
+    html += `
+      <div style="margin-bottom:4px">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px">
+          <span style="width:6px;height:6px;border-radius:50%;background:${list.color || 'var(--gold)'};flex-shrink:0"></span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--cream);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(list.name)}</span>
+          <span style="font-size:9px;color:var(--muted);flex-shrink:0">${doneCount}/${items.length}</span>
+          <button data-ms-unlink="${entry.id}" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1" title="Unlink">×</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:5px">
+          ${items.map(item => `
+            <div style="display:flex;align-items:flex-start;gap:5px">
+              <input type="checkbox" data-ms-toggle="${item.id}" data-ms-list="${list.id}" ${item.done ? 'checked' : ''} style="cursor:pointer;accent-color:var(--gold);flex-shrink:0;margin-top:2px">
+              <span style="font-size:11px;color:${item.done ? 'var(--muted)' : 'var(--cream)'};flex:1;${item.done ? 'text-decoration:line-through' : ''};line-height:1.4;word-break:break-word">${escHtml(item.text)}</span>
+              <button data-ms-del="${item.id}" data-ms-list="${list.id}" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;flex-shrink:0">×</button>
+            </div>
+          `).join('')}
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:10px">
+          <input class="form-input ms-add-item-inp" placeholder="Add item…" data-ms-add-input="${list.id}" style="flex:1;font-size:11px;padding:4px 7px;height:26px">
+          <button data-ms-add-btn="${list.id}" class="btn-primary" style="font-size:9px;padding:4px 8px;height:26px;flex-shrink:0">+</button>
+        </div>
+        <div style="height:1px;background:var(--border);margin-bottom:10px"></div>
+      </div>`;
+  }
+
+  // Link an existing list
+  const available = LISTS.filter(l => !linkedEntries.some(ml => ml.listId === l.id));
+  if (available.length > 0) {
+    html += `
+      <div style="display:flex;gap:4px">
+        <select id="ms-link-sel" style="flex:1;font-size:10px;padding:4px 6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--cream);min-width:0">
+          <option value="">Link a list…</option>
+          ${available.map(l => `<option value="${l.id}">${escHtml(l.name)}</option>`).join('')}
+        </select>
+        <button id="ms-link-btn" class="btn-ghost" style="font-size:9px;padding:4px 8px;white-space:nowrap;flex-shrink:0">Link</button>
+      </div>`;
+  } else if (linkedLists.length === 0) {
+    html += `<div style="font-size:11px;color:var(--muted);text-align:center;padding:20px 0;line-height:1.6">No lists linked.<br>Create lists in the<br>Lists page first.</div>`;
+  }
+
+  body.innerHTML = html;
+
+  // Events (re-attached each render, OK since body.innerHTML clears old DOM)
+  body.querySelectorAll('[data-ms-add-input]').forEach(inp => {
+    inp.addEventListener('keydown', async e => {
+      if (e.key === 'Enter' && inp.value.trim()) {
+        await addListItem(inp.dataset.msAddInput, inp.value.trim());
+        inp.value = '';
+      }
+    });
+  });
+
+  body.querySelectorAll('[data-ms-add-btn]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const inp = body.querySelector(`[data-ms-add-input="${btn.dataset.msAddBtn}"]`);
+      if (inp && inp.value.trim()) {
+        await addListItem(btn.dataset.msAddBtn, inp.value.trim());
+        inp.value = '';
+      }
+    });
+  });
+
+  body.querySelectorAll('[data-ms-del]').forEach(btn => {
+    btn.addEventListener('click', () => deleteListItem(btn.dataset.msList, btn.dataset.msDel));
+  });
+
+  body.querySelectorAll('[data-ms-toggle]').forEach(cb => {
+    cb.addEventListener('change', () => toggleListItem(cb.dataset.msList, cb.dataset.msToggle));
+  });
+
+  body.querySelectorAll('[data-ms-unlink]').forEach(btn => {
+    btn.addEventListener('click', () => unlinkListFromMilestone(btn.dataset.msUnlink));
+  });
+
+  const linkBtn = body.querySelector('#ms-link-btn');
+  if (linkBtn) {
+    linkBtn.addEventListener('click', async () => {
+      const sel = body.querySelector('#ms-link-sel');
+      if (sel && sel.value) await linkListToMilestone(projId, sel.value);
+    });
+  }
 }
 
 /* ── Timeline: single-project alternating view ────────── */
@@ -9567,6 +9727,7 @@ function initData() {
       renderLists();
       if (_listView) renderListDetail(_listView);
     }
+    if (_mainPanel === 'milestones' && _msView === 'timeline' && _msFocusProj) renderMilestoneListsPanel(_msFocusProj);
   });
 
   onSnapshot(query(_uc('milestoneProjects'), orderBy('startDate', 'asc')), snap => {
@@ -9577,6 +9738,11 @@ function initData() {
   onSnapshot(query(_uc('milestoneEvents'), orderBy('date', 'asc')), snap => {
     MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, activities: [], ...d.data() }));
     if (_mainPanel === 'milestones') renderMilestones();
+  });
+
+  onSnapshot(_uc('milestone_lists'), snap => {
+    MILESTONE_LISTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (_mainPanel === 'milestones' && _msView === 'timeline' && _msFocusProj) renderMilestoneListsPanel(_msFocusProj);
   });
 
   seedHolidays();
@@ -11881,6 +12047,7 @@ const CMD_COMMANDS_BASE = [
   { label: 'Lists',            icon: '▤', action: () => showMainPanel('lists'), keys: '' },
   { label: 'Planning',         icon: '◉', action: () => showMainPanel('milestones'), keys: '' },
   { label: 'Toggle Theme',     icon: '◑', action: toggleTheme, keys: '' },
+  { label: 'Zen Mode',         icon: '◎', action: () => document.getElementById('left-nav').classList.toggle('collapsed'), keys: '' },
 ];
 
 function getCmdCommands() {
