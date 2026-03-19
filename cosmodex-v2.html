@@ -6366,6 +6366,8 @@ function showMainPanel(name) {
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
   if (name === 'habits') { switchHabitsTab(_habitsTab || 'habits'); }
   if (name === 'insights') { habitsSubscribe(); renderInsights(); loadDoneWall(); }
+  const orbEl = document.getElementById('cosmodex-orb');
+  if (orbEl) orbEl.style.display = name === 'timedrift' ? 'none' : '';
   if (name === 'timedrift') { startTimedrift(); }
   else { stopTimedrift(); }
 }
@@ -9095,7 +9097,7 @@ function _tdDrawTimeline(now){
   const W=cssW, H=cssH;
   const PAD=52;
   const TW=W-PAD*2;
-  const RULE_Y=Math.round(H*0.50);
+  const RULE_Y=Math.round(H*0.82);
 
   const todayStr=localDateStr(now);
   const nowMins=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
@@ -9152,7 +9154,7 @@ function _tdDrawTimeline(now){
     ge2.addColorStop(0.7,isPast?'rgba(53,249,47,0.20)':'rgba(53,249,47,0.50)');
     ge2.addColorStop(1,'rgba(53,249,47,0)');
     ctx.beginPath(); ctx.moveTo(sx,lineTop); ctx.lineTo(sx,RULE_Y);
-    ctx.strokeStyle=ge2; ctx.lineWidth=1.2; ctx.stroke();
+    ctx.strokeStyle=ge2; ctx.lineWidth=2.5; ctx.stroke();
 
     // Top dot
     ctx.beginPath(); ctx.arc(sx,lineTop,2.4,0,Math.PI*2);
@@ -9213,7 +9215,16 @@ function _tdDrawTimeline(now){
       ctx.font="300 10px 'DM Mono',monospace";
       ctx.textAlign='center';
       ctx.fillStyle='rgba(255,255,255,0.38)';
+      ctx.shadowColor='rgba(255,255,255,0.6)'; ctx.shadowBlur=6;
       ctx.fillText(String(h).padStart(2,'0'),x,RULE_Y-15);
+      ctx.shadowBlur=0;
+    }
+    // 30-minute tick
+    if(h<24){
+      const hx=PAD+((h+0.5)/24)*TW;
+      ctx.beginPath(); ctx.moveTo(hx,RULE_Y); ctx.lineTo(hx,RULE_Y-4);
+      ctx.strokeStyle='rgba(255,255,255,0.10)';
+      ctx.lineWidth=0.4; ctx.stroke();
     }
   }
 
