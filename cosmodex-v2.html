@@ -9019,33 +9019,29 @@ const _tdWa = a => `rgba(255,255,255,${+a.toFixed(3)})`;
 const _tdLerp2 = (a,b,t) => a+(b-a)*t;
 
 const TD_RINGS = [
-  { id:'yr',  r:108, bw:34, items:['2023','2024','2025','2026','2027'],
-    cur:d=>_tdClamp(d.getFullYear()-2023,0,4),
-    sub:d=>0,
-    maj:1,th:13,tm:13,fs:11,lr:89,bandFill:'rgba(255,255,255,0.07)',bandStroke:'rgba(255,255,255,0.18)',dimA:0.35 },
-  { id:'mon', r:152, bw:32, items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  { id:'mon', r:74, bw:32, items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     cur:d=>d.getMonth(),
     sub:d=>0,
-    maj:1,th:13,tm:13,fs:11.5,lr:133,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.32 },
-  { id:'dow', r:196, bw:32, items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    maj:1,th:13,tm:13,fs:11.5,lr:55,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.32 },
+  { id:'dow', r:118, bw:32, items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     cur:d=>d.getDay(),
     sub:d=>0,
-    maj:1,th:14,tm:14,fs:12,lr:176,bandFill:'rgba(255,255,255,0.11)',bandStroke:'rgba(255,255,255,0.22)',dimA:0.30 },
-  { id:'hr',  r:240, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
+    maj:1,th:14,tm:14,fs:12,lr:98,bandFill:'rgba(255,255,255,0.11)',bandStroke:'rgba(255,255,255,0.22)',dimA:0.30 },
+  { id:'hr',  r:162, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
     cur:d=>d.getHours(),
     sub:d=>(d.getMinutes()*60+d.getSeconds())/3600,
-    maj:1,th:12,tm:5,fs:10.5,lr:220,bandFill:'rgba(255,255,255,0.13)',bandStroke:'rgba(255,255,255,0.24)',dimA:0.26 },
-  { id:'min', r:284, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
+    maj:1,th:12,tm:5,fs:10.5,lr:142,bandFill:'rgba(255,255,255,0.13)',bandStroke:'rgba(255,255,255,0.24)',dimA:0.26 },
+  { id:'min', r:206, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getMinutes(),
     sub:d=>d.getSeconds()/60,
-    maj:5,th:11,tm:4,fs:9.5,lr:263,bandFill:'rgba(255,255,255,0.15)',bandStroke:'rgba(255,255,255,0.26)',dimA:0.22 },
-  { id:'sec', r:328, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
+    maj:5,th:11,tm:4,fs:9.5,lr:185,bandFill:'rgba(255,255,255,0.15)',bandStroke:'rgba(255,255,255,0.26)',dimA:0.22 },
+  { id:'sec', r:250, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getSeconds(),
     sub:d=>d.getMilliseconds()/1000,
-    maj:5,th:11,tm:4,fs:9,lr:307,bandFill:'rgba(255,255,255,0.17)',bandStroke:'rgba(255,255,255,0.28)',dimA:0.18 },
+    maj:5,th:11,tm:4,fs:9,lr:229,bandFill:'rgba(255,255,255,0.17)',bandStroke:'rgba(255,255,255,0.28)',dimA:0.18 },
 ];
 
-let _tdSvg=null, _tdElTime=null, _tdElDate=null;
+let _tdSvg=null, _tdElYear=null, _tdElTime=null, _tdElDate=null;
 let _tdRingGroups={}, _tdRaf=null, _tdResizeObs=null, _tdInitialized=false;
 
 function _tdInit(){
@@ -9098,6 +9094,16 @@ function _tdInit(){
   const bloom=_tdMk('circle');
   bloom.setAttribute('cx',_TD_CX); bloom.setAttribute('cy',_TD_CY); bloom.setAttribute('r','250');
   bloom.setAttribute('fill','url(#td-cbloom)'); gBg.appendChild(bloom);
+
+  // Year text in center hub
+  _tdElYear=_tdMk('text');
+  _tdElYear.setAttribute('x',_TD_CX); _tdElYear.setAttribute('y',String(_TD_CY+10));
+  _tdElYear.setAttribute('text-anchor','middle'); _tdElYear.setAttribute('dominant-baseline','middle');
+  _tdElYear.setAttribute('font-family',"'DM Mono',monospace");
+  _tdElYear.setAttribute('font-size','15'); _tdElYear.setAttribute('font-weight','300');
+  _tdElYear.setAttribute('fill','rgba(255,255,255,0.75)'); _tdElYear.setAttribute('letter-spacing','1.5');
+  _tdElYear.textContent=String(new Date().getFullYear());
+  gOver.appendChild(_tdElYear);
 
   // Static ring bands + strokes
   TD_RINGS.forEach(ring=>{
@@ -9200,11 +9206,7 @@ function _tdUpdateRing(info,now){
 }
 
 function _tdUpdateCenter(now){
-  const D=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const h=String(now.getHours()).padStart(2,'0'), m=String(now.getMinutes()).padStart(2,'0'), s=String(now.getSeconds()).padStart(2,'0');
-  if(_tdElTime) _tdElTime.textContent=`${h}:${m}:${s}`;
-  if(_tdElDate) _tdElDate.textContent=`${D[now.getDay()]} · ${M[now.getMonth()]} ${now.getDate()} · ${now.getFullYear()}`;
+  if(_tdElYear) _tdElYear.textContent=String(now.getFullYear());
 }
 
 function _tdFrame(){
