@@ -709,10 +709,10 @@ body::after {
 .cal-now-line {
   position: absolute;
   left: 48px; right: 0;
-  height: 1px;
-  background: var(--gold);
+  height: 2px;
+  background: rgba(53,249,47,0.85);
+  box-shadow: 0 0 8px rgba(53,249,47,0.8), 0 0 18px rgba(53,249,47,0.4);
   z-index: 5;
-  opacity: 0.7;
 }
 
 .cal-now-dot {
@@ -720,7 +720,8 @@ body::after {
   left: 44px;
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: var(--gold);
+  background: rgba(53,249,47,1);
+  box-shadow: 0 0 6px rgba(53,249,47,0.9), 0 0 12px rgba(53,249,47,0.5);
   transform: translateX(-50%) translateY(-3px);
 }
 
@@ -8998,32 +8999,14 @@ function initOrbAddTask() {
 
 function updateCalNowLine() {
   const now = new Date();
-  // Use Intl to read hours/minutes in the browser's local IANA timezone
-  // (handles any OS timezone correctly, including HKT UTC+8)
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const parts = new Intl.DateTimeFormat('en-US', {
-    hour: 'numeric', minute: 'numeric', hour12: false, timeZone: tz
-  }).formatToParts(now);
-  const h = parseInt(parts.find(p => p.type === 'hour').value, 10);
-  const m = parseInt(parts.find(p => p.type === 'minute').value, 10);
+  const h = now.getHours();
+  const m = now.getMinutes();
   const minutesSince5am = (h - 5) * 60 + m;
   const totalMinutes = 19 * 60;
   const pct = Math.max(0, Math.min(100, (minutesSince5am / totalMinutes) * 100));
   const line = document.getElementById('cal-now-line');
   if (line) {
     line.style.top = pct + '%';
-    // Show local time + timezone as tooltip
-    const timeStr = `${String(h % 24).padStart(2,'0')}:${String(m).padStart(2,'0')} ${tz}`;
-    line.title = timeStr;
-    // Small time label riding beside the dot
-    let lbl = line.querySelector('.cal-now-time-lbl');
-    if (!lbl) {
-      lbl = document.createElement('span');
-      lbl.className = 'cal-now-time-lbl';
-      lbl.style.cssText = 'position:absolute;right:8px;bottom:4px;font-family:var(--font-mono);font-size:9px;color:var(--gold);white-space:nowrap;opacity:0.8;pointer-events:none';
-      line.appendChild(lbl);
-    }
-    lbl.textContent = timeStr;
   }
 }
 // Update every minute so it stays accurate
