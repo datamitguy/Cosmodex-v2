@@ -9040,26 +9040,30 @@ const _tdWa = a => `rgba(255,255,255,${+a.toFixed(3)})`;
 const _tdLerp2 = (a,b,t) => a+(b-a)*t;
 
 const TD_RINGS = [
-  { id:'mon', r:74, bw:32, items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  { id:'dom', r:74,  bw:32, items:Array.from({length:31},(_,i)=>String(i+1)),
+    cur:d=>d.getDate()-1,
+    sub:d=>0,
+    maj:1,th:5.2,tm:5.2,fs:5.8,lr:67,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.22)',dimA:0.52 },
+  { id:'mon', r:106, bw:32, items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     cur:d=>d.getMonth(),
     sub:d=>0,
-    maj:1,th:5.2,tm:5.2,fs:4.6,lr:67,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.12)',dimA:0.32 },
-  { id:'dow', r:106, bw:32, items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    maj:1,th:5.2,tm:5.2,fs:5.8,lr:99,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.22)',dimA:0.52 },
+  { id:'dow', r:138, bw:32, items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     cur:d=>d.getDay(),
     sub:d=>0,
-    maj:1,th:5.6,tm:5.6,fs:4.8,lr:99,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.10)',dimA:0.30 },
-  { id:'hr',  r:138, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
+    maj:1,th:5.6,tm:5.6,fs:6.0,lr:131,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.18)',dimA:0.50 },
+  { id:'hr',  r:170, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
     cur:d=>d.getHours(),
     sub:d=>_tdHrSnapFrac,
-    maj:1,th:4.8,tm:2.0,fs:4.2,lr:131,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.10)',dimA:0.26 },
-  { id:'min', r:170, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
+    maj:1,th:4.8,tm:2.0,fs:5.4,lr:163,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.18)',dimA:0.44 },
+  { id:'min', r:202, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getMinutes(),
     sub:d=>_tdMinSnapFrac,
-    maj:1,th:4.4,tm:1.6,fs:3.8,lr:163,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.08)',dimA:0.22 },
-  { id:'sec', r:202, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
+    maj:1,th:4.4,tm:1.6,fs:5.0,lr:195,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.14)',dimA:0.38 },
+  { id:'sec', r:234, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getSeconds(),
     sub:d=>d.getMilliseconds()/1000,
-    maj:1,th:4.4,tm:1.6,fs:3.6,lr:195,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.06)',dimA:0.18 },
+    maj:1,th:4.4,tm:1.6,fs:4.8,lr:227,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.10)',dimA:0.32 },
 ];
 
 let _tdSvg=null, _tdElYear=null, _tdElTime=null, _tdElDate=null;
@@ -9281,6 +9285,12 @@ function _tdInit(){
   });
 
 
+  // Center hub — explicit black fill so year text sits on pure black
+  const hubCirc=_tdMk('circle'); hubCirc.setAttribute('cx',_TD_CX); hubCirc.setAttribute('cy',_TD_CY);
+  hubCirc.setAttribute('r','42'); hubCirc.setAttribute('fill','#000000');
+  hubCirc.setAttribute('stroke','rgba(255,255,255,0.15)'); hubCirc.setAttribute('stroke-width','0.5');
+  gBg.appendChild(hubCirc);
+
   // Build rotating ring groups — store text el refs for per-frame counter-rotation
   _tdRingGroups={};
   TD_RINGS.forEach(ring=>{
@@ -9354,8 +9364,8 @@ function _tdUpdateRing(info,now,animEase){
       if(rl){rl.setAttribute('fill','rgba(255,255,255,1)');rl.setAttribute('font-weight','500');rl.setAttribute('font-size',String(ring.fs*1.22));rl.setAttribute('filter','url(#td-wglow)');}
       item.style.opacity='1';
     } else {
-      if(tk){tk.setAttribute('stroke','rgba(255,255,255,0.28)');tk.setAttribute('stroke-width',maj?'0.5':'0.22');tk.removeAttribute('filter');}
-      if(rl){rl.setAttribute('fill','rgba(255,255,255,0.28)');rl.setAttribute('font-weight','300');rl.setAttribute('font-size',String(ring.fs));rl.removeAttribute('filter');}
+      if(tk){tk.setAttribute('stroke','rgba(255,255,255,0.48)');tk.setAttribute('stroke-width',maj?'0.5':'0.22');tk.removeAttribute('filter');}
+      if(rl){rl.setAttribute('fill','rgba(255,255,255,0.48)');rl.setAttribute('font-weight','300');rl.setAttribute('font-size',String(ring.fs));rl.removeAttribute('filter');}
       item.style.opacity=opac<0.02?'0':String(opac);
     }
   });
