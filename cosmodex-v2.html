@@ -306,13 +306,26 @@ body::after {
 
 .nav-item.active {
   color: #ffffff;
-  border-left-color: transparent;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: linear-gradient(135deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.04) 100%);
-  box-shadow: 0 2px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 0 0 1px rgba(255,255,255,0.04);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  text-shadow: 0 0 18px rgba(255,255,255,0.55), 0 0 36px rgba(255,255,255,0.15);
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.28);
+  border-bottom-color: rgba(255,255,255,0.06);
+  border-left-color: rgba(255,255,255,0.28);
+  background: linear-gradient(
+    175deg,
+    rgba(255,255,255,0.22) 0%,
+    rgba(255,255,255,0.08) 45%,
+    rgba(255,255,255,0.03) 100%
+  );
+  box-shadow:
+    inset 0 1.5px 0 rgba(255,255,255,0.60),
+    inset 0 -1px 0 rgba(0,0,0,0.14),
+    inset 1px 0 0 rgba(255,255,255,0.18),
+    inset -1px 0 0 rgba(255,255,255,0.08),
+    0 4px 28px rgba(0,0,0,0.45),
+    0 1px 4px rgba(0,0,0,0.25);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25), 0 0 18px rgba(255,255,255,0.45);
 }
 
 /* Left glow bleed on hover */
@@ -4299,10 +4312,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   position: absolute; left: 50%; top: 0; bottom: 0; width: 1px;
   transform: translateX(-50%); pointer-events: none; z-index: 30;
   background: linear-gradient(to bottom,
-    transparent 0%, rgba(200,161,36,0) 15%, rgba(200,161,36,0.4) 32%,
-    rgba(200,161,36,0.9) 48%, rgba(200,161,36,1) 52%,
-    rgba(200,161,36,0.9) 56%, rgba(200,161,36,0.4) 70%,
-    rgba(200,161,36,0) 85%, transparent 100%);
+    transparent 0%, rgba(255,255,255,0) 15%, rgba(255,255,255,0.35) 32%,
+    rgba(255,255,255,0.85) 48%, rgba(255,255,255,1) 52%,
+    rgba(255,255,255,0.85) 56%, rgba(255,255,255,0.35) 70%,
+    rgba(255,255,255,0) 85%, transparent 100%);
 }
 #td-axis-line::before {
   content: ''; position: absolute; inset: 0 -6px;
@@ -9001,62 +9014,69 @@ let _tdInitialized = false;
 const TD_VCX = 500, TD_VCY = 500;
 
 const TD_RINGS = [
+  // ── yr: warm amber glass (innermost) ────────────────────────────────
   { id:'yr',  r:118,
     items:['2022','2023','2024','2025','2026','2027','2028'],
     cur: d=>Math.max(0,Math.min(6,d.getFullYear()-2022)),
     sub: d=>{ const s=new Date(d.getFullYear(),0,1),e=new Date(d.getFullYear()+1,0,1); return (d-s)/(e-s); },
     maj:1,th:15,tm:15,fs:10.5,lr:97,sw:0.7,
-    ringCol:'rgba(200,161,36,0.30)',
-    bandCol:['rgba(200,161,36,0.0)','rgba(200,161,36,0.08)','rgba(200,161,36,0.14)','rgba(200,161,36,0.08)','rgba(200,161,36,0.0)'],
-    tickBase:'rgba(220,200,140,0.70)',labelBase:'rgba(220,200,140,0.72)',activeCol:'#f0d060',glowCol:'rgba(240,208,80,0.9)' },
+    ringCol:'rgba(255,220,160,0.18)',
+    bandCol:['rgba(255,255,255,0.0)','rgba(255,230,170,0.07)','rgba(255,240,190,0.14)','rgba(255,230,170,0.07)','rgba(255,255,255,0.0)'],
+    tickBase:'rgba(255,240,210,0.62)',labelBase:'rgba(255,240,210,0.65)',activeCol:'#ffffff',glowCol:'rgba(255,255,255,1.0)' },
+  // ── mon: rose-gold glass ─────────────────────────────────────────────
   { id:'mon', r:166,
     items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     cur: d=>d.getMonth(),
     sub: d=>{ const dm=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); return (d.getDate()-1+d.getHours()/24)/dm; },
     maj:1,th:16,tm:16,fs:11,lr:143,sw:0.75,
-    ringCol:'rgba(180,155,40,0.28)',
-    bandCol:['rgba(200,161,36,0.0)','rgba(180,150,40,0.07)','rgba(160,140,40,0.12)','rgba(180,150,40,0.07)','rgba(200,161,36,0.0)'],
-    tickBase:'rgba(210,195,135,0.68)',labelBase:'rgba(210,195,135,0.70)',activeCol:'#e8cc50',glowCol:'rgba(232,204,80,0.9)' },
+    ringCol:'rgba(255,190,200,0.16)',
+    bandCol:['rgba(255,255,255,0.0)','rgba(255,200,215,0.07)','rgba(255,215,225,0.13)','rgba(255,200,215,0.07)','rgba(255,255,255,0.0)'],
+    tickBase:'rgba(255,220,230,0.60)',labelBase:'rgba(255,220,230,0.62)',activeCol:'#ffffff',glowCol:'rgba(255,255,255,1.0)' },
+  // ── dow: lavender glass ──────────────────────────────────────────────
   { id:'dow', r:216,
     items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     cur: d=>d.getDay(),
     sub: d=>(d.getHours()*3600+d.getMinutes()*60+d.getSeconds())/86400,
     maj:1,th:17,tm:17,fs:11.5,lr:191,sw:0.8,
-    ringCol:'rgba(160,155,140,0.26)',
-    bandCol:['rgba(160,155,140,0.0)','rgba(155,150,135,0.07)','rgba(150,145,130,0.11)','rgba(155,150,135,0.07)','rgba(160,155,140,0.0)'],
-    tickBase:'rgba(200,195,180,0.65)',labelBase:'rgba(200,195,180,0.68)',activeCol:'#d8d0b8',glowCol:'rgba(220,215,195,0.9)' },
+    ringCol:'rgba(200,190,255,0.16)',
+    bandCol:['rgba(255,255,255,0.0)','rgba(210,200,255,0.07)','rgba(220,210,255,0.13)','rgba(210,200,255,0.07)','rgba(255,255,255,0.0)'],
+    tickBase:'rgba(225,220,255,0.60)',labelBase:'rgba(225,220,255,0.62)',activeCol:'#ffffff',glowCol:'rgba(255,255,255,1.0)' },
+  // ── dom: sapphire glass ──────────────────────────────────────────────
   { id:'dom', r:266,
     items:Array.from({length:31},(_,i)=>String(i+1).padStart(2,'0')),
     cur: d=>d.getDate()-1,
     sub: d=>(d.getHours()*3600+d.getMinutes()*60+d.getSeconds())/86400,
     maj:5,th:14,tm:6,fs:10,lr:243,sw:0.7,
-    ringCol:'rgba(140,155,165,0.25)',
-    bandCol:['rgba(140,155,165,0.0)','rgba(135,150,162,0.06)','rgba(130,145,160,0.10)','rgba(135,150,162,0.06)','rgba(140,155,165,0.0)'],
-    tickBase:'rgba(190,195,205,0.62)',labelBase:'rgba(190,195,205,0.65)',activeCol:'#c8d0dc',glowCol:'rgba(200,212,228,0.9)' },
+    ringCol:'rgba(160,200,255,0.16)',
+    bandCol:['rgba(255,255,255,0.0)','rgba(170,210,255,0.07)','rgba(185,220,255,0.12)','rgba(170,210,255,0.07)','rgba(255,255,255,0.0)'],
+    tickBase:'rgba(200,225,255,0.58)',labelBase:'rgba(200,225,255,0.60)',activeCol:'#ffffff',glowCol:'rgba(255,255,255,1.0)' },
+  // ── hr: aqua glass ───────────────────────────────────────────────────
   { id:'hr',  r:318,
     items:Array.from({length:24},(_,i)=>String(i).padStart(2,'0')),
     cur: d=>d.getHours(),
     sub: d=>(d.getMinutes()*60+d.getSeconds())/3600,
     maj:6,th:15,tm:6,fs:10.5,lr:294,sw:0.75,
-    ringCol:'rgba(120,145,175,0.24)',
-    bandCol:['rgba(120,145,175,0.0)','rgba(118,142,172,0.06)','rgba(115,140,170,0.10)','rgba(118,142,172,0.06)','rgba(120,145,175,0.0)'],
-    tickBase:'rgba(175,190,210,0.60)',labelBase:'rgba(175,190,210,0.62)',activeCol:'#b8ccec',glowCol:'rgba(185,208,240,0.9)' },
+    ringCol:'rgba(140,230,240,0.15)',
+    bandCol:['rgba(255,255,255,0.0)','rgba(150,235,245,0.07)','rgba(165,240,250,0.12)','rgba(150,235,245,0.07)','rgba(255,255,255,0.0)'],
+    tickBase:'rgba(190,242,250,0.56)',labelBase:'rgba(190,242,250,0.58)',activeCol:'#ffffff',glowCol:'rgba(255,255,255,1.0)' },
+  // ── min: emerald glass ───────────────────────────────────────────────
   { id:'min', r:370,
     items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur: d=>d.getMinutes(),
     sub: d=>d.getSeconds()/60,
     maj:5,th:13,tm:5,fs:9.5,lr:346,sw:0.65,
-    ringCol:'rgba(110,135,170,0.22)',
-    bandCol:['rgba(110,135,170,0.0)','rgba(108,132,168,0.05)','rgba(105,130,165,0.09)','rgba(108,132,168,0.05)','rgba(110,135,170,0.0)'],
-    tickBase:'rgba(165,182,205,0.58)',labelBase:'rgba(165,182,205,0.60)',activeCol:'#aac0e0',glowCol:'rgba(175,200,235,0.9)' },
+    ringCol:'rgba(140,240,200,0.14)',
+    bandCol:['rgba(255,255,255,0.0)','rgba(150,245,210,0.06)','rgba(165,250,220,0.11)','rgba(150,245,210,0.06)','rgba(255,255,255,0.0)'],
+    tickBase:'rgba(185,250,225,0.54)',labelBase:'rgba(185,250,225,0.56)',activeCol:'#ffffff',glowCol:'rgba(255,255,255,1.0)' },
+  // ── sec: clear silver glass (outermost) ──────────────────────────────
   { id:'sec', r:420,
     items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur: d=>d.getSeconds(),
     sub: d=>d.getMilliseconds()/1000,
     maj:5,th:13,tm:5,fs:9,lr:396,sw:0.6,
-    ringCol:'rgba(100,125,165,0.20)',
-    bandCol:['rgba(100,125,165,0.0)','rgba(98,122,162,0.05)','rgba(95,120,160,0.08)','rgba(98,122,162,0.05)','rgba(100,125,165,0.0)'],
-    tickBase:'rgba(155,174,200,0.55)',labelBase:'rgba(155,174,200,0.58)',activeCol:'#9cb4d8',glowCol:'rgba(162,192,228,0.9)' },
+    ringCol:'rgba(220,228,245,0.13)',
+    bandCol:['rgba(255,255,255,0.0)','rgba(225,232,250,0.06)','rgba(235,240,255,0.10)','rgba(225,232,250,0.06)','rgba(255,255,255,0.0)'],
+    tickBase:'rgba(230,235,252,0.52)',labelBase:'rgba(230,235,252,0.54)',activeCol:'#ffffff',glowCol:'rgba(255,255,255,1.0)' },
 ];
 
 let _tdRingGroups = {};
@@ -9094,7 +9114,7 @@ function _tdInit() {
   const cg=mk('radialGradient'); cg.setAttribute('id','td-central-bloom');
   cg.setAttribute('gradientUnits','userSpaceOnUse');
   cg.setAttribute('cx',TD_VCX); cg.setAttribute('cy',TD_VCY); cg.setAttribute('r','260');
-  [[0,'rgba(255,252,240,0.22)'],[0.25,'rgba(240,230,200,0.12)'],[0.5,'rgba(220,200,160,0.06)'],[0.75,'rgba(180,160,120,0.02)'],[1,'rgba(0,0,0,0)']].forEach(([o,c])=>{
+  [[0,'rgba(255,255,255,0.20)'],[0.25,'rgba(235,240,255,0.10)'],[0.5,'rgba(215,225,255,0.05)'],[0.75,'rgba(190,200,240,0.02)'],[1,'rgba(0,0,0,0)']].forEach(([o,c])=>{
     const s=mk('stop');s.setAttribute('offset',o);s.setAttribute('stop-color',c);cg.appendChild(s);
   }); defs.appendChild(cg);
 
@@ -9135,7 +9155,7 @@ function _tdInit() {
     const ln=mk('line');
     ln.setAttribute('x1',TD_VCX-dw);ln.setAttribute('y1',ty);
     ln.setAttribute('x2',TD_VCX+dw);ln.setAttribute('y2',ty);
-    ln.setAttribute('stroke','rgba(200,161,36,0.7)');ln.setAttribute('stroke-width','1.2');
+    ln.setAttribute('stroke','rgba(255,255,255,0.65)');ln.setAttribute('stroke-width','1.2');
     ln.setAttribute('filter','url(#td-glow-soft)'); gAxis.appendChild(ln);
   });
 
@@ -9144,14 +9164,14 @@ function _tdInit() {
   ct.setAttribute('text-anchor','middle');ct.setAttribute('dominant-baseline','middle');
   ct.setAttribute('font-family','Fraunces, serif');ct.setAttribute('font-size','34');
   ct.setAttribute('font-weight','200');ct.setAttribute('font-style','italic');
-  ct.setAttribute('fill','rgba(230,222,208,0.93)');ct.setAttribute('filter','url(#td-glow-soft)');
+  ct.setAttribute('fill','rgba(245,248,255,0.95)');ct.setAttribute('filter','url(#td-glow-soft)');
   gCenter.appendChild(ct);
 
   const cd=mk('text'); cd.setAttribute('id','td-center-date');
   cd.setAttribute('x',TD_VCX);cd.setAttribute('y',TD_VCY+26);
   cd.setAttribute('text-anchor','middle');cd.setAttribute('dominant-baseline','middle');
   cd.setAttribute('font-family','DM Mono, monospace');cd.setAttribute('font-size','9.5');
-  cd.setAttribute('font-weight','300');cd.setAttribute('fill','rgba(200,161,36,0.55)');
+  cd.setAttribute('font-weight','300');cd.setAttribute('fill','rgba(200,220,255,0.45)');
   cd.setAttribute('letter-spacing','1.8'); gCenter.appendChild(cd);
 
   _tdRingGroups = {};
