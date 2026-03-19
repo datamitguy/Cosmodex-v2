@@ -9022,27 +9022,28 @@ const TD_RINGS = [
   { id:'mon', r:74, bw:32, items:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     cur:d=>d.getMonth(),
     sub:d=>0,
-    maj:1,th:13,tm:13,fs:11.5,lr:55,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.32 },
+    maj:1,th:5.2,tm:5.2,fs:4.6,lr:55,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.32 },
   { id:'dow', r:118, bw:32, items:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
     cur:d=>d.getDay(),
     sub:d=>0,
-    maj:1,th:14,tm:14,fs:12,lr:98,bandFill:'rgba(255,255,255,0.11)',bandStroke:'rgba(255,255,255,0.22)',dimA:0.30 },
+    maj:1,th:5.6,tm:5.6,fs:4.8,lr:98,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.30 },
   { id:'hr',  r:162, bw:32, items:Array.from({length:24},(_,i)=>String(i)),
     cur:d=>d.getHours(),
     sub:d=>(d.getMinutes()*60+d.getSeconds())/3600,
-    maj:1,th:12,tm:5,fs:10.5,lr:142,bandFill:'rgba(255,255,255,0.13)',bandStroke:'rgba(255,255,255,0.24)',dimA:0.26 },
+    maj:1,th:4.8,tm:2.0,fs:4.2,lr:142,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.26 },
   { id:'min', r:206, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getMinutes(),
     sub:d=>d.getSeconds()/60,
-    maj:5,th:11,tm:4,fs:9.5,lr:185,bandFill:'rgba(255,255,255,0.15)',bandStroke:'rgba(255,255,255,0.26)',dimA:0.22 },
+    maj:5,th:4.4,tm:1.6,fs:3.8,lr:185,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.22 },
   { id:'sec', r:250, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getSeconds(),
     sub:d=>d.getMilliseconds()/1000,
-    maj:5,th:11,tm:4,fs:9,lr:229,bandFill:'rgba(255,255,255,0.17)',bandStroke:'rgba(255,255,255,0.28)',dimA:0.18 },
+    maj:5,th:4.4,tm:1.6,fs:3.6,lr:229,bandFill:'rgba(255,255,255,0.09)',bandStroke:'rgba(255,255,255,0.20)',dimA:0.18 },
 ];
 
 let _tdSvg=null, _tdElYear=null, _tdElTime=null, _tdElDate=null;
 let _tdRingGroups={}, _tdRaf=null, _tdResizeObs=null, _tdInitialized=false;
+let _tdAnimT0=null;
 
 function _tdInit(){
   if(_tdInitialized) return;
@@ -9076,24 +9077,11 @@ function _tdInit(){
     f.appendChild(b); f.appendChild(m); defs.appendChild(f);
   })();
 
-  // Central bloom gradient
-  (()=>{
-    const g=_tdMk('radialGradient'); g.id='td-cbloom';
-    g.setAttribute('gradientUnits','userSpaceOnUse');
-    g.setAttribute('cx',_TD_CX); g.setAttribute('cy',_TD_CY); g.setAttribute('r','250');
-    [[0,'rgba(255,255,255,0.10)'],[0.5,'rgba(255,255,255,0.04)'],[1,'rgba(255,255,255,0)']].forEach(([o,c])=>{
-      const s=_tdMk('stop'); s.setAttribute('offset',o); s.setAttribute('stop-color',c); g.appendChild(s);
-    }); defs.appendChild(g);
-  })();
 
   const gBg=_tdMk('g'); _tdSvg.appendChild(gBg);
   const gRings=_tdMk('g'); _tdSvg.appendChild(gRings);
   const gOver=_tdMk('g'); _tdSvg.appendChild(gOver);
 
-  // Central bloom
-  const bloom=_tdMk('circle');
-  bloom.setAttribute('cx',_TD_CX); bloom.setAttribute('cy',_TD_CY); bloom.setAttribute('r','250');
-  bloom.setAttribute('fill','url(#td-cbloom)'); gBg.appendChild(bloom);
 
   // Year text in center hub
   _tdElYear=_tdMk('text');
@@ -9168,12 +9156,13 @@ function _tdLayout(){
   if(stage){ stage.style.width=pw+'px'; stage.style.height=ph+'px'; }
 }
 
-function _tdUpdateRing(info,now){
+function _tdUpdateRing(info,now,animEase){
   const {g,ring,textEls}=info;
   const n=ring.items.length;
   const cur=ring.cur(now), frac=ring.sub(now), exact=cur+frac;
   const rot=180-(exact/n)*360;
-  g.setAttribute('transform',`rotate(${rot},${_TD_CX},${_TD_CY})`);
+  const animRot = animEase < 1 ? rot - 90*(1-animEase) : rot;
+  g.setAttribute('transform',`rotate(${animRot},${_TD_CX},${_TD_CY})`);
   // Counter-rotate text so labels stay upright
   textEls.forEach(txt=>{
     const lx=+txt.dataset.lx, ly=+txt.dataset.ly;
@@ -9188,17 +9177,17 @@ function _tdUpdateRing(info,now){
     const norm=abs/vis, opac=_tdClamp(Math.pow(Math.max(0,1-norm),1.5),0,1);
     const tk=item.querySelector('.td-tk'), rl=item.querySelector('.td-rl');
     if(abs<0.45){
-      if(tk){tk.setAttribute('stroke','rgba(255,255,255,1)');tk.setAttribute('stroke-width','2.4');tk.setAttribute('filter','url(#td-wglow)');}
+      if(tk){tk.setAttribute('stroke','rgba(255,255,255,1)');tk.setAttribute('stroke-width','1.0');tk.setAttribute('filter','url(#td-wglow)');}
       if(rl){rl.setAttribute('fill','rgba(255,255,255,1)');rl.setAttribute('font-weight','500');rl.setAttribute('font-size',String(ring.fs*1.22));rl.setAttribute('filter','url(#td-wglow)');}
       item.style.opacity='1';
     } else if(abs<3.5){
       const t=_tdClamp(1-(abs-0.45)/3.05,0,1);
       const a=_tdLerp2(ring.dimA,0.82,t);
-      if(tk){tk.setAttribute('stroke',_tdWa(a));tk.setAttribute('stroke-width',String(maj?_tdLerp2(0.9,2.0,t):_tdLerp2(0.4,0.9,t)));tk.removeAttribute('filter');}
+      if(tk){tk.setAttribute('stroke',_tdWa(a));tk.setAttribute('stroke-width',String(maj?_tdLerp2(0.36,0.8,t):_tdLerp2(0.16,0.36,t)));tk.removeAttribute('filter');}
       if(rl){rl.setAttribute('fill',_tdWa(a));rl.setAttribute('font-weight','300');rl.setAttribute('font-size',String(ring.fs*_tdLerp2(1,1.12,t)));rl.removeAttribute('filter');}
       item.style.opacity=String(_tdClamp(Math.max(opac,t*0.92),0,1));
     } else {
-      if(tk){tk.setAttribute('stroke',_tdWa(ring.dimA));tk.setAttribute('stroke-width',maj?'0.9':'0.4');tk.removeAttribute('filter');}
+      if(tk){tk.setAttribute('stroke',_tdWa(ring.dimA));tk.setAttribute('stroke-width',maj?'0.36':'0.16');tk.removeAttribute('filter');}
       if(rl){rl.setAttribute('fill',_tdWa(ring.dimA));rl.setAttribute('font-weight','300');rl.setAttribute('font-size',String(ring.fs));rl.removeAttribute('filter');}
       item.style.opacity=opac<0.02?'0':String(opac);
     }
@@ -9211,7 +9200,10 @@ function _tdUpdateCenter(now){
 
 function _tdFrame(){
   const now=new Date();
-  Object.values(_tdRingGroups).forEach(info=>_tdUpdateRing(info,now));
+  if(!_tdAnimT0) _tdAnimT0=performance.now();
+  const progress=Math.min(1,(performance.now()-_tdAnimT0)/900);
+  const animEase=1-Math.pow(1-progress,3);
+  Object.values(_tdRingGroups).forEach(info=>_tdUpdateRing(info,now,animEase));
   _tdUpdateCenter(now);
   _tdRaf=requestAnimationFrame(_tdFrame);
 }
@@ -9224,7 +9216,7 @@ function startTimedrift(){
     const top=document.getElementById('td-top');
     if(top) _tdResizeObs.observe(top);
   }
-  if(!_tdRaf) _tdFrame();
+  if(!_tdRaf){ _tdAnimT0=null; _tdFrame(); }
 }
 
 function stopTimedrift(){
