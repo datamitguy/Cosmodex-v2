@@ -6228,7 +6228,7 @@ select.sched-input { background: #181818; }
 
 <!-- Milestone: Add/Edit Event Modal -->
 <div class="overlay" id="ms-event-modal" style="z-index:860">
-  <div class="overlay-panel" style="width:min(520px,92vw);max-height:90dvh;overflow-y:auto">
+  <div class="overlay-panel" style="width:min(520px,92vw);max-height:90dvh;overflow-y:auto" onclick="event.stopPropagation()">
     <div class="overlay-header">
       <span class="overlay-title" id="ms-event-modal-title">New Milestone</span>
       <button class="overlay-close" data-close="ms-event-modal">✕</button>
@@ -6960,6 +6960,7 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
    PANEL SWITCHING (Calendar/Tasks ↔ Milestones)
    ══════════════════════════════════════════════════════════ */
 function showMainPanel(name) {
+  _mainPanel = name;
   document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
   document.getElementById('panel-tasks').style.display       = name === 'default' ? '' : 'none';
   document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
@@ -6969,7 +6970,6 @@ function showMainPanel(name) {
   document.getElementById('panel-timedrift').style.display   = name === 'timedrift' ? 'flex' : 'none';
   document.getElementById('panel-articles').style.display    = name === 'articles' ? 'flex' : 'none';
   document.getElementById('panel-getabstract').style.display = name === 'getabstract' ? 'flex' : 'none';
-  _mainPanel = name;
   const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights', timedrift:'Timedrift', articles:'Reading', getabstract:'GetAbstract' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
@@ -9231,28 +9231,31 @@ function initMilestonesPanel() {
     const evId   = document.getElementById('ms-event-id').value;
     if (!title || !date) { _msEventSaving = false; return; }
 
-    // For new tasks (taskId=null), create real tasks in Firestore before saving
-    const activitiesToSave = await Promise.all(_msNewActivities.map(async a => {
-      if (!a.taskId && a.text) {
-        const { addDoc, serverTimestamp } = window.CDX_FB;
-        const ref = await addDoc(_uc('tasks'), {
-          title: a.text, done: false, priority: 'med',
-          dueDate: date || null, category: null,
-          calEventId: null, subtasks: [],
-          createdAt: serverTimestamp()
-        });
-        return { ...a, taskId: ref.id };
-      }
-      return a;
-    }));
+    try {
+      // For new tasks (taskId=null), create real tasks in Firestore before saving
+      const activitiesToSave = await Promise.all(_msNewActivities.map(async a => {
+        if (!a.taskId && a.text) {
+          const { addDoc, serverTimestamp } = window.CDX_FB;
+          const ref = await addDoc(_uc('tasks'), {
+            title: a.text, done: false, priority: 'med',
+            dueDate: date || null, category: null,
+            calEventId: null, subtasks: [],
+            createdAt: serverTimestamp()
+          });
+          return { ...a, taskId: ref.id };
+        }
+        return a;
+      }));
 
-    if (evId) {
-      await updateMilestoneEvent(evId, { title, date, description: desc, activities: activitiesToSave });
-    } else {
-      await addMilestoneEvent(projId, title, date, desc, activitiesToSave);
+      if (evId) {
+        await updateMilestoneEvent(evId, { title, date, description: desc, activities: activitiesToSave });
+      } else {
+        await addMilestoneEvent(projId, title, date, desc, activitiesToSave);
+      }
+      closeOverlay('ms-event-modal');
+    } finally {
+      _msEventSaving = false;
     }
-    closeOverlay('ms-event-modal');
-    _msEventSaving = false;
   });
 
   // Event detail — activity toggles
