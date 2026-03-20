@@ -8238,12 +8238,15 @@ function _weekPct(dates, habits) {
    MILESTONES — FIRESTORE CRUD
    ══════════════════════════════════════════════════════════ */
 async function addMilestoneProject(title, startDate, endDate, color, category='', notes='', missionBrief='', antiGoals='') {
+  console.log('[CDX] addMilestoneProject called', { title, startDate, endDate, color, category });
+  console.log('[CDX] Firebase state', { CDX_DB: !!window.CDX_DB, CDX_FB: !!window.CDX_FB, CDX_USER: window.CDX_USER?.uid });
   const { addDoc, serverTimestamp } = window.CDX_FB;
   const ref = await addDoc(_uc('milestoneProjects'),
     { title, startDate, endDate, color, category: category||null, notes: notes||'',
       missionBrief: missionBrief||null, antiGoals: antiGoals||null,
       isArchived: false,
       createdAt: serverTimestamp() });
+  console.log('[CDX] addMilestoneProject success, id:', ref?.id);
   return ref;
 }
 
@@ -8983,6 +8986,7 @@ function initMilestonesPanel() {
     const notes       = document.getElementById('ms-proj-notes')?.value.trim() || '';
     const missionBrief = document.getElementById('ms-proj-mission')?.value.trim() || '';
     const antiGoals   = document.getElementById('ms-proj-antigoals')?.value.trim() || '';
+    console.log('[CDX] ms-proj-confirm clicked', { title, start, end, color, category, _msProjEdit });
     if (!title || !start || !end) { showToast('Title, Start Date, and End Date are required.', 'error'); return; }
     try {
       if (_msProjEdit) {
@@ -12888,6 +12892,7 @@ function openOverlay(id) {
 }
 
 function closeOverlay(id) {
+  console.log('[CDX] closeOverlay called:', id, new Error().stack.split('\n').slice(1,4).join(' | '));
   const el = document.getElementById(id);
   if (el) el.classList.remove('open');
 }
@@ -12896,11 +12901,18 @@ function closeOverlay(id) {
 // elements inserted after script execution (e.g. #quick-cal-modal at end of body)
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-close]');
-  if (btn) { closeOverlay(btn.dataset.close); return; }
+  if (btn) {
+    console.log('[CDX] [data-close] click: closing', btn.dataset.close, 'target:', e.target.tagName, e.target.id||e.target.className);
+    closeOverlay(btn.dataset.close); return;
+  }
   // Don't close on modifier+click (e.g. Ctrl+click for text selection)
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) {
+    console.log('[CDX] click suppressed (modifier key)', { ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, target: e.target.tagName });
+    return;
+  }
   const overlay = e.target;
   if (overlay.classList?.contains('overlay') && overlay.classList.contains('open')) {
+    console.log('[CDX] backdrop click closing overlay:', overlay.id);
     if (overlay.id === 'pomo-overlay') {
       document.getElementById('pomo-close')?.click();
     } else {
@@ -13126,6 +13138,8 @@ document.addEventListener('keydown', e => {
   }
   // ESC — close topmost open thing
   if (e.key === 'Escape') {
+    const openOverlays = [...document.querySelectorAll('.overlay.open')].map(o => o.id);
+    console.log('[CDX] ESC pressed, open overlays:', openOverlays);
     if (document.getElementById('cmd-palette').classList.contains('open')) {
       closeCmdPalette(); return;
     }
@@ -13133,6 +13147,11 @@ document.addEventListener('keydown', e => {
       closeOrb(); return;
     }
     document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+  }
+  // Log any Ctrl key events while a modal is open
+  if (e.key === 'Control' || e.key === 'Meta') {
+    const openOverlays = [...document.querySelectorAll('.overlay.open')].map(o => o.id);
+    if (openOverlays.length) console.log('[CDX] modifier key pressed while overlays open:', e.key, openOverlays);
   }
 });
 
