@@ -6068,7 +6068,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 </div>
 
 <!-- Time-to-complete popover (shown when ticking a task done) -->
-<div id="task-time-popover" style="display:none;position:fixed;z-index:950;background:var(--elevated);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,0.5);min-width:230px">
+<div id="task-time-popover" style="display:none;position:fixed;z-index:950;background:#151515;border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,0.7);min-width:230px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
   <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Time to complete</div>
   <div id="task-time-options" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
     <button class="time-opt-btn" data-mins="5">5m</button>
@@ -9267,15 +9267,13 @@ function _tdDrawTimeline(now){
     e.date===todayStr && e.startTime && !e.allDay
   );
   const phase=performance.now()*0.001;
+  const LINE_TOP=Math.max(36,RULE_Y-Math.round(H*0.38)); // fixed equal height for all lines
   todayEvts.forEach(ev=>{
     const [sh,sm]=(ev.startTime||'0:0').split(':').map(Number);
     const sFrac=(sh*60+sm)/(24*60);
     const sx=PAD+sFrac*TW;
     const isPast=sFrac<nowFrac;
-    // Deterministic height variation per event to prevent overlap
-    const _htSeed=((sh*60+sm)*2654435769)>>>0;
-    const _htFrac=0.22+(_htSeed%100)/100*0.20; // 22%–42% above rule
-    const lineTop=Math.max(36,RULE_Y-Math.round(H*_htFrac));
+    const lineTop=LINE_TOP;
 
     // Compute end x upfront (needed for waveform + fill)
     let ex=null;
@@ -9331,22 +9329,17 @@ function _tdDrawTimeline(now){
       ctx.lineWidth=2.2; ctx.stroke();
     }
 
-    // Pill label above line
+    // Label rotated along the line (reads upward from bottom)
     if(ev.title){
       ctx.save();
-      ctx.font="500 11px 'DM Mono',monospace";
-      const labelStr=ev.title.length>24?ev.title.slice(0,23)+'…':ev.title;
-      const tlw=ctx.measureText(labelStr).width;
-      const pH=10, bh=22, bw=tlw+pH*2;
-      const bx=Math.min(Math.max(sx-bw/2,PAD+2),PAD+TW-bw-2);
-      const by=lineTop-28;
-      // White pill fill
-      ctx.fillStyle=isPast?'rgba(255,255,255,0.42)':'rgba(255,255,255,0.72)';
-      ctx.beginPath(); ctx.roundRect(bx,by,bw,bh,11); ctx.fill();
-      // Text: dark on white pill
-      ctx.fillStyle=isPast?'rgba(0,0,0,0.45)':'rgba(0,0,0,0.80)';
+      const labelStr=ev.title.length>28?ev.title.slice(0,27)+'…':ev.title;
+      ctx.font="300 10px 'DM Mono',monospace";
+      ctx.fillStyle=isPast?'rgba(53,249,47,0.42)':'rgba(53,249,47,0.82)';
       ctx.textAlign='left';
-      ctx.fillText(labelStr,bx+pH,by+15);
+      ctx.textBaseline='middle';
+      ctx.translate(sx,RULE_Y-8);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText(labelStr,6,0);
       ctx.restore();
     }
   });
