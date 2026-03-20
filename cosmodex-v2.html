@@ -4552,6 +4552,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <span class="nav-item-icon">◎</span>
         Cosmodex Bubble
       </div>
+      <div class="nav-item" data-panel="articles" id="nav-articles">
+        <span class="nav-item-icon">◧</span>
+        Reading
+      </div>
       <div class="nav-item" data-panel="timedrift" id="nav-timedrift">
         <span class="nav-item-icon">◌</span>
         Timedrift
@@ -4709,7 +4713,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <div class="planning-right-tabs">
             <button class="planning-right-tab active" data-ptab="week">Week</button>
             <button class="planning-right-tab" data-ptab="month">Month</button>
-            <button class="planning-right-tab" data-ptab="articles">Articles</button>
           </div>
           <!-- Week pane -->
           <div id="plan-right-week" class="planning-right-body">
@@ -4780,19 +4783,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
                 <div id="pm-due-section"></div>
               </div>
             </div>
-          </div>
-          <!-- Articles pane -->
-          <div id="plan-right-articles" class="planning-right-body" style="display:none;flex-direction:column;gap:0;padding:0">
-            <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px">
-              <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Reading</span>
-              <div style="margin-left:auto;display:flex;gap:6px" id="articles-filter-btns">
-                <button class="articles-filter-btn active" data-cat="all" style="font-size:9px;padding:3px 10px">All</button>
-                <button class="articles-filter-btn" data-cat="pm" style="font-size:9px;padding:3px 10px">Product</button>
-                <button class="articles-filter-btn" data-cat="biz" style="font-size:9px;padding:3px 10px">Business</button>
-                <button class="articles-filter-btn" data-cat="psych" style="font-size:9px;padding:3px 10px">Psychology</button>
-              </div>
-            </div>
-            <div id="articles-list" style="flex:1;overflow-y:auto;padding:12px 20px;display:flex;flex-direction:column;gap:8px"></div>
           </div>
         </div>
       </div>
@@ -5442,6 +5432,20 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
       </div>
     </div><!-- /panel-insights -->
+
+    <!-- Articles / Reading Panel -->
+    <div id="panel-articles" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 24px 12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px">
+        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Reading</span>
+        <div style="margin-left:auto;display:flex;gap:6px" id="articles-filter-btns">
+          <button class="articles-filter-btn active" data-cat="all" style="font-size:9px;padding:3px 10px">All</button>
+          <button class="articles-filter-btn" data-cat="pm" style="font-size:9px;padding:3px 10px">Product</button>
+          <button class="articles-filter-btn" data-cat="biz" style="font-size:9px;padding:3px 10px">Business</button>
+          <button class="articles-filter-btn" data-cat="psych" style="font-size:9px;padding:3px 10px">Psychology</button>
+        </div>
+      </div>
+      <div id="articles-list" style="flex:1;overflow-y:auto;padding:16px 24px;display:flex;flex-direction:column;gap:8px"></div>
+    </div><!-- /panel-articles -->
 
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
@@ -6394,6 +6398,13 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       showMainPanel('milestones');
       return;
     }
+    // Articles / Reading → full page
+    if (panel === 'articles') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('articles');
+      return;
+    }
     // Timedrift → full screen panel
     if (panel === 'timedrift') {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -6426,14 +6437,16 @@ function showMainPanel(name) {
   document.getElementById('panel-habits').style.display      = name === 'habits' ? 'flex' : 'none';
   document.getElementById('panel-insights').style.display    = name === 'insights' ? 'flex' : 'none';
   document.getElementById('panel-timedrift').style.display   = name === 'timedrift' ? 'flex' : 'none';
+  document.getElementById('panel-articles').style.display    = name === 'articles' ? 'flex' : 'none';
   _mainPanel = name;
-  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights', timedrift:'Timedrift' };
+  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights', timedrift:'Timedrift', articles:'Reading' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
   if (name === 'habits') { switchHabitsTab(_habitsTab || 'habits'); }
   if (name === 'insights') { habitsSubscribe(); renderInsights(); loadDoneWall(); }
+  if (name === 'articles') { renderArticlesPane(); }
   const orbEl = document.getElementById('cosmodex-orb');
   if (orbEl) orbEl.style.display = name === 'timedrift' ? 'none' : '';
   if (name === 'timedrift') { startTimedrift(); }
@@ -7985,10 +7998,9 @@ function renderMilestoneDashboard() {
 function showPlanningTimeline(projId) {
   const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
   if (!proj) return;
-  // Hide week/month/articles panes and tabs; show timeline container
+  // Hide week/month panes and tabs; show timeline container
   document.getElementById('plan-right-week').style.display     = 'none';
   document.getElementById('plan-right-month').style.display    = 'none';
-  document.getElementById('plan-right-articles').style.display = 'none';
   document.querySelector('.planning-right-tabs').style.display = 'none';
   const tl = document.getElementById('plan-right-timeline');
   tl.style.display = 'flex';
@@ -8006,9 +8018,8 @@ function showPlanningTimeline(projId) {
       document.querySelector('.planning-right-tabs').style.display = '';
       // Restore the active tab pane
       const activeTab = document.querySelector('.planning-right-tab.active')?.dataset.ptab || 'week';
-      document.getElementById('plan-right-week').style.display     = activeTab === 'week'     ? '' : 'none';
-      document.getElementById('plan-right-month').style.display    = activeTab === 'month'    ? '' : 'none';
-      document.getElementById('plan-right-articles').style.display = activeTab === 'articles' ? 'flex' : 'none';
+      document.getElementById('plan-right-week').style.display     = activeTab === 'week'  ? '' : 'none';
+      document.getElementById('plan-right-month').style.display    = activeTab === 'month' ? '' : 'none';
     };
   }
   renderMilestoneTimeline(projId);
@@ -8809,12 +8820,10 @@ function initMilestonesPanel() {
 
   function switchPlanRightTab(tab) {
     document.querySelectorAll('.planning-right-tab').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
-    document.getElementById('plan-right-week').style.display     = tab === 'week'     ? '' : 'none';
-    document.getElementById('plan-right-month').style.display    = tab === 'month'    ? '' : 'none';
-    document.getElementById('plan-right-articles').style.display = tab === 'articles' ? 'flex' : 'none';
-    if (tab === 'week')     buildWeekPlan();
-    if (tab === 'month')    buildMonthPlan();
-    if (tab === 'articles') renderArticlesPane();
+    document.getElementById('plan-right-week').style.display  = tab === 'week'  ? '' : 'none';
+    document.getElementById('plan-right-month').style.display = tab === 'month' ? '' : 'none';
+    if (tab === 'week')  buildWeekPlan();
+    if (tab === 'month') buildMonthPlan();
   }
 
   async function buildWeekPlan() {
@@ -11492,7 +11501,7 @@ function closeOrb() {
   orbBackdrop.classList.remove('visible');
   orbDisplay.classList.remove('visible');
   orbHeader.classList.remove('visible');
-  setTimeout(() => { orb.style.display = 'none'; drawCosmodex(); }, 500);
+  orb.style.display = 'none'; drawCosmodex();
 }
 
 orb.addEventListener('click', e => {
@@ -12913,9 +12922,6 @@ window.addEventListener('cdx-auth-ready', () => {
     }
     // Rebuild selects with any custom categories loaded from localStorage
     rebuildCategorySelects();
-    // Show orb as floating mini button
-    const _orbEl = document.getElementById('cosmodex-orb');
-    if (_orbEl) _orbEl.style.display = 'block';
     initData();
     initCalDropZones();
     initEventModal();
