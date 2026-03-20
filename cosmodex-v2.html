@@ -8980,12 +8980,17 @@ function initMilestonesPanel() {
     const missionBrief = document.getElementById('ms-proj-mission')?.value.trim() || '';
     const antiGoals   = document.getElementById('ms-proj-antigoals')?.value.trim() || '';
     if (!title || !start || !end) return;
-    if (_msProjEdit) {
-      await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes, missionBrief: missionBrief||null, antiGoals: antiGoals||null });
-    } else {
-      await addMilestoneProject(title, start, end, color, category, notes, missionBrief, antiGoals);
+    try {
+      if (_msProjEdit) {
+        await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes, missionBrief: missionBrief||null, antiGoals: antiGoals||null });
+      } else {
+        await addMilestoneProject(title, start, end, color, category, notes, missionBrief, antiGoals);
+      }
+      closeOverlay('ms-project-modal');
+    } catch (err) {
+      console.error('Failed to save initiative:', err);
+      showToast('Failed to save initiative', 'error');
     }
-    closeOverlay('ms-project-modal');
   });
 
   // Initiative delete button
@@ -9672,7 +9677,6 @@ function initMilestonesPanel() {
       document.getElementById('plan-month-next')?.addEventListener('click', () => { _planMonthOffset++; buildMonthPlan(); });
       document.getElementById('plan-month-today')?.addEventListener('click', () => { _planMonthOffset = 0; buildMonthPlan(); });
       document.getElementById('plan-add-month-ms')?.addEventListener('click', addPlanMonthMilestone);
-      document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
       document.getElementById('plan-left-toggle')?.addEventListener('click',  () => togglePlanPanel('left'));
       document.getElementById('plan-right-toggle')?.addEventListener('click', () => togglePlanPanel('right'));
       document.getElementById('plan-left-expand')?.addEventListener('click',  e => { e.stopPropagation(); togglePlanPanel('left'); });
@@ -10594,12 +10598,12 @@ function initData() {
 
   onSnapshot(query(_uc('milestoneProjects'), orderBy('startDate', 'asc')), snap => {
     MILESTONE_PROJECTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (_mainPanel === 'milestones') renderMilestones();
+    renderMilestones();
   });
 
   onSnapshot(query(_uc('milestoneEvents'), orderBy('date', 'asc')), snap => {
     MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data(), activities: d.data().activities || [] }));
-    if (_mainPanel === 'milestones') renderMilestones();
+    renderMilestones();
   });
 
   onSnapshot(_uc('milestone_lists'), snap => {
