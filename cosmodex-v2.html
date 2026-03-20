@@ -2710,8 +2710,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   left: 50%;
   top: 0; bottom: 0;
   width: 2px;
-  background: var(--border);
+  background: rgba(255,255,255,0.22);
   transform: translateX(-50%);
+  z-index: 1;
 }
 .ms-alt-center-elapsed {
   position: absolute;
@@ -2721,6 +2722,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   border-radius: 2px;
   transform: translateX(-50%);
   pointer-events: none;
+  z-index: 2;
   box-shadow: 0 0 8px rgba(53,249,47,0.8), 0 0 24px rgba(53,249,47,0.4);
 }
 
@@ -2731,6 +2733,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   align-items: flex-start;
   margin-bottom: 36px;
   position: relative;
+  z-index: 3;
 }
 
 /* Dot column */
@@ -2824,7 +2827,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* ── 3-column planning layout ───────────────────────── */
 .plan-layout { display: flex; flex: 1; overflow: hidden; min-height: 0; }
 .plan-left {
-  width: 260px; min-width: 260px;
+  width: 300px; min-width: 300px;
   border-right: 1px solid var(--border);
   display: flex; flex-direction: column; overflow: hidden;
   transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
@@ -2949,8 +2952,12 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   transition: color 200ms; white-space: nowrap; min-width: 140px; text-align: center;
 }
 .plan-switcher-btn.active { color: #1a1612; font-weight: 700; }
-/* Projects panel */
-#plan-left-panel { width: 260px; min-width: 260px; }
+/* Projects panel — flex-shrink:0 prevents it from being squeezed;
+   width/min-width are intentionally NOT set here to avoid overriding
+   the .plan-left.collapsed { width:0; min-width:0 } rule (CSS specificity
+   of an ID selector beats a two-class selector, which was preventing
+   the collapse width-transition from working). */
+#plan-left-panel { flex-shrink: 0; }
 /* Milestone panel fills remaining space */
 #plan-ms-panel { flex: 1; min-width: 0; }
 /* Lists panel uses default plan-right-ctx width (280px) */
@@ -5145,6 +5152,7 @@ select.sched-input { background: #181818; }
           <div class="plan-panel-header">
             <span class="plan-panel-label">Projects</span>
             <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
+              <button id="ms-archived-btn" class="btn-ghost" style="font-size:10px;padding:3px 8px;display:none;color:var(--muted)">⊡ Archived</button>
               <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:5px 11px">+ New</button>
               <button class="plan-panel-toggle" id="plan-left-toggle" title="Collapse">‹</button>
             </div>
@@ -5162,6 +5170,7 @@ select.sched-input { background: #181818; }
             <span class="plan-panel-label" id="plan-ctx-title">Milestones</span>
             <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
               <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:5px 11px;display:none">+ Milestone</button>
+              <button id="plan-edit-proj" class="btn-ghost" title="Edit initiative" style="font-size:10px;padding:5px 10px;display:none">✎ Edit</button>
               <button id="plan-ms-close" class="plan-panel-toggle" title="Close project view" style="display:none">×</button>
             </div>
           </div>
@@ -8232,6 +8241,7 @@ async function addMilestoneProject(title, startDate, endDate, color, category=''
   await addDoc(_uc('milestoneProjects'),
     { title, startDate, endDate, color, category: category||null, notes: notes||'',
       missionBrief: missionBrief||null, antiGoals: antiGoals||null,
+      isArchived: false,
       createdAt: serverTimestamp() });
 }
 
@@ -8242,17 +8252,30 @@ async function updateMilestoneProject(id, data) {
 
 async function deleteMilestoneProject(id) {
   const { deleteDoc, getDocs, query, where } = window.CDX_FB;
-  const evSnap = await getDocs(
-    query(_uc('milestoneEvents'), where('projectId', '==', id))
-  );
-  // Cascade-delete any tasks linked via activities
+  const [evSnap, listSnap] = await Promise.all([
+    getDocs(query(_uc('milestoneEvents'), where('projectId', '==', id))),
+    getDocs(query(_uc('milestone_lists'), where('projectId', '==', id))),
+  ]);
+  // Cascade-delete tasks linked via milestone event activities
   const taskIds = [];
   evSnap.docs.forEach(d => {
     (d.data().activities || []).forEach(a => { if (a.taskId) taskIds.push(a.taskId); });
   });
+  // Collect calEventIds from linked tasks (and their subtasks) to avoid orphans
+  const calEventIds = [];
+  taskIds.forEach(tid => {
+    const t = TASKS.find(t => t.id === tid);
+    if (t?.calEventId) calEventIds.push(t.calEventId);
+    (t?.subtasks || []).forEach(s => { if (s.calEventId) calEventIds.push(s.calEventId); });
+  });
+  CAL_EVENTS.filter(e => taskIds.includes(e.taskId)).forEach(e => {
+    if (!calEventIds.includes(e.id)) calEventIds.push(e.id);
+  });
   await Promise.all([
     ...evSnap.docs.map(d => deleteDoc(d.ref)),
+    ...listSnap.docs.map(d => deleteDoc(d.ref)),
     ...taskIds.map(tid => deleteDoc(_ud('tasks', tid))),
+    ...calEventIds.map(cid => deleteDoc(_ud('calEvents', cid))),
   ]);
   await deleteDoc(_ud('milestoneProjects', id));
 }
@@ -8363,21 +8386,6 @@ function renderMilestones() {
   }
 }
 
-/* ── Planning toolbar state ──────────────────────────── */
-function updateMilestoneToolbar() {
-  const toolbar = document.querySelector('#panel-milestones .panel-toolbar');
-  if (!toolbar) return;
-  const archCount = MILESTONE_PROJECTS.filter(p => p.isArchived).length;
-  toolbar.innerHTML = `
-    <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Planning</span>
-    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-      ${archCount > 0 ? `<button id="ms-archived-btn" class="btn-ghost" style="font-size:10px;padding:5px 10px;color:var(--muted)">⊡ Archived (${archCount})</button>` : ''}
-      <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:6px 12px">+ New</button>
-    </div>`;
-  document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
-  document.getElementById('ms-archived-btn')?.addEventListener('click', showArchivedProjectsOverlay);
-}
-
 /* ── Dashboard: card grid ────────────────────────────── */
 function renderMilestoneDashboard() {
   const body = document.getElementById('milestones-body');
@@ -8385,6 +8393,18 @@ function renderMilestoneDashboard() {
 
   const activeProjs   = MILESTONE_PROJECTS.filter(p => !p.isArchived);
   const archivedProjs = MILESTONE_PROJECTS.filter(p => p.isArchived);
+
+  // Update the archived button in the left panel header
+  const archBtn = document.getElementById('ms-archived-btn');
+  if (archBtn) {
+    if (archivedProjs.length) {
+      archBtn.textContent = `⊡ Archived (${archivedProjs.length})`;
+      archBtn.style.display = '';
+      archBtn.onclick = showArchivedProjectsOverlay;
+    } else {
+      archBtn.style.display = 'none';
+    }
+  }
 
   if (!MILESTONE_PROJECTS.length) {
     body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:60px">No initiatives yet.<br><br>Click "+ Initiative" to start.</div>`;
@@ -8540,6 +8560,11 @@ function showPlanningTimeline(projId) {
   }
   const closeBtn = document.getElementById('plan-ms-close');
   if (closeBtn) closeBtn.style.display = '';
+  const editProjBtn = document.getElementById('plan-edit-proj');
+  if (editProjBtn) {
+    editProjBtn.style.display = '';
+    editProjBtn.onclick = () => openMsProjectModal(projId);
+  }
 
   // Switch from empty state to content
   const empty   = document.getElementById('plan-ctx-empty');
@@ -8649,8 +8674,9 @@ function renderMilestoneTimeline(projId) {
     const actItems = acts.map(a => {
       const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
       const cat = task?.category ? CATEGORIES[task.category] : null;
+      const actCatClr = getCatColor(task?.category);
       const catBadge = cat
-        ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>`
+        ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${actCatClr}22;color:${actCatClr};border:1px solid ${actCatClr}44;font-family:var(--font-mono)">${cat.label}</span>`
         : '';
       return `<div class="ms-action-item">
         <div class="ms-action-check ${a.done?'done':''}" data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">${a.done?'✓':''}</div>
@@ -8776,7 +8802,8 @@ function renderMsActivityList() {
   el.innerHTML = _msNewActivities.map((a, i) => {
     const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
     const cat  = task?.category ? CATEGORIES[task.category] : null;
-    const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const modCatClr = getCatColor(task?.category);
+    const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
     const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:8px;color:var(--sage);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
@@ -9573,6 +9600,8 @@ function initMilestonesPanel() {
     if (titleEl) titleEl.textContent   = 'Milestones';
     if (addBtn)  addBtn.style.display  = 'none';
     if (closeBtn) closeBtn.style.display = 'none';
+    const editProjBtn = document.getElementById('plan-edit-proj');
+    if (editProjBtn) editProjBtn.style.display = 'none';
     if (listsEmpty) listsEmpty.style.display = 'flex';
     if (listsBody)  listsBody.style.display  = 'none';
     // Remove active highlight from all project cards
@@ -9625,8 +9654,8 @@ function initMilestonesPanel() {
       document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
       document.getElementById('plan-left-toggle')?.addEventListener('click',  () => togglePlanPanel('left'));
       document.getElementById('plan-right-toggle')?.addEventListener('click', () => togglePlanPanel('right'));
-      document.getElementById('plan-left-expand')?.addEventListener('click',  () => togglePlanPanel('left'));
-      document.getElementById('plan-right-expand')?.addEventListener('click', () => togglePlanPanel('right'));
+      document.getElementById('plan-left-expand')?.addEventListener('click',  e => { e.stopPropagation(); togglePlanPanel('left'); });
+      document.getElementById('plan-right-expand')?.addEventListener('click', e => { e.stopPropagation(); togglePlanPanel('right'); });
       document.getElementById('plan-ms-close')?.addEventListener('click', closeMilestoneDetail);
       // View switcher (Projects & Context  ↔  Week & Month)
       document.querySelectorAll('.plan-switcher-btn').forEach(btn => {
@@ -9638,6 +9667,7 @@ function initMilestonesPanel() {
           document.getElementById('plan-view-projects').style.display = isCalendar ? 'none' : 'flex';
           document.getElementById('plan-view-calendar').style.display = isCalendar ? 'flex' : 'none';
           if (isCalendar) buildWeekPlan();
+          else renderMilestones();
         });
       });
       restorePlanPanelStates();
@@ -10547,7 +10577,7 @@ function initData() {
   });
 
   onSnapshot(query(_uc('milestoneEvents'), orderBy('date', 'asc')), snap => {
-    MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, activities: [], ...d.data() }));
+    MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data(), activities: d.data().activities || [] }));
     if (_mainPanel === 'milestones') renderMilestones();
   });
 
@@ -10667,8 +10697,9 @@ function buildTaskRow(task, idx) {
 
   const hasSubs  = task.subtasks && task.subtasks.length > 0;
   const cat      = task.category ? CATEGORIES[task.category] : null;
+  const catClr   = getCatColor(task.category);
   const catBadge = cat
-    ? `<span class="task-cat-badge" data-setcat="${escAttr(task.id)}" title="Click to change category" style="cursor:pointer;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>`
+    ? `<span class="task-cat-badge" data-setcat="${escAttr(task.id)}" title="Click to change category" style="cursor:pointer;background:${catClr}22;color:${catClr};border:1px solid ${catClr}44">${cat.label}</span>`
     : `<span class="task-cat-badge" data-setcat="${escAttr(task.id)}" title="Click to set category" style="cursor:pointer;opacity:0.35;border:1px dashed var(--border)">+ cat</span>`;
 
   let schedBadge = '';
@@ -11150,6 +11181,11 @@ async function deleteTask(taskId) {
       if (sub.calEventId) {
         try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
       }
+    }
+    // Also clean up any orphaned calEvents that reference this task by taskId
+    // (handles cases where task.calEventId was null/mismatched)
+    for (const ev of CAL_EVENTS.filter(e => e.taskId === taskId && e.id !== task.calEventId)) {
+      try { await deleteDoc(_ud('calEvents', ev.id)); } catch (_) {}
     }
     await deleteDoc(_ud('tasks', taskId));
     showToast('Task deleted', 'info');
