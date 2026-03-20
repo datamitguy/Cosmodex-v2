@@ -1741,10 +1741,10 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
 }
 
 .signin-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 32px;
+  padding: 12px 20px;
   border-radius: 12px;
   background: var(--gold);
   color: var(--ink);
@@ -3386,8 +3386,11 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 .week-cell:hover { background:rgba(255,255,255,0.03); }
 .week-event-chip {
-  font-size:9px; padding:2px 5px; border-radius:3px;
+  font-size:9px; padding:2px 5px; border-radius:4px;
   margin:2px 2px 0; overflow:hidden; border-left:2px solid;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 .week-event-chip .chip-title {
   font-weight:500; white-space:nowrap; overflow:hidden;
@@ -3417,12 +3420,12 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   cursor:pointer; transition:background 0.15s; overflow:hidden;
 }
 .month-day-cell:hover { background:var(--elevated); }
-.month-day-cell.today { background:rgba(255,255,255,0.04); }
+.month-day-cell.today { background:rgba(53,249,47,0.04); border-color: rgba(53,249,47,0.25) !important; }
 .month-day-cell.other-month { opacity:0.32; }
 .month-day-cell.holiday { background:rgba(196,92,42,0.04); }
 .month-day-cell.weekend { border-left:2px solid rgba(196,92,42,0.35); }
 .month-day-num { font-family:var(--font-mono); font-size:11px; color:var(--muted); margin-bottom:3px; display:block; }
-.month-day-cell.today .month-day-num { color:var(--gold); font-weight:600; }
+.month-day-cell.today .month-day-num { color: rgba(53,249,47,0.9); font-weight:600; text-shadow: 0 0 8px rgba(53,249,47,0.5); }
 .month-holiday-name {
   font-family:var(--font-mono); font-size:7px;
   color:#fff; background:var(--rust);
@@ -3437,9 +3440,12 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .month-spark-bar { width:4px; border-radius:1px; min-height:2px; }
 .month-event-pill {
   font-size:9px; font-family:var(--font-mono);
-  padding:1px 4px; border-radius:3px;
+  padding:2px 5px; border-radius:4px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  margin-bottom:1px; color:var(--cream); display:block;
+  margin-bottom:2px; display:block;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -4655,29 +4661,119 @@ select.sched-input { background: #181818; }
 
 /* Timedrift panel */
 #panel-timedrift { background: var(--bg); }
-/* Articles pane */
-.articles-filter-btn {
-  font-family: var(--font-mono);
-  font-size: 9px; letter-spacing: 0.08em;
-  background: none; border: 1px solid var(--border);
-  color: var(--muted); border-radius: 100px;
+/* ═══ RSS Feed Reader ═══════════════════════════════════════ */
+.rss-list-pane {
+  width: 310px; min-width: 240px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--surface); overflow: hidden;
+}
+.rss-list-header {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
+.rss-filter-btn {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em;
+  padding: 3px 9px; border-radius: 100px;
+  border: 1px solid var(--border); background: transparent; color: var(--muted);
   cursor: pointer; transition: color 120ms, border-color 120ms;
 }
-.articles-filter-btn.active { color: var(--gold); border-color: var(--gold-dim); }
-.articles-filter-btn:hover:not(.active) { color: var(--cream); border-color: var(--muted); }
-.article-card {
-  display: block; text-decoration: none;
-  background: var(--elevated); border: 1px solid var(--border);
-  border-left: 3px solid var(--art-color, var(--gold));
-  border-radius: 6px; padding: 12px 14px;
-  transition: background 0.15s, border-color 0.15s;
+.rss-filter-btn.active { color: var(--gold); border-color: var(--gold-dim); }
+.rss-filter-btn:hover:not(.active) { color: var(--cream); border-color: var(--muted); }
+.rss-refresh-btn {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; margin-left: auto;
+  border: 1px solid var(--border); background: transparent; color: var(--muted);
+  cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center;
+  transition: color 120ms, border-color 120ms;
 }
-.article-card:hover { background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.12); }
-.article-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-.article-cat-badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; padding: 1px 8px; border-radius: 100px; }
-.article-source { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
-.article-title { font-family: var(--font-display); font-size: 13px; font-weight: 400; color: var(--cream); margin-bottom: 4px; }
-.article-summary { font-family: var(--font-body); font-size: 11px; color: var(--muted-readable); line-height: 1.5; }
+.rss-refresh-btn:hover { color: var(--cream); border-color: var(--muted); }
+.rss-refresh-btn.spinning { animation: rss-spin 0.8s linear infinite; }
+@keyframes rss-spin { to { transform: rotate(360deg); } }
+.rss-sources-row {
+  display: flex; gap: 5px; padding: 7px 14px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+  overflow-x: auto; scrollbar-width: none; flex-wrap: wrap;
+}
+.rss-source-chip {
+  font-family: var(--font-mono); font-size: 8px; padding: 2px 7px; border-radius: 100px;
+  border: 1px solid; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: opacity 120ms; background: transparent;
+}
+.rss-source-chip.inactive { opacity: 0.28; }
+.rss-items-list { flex: 1; overflow-y: auto; }
+.rss-feed-item {
+  padding: 9px 14px; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-left: 2px solid transparent;
+  transition: background 0.12s;
+}
+.rss-feed-item:hover { background: rgba(255,255,255,0.03); }
+.rss-feed-item.active { background: rgba(255,255,255,0.04); border-left-color: var(--gold); }
+.rss-item-meta { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+.rss-item-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.rss-item-src { font-family: var(--font-mono); font-size: 8px; color: var(--muted); }
+.rss-item-age { font-family: var(--font-mono); font-size: 8px; color: var(--muted); margin-left: auto; }
+.rss-item-title {
+  font-family: var(--font-body); font-size: 12px; color: var(--cream); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.rss-loading {
+  display: flex; align-items: center; justify-content: center;
+  padding: 48px 16px; gap: 5px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+}
+.rss-ld { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); animation: rss-ld 1.2s ease infinite; }
+.rss-ld:nth-child(2) { animation-delay: 0.2s; }
+.rss-ld:nth-child(3) { animation-delay: 0.4s; }
+@keyframes rss-ld { 0%,80%,100%{opacity:0.15} 40%{opacity:1} }
+/* Reader */
+.rss-reader-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.rss-reader-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.rss-reader-bar {
+  padding: 10px 20px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+}
+.rss-reader-scroll {
+  flex: 1; overflow-y: auto; padding: 28px 48px 60px; box-sizing: border-box;
+}
+.rss-reader-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.rss-reader-cat { font-family: var(--font-mono); font-size: 9px; padding: 2px 8px; border-radius: 100px; }
+.rss-reader-src { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.rss-reader-sep { color: var(--border); font-size: 10px; }
+.rss-reader-dt  { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+.rss-reader-rt  { font-family: var(--font-mono); font-size: 9px; color: var(--muted); }
+.rss-reader-h1 {
+  font-family: var(--font-display); font-size: 22px; font-weight: 400;
+  color: var(--cream); line-height: 1.32; margin-bottom: 20px; max-width: 640px;
+}
+.rss-reader-body {
+  font-family: var(--font-body); font-size: 14px; color: rgba(255,255,255,0.76);
+  line-height: 1.76; max-width: 640px;
+}
+.rss-reader-body h1,.rss-reader-body h2,.rss-reader-body h3 { font-family: var(--font-display); color: var(--cream); margin: 20px 0 9px; }
+.rss-reader-body h2 { font-size: 17px; } .rss-reader-body h3 { font-size: 14px; font-weight:500; }
+.rss-reader-body p { margin: 0 0 12px; }
+.rss-reader-body a { color: var(--gold); text-decoration: underline; text-decoration-color: var(--gold-dim); }
+.rss-reader-body a:hover { text-decoration-color: var(--gold); }
+.rss-reader-body img { max-width: 100%; border-radius: 7px; margin: 12px 0; display: block; }
+.rss-reader-body blockquote {
+  border-left: 3px solid var(--gold-dim); padding: 3px 14px; margin: 12px 0;
+  color: var(--muted-readable); background: rgba(255,255,255,0.02); border-radius: 0 4px 4px 0;
+}
+.rss-reader-body ul,.rss-reader-body ol { padding-left: 18px; margin: 0 0 12px; }
+.rss-reader-body li { margin-bottom: 5px; }
+.rss-reader-body hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.rss-reader-body pre,.rss-reader-body code { font-family: var(--font-mono); font-size: 12px; background: rgba(255,255,255,0.06); border-radius: 4px; }
+.rss-reader-body pre { padding: 10px 14px; overflow-x: auto; } .rss-reader-body code { padding: 1px 5px; }
+.rss-open-btn {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: auto; flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 5px; padding: 4px 10px;
+  text-decoration: none; transition: color 120ms, border-color 120ms;
+}
+.rss-open-btn:hover { color: var(--cream); border-color: var(--muted); }
 
 /* ms-archive button */
 .ms-archive-btn:hover { color: var(--sage) !important; border-color: var(--sage) !important; }
@@ -5821,17 +5917,41 @@ select.sched-input { background: #181818; }
     </div><!-- /panel-insights -->
 
     <!-- Articles / Reading Panel -->
-    <div id="panel-articles" style="display:none;flex:1;flex-direction:column;overflow:hidden">
-      <div style="padding:16px 24px 12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px">
-        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Reading</span>
-        <div style="margin-left:auto;display:flex;gap:6px" id="articles-filter-btns">
-          <button class="articles-filter-btn active" data-cat="all" style="font-size:9px;padding:3px 10px">All</button>
-          <button class="articles-filter-btn" data-cat="pm" style="font-size:9px;padding:3px 10px">Product</button>
-          <button class="articles-filter-btn" data-cat="biz" style="font-size:9px;padding:3px 10px">Business</button>
-          <button class="articles-filter-btn" data-cat="psych" style="font-size:9px;padding:3px 10px">Psychology</button>
+    <div id="panel-articles" style="display:none;flex:1;flex-direction:row;overflow:hidden">
+      <!-- Left: feed list -->
+      <div class="rss-list-pane">
+        <div class="rss-list-header">
+          <button class="rss-filter-btn active" data-rcat="all">All</button>
+          <button class="rss-filter-btn" data-rcat="pm">Product</button>
+          <button class="rss-filter-btn" data-rcat="biz">Business</button>
+          <button class="rss-filter-btn" data-rcat="psych">Psychology</button>
+          <button class="rss-refresh-btn" id="rss-refresh-btn" title="Refresh feeds">↻</button>
+        </div>
+        <div class="rss-sources-row" id="rss-sources-row"></div>
+        <div class="rss-items-list" id="rss-items-list">
+          <div class="rss-loading">
+            <div class="rss-ld"></div><div class="rss-ld"></div><div class="rss-ld"></div>
+            <span style="margin-left:6px">Loading feeds…</span>
+          </div>
         </div>
       </div>
-      <div id="articles-list" style="flex:1;overflow-y:auto;padding:16px 24px;display:flex;flex-direction:column;gap:8px"></div>
+      <!-- Right: reader -->
+      <div class="rss-reader-pane">
+        <div class="rss-reader-empty" id="rss-reader-empty">
+          <div style="font-size:30px;opacity:0.18">◧</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted)">Select an article to read</div>
+        </div>
+        <div id="rss-reader-article" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+          <div class="rss-reader-bar">
+            <div id="rss-reader-meta" class="rss-reader-meta" style="flex:1;margin-bottom:0"></div>
+            <a id="rss-open-btn" href="#" target="_blank" rel="noopener noreferrer" class="rss-open-btn">↗ Open original</a>
+          </div>
+          <div class="rss-reader-scroll">
+            <h1 class="rss-reader-h1" id="rss-reader-title"></h1>
+            <div class="rss-reader-body" id="rss-reader-body"></div>
+          </div>
+        </div>
+      </div>
     </div><!-- /panel-articles -->
 
   </div><!-- /main-content -->
@@ -6773,7 +6893,7 @@ function showMainPanel(name) {
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
   if (name === 'habits') { switchHabitsTab(_habitsTab || 'habits'); }
   if (name === 'insights') { habitsSubscribe(); renderInsights(); loadDoneWall(); }
-  if (name === 'articles') { renderArticlesPane(); }
+  if (name === 'articles') { window.renderArticlesPane?.(); }
   const orbEl = document.getElementById('cosmodex-orb');
   if (orbEl) orbEl.style.display = name === 'timedrift' ? 'none' : '';
   if (name === 'timedrift') { startTimedrift(); window.initPomoOverlay?.(); }
@@ -9102,59 +9222,7 @@ function initMilestonesPanel() {
     return mon;
   }
 
-  // ── Articles / Reading pane ─────────────────────────────
-  const ARTICLES = [
-    // Product Management
-    { cat:'pm', title:'Shape Up: Stop Running in Circles', source:'Basecamp / Ryan Singer', url:'https://basecamp.com/shapeup', summary:'Full methodology for product teams who want to ship meaningful work on a fixed schedule.' },
-    { cat:'pm', title:'Inspired: How to Create Tech Products Customers Love', source:'Marty Cagan', url:'https://www.svpg.com/inspired-how-to-create-products-customers-love/', summary:'The definitive guide to building empowered product teams with outcome-oriented thinking.' },
-    { cat:'pm', title:'Good Strategy / Bad Strategy', source:'Richard Rumelt', url:'https://www.mckinsey.com/capabilities/strategy-and-corporate-finance/our-insights/the-perils-of-bad-strategy', summary:'Explains why most strategies fail and what a coherent kernel of good strategy looks like.' },
-    { cat:'pm', title:'The Lean Startup', source:'Eric Ries', url:'https://theleanstartup.com/', summary:'Build-measure-learn loops and validated learning as a foundation for product development.' },
-    { cat:'pm', title:'Continuous Discovery Habits', source:'Teresa Torres', url:'https://www.producttalk.org/2021/05/continuous-discovery-habits/', summary:'Weekly touchpoints with customers woven into the regular product development cycle.' },
-    { cat:'pm', title:'Jobs to Be Done Theory', source:'Clayton Christensen', url:'https://hbr.org/2016/09/know-your-customers-jobs-to-be-done', summary:'Customers hire products to do a job — frame every feature around the job, not the persona.' },
-    { cat:'pm', title:'Competing Against Luck', source:'Christensen, Hall, Dillon, Duncan', url:'https://www.harpercollins.com/products/competing-against-luck-clayton-m-christensenhall-taddy-dillon-david', summary:'Deep dive into JTBD with case studies showing how to find causal mechanisms in customer choices.' },
-    { cat:'pm', title:'The Mom Test', source:'Rob Fitzpatrick', url:'http://momtestbook.com/', summary:'How to talk to customers and learn if your business is a good idea when everyone is lying to you.' },
-    // Business
-    { cat:'biz', title:'Zero to One', source:'Peter Thiel', url:'https://zerotoonebook.com/', summary:'Building companies that create new things — the power of monopolies, secrets, and definite optimism.' },
-    { cat:'biz', title:'The Hard Thing About Hard Things', source:'Ben Horowitz', url:'https://www.harpercollins.com/products/the-hard-thing-about-hard-things-ben-horowitz', summary:'Straight-talk on the brutal realities of building and running a startup — no silver bullets.' },
-    { cat:'biz', title:'High Output Management', source:'Andy Grove', url:'https://www.penguinrandomhouse.com/books/74765/high-output-management-by-andrew-s-grove/', summary:'OKRs, 1-on-1s, leverage — the operational bible for managing knowledge-worker teams.' },
-    { cat:'biz', title:'Playing to Win', source:'Roger Martin & A.G. Lafley', url:'https://rogerlmartin.com/lets-read/playing-to-win', summary:'Strategy as cascading choices — winning aspiration, where to play, how to win.' },
-    { cat:'biz', title:'Seven Powers', source:'Hamilton Helmer', url:'https://7powers.com/', summary:'The seven durable sources of business power and how to build them into a strategy.' },
-    { cat:'biz', title:'Measure What Matters', source:'John Doerr', url:'https://www.whatmatters.com/the-book/', summary:'How OKRs help organisations set audacious goals and align teams around what actually matters.' },
-    { cat:'biz', title:'No Rules Rules (Netflix Culture)', source:'Reed Hastings & Erin Meyer', url:'https://www.norulesrules.com/', summary:'Radical transparency, talent density, and freedom with responsibility at Netflix.' },
-    // Psychology
-    { cat:'psych', title:'Thinking, Fast and Slow', source:'Daniel Kahneman', url:'https://us.macmillan.com/books/9780374533557/thinkingfastandslow', summary:'System 1 vs System 2 thinking — the cognitive biases that shape every decision we make.' },
-    { cat:'psych', title:'Influence: The Psychology of Persuasion', source:'Robert Cialdini', url:'https://www.influenceatwork.com/', summary:'Six universal principles of influence — reciprocity, commitment, social proof, authority, liking, scarcity.' },
-    { cat:'psych', title:'Drive: The Surprising Truth About What Motivates Us', source:'Daniel Pink', url:'https://www.danpink.com/books/drive/', summary:'Autonomy, mastery, and purpose outperform carrot-and-stick for knowledge workers.' },
-    { cat:'psych', title:'Mindset: The New Psychology of Success', source:'Carol Dweck', url:'https://www.penguinrandomhouse.com/books/44330/mindset-by-carol-s-dweck-phd/', summary:'Fixed vs growth mindset — how beliefs about ability shape achievement and resilience.' },
-    { cat:'psych', title:'Atomic Habits', source:'James Clear', url:'https://jamesclear.com/atomic-habits', summary:'1% improvements compound — the four-step loop (cue, craving, response, reward) for lasting change.' },
-    { cat:'psych', title:'The Power of Now', source:'Eckhart Tolle', url:'https://www.eckharttolle.com/books/', summary:'Separating identity from thought and finding stillness as the foundation for effective action.' },
-    { cat:'psych', title:'Stolen Focus', source:'Johann Hari', url:'https://stolenfocusbook.com/', summary:'Why our attention is collapsing and twelve environmental interventions to reclaim deep focus.' },
-  ];
-
-  let _articlesFilter = 'all';
-
-  function renderArticlesPane() {
-    const list = document.getElementById('articles-list');
-    if (!list) return;
-    const filtered = _articlesFilter === 'all' ? ARTICLES : ARTICLES.filter(a => a.cat === _articlesFilter);
-    const catColors = { pm:'#6b9fd4', biz:'#e4e4e4', psych:'#4a7c5e' };
-    const catLabels = { pm:'Product', biz:'Business', psych:'Psychology' };
-    list.innerHTML = filtered.map(a => `
-      <a href="${a.url}" target="_blank" rel="noopener" class="article-card" style="--art-color:${catColors[a.cat]||'var(--gold)'}">
-        <div class="article-card-top">
-          <span class="article-cat-badge" style="background:${catColors[a.cat]}22;color:${catColors[a.cat]};border:1px solid ${catColors[a.cat]}44">${catLabels[a.cat]||a.cat}</span>
-          <span class="article-source">${escHtml(a.source)}</span>
-        </div>
-        <div class="article-title">${escHtml(a.title)}</div>
-        <div class="article-summary">${escHtml(a.summary)}</div>
-      </a>`).join('');
-
-    // Filter buttons
-    document.querySelectorAll('.articles-filter-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.cat === _articlesFilter);
-      btn.onclick = () => { _articlesFilter = btn.dataset.cat; renderArticlesPane(); };
-    });
-  }
+  // (articles/reading pane is now handled by the global RSS reader below)
 
   function switchPlanRightTab(tab) {
     document.querySelectorAll('.plan-center-tab').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
@@ -9470,6 +9538,249 @@ function initMilestonesPanel() {
 })();
 
 /* ══════════════════════════════════════════════════════════
+   RSS FEED READER
+   ══════════════════════════════════════════════════════════ */
+(function() {
+  const RSS_SOURCES = [
+    // Product Management (Substack-first)
+    { id:'lenny',      cat:'pm',    label:"Lenny's Newsletter",   url:'https://lenny.substack.com/feed',                         color:'#6b9fd4' },
+    { id:'prageng',    cat:'pm',    label:'Pragmatic Engineer',    url:'https://newsletter.pragmaticengineer.com/feed',           color:'#6b9fd4' },
+    { id:'prodcompass',cat:'pm',    label:'Product Compass',       url:'https://www.productcompass.pm/feed',                     color:'#6b9fd4' },
+    // Business (Substack-first)
+    { id:'notboring',  cat:'biz',   label:'Not Boring',            url:'https://www.notboring.co/feed',                         color:'#c9a227' },
+    { id:'generalist', cat:'biz',   label:'The Generalist',        url:'https://thegeneralist.substack.com/feed',               color:'#c9a227' },
+    { id:'stratechery',cat:'biz',   label:'Stratechery',           url:'https://stratechery.com/feed',                          color:'#c9a227' },
+    // Psychology (Substack-first)
+    { id:'exphistory', cat:'psych', label:'Experimental History',  url:'https://www.experimental-history.com/feed',             color:'#68b48a' },
+    { id:'nesslabs',   cat:'psych', label:'Ness Labs',             url:'https://nesslabs.com/feed',                             color:'#68b48a' },
+    { id:'afterbabel', cat:'psych', label:'After Babel',           url:'https://www.afterbabel.com/feed',                       color:'#68b48a' },
+  ];
+  const CAT_COLORS = { pm:'#6b9fd4', biz:'#c9a227', psych:'#68b48a' };
+  const CAT_LABELS = { pm:'Product',  biz:'Business', psych:'Psychology' };
+  const RSS2JSON   = 'https://api.rss2json.com/v1/api.json';
+  const CACHE_TTL  = 60 * 60 * 1000; // 1 hour
+
+  let _items       = [];       // all fetched items merged + sorted
+  let _filter      = 'all';    // active category filter
+  let _activeSrcs  = new Set(RSS_SOURCES.map(s => s.id));
+  let _activeId    = null;     // currently open article id
+  let _fetching    = false;
+  let _inited      = false;    // listeners wired?
+
+  /* ── Cache helpers ─────────────────────────────────────── */
+  function getCached(id) {
+    try {
+      const d = JSON.parse(localStorage.getItem('rss_' + id) || 'null');
+      return d && (Date.now() - d.ts < CACHE_TTL) ? d.items : null;
+    } catch { return null; }
+  }
+  function setCached(id, items) {
+    try { localStorage.setItem('rss_' + id, JSON.stringify({ ts: Date.now(), items })); } catch {}
+  }
+
+  /* ── Fetch one source via rss2json ─────────────────────── */
+  async function fetchSource(src) {
+    const cached = getCached(src.id);
+    if (cached) return cached;
+    try {
+      const url = RSS2JSON + '?rss_url=' + encodeURIComponent(src.url) + '&count=20';
+      const resp = await fetch(url, { signal: AbortSignal.timeout(12000) });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      if (data.status !== 'ok') throw new Error(data.message || 'feed error');
+      const items = (data.items || []).map(item => ({
+        id:         item.guid || item.link || (src.id + Math.random()),
+        title:      (item.title || '').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
+        link:       item.link || '',
+        pubDate:    item.pubDate || '',
+        content:    item.content || item.description || '',
+        author:     item.author || src.label,
+        thumbnail:  item.thumbnail || null,
+        sourceId:   src.id,
+        sourceName: src.label,
+        cat:        src.cat,
+        color:      src.color,
+      }));
+      setCached(src.id, items);
+      return items;
+    } catch(e) {
+      console.warn('[RSS] ' + src.id, e.message);
+      return [];
+    }
+  }
+
+  /* ── Fetch all sources ─────────────────────────────────── */
+  async function fetchAll(force) {
+    if (force) RSS_SOURCES.forEach(s => { try { localStorage.removeItem('rss_' + s.id); } catch {} });
+    _fetching = true;
+    renderLoading();
+    const results = await Promise.allSettled(RSS_SOURCES.map(s => fetchSource(s)));
+    _items = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+    _items.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+    _fetching = false;
+    renderList();
+  }
+
+  /* ── Helpers ───────────────────────────────────────────── */
+  function timeSince(dateStr) {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr);
+    if (diff < 3600000) return Math.max(1, Math.floor(diff / 60000)) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+    const days = Math.floor(diff / 86400000);
+    if (days < 14) return days + 'd ago';
+    return new Date(dateStr).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+  }
+
+  function readTime(html) {
+    const words = (html || '').replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.round(words / 200));
+  }
+
+  function sanitize(html) {
+    try {
+      const doc = (new DOMParser()).parseFromString(html, 'text/html');
+      doc.querySelectorAll('script,style,iframe,form,input,button,noscript,object,embed').forEach(el => el.remove());
+      doc.querySelectorAll('a[href]').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
+      // Fix relative image URLs from Substack CDN — they're typically absolute already
+      return doc.body.innerHTML;
+    } catch { return html; }
+  }
+
+  function filteredItems() {
+    return _items.filter(item =>
+      (_filter === 'all' || item.cat === _filter) && _activeSrcs.has(item.sourceId)
+    );
+  }
+
+  /* ── Render: loading state ─────────────────────────────── */
+  function renderLoading() {
+    const el = document.getElementById('rss-items-list');
+    if (el) el.innerHTML = '<div class="rss-loading"><div class="rss-ld"></div><div class="rss-ld"></div><div class="rss-ld"></div><span style="margin-left:6px">Loading feeds\u2026</span></div>';
+  }
+
+  /* ── Render: source chips ──────────────────────────────── */
+  function renderSources() {
+    const row = document.getElementById('rss-sources-row');
+    if (!row) return;
+    const visible = _filter === 'all' ? RSS_SOURCES : RSS_SOURCES.filter(s => s.cat === _filter);
+    row.innerHTML = visible.map(s =>
+      `<button class="rss-source-chip${_activeSrcs.has(s.id) ? '' : ' inactive'}" data-rsrc="${escAttr(s.id)}" style="color:${s.color};border-color:${s.color}55;background:${s.color}12">${escHtml(s.label)}</button>`
+    ).join('');
+    row.querySelectorAll('.rss-source-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const id = chip.dataset.rsrc;
+        if (_activeSrcs.has(id)) { if (_activeSrcs.size > 1) _activeSrcs.delete(id); }
+        else _activeSrcs.add(id);
+        renderSources();
+        renderList();
+      });
+    });
+  }
+
+  /* ── Render: feed item list ────────────────────────────── */
+  function renderList() {
+    const el = document.getElementById('rss-items-list');
+    if (!el) return;
+    renderSources();
+    const items = filteredItems();
+    if (!items.length) {
+      el.innerHTML = '<div style="padding:32px 16px;text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--muted)">' + (_fetching ? '' : 'No articles found') + '</div>';
+      return;
+    }
+    el.innerHTML = items.map(item => `
+      <div class="rss-feed-item${item.id === _activeId ? ' active' : ''}" data-rid="${escAttr(item.id)}">
+        <div class="rss-item-meta">
+          <div class="rss-item-dot" style="background:${item.color}"></div>
+          <span class="rss-item-src">${escHtml(item.sourceName)}</span>
+          <span class="rss-item-age">${timeSince(item.pubDate)}</span>
+        </div>
+        <div class="rss-item-title">${escHtml(item.title)}</div>
+      </div>`).join('');
+    el.querySelectorAll('.rss-feed-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const item = _items.find(i => i.id === el.dataset.rid);
+        if (item) openArticle(item);
+      });
+    });
+  }
+
+  /* ── Open article in reader ────────────────────────────── */
+  function openArticle(item) {
+    _activeId = item.id;
+    document.querySelectorAll('.rss-feed-item').forEach(el =>
+      el.classList.toggle('active', el.dataset.rid === item.id)
+    );
+    const emptyEl   = document.getElementById('rss-reader-empty');
+    const articleEl = document.getElementById('rss-reader-article');
+    if (emptyEl)   emptyEl.style.display   = 'none';
+    if (articleEl) articleEl.style.display = 'flex';
+
+    // Meta bar
+    const metaEl = document.getElementById('rss-reader-meta');
+    if (metaEl) {
+      const c = CAT_COLORS[item.cat] || 'var(--gold)';
+      const l = CAT_LABELS[item.cat] || item.cat;
+      const rt = readTime(item.content);
+      metaEl.innerHTML =
+        `<span class="rss-reader-cat" style="background:${c}20;color:${c};border:1px solid ${c}44">${l}</span>` +
+        `<span class="rss-reader-src">${escHtml(item.sourceName)}</span>` +
+        `<span class="rss-reader-sep">·</span>` +
+        `<span class="rss-reader-dt">${timeSince(item.pubDate)}</span>` +
+        `<span class="rss-reader-sep">·</span>` +
+        `<span class="rss-reader-rt">${rt} min read</span>`;
+    }
+    const titleEl = document.getElementById('rss-reader-title');
+    if (titleEl) titleEl.textContent = item.title;
+
+    const bodyEl = document.getElementById('rss-reader-body');
+    if (bodyEl) {
+      const html = item.content || '';
+      bodyEl.innerHTML = html.length > 200
+        ? sanitize(html)
+        : `<p style="color:var(--muted);font-family:var(--font-mono);font-size:12px">Full content not available in feed preview.<br>Click "Open original" to read on the source site.</p>`;
+    }
+    const linkEl = document.getElementById('rss-open-btn');
+    if (linkEl) linkEl.href = item.link;
+
+    // Scroll reader to top
+    document.querySelector('.rss-reader-scroll')?.scrollTo(0, 0);
+  }
+
+  /* ── Public entry called by showMainPanel ──────────────── */
+  window.renderArticlesPane = function() {
+    // Wire listeners once
+    if (!_inited) {
+      _inited = true;
+      document.querySelectorAll('.rss-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          _filter = btn.dataset.rcat;
+          const srcForFilter = _filter === 'all' ? RSS_SOURCES : RSS_SOURCES.filter(s => s.cat === _filter);
+          _activeSrcs = new Set(srcForFilter.map(s => s.id));
+          document.querySelectorAll('.rss-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.rcat === _filter));
+          renderSources();
+          renderList();
+        });
+      });
+      const refreshBtn = document.getElementById('rss-refresh-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', async function() {
+          this.classList.add('spinning');
+          await fetchAll(true);
+          this.classList.remove('spinning');
+        });
+      }
+    }
+
+    if (!_items.length && !_fetching) {
+      fetchAll(false);
+    } else {
+      renderList();
+    }
+  };
+})();
+
+/* ══════════════════════════════════════════════════════════
    ORB PETAL QUICK-ADD
    ══════════════════════════════════════════════════════════ */
 function openOrbAddTaskModal(hour) {
@@ -9715,7 +10026,7 @@ function _tdDrawTimeline(now){
       ctx.textBaseline='middle';
       ctx.translate(sx, lineTop + 4);
       ctx.rotate(Math.PI/2);
-      ctx.fillText(labelStr, 8, 0);
+      ctx.fillText(labelStr, 8, -7);
       ctx.restore();
     }
   });
@@ -10954,7 +11265,7 @@ function renderWeekView(date) {
     const isToday = ds === today;
     const isWeekend = (i === 5 || i === 6); // Sat=5, Sun=6
     const hol = HOLIDAYS[ds];
-    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:var(--gold)' : ''}">
+    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(53,249,47,0.9);text-shadow:0 0 8px rgba(53,249,47,0.4);border-bottom:2px solid rgba(53,249,47,0.45)' : ''}">
       ${DAYS[i]} ${d.getDate()}${hol ? `<br><span style="font-size:7px;color:#fff;background:var(--rust);border-radius:2px;padding:0 2px;display:block">${escHtml(hol.name)}</span>` : ''}
     </div>`;
   }
@@ -11298,7 +11609,7 @@ function openQuickCalModal(date, startTime) {
   document.getElementById('qcal-time-wrap').style.display = '';
   document.getElementById('qcal-dur-wrap').style.display  = '';
   const durEl = document.getElementById('qcal-duration');
-  if (durEl) durEl.value = 60;
+  if (durEl) durEl.value = 30;
   const sel = document.getElementById('qcal-category');
   if (sel) sel.innerHTML = '<option value="">No category</option>' + Object.entries(CATEGORIES).map(([k,v]) => `<option value="${escAttr(k)}">${escHtml(v.label)}</option>`).join('');
   document.getElementById('quick-cal-modal')?.classList.add('open');
@@ -12381,7 +12692,7 @@ document.addEventListener('click', e => {
 // Header action buttons
 document.getElementById('btn-notes')?.addEventListener('click', () => openOverlay('notes-overlay'));
 document.getElementById('btn-focus')?.addEventListener('click', () => { showMainPanel('timedrift'); document.getElementById('left-nav')?.classList.add('collapsed'); });
-document.getElementById('btn-cosmodex-bubble')?.addEventListener('click', () => showMainPanel('cosmodex-bubble'));
+document.getElementById('btn-cosmodex-bubble')?.addEventListener('click', () => openOrb());
 document.getElementById('btn-cosmos')?.addEventListener('click', () => openOverlay('claude-panel'));
 
 // Nav footer overlays
@@ -12401,6 +12712,11 @@ const CMD_COMMANDS_BASE = [
   { label: 'Planning',         icon: '◉', action: () => showMainPanel('milestones'), keys: '' },
   { label: 'Toggle Theme',     icon: '◑', action: toggleTheme, keys: '' },
   { label: 'Zen Mode',         icon: '◎', action: () => document.getElementById('left-nav').classList.toggle('collapsed'), keys: '' },
+  { label: 'Add Shallow Task', icon: '💬', action: async () => {
+    const title = prompt('Shallow task title:');
+    if (!title?.trim()) return;
+    await addTask(title.trim(), 'med', '', _settings.defaultCategory || '', '', 'shallow', []);
+  }, keys: '' },
 ];
 
 function getCmdCommands() {
@@ -13644,7 +13960,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   document.getElementById('pomo-check-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') addCheckItem(); });
 
   // Pomo column collapse/expand
-  let _pomoCollapsed = localStorage.getItem('cosmodex_pomo_collapsed') === '1';
+  let _pomoCollapsed = localStorage.getItem('cosmodex_pomo_collapsed') !== '0';
   function togglePomoCol() {
     const col    = document.getElementById('td-pomo-col');
     const rail   = document.getElementById('td-pomo-rail');
@@ -13794,7 +14110,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
       </div>
       <div id="qcal-dur-wrap">
         <label class="sched-label">Duration (min)</label>
-        <input id="qcal-duration" type="number" class="sched-input" value="60" min="15" step="15" />
+        <input id="qcal-duration" type="number" class="sched-input" value="30" min="15" step="15" />
       </div>
       <div>
         <label class="sched-label">Category</label>
