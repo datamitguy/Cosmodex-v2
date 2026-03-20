@@ -4952,6 +4952,10 @@ select.sched-input { background: #181818; }
         <span class="nav-item-icon">◌</span>
         Timedrift
       </div>
+      <div class="nav-item" data-panel="getabstract" id="nav-getabstract">
+        <span class="nav-item-icon">⬡</span>
+        GetAbstract
+      </div>
     </div>
   </div>
 
@@ -5917,6 +5921,34 @@ select.sched-input { background: #181818; }
     </div><!-- /panel-insights -->
 
     <!-- Articles / Reading Panel -->
+    <div id="panel-getabstract" style="display:none;flex:1;flex-direction:column;overflow:hidden;background:#1a1612">
+      <div id="ga-iframe-wrap" style="flex:1;display:flex;flex-direction:column;position:relative">
+        <iframe
+          id="ga-iframe"
+          src="https://www.getabstract.com/en/my-library"
+          style="flex:1;width:100%;height:100%;border:none"
+          allow="fullscreen"
+          onload="document.getElementById('ga-blocked').style.display='none'"
+          onerror="document.getElementById('ga-blocked').style.display='flex'"
+        ></iframe>
+        <div id="ga-blocked" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:#1a1612;gap:16px">
+          <div style="font-size:2rem">⬡</div>
+          <div style="color:#c9a227;font-size:1.1rem;font-weight:600">GetAbstract can't be embedded</div>
+          <div style="color:#888;font-size:.85rem;text-align:center;max-width:360px">GetAbstract blocks iframe embedding. Open it in a companion window — your browser login session is shared automatically.</div>
+          <button onclick="window.open('https://www.getabstract.com/en/my-library','getabstract-window','width=1200,height=800')" style="margin-top:8px;padding:10px 24px;background:#c9a227;color:#1a1612;border:none;border-radius:6px;font-size:.9rem;font-weight:700;cursor:pointer">Open GetAbstract ↗</button>
+        </div>
+      </div>
+      <script>
+        // Detect X-Frame-Options block: iframe stays blank with no load event on cross-origin denial
+        (function() {
+          var iframe = document.getElementById('ga-iframe');
+          var blocked = document.getElementById('ga-blocked');
+          var timer = setTimeout(function() { blocked.style.display = 'flex'; }, 4000);
+          iframe.addEventListener('load', function() { clearTimeout(timer); });
+        })();
+      </script>
+    </div>
+
     <div id="panel-articles" style="display:none;flex:1;flex-direction:row;overflow:hidden">
       <!-- Left: feed list -->
       <div class="rss-list-pane">
@@ -6852,6 +6884,13 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       showMainPanel('articles');
       return;
     }
+    // GetAbstract → full page
+    if (panel === 'getabstract') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('getabstract');
+      return;
+    }
     // Timedrift → full screen panel
     if (panel === 'timedrift') {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -6885,8 +6924,9 @@ function showMainPanel(name) {
   document.getElementById('panel-insights').style.display    = name === 'insights' ? 'flex' : 'none';
   document.getElementById('panel-timedrift').style.display   = name === 'timedrift' ? 'flex' : 'none';
   document.getElementById('panel-articles').style.display    = name === 'articles' ? 'flex' : 'none';
+  document.getElementById('panel-getabstract').style.display = name === 'getabstract' ? 'flex' : 'none';
   _mainPanel = name;
-  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights', timedrift:'Timedrift', articles:'Reading' };
+  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights', timedrift:'Timedrift', articles:'Reading', getabstract:'GetAbstract' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
@@ -9557,7 +9597,6 @@ function initMilestonesPanel() {
   ];
   const CAT_COLORS = { pm:'#6b9fd4', biz:'#c9a227', psych:'#68b48a' };
   const CAT_LABELS = { pm:'Product',  biz:'Business', psych:'Psychology' };
-  const RSS2JSON   = 'https://api.rss2json.com/v1/api.json';
   const CACHE_TTL  = 60 * 60 * 1000; // 1 hour
 
   let _items       = [];       // all fetched items merged + sorted
@@ -9568,39 +9607,79 @@ function initMilestonesPanel() {
   let _inited      = false;    // listeners wired?
 
   /* ── Cache helpers ─────────────────────────────────────── */
+  const CACHE_VER = 'v2'; // bump to invalidate old rss2json cache
   function getCached(id) {
     try {
-      const d = JSON.parse(localStorage.getItem('rss_' + id) || 'null');
-      return d && (Date.now() - d.ts < CACHE_TTL) ? d.items : null;
+      const d = JSON.parse(localStorage.getItem('rss2_' + id) || 'null');
+      return d && d.ver === CACHE_VER && (Date.now() - d.ts < CACHE_TTL) ? d.items : null;
     } catch { return null; }
   }
   function setCached(id, items) {
-    try { localStorage.setItem('rss_' + id, JSON.stringify({ ts: Date.now(), items })); } catch {}
+    try { localStorage.setItem('rss2_' + id, JSON.stringify({ ver: CACHE_VER, ts: Date.now(), items })); } catch {}
   }
 
-  /* ── Fetch one source via rss2json ─────────────────────── */
+  /* ── Fetch raw RSS XML via CORS proxies ─────────────────── */
+  async function fetchRawXml(feedUrl) {
+    const proxies = [
+      u => 'https://api.allorigins.win/get?disableCache=true&url=' + encodeURIComponent(u),
+      u => 'https://corsproxy.io/?' + encodeURIComponent(u),
+    ];
+    for (const makeProxy of proxies) {
+      try {
+        const resp = await fetch(makeProxy(feedUrl), { signal: AbortSignal.timeout(12000) });
+        if (!resp.ok) continue;
+        // allorigins wraps in JSON; corsproxy returns raw
+        const ct = resp.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const json = await resp.json();
+          if (json.contents) return json.contents;
+        } else {
+          const text = await resp.text();
+          if (text) return text;
+        }
+      } catch {}
+    }
+    return null;
+  }
+
+  /* ── Parse RSS/Atom XML into item objects ───────────────── */
+  function parseXml(xmlText, src) {
+    const NS = {
+      content: 'http://purl.org/rss/1.0/modules/content/',
+      dc:      'http://purl.org/dc/elements/1.1/',
+    };
+    function getNS(el, ns, local) {
+      return el.getElementsByTagNameNS(ns, local)[0]?.textContent?.trim() || '';
+    }
+    function get(el, tag) {
+      return el.querySelector(tag)?.textContent?.trim() || '';
+    }
+    const xml   = (new DOMParser()).parseFromString(xmlText, 'text/xml');
+    const isAtom = !!xml.querySelector('feed');
+    const entries = [...xml.querySelectorAll(isAtom ? 'entry' : 'item')].slice(0, 20);
+    return entries.map(el => {
+      const link = isAtom
+        ? (el.querySelector('link[rel="alternate"]') || el.querySelector('link'))?.getAttribute('href') || get(el, 'link')
+        : get(el, 'link');
+      const content  = getNS(el, NS.content, 'encoded') || get(el, 'content') || get(el, 'description') || get(el, 'summary');
+      const pubDate  = isAtom ? get(el, 'published') || get(el, 'updated') : get(el, 'pubDate');
+      const rawTitle = isAtom ? get(el, 'title') : get(el, 'title');
+      const title    = rawTitle.replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"');
+      const guid     = get(el, 'guid') || get(el, 'id') || link;
+      const author   = getNS(el, NS.dc, 'creator') || get(el, 'author') || src.label;
+      return { id: guid || (src.id + Math.random()), title, link, pubDate, content, author,
+               thumbnail: null, sourceId: src.id, sourceName: src.label, cat: src.cat, color: src.color };
+    }).filter(i => i.title);
+  }
+
+  /* ── Fetch one source ───────────────────────────────────── */
   async function fetchSource(src) {
     const cached = getCached(src.id);
     if (cached) return cached;
     try {
-      const url = RSS2JSON + '?rss_url=' + encodeURIComponent(src.url) + '&count=20';
-      const resp = await fetch(url, { signal: AbortSignal.timeout(12000) });
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
-      if (data.status !== 'ok') throw new Error(data.message || 'feed error');
-      const items = (data.items || []).map(item => ({
-        id:         item.guid || item.link || (src.id + Math.random()),
-        title:      (item.title || '').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"'),
-        link:       item.link || '',
-        pubDate:    item.pubDate || '',
-        content:    item.content || item.description || '',
-        author:     item.author || src.label,
-        thumbnail:  item.thumbnail || null,
-        sourceId:   src.id,
-        sourceName: src.label,
-        cat:        src.cat,
-        color:      src.color,
-      }));
+      const xml = await fetchRawXml(src.url);
+      if (!xml) throw new Error('all proxies failed');
+      const items = parseXml(xml, src);
       setCached(src.id, items);
       return items;
     } catch(e) {
