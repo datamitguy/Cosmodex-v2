@@ -2949,8 +2949,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   transition: color 200ms; white-space: nowrap; min-width: 140px; text-align: center;
 }
 .plan-switcher-btn.active { color: #1a1612; font-weight: 700; }
-/* Projects panel narrower to give more space to milestone + lists */
-#plan-left-panel { width: 200px; min-width: 200px; }
+/* Projects panel */
+#plan-left-panel { width: 260px; min-width: 260px; }
 /* Milestone panel fills remaining space */
 #plan-ms-panel { flex: 1; min-width: 0; }
 /* Lists panel uses default plan-right-ctx width (280px) */
@@ -5160,8 +5160,9 @@ select.sched-input { background: #181818; }
         <div id="plan-ms-panel" style="display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)">
           <div class="plan-panel-header">
             <span class="plan-panel-label" id="plan-ctx-title">Milestones</span>
-            <div style="margin-left:auto">
+            <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
               <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:5px 11px;display:none">+ Milestone</button>
+              <button id="plan-ms-close" class="plan-panel-toggle" title="Close project view" style="display:none">×</button>
             </div>
           </div>
           <!-- Empty state -->
@@ -8530,13 +8531,15 @@ function showPlanningTimeline(projId) {
   const titleEl = document.getElementById('plan-ctx-title');
   if (titleEl) titleEl.textContent = proj.title;
 
-  // Show "+ Milestone" button in right panel header
+  // Show "+ Milestone" and close buttons in header
   const addBtn = document.getElementById('plan-tl-add-ms');
   if (addBtn) {
     addBtn.style.display = '';
     addBtn.dataset.msAddEvent = projId;
     addBtn.onclick = () => openMsEventModal(projId);
   }
+  const closeBtn = document.getElementById('plan-ms-close');
+  if (closeBtn) closeBtn.style.display = '';
 
   // Switch from empty state to content
   const empty   = document.getElementById('plan-ctx-empty');
@@ -9556,6 +9559,28 @@ function initMilestonesPanel() {
     } catch(e) { console.warn('Plan save error:', e); }
   }
 
+  function closeMilestoneDetail() {
+    // Reset milestone center panel to empty state
+    const empty   = document.getElementById('plan-ctx-empty');
+    const content = document.getElementById('plan-ctx-content');
+    const titleEl = document.getElementById('plan-ctx-title');
+    const addBtn  = document.getElementById('plan-tl-add-ms');
+    const closeBtn = document.getElementById('plan-ms-close');
+    const listsEmpty = document.getElementById('plan-lists-empty');
+    const listsBody  = document.getElementById('plan-tl-lists-body');
+    if (empty)   empty.style.display   = 'flex';
+    if (content) content.style.display = 'none';
+    if (titleEl) titleEl.textContent   = 'Milestones';
+    if (addBtn)  addBtn.style.display  = 'none';
+    if (closeBtn) closeBtn.style.display = 'none';
+    if (listsEmpty) listsEmpty.style.display = 'flex';
+    if (listsBody)  listsBody.style.display  = 'none';
+    // Remove active highlight from all project cards
+    document.querySelectorAll('.plan-left .ms-dash-card-outer').forEach(c => c.classList.remove('ctx-active'));
+    _msView = 'dashboard';
+    _msFocusProj = null;
+  }
+
   function togglePlanPanel(side) {
     const isLeft = side === 'left';
     const panel  = document.getElementById(isLeft ? 'plan-left-panel'  : 'plan-right-panel');
@@ -9602,6 +9627,7 @@ function initMilestonesPanel() {
       document.getElementById('plan-right-toggle')?.addEventListener('click', () => togglePlanPanel('right'));
       document.getElementById('plan-left-expand')?.addEventListener('click',  () => togglePlanPanel('left'));
       document.getElementById('plan-right-expand')?.addEventListener('click', () => togglePlanPanel('right'));
+      document.getElementById('plan-ms-close')?.addEventListener('click', closeMilestoneDetail);
       // View switcher (Projects & Context  ↔  Week & Month)
       document.querySelectorAll('.plan-switcher-btn').forEach(btn => {
         btn.addEventListener('click', function() {
