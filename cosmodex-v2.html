@@ -2960,7 +2960,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
    the collapse width-transition from working). */
 #plan-left-panel { flex-shrink: 0; }
 /* Milestone panel fills remaining space */
-#plan-ms-panel { flex: 1; min-width: 0; }
+#plan-ms-panel { flex: 1; min-width: 0; overflow: hidden; isolation: isolate; }
 /* Lists panel uses default plan-right-ctx width (280px) */
 #plan-right-panel.collapsed { flex-grow: 0; flex-shrink: 0; flex-basis: 0 !important; min-width: 0 !important; width: 0 !important; }
 .plan-widget-label {
@@ -8239,11 +8239,12 @@ function _weekPct(dates, habits) {
    ══════════════════════════════════════════════════════════ */
 async function addMilestoneProject(title, startDate, endDate, color, category='', notes='', missionBrief='', antiGoals='') {
   const { addDoc, serverTimestamp } = window.CDX_FB;
-  await addDoc(_uc('milestoneProjects'),
+  const ref = await addDoc(_uc('milestoneProjects'),
     { title, startDate, endDate, color, category: category||null, notes: notes||'',
       missionBrief: missionBrief||null, antiGoals: antiGoals||null,
       isArchived: false,
       createdAt: serverTimestamp() });
+  return ref;
 }
 
 async function updateMilestoneProject(id, data) {
@@ -8982,14 +8983,16 @@ function initMilestonesPanel() {
     const notes       = document.getElementById('ms-proj-notes')?.value.trim() || '';
     const missionBrief = document.getElementById('ms-proj-mission')?.value.trim() || '';
     const antiGoals   = document.getElementById('ms-proj-antigoals')?.value.trim() || '';
-    if (!title || !start || !end) return;
+    if (!title || !start || !end) { showToast('Title, Start Date, and End Date are required.', 'error'); return; }
     try {
       if (_msProjEdit) {
         await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes, missionBrief: missionBrief||null, antiGoals: antiGoals||null });
+        closeOverlay('ms-project-modal');
       } else {
-        await addMilestoneProject(title, start, end, color, category, notes, missionBrief, antiGoals);
+        const newRef = await addMilestoneProject(title, start, end, color, category, notes, missionBrief, antiGoals);
+        closeOverlay('ms-project-modal');
+        if (newRef?.id) { _msView = 'timeline'; _msFocusProj = newRef.id; showPlanningTimeline(newRef.id); }
       }
-      closeOverlay('ms-project-modal');
     } catch (err) {
       console.error('Failed to save initiative:', err);
       showToast('Failed to save initiative', 'error');
@@ -12894,6 +12897,8 @@ function closeOverlay(id) {
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-close]');
   if (btn) { closeOverlay(btn.dataset.close); return; }
+  // Don't close on modifier+click (e.g. Ctrl+click for text selection)
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
   const overlay = e.target;
   if (overlay.classList?.contains('overlay') && overlay.classList.contains('open')) {
     if (overlay.id === 'pomo-overlay') {
@@ -13112,11 +13117,12 @@ document.addEventListener('keydown', e => {
     document.getElementById('task-add-input')?.focus();
     return;
   }
-  // Cmd/Ctrl+Space — command palette
+  // Cmd/Ctrl+Space — command palette (skip if a modal overlay is already open)
   if ((e.metaKey || e.ctrlKey) && e.key === ' ') {
     e.preventDefault();
     const pal = document.getElementById('cmd-palette');
-    pal.classList.contains('open') ? closeCmdPalette() : openCmdPalette();
+    if (pal.classList.contains('open')) { closeCmdPalette(); }
+    else if (!document.querySelector('.overlay.open')) { openCmdPalette(); }
   }
   // ESC — close topmost open thing
   if (e.key === 'Escape') {
@@ -13420,6 +13426,7 @@ function openDailyRitual() {
   const today = localDateStr(new Date());
   const last = localStorage.getItem('cdx_ritual_date');
   if (last === today) return; // already shown today
+  if (document.querySelector('.overlay.open')) return; // don't bury active modals
 
   const overlay = document.getElementById('ritual-overlay');
   if (!overlay) return;
