@@ -5136,7 +5136,7 @@ select.sched-input { background: #181818; }
     </div>
 
     <!-- Milestones Panel (shown via Planning nav item) -->
-    <div id="panel-milestones" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+    <div id="panel-milestones" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden">
       <!-- View switcher -->
       <div class="plan-switcher-bar">
         <div class="plan-switcher-track">
@@ -5180,7 +5180,7 @@ select.sched-input { background: #181818; }
             <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center;padding:20px">Click a project<br>to view milestones</span>
           </div>
           <!-- Content: milestone timeline -->
-          <div id="plan-ctx-content" style="flex:1;flex-direction:column;overflow:hidden;display:none">
+          <div id="plan-ctx-content" style="flex:1;min-height:0;flex-direction:column;overflow:hidden;display:none">
             <div id="plan-tl-body" style="flex:1;overflow-y:auto;padding:12px 14px"></div>
           </div>
         </div>
@@ -6228,7 +6228,7 @@ select.sched-input { background: #181818; }
 
 <!-- Milestone: Add/Edit Event Modal -->
 <div class="overlay" id="ms-event-modal" style="z-index:860">
-  <div class="overlay-panel" style="width:min(520px,92vw);max-height:90dvh;overflow-y:auto" onclick="event.stopPropagation()">
+  <div class="overlay-panel" style="width:min(520px,92vw);max-height:90dvh;overflow-y:auto">
     <div class="overlay-header">
       <span class="overlay-title" id="ms-event-modal-title">New Milestone</span>
       <button class="overlay-close" data-close="ms-event-modal">✕</button>
