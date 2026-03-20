@@ -2405,23 +2405,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   gap: 20px;
   padding: 24px;
 }
-/* When inside the narrow planning-left column, cards are single-column */
-.planning-left .ms-dash-grid {
-  grid-template-columns: 1fr;
-  gap: 10px;
-  padding: 12px;
-}
-/* Compact card style for left panel */
-.planning-left .ms-dash-card-inner {
-  padding: 14px 14px 12px;
-  gap: 8px;
-}
-.planning-left .ms-dash-card-title {
-  font-size: 14px;
-}
-.planning-left .ms-dash-pct-label {
-  font-size: 16px;
-}
 /* Milestone list inside card */
 .ms-card-milestones {
   display: flex;
@@ -2800,55 +2783,105 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 
 /* ── Planning two-panel layout ──────────────────────── */
-.planning-split {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-}
-.planning-left {
-  width: 30%;
-  min-width: 220px;
-  max-width: 360px;
+/* ── 3-column planning layout ───────────────────────── */
+.plan-layout { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.plan-left {
+  width: 260px; min-width: 260px;
   border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              opacity 0.28s ease;
 }
-.planning-right {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
+.plan-left.collapsed { width: 0; min-width: 0; opacity: 0; border-right-color: transparent; }
+.plan-left-rail {
+  width: 0; min-width: 0; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+  border-right: 1px solid transparent;
+  transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  padding-top: 8px; gap: 8px;
 }
-.planning-right-tabs {
-  display: flex;
-  align-items: stretch;
-  padding: 0 16px;
-  gap: 4px;
-  height: 38px;
-  min-height: 38px;
+.plan-left-rail.visible { width: 36px; min-width: 36px; border-right-color: var(--border); }
+.plan-center { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.plan-center-tabs {
+  display: flex; align-items: stretch; padding: 0 16px; gap: 4px;
+  height: 38px; min-height: 38px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(14,14,14,0.5); flex-shrink: 0;
+}
+.plan-center-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--muted); cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0 12px; transition: color 150ms, border-color 150ms;
+}
+.plan-center-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.plan-center-tab:hover:not(.active) { color: var(--cream); }
+.plan-right-ctx {
+  width: 280px; min-width: 280px;
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              opacity 0.28s ease;
+}
+.plan-right-ctx.collapsed { width: 0; min-width: 0; opacity: 0; border-left-color: transparent; }
+.plan-right-rail {
+  width: 0; min-width: 0; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+  border-left: 1px solid transparent;
+  transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  padding-top: 8px; gap: 8px;
+}
+.plan-right-rail.visible { width: 36px; min-width: 36px; border-left-color: var(--border); }
+.plan-panel-header {
+  height: 38px; min-height: 38px; flex-shrink: 0;
+  display: flex; align-items: center;
+  padding: 0 10px 0 14px; gap: 8px;
   border-bottom: 1px solid var(--border);
   background: rgba(14,14,14,0.5);
-  flex-shrink: 0;
 }
-.planning-right-tab {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 0 12px;
-  transition: color 150ms, border-color 150ms;
+.plan-panel-label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--muted); white-space: nowrap;
 }
-.planning-right-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-.planning-right-tab:hover:not(.active) { color: var(--cream); }
+.plan-panel-toggle {
+  background: none; border: 1px solid var(--border);
+  border-radius: 4px; color: var(--muted); cursor: pointer;
+  font-size: 12px; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--ease-fast); flex-shrink: 0; line-height: 1;
+}
+.plan-panel-toggle:hover { color: var(--cream); border-color: var(--gold-dim); }
+.plan-rail-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: 4px; color: var(--muted); cursor: pointer;
+  font-size: 12px; width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--ease-fast);
+}
+.plan-rail-btn:hover { color: var(--cream); border-color: var(--gold-dim); }
+.plan-rail-label {
+  font-family: var(--font-mono); font-size: 8px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--muted); writing-mode: vertical-rl;
+  transform: rotate(180deg); white-space: nowrap;
+}
+.plan-left .ms-dash-grid { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
+.plan-left .ms-dash-card-inner { padding: 12px 12px 10px; gap: 8px; }
+.plan-left .ms-dash-card-title { font-size: 13px; }
+.plan-left .ms-dash-pct-label  { font-size: 15px; }
+.plan-left .ms-dash-card-outer.ctx-active {
+  box-shadow: 0 0 0 1.5px var(--gold-dim), 0 10px 40px rgba(0,0,0,0.65);
+}
 .planning-right-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+@media (max-width: 768px) {
+  .plan-left, .plan-left-rail, .plan-right-ctx, .plan-right-rail { display: none; }
+}
 .plan-widget-label {
   font-family: var(--font-mono);
   font-size: 9px;
@@ -4715,22 +4748,28 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 
     <!-- Milestones Panel (shown via Planning nav item) -->
     <div id="panel-milestones" style="display:none;flex:1;flex-direction:column;overflow:hidden">
-      <div class="planning-split">
-        <!-- Left: initiative cards (30%) -->
-        <div class="planning-left">
-          <div class="panel-toolbar" style="height:46px;padding:0 16px;flex-shrink:0">
-            <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Planning</span>
-            <div style="margin-left:auto">
-              <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:6px 12px">+ New</button>
+      <div class="plan-layout">
+        <!-- LEFT PANEL: Project cards -->
+        <div class="plan-left" id="plan-left-panel">
+          <div class="plan-panel-header">
+            <span class="plan-panel-label">Projects</span>
+            <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
+              <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:5px 11px">+ New</button>
+              <button class="plan-panel-toggle" id="plan-left-toggle" title="Collapse">‹</button>
             </div>
           </div>
-          <div id="milestones-body" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px"></div>
+          <div id="milestones-body" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px"></div>
         </div>
-        <!-- Right: planning widgets (70%) -->
-        <div class="planning-right">
-          <div class="planning-right-tabs">
-            <button class="planning-right-tab active" data-ptab="week">Week</button>
-            <button class="planning-right-tab" data-ptab="month">Month</button>
+        <!-- Left collapsed rail -->
+        <div class="plan-left-rail" id="plan-left-rail">
+          <button class="plan-rail-btn" id="plan-left-expand" title="Expand projects">›</button>
+          <span class="plan-rail-label">Projects</span>
+        </div>
+        <!-- CENTER: Week / Month workspace -->
+        <div class="plan-center" id="plan-center-panel">
+          <div class="plan-center-tabs">
+            <button class="plan-center-tab active" data-ptab="week">Week</button>
+            <button class="plan-center-tab" data-ptab="month">Month</button>
           </div>
           <!-- Week pane -->
           <div id="plan-right-week" class="planning-right-body">
@@ -4760,25 +4799,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
               </div>
             </div>
           </div>
-          <!-- Timeline pane (shown when card clicked) -->
-          <div id="plan-right-timeline" style="display:none;flex:1;flex-direction:row;overflow:hidden">
-            <!-- Main timeline column -->
-            <div id="plan-tl-main" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
-              <div id="plan-tl-header" style="display:flex;align-items:center;padding:12px 24px;border-bottom:1px solid var(--border);flex-shrink:0;gap:10px">
-                <button id="plan-tl-back" class="btn-ghost" style="font-size:10px;padding:5px 12px">← Back</button>
-                <span id="plan-tl-title" style="font-family:var(--font-display);font-size:15px;font-weight:300;color:var(--cream);flex:1"></span>
-                <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:6px 12px">+ Milestone</button>
-              </div>
-              <div id="plan-tl-body" style="flex:1;overflow-y:auto"></div>
-            </div>
-            <!-- Lists side panel -->
-            <div id="plan-tl-lists" style="width:230px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden">
-              <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-                <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">Lists</span>
-              </div>
-              <div id="plan-tl-lists-body" style="flex:1;overflow-y:auto;padding:10px 10px 16px"></div>
-            </div>
-          </div>
           <!-- Month pane -->
           <div id="plan-right-month" class="planning-right-body" style="display:none">
             <div class="plan-month-nav">
@@ -4802,6 +4822,33 @@ textarea.form-input { resize: vertical; min-height: 60px; }
               </div>
             </div>
           </div>
+        </div>
+        <!-- RIGHT PANEL: Project context (milestones + lists) -->
+        <div class="plan-right-ctx" id="plan-right-panel">
+          <div class="plan-panel-header">
+            <span class="plan-panel-label" id="plan-ctx-title">Context</span>
+            <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
+              <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:5px 11px;display:none">+ Milestone</button>
+              <button class="plan-panel-toggle" id="plan-right-toggle" title="Collapse">›</button>
+            </div>
+          </div>
+          <!-- Empty state -->
+          <div id="plan-ctx-empty" style="flex:1;display:flex;align-items:center;justify-content:center">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center;padding:20px">Click a project<br>to view context</span>
+          </div>
+          <!-- Content: timeline + lists -->
+          <div id="plan-ctx-content" style="flex:1;flex-direction:column;overflow:hidden;display:none">
+            <div id="plan-tl-body" style="flex:1;overflow-y:auto;padding:12px 14px"></div>
+            <div style="border-top:1px solid var(--border);flex-shrink:0">
+              <div style="padding:8px 12px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);text-transform:uppercase">Lists</div>
+              <div id="plan-tl-lists-body" style="overflow-y:auto;max-height:220px;padding:0 10px 12px"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Right collapsed rail -->
+        <div class="plan-right-rail" id="plan-right-rail">
+          <button class="plan-rail-btn" id="plan-right-expand" title="Expand context">‹</button>
+          <span class="plan-rail-label">Context</span>
         </div>
       </div>
     </div>
@@ -6342,6 +6389,8 @@ let _msNewActivities   = [];
 let _mainPanel         = 'default';  // 'default' | 'milestones'
 let _msView            = 'dashboard'; // 'dashboard' | 'timeline'
 let _msFocusProj       = null;        // project id when in timeline view
+let _planLeftCollapsed  = localStorage.getItem('cosmodex_plan_left_collapsed')  === '1';
+let _planRightCollapsed = localStorage.getItem('cosmodex_plan_right_collapsed') === '1';
 
 let _settings = JSON.parse(localStorage.getItem('cdx_v2_settings') || 'null') || {
   visibleCategories: Object.keys(CATEGORIES),
@@ -7876,7 +7925,6 @@ function updateMilestoneToolbar() {
 
 /* ── Dashboard: card grid ────────────────────────────── */
 function renderMilestoneDashboard() {
-  updateMilestoneToolbar();
   const body = document.getElementById('milestones-body');
   if (!body) return;
 
@@ -8018,30 +8066,34 @@ function renderMilestoneDashboard() {
 function showPlanningTimeline(projId) {
   const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
   if (!proj) return;
-  // Hide week/month panes and tabs; show timeline container
-  document.getElementById('plan-right-week').style.display     = 'none';
-  document.getElementById('plan-right-month').style.display    = 'none';
-  document.querySelector('.planning-right-tabs').style.display = 'none';
-  const tl = document.getElementById('plan-right-timeline');
-  tl.style.display = 'flex';
-  document.getElementById('plan-tl-title').textContent = proj.title;
+
+  // Update right panel header title
+  const titleEl = document.getElementById('plan-ctx-title');
+  if (titleEl) titleEl.textContent = proj.title;
+
+  // Show "+ Milestone" button in right panel header
   const addBtn = document.getElementById('plan-tl-add-ms');
   if (addBtn) {
+    addBtn.style.display = '';
     addBtn.dataset.msAddEvent = projId;
     addBtn.onclick = () => openMsEventModal(projId);
   }
-  const backBtn = document.getElementById('plan-tl-back');
-  if (backBtn) {
-    backBtn.onclick = () => {
-      _msView = 'dashboard'; _msFocusProj = null;
-      tl.style.display = 'none';
-      document.querySelector('.planning-right-tabs').style.display = '';
-      // Restore the active tab pane
-      const activeTab = document.querySelector('.planning-right-tab.active')?.dataset.ptab || 'week';
-      document.getElementById('plan-right-week').style.display     = activeTab === 'week'  ? '' : 'none';
-      document.getElementById('plan-right-month').style.display    = activeTab === 'month' ? '' : 'none';
-    };
-  }
+
+  // Switch from empty state to content
+  const empty   = document.getElementById('plan-ctx-empty');
+  const content = document.getElementById('plan-ctx-content');
+  if (empty)   empty.style.display   = 'none';
+  if (content) content.style.display = 'flex';
+
+  // Highlight active card in left panel
+  document.querySelectorAll('.plan-left .ms-dash-card-outer').forEach(c => {
+    c.classList.toggle('ctx-active', c.dataset.msDashCard === projId);
+  });
+
+  // Auto-expand right panel if collapsed
+  if (_planRightCollapsed) togglePlanPanel('right');
+
+  // Render content
   renderMilestoneTimeline(projId);
   ensureMilestoneList(projId, proj.title).then(() => renderMilestoneListsPanel(projId));
 }
@@ -8839,7 +8891,7 @@ function initMilestonesPanel() {
   }
 
   function switchPlanRightTab(tab) {
-    document.querySelectorAll('.planning-right-tab').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
+    document.querySelectorAll('.plan-center-tab').forEach(b => b.classList.toggle('active', b.dataset.ptab === tab));
     document.getElementById('plan-right-week').style.display  = tab === 'week'  ? '' : 'none';
     document.getElementById('plan-right-month').style.display = tab === 'month' ? '' : 'none';
     if (tab === 'week')  buildWeekPlan();
@@ -9091,12 +9143,38 @@ function initMilestonesPanel() {
     } catch(e) { console.warn('Plan save error:', e); }
   }
 
+  function togglePlanPanel(side) {
+    const isLeft = side === 'left';
+    const panel  = document.getElementById(isLeft ? 'plan-left-panel'  : 'plan-right-panel');
+    const rail   = document.getElementById(isLeft ? 'plan-left-rail'   : 'plan-right-rail');
+    const toggle = document.getElementById(isLeft ? 'plan-left-toggle' : 'plan-right-toggle');
+    const nowCollapsed = panel.classList.toggle('collapsed');
+    rail.classList.toggle('visible', nowCollapsed);
+    if (toggle) toggle.textContent = isLeft ? (nowCollapsed ? '›' : '‹') : (nowCollapsed ? '‹' : '›');
+    const key = isLeft ? 'cosmodex_plan_left_collapsed' : 'cosmodex_plan_right_collapsed';
+    localStorage.setItem(key, nowCollapsed ? '1' : '0');
+    if (isLeft) _planLeftCollapsed = nowCollapsed; else _planRightCollapsed = nowCollapsed;
+  }
+
+  function restorePlanPanelStates() {
+    if (_planLeftCollapsed) {
+      document.getElementById('plan-left-panel')?.classList.add('collapsed');
+      document.getElementById('plan-left-rail')?.classList.add('visible');
+      const t = document.getElementById('plan-left-toggle'); if (t) t.textContent = '›';
+    }
+    if (_planRightCollapsed) {
+      document.getElementById('plan-right-panel')?.classList.add('collapsed');
+      document.getElementById('plan-right-rail')?.classList.add('visible');
+      const t = document.getElementById('plan-right-toggle'); if (t) t.textContent = '‹';
+    }
+  }
+
   // Wire up tabs + nav buttons once, auto-build on first open
   let _planWidgetsInited = false;
   window.initPlanningWidgets = function() {
     if (!_planWidgetsInited) {
       _planWidgetsInited = true;
-      document.querySelectorAll('.planning-right-tab').forEach(btn => {
+      document.querySelectorAll('.plan-center-tab').forEach(btn => {
         btn.addEventListener('click', () => switchPlanRightTab(btn.dataset.ptab));
       });
       document.getElementById('plan-week-prev')?.addEventListener('click', () => { _planWeekOffset--; buildWeekPlan(); });
@@ -9106,6 +9184,12 @@ function initMilestonesPanel() {
       document.getElementById('plan-month-next')?.addEventListener('click', () => { _planMonthOffset++; buildMonthPlan(); });
       document.getElementById('plan-month-today')?.addEventListener('click', () => { _planMonthOffset = 0; buildMonthPlan(); });
       document.getElementById('plan-add-month-ms')?.addEventListener('click', addPlanMonthMilestone);
+      document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
+      document.getElementById('plan-left-toggle')?.addEventListener('click',  () => togglePlanPanel('left'));
+      document.getElementById('plan-right-toggle')?.addEventListener('click', () => togglePlanPanel('right'));
+      document.getElementById('plan-left-expand')?.addEventListener('click',  () => togglePlanPanel('left'));
+      document.getElementById('plan-right-expand')?.addEventListener('click', () => togglePlanPanel('right'));
+      restorePlanPanelStates();
     }
     buildWeekPlan(); // refresh data each time panel opens
   };
