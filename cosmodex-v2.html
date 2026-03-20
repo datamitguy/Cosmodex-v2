@@ -8382,7 +8382,28 @@ function renderMilestones() {
   // Always show dashboard in left panel; timeline (if active) in right panel
   renderMilestoneDashboard();
   if (_msView === 'timeline' && _msFocusProj) {
-    showPlanningTimeline(_msFocusProj);
+    if (MILESTONE_PROJECTS.find(p => p.id === _msFocusProj)) {
+      showPlanningTimeline(_msFocusProj);
+    } else {
+      // Focused project was deleted — reset panel to empty state
+      _msView = 'dashboard';
+      _msFocusProj = null;
+      const empty   = document.getElementById('plan-ctx-empty');
+      const content = document.getElementById('plan-ctx-content');
+      if (empty)   empty.style.display   = 'flex';
+      if (content) content.style.display = 'none';
+      const titleEl = document.getElementById('plan-ctx-title');
+      if (titleEl) titleEl.textContent = 'Milestones';
+      ['plan-tl-add-ms', 'plan-edit-proj', 'plan-ms-close'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      const listsEmpty = document.getElementById('plan-lists-empty');
+      const listsBody  = document.getElementById('plan-tl-lists-body');
+      if (listsEmpty) listsEmpty.style.display = 'flex';
+      if (listsBody)  listsBody.style.display  = 'none';
+      document.querySelectorAll('.plan-left .ms-dash-card-outer').forEach(c => c.classList.remove('ctx-active'));
+    }
   }
 }
 
