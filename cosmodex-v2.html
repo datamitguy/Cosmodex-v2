@@ -2959,7 +2959,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
    of an ID selector beats a two-class selector, which was preventing
    the collapse width-transition from working). */
 #plan-left-panel { flex-shrink: 0; }
-#plan-left-panel.ms-expanded { flex: 1; width: auto !important; min-width: 0 !important; }
 /* Milestone panel fills remaining space */
 #plan-ms-panel { flex: 1; min-width: 0; overflow: hidden; isolation: isolate; }
 /* Lists panel uses default plan-right-ctx width (280px) */
@@ -5167,7 +5166,7 @@ select.sched-input { background: #181818; }
           <span class="plan-rail-label">Projects</span>
         </div>
         <!-- Panel 2: Milestone timeline (center, fills remaining space) -->
-        <div id="plan-ms-panel" style="display:none;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)">
+        <div id="plan-ms-panel" style="display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)">
           <div class="plan-panel-header">
             <span class="plan-panel-label" id="plan-ctx-title">Milestones</span>
             <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
@@ -8386,16 +8385,7 @@ function renderMilestones() {
   renderMilestoneDashboard();
   // Only manage timeline/center-panel state when actually on the Planning panel
   if (_mainPanel !== 'milestones') return;
-  if (_msView === 'lists' && _msFocusProj) {
-    if (MILESTONE_PROJECTS.find(p => p.id === _msFocusProj)) {
-      selectProjectForLists(_msFocusProj);
-    } else {
-      _msView = 'dashboard';
-      _msFocusProj = null;
-      document.getElementById('plan-left-panel')?.classList.add('ms-expanded');
-      document.getElementById('plan-ms-panel').style.display = 'none';
-    }
-  } else if (_msView === 'timeline' && _msFocusProj) {
+  if (_msView === 'timeline' && _msFocusProj) {
     if (MILESTONE_PROJECTS.find(p => p.id === _msFocusProj)) {
       showPlanningTimeline(_msFocusProj);
     } else {
@@ -8500,7 +8490,7 @@ function renderMilestoneDashboard() {
             <div class="ms-dash-acts-label">${doneActs} / ${totalActs} tasks done</div>
           </div>
           <div style="text-align:right;display:flex;align-items:center;gap:8px">
-            <div class="ms-dash-milestones-count" data-ms-view-tl="${proj.id}" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px" title="View timeline">${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
+            <div class="ms-dash-milestones-count">${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
             <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
           </div>
         </div>
@@ -8511,20 +8501,11 @@ function renderMilestoneDashboard() {
   if (activeProjs.length) body.appendChild(grid);
   else body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">All initiatives archived.</div>`;
 
-  // Card click → show lists in right panel
   grid.querySelectorAll('[data-ms-dash-card]').forEach(card => {
     card.addEventListener('click', e => {
       if (e.target.closest('button')) return;
-      selectProjectForLists(card.dataset.msDashCard);
-    });
-  });
-
-  // Milestone count badge click → open timeline
-  grid.querySelectorAll('[data-ms-view-tl]').forEach(badge => {
-    badge.addEventListener('click', e => {
-      e.stopPropagation();
       _msView = 'timeline';
-      _msFocusProj = badge.dataset.msViewTl;
+      _msFocusProj = card.dataset.msDashCard;
       showPlanningTimeline(_msFocusProj);
     });
   });
@@ -8586,46 +8567,9 @@ function showArchivedProjectsOverlay() {
   });
 }
 
-function selectProjectForLists(projId) {
-  const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
-  if (!proj) return;
-
-  _msView = 'lists';
-  _msFocusProj = projId;
-
-  // Hide center panel, expand left panel
-  const centerPanel = document.getElementById('plan-ms-panel');
-  const leftPanel   = document.getElementById('plan-left-panel');
-  if (centerPanel) centerPanel.style.display = 'none';
-  if (leftPanel)   leftPanel.classList.add('ms-expanded');
-
-  // Show lists body, hide empty state
-  const listsEmpty = document.getElementById('plan-lists-empty');
-  const listsBody  = document.getElementById('plan-tl-lists-body');
-  if (listsEmpty) listsEmpty.style.display = 'none';
-  if (listsBody)  listsBody.style.display  = '';
-
-  // Highlight active card
-  document.querySelectorAll('.plan-left .ms-dash-card-outer').forEach(c => {
-    c.classList.toggle('ctx-active', c.dataset.msDashCard === projId);
-  });
-
-  // Auto-expand right panel if collapsed
-  if (_planRightCollapsed) togglePlanPanel('right');
-
-  // Render lists
-  ensureMilestoneList(projId, proj.title).then(() => renderMilestoneListsPanel(projId));
-}
-
 function showPlanningTimeline(projId) {
   const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
   if (!proj) return;
-
-  // Show center panel, restore left panel to fixed width
-  const centerPanel = document.getElementById('plan-ms-panel');
-  const leftPanel   = document.getElementById('plan-left-panel');
-  if (centerPanel) centerPanel.style.display = 'flex';
-  if (leftPanel)   leftPanel.classList.remove('ms-expanded');
 
   // Update right panel header title
   const titleEl = document.getElementById('plan-ctx-title');
@@ -8682,18 +8626,19 @@ function renderMilestoneListsPanel(projId) {
     return;
   }
 
-  const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
-  const accentColor = proj?.color || 'var(--gold)';
   const items = ml.items || [];
-
+  const doneCount = items.filter(i => i.done).length;
   body.innerHTML = `
     <div style="padding:6px 0 8px">
-      <div id="ms-items-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${doneCount}/${items.length} done</span>
+      </div>
+      <div id="ms-items-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
         ${items.map(item => `
-          <div style="display:flex;align-items:flex-start;gap:7px">
-            <span style="flex-shrink:0;color:${accentColor};font-size:8px;margin-top:5px;line-height:1">◆</span>
-            <span style="font-size:12px;color:var(--cream);flex:1;line-height:1.5;word-break:break-word">${escHtml(item.text)}</span>
-            <button data-ms-del="${item.id}" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;flex-shrink:0;opacity:0.5">×</button>
+          <div style="display:flex;align-items:flex-start;gap:5px">
+            <input type="checkbox" data-ms-toggle="${item.id}" ${item.done ? 'checked' : ''} style="cursor:pointer;accent-color:var(--gold);flex-shrink:0;margin-top:3px">
+            <span style="font-size:11px;color:${item.done ? 'var(--muted)' : 'var(--cream)'};flex:1;${item.done ? 'text-decoration:line-through' : ''};line-height:1.4;word-break:break-word">${escHtml(item.text)}</span>
+            <button data-ms-del="${item.id}" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;flex-shrink:0">×</button>
           </div>
         `).join('')}
       </div>
@@ -8709,6 +8654,10 @@ function renderMilestoneListsPanel(projId) {
   });
   inp.addEventListener('keydown', async e => {
     if (e.key === 'Enter' && inp.value.trim()) { await addMilestoneItem(projId, inp.value.trim()); inp.value = ''; }
+  });
+
+  body.querySelectorAll('[data-ms-toggle]').forEach(cb => {
+    cb.addEventListener('change', () => toggleMilestoneItem(projId, cb.dataset.msToggle));
   });
 
   body.querySelectorAll('[data-ms-del]').forEach(btn => {
@@ -9672,12 +9621,6 @@ function initMilestonesPanel() {
   }
 
   function closeMilestoneDetail() {
-    // Hide center panel, expand left panel
-    const centerPanel = document.getElementById('plan-ms-panel');
-    const leftPanel   = document.getElementById('plan-left-panel');
-    if (centerPanel) centerPanel.style.display = 'none';
-    if (leftPanel)   leftPanel.classList.add('ms-expanded');
-
     // Reset milestone center panel to empty state
     const empty   = document.getElementById('plan-ctx-empty');
     const content = document.getElementById('plan-ctx-content');
@@ -9761,12 +9704,6 @@ function initMilestonesPanel() {
         });
       });
       restorePlanPanelStates();
-      // Default: no timeline open, expand left panel to fill space
-      if (!_msFocusProj || _msView === 'dashboard') {
-        document.getElementById('plan-left-panel')?.classList.add('ms-expanded');
-        const cp = document.getElementById('plan-ms-panel');
-        if (cp) cp.style.display = 'none';
-      }
     }
     buildWeekPlan(); // refresh data each time panel opens
   };
@@ -10679,7 +10616,7 @@ function initData() {
 
   onSnapshot(_uc('milestone_lists'), snap => {
     MILESTONE_LISTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (_mainPanel === 'milestones' && (_msView === 'timeline' || _msView === 'lists') && _msFocusProj) renderMilestoneListsPanel(_msFocusProj);
+    if (_mainPanel === 'milestones' && _msView === 'timeline' && _msFocusProj) renderMilestoneListsPanel(_msFocusProj);
   });
 
   seedHolidays();
