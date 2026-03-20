@@ -8381,6 +8381,8 @@ function msDateToPercent(dateStr, startDate, endDate) {
 function renderMilestones() {
   // Always show dashboard in left panel; timeline (if active) in right panel
   renderMilestoneDashboard();
+  // Only manage timeline/center-panel state when actually on the Planning panel
+  if (_mainPanel !== 'milestones') return;
   if (_msView === 'timeline' && _msFocusProj) {
     if (MILESTONE_PROJECTS.find(p => p.id === _msFocusProj)) {
       showPlanningTimeline(_msFocusProj);
@@ -8666,7 +8668,7 @@ function renderMilestoneListsPanel(projId) {
 /* ── Timeline: single-project alternating view ────────── */
 function renderMilestoneTimeline(projId) {
   // Render into right panel timeline body (new two-panel layout)
-  const body = document.getElementById('plan-tl-body') || document.getElementById('milestones-body');
+  const body = document.getElementById('plan-tl-body');
   if (!body) return;
   const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
   if (!proj) { _msView = 'dashboard'; renderMilestoneDashboard(); return; }
