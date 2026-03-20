@@ -9590,6 +9590,7 @@ function initMilestonesPanel() {
     _planSaveTimer = setTimeout(() => savePlanData(tab, key), 800);
   }
   window._schedulePlanSave = scheduleSave;
+  window.togglePlanPanel = togglePlanPanel;
 
   async function savePlanData(tab, key) {
     const uid = window.CDX_USER?.uid;
