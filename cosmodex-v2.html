@@ -66,13 +66,13 @@
 :root {
   /* Backgrounds — pure black base; surface used for left nav to differentiate */
   --bg:          #000000;
-  --surface:     rgba(255,255,255,0.032);
-  --elevated:    rgba(255,255,255,0.07);
-  --border:      rgba(255,255,255,0.09);
+  --surface:     rgba(255,255,255,0.05);
+  --elevated:    rgba(255,255,255,0.09);
+  --border:      rgba(255,255,255,0.13);
 
   /* Text — white transparency hierarchy */
   --cream:       rgba(255,255,255,0.88);   /* body text */
-  --muted:       rgba(255,255,255,0.40);   /* secondary / labels */
+  --muted:       rgba(255,255,255,0.50);   /* secondary / labels */
   --muted-readable: rgba(255,255,255,0.65); /* readable secondary */
   --ink:         #000000;
 
@@ -116,11 +116,21 @@ button:focus:not(:focus-visible) { outline: none; }
 
 html { font-size:16px; -webkit-font-smoothing:antialiased; }
 
+/* ── Global scrollbar ───────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.26); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+
+/* ── Global placeholder ─────────────────────────────── */
+::placeholder { color: rgba(255,255,255,0.32); }
+
 body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--cream);
-  text-shadow: 0 0 18px rgba(255,255,255,0.06);
+  line-height: 1.6;
   height: 100dvh;
   overflow: hidden;
   display: flex;
@@ -264,13 +274,12 @@ body::after {
 
 .nav-section-label {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.2em;
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.70);
+  color: rgba(255,255,255,0.52);
   padding: 4px 10px 6px;
   white-space: nowrap;
-  text-shadow: 0 0 12px rgba(255,255,255,0.40);
 }
 
 .nav-item {
@@ -287,17 +296,16 @@ body::after {
   color: rgba(255,255,255,0.92);
   font-family: var(--font-body);
   font-size: 13px;
+  line-height: 1.4;
   user-select: none;
   border-left: 2px solid transparent;
   margin-bottom: 1px;
-  text-shadow: 0 0 12px rgba(255,255,255,0.28);
 }
 
 .nav-item:hover {
   background: rgba(255,255,255,0.06);
   color: #ffffff;
   border-left-color: rgba(255,255,255,0.3);
-  text-shadow: 0 0 14px rgba(255,255,255,0.4);
 }
 
 .nav-item.active {
@@ -517,14 +525,14 @@ body::after {
 }
 
 .panel-toolbar {
-  height: 38px;
-  min-height: 38px;
+  height: 40px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 16px;
   border-bottom: 1px solid var(--border);
-  background: rgba(14,14,14,0.5);
+  background: rgba(255,255,255,0.03);
 }
 
 .view-tabs {
@@ -595,15 +603,13 @@ body::after {
   flex: 1;
   overflow-y: auto;
   position: relative;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
 }
 
 .cal-hour-row {
   display: flex;
   min-height: 60px;
   height: 60px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   position: relative;
   background: var(--bg);
 }
@@ -772,8 +778,6 @@ body::after {
   flex: 1;
   overflow-y: auto;
   padding: 10px 0;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
 }
 
 .tasks-group-label {
@@ -987,9 +991,10 @@ body::after {
 }
 
 .task-add-input {
-  background: var(--surface); border: 1px solid var(--border);
+  background: rgba(255,255,255,0.09); border: 1px solid var(--border);
   border-radius: 8px; padding: 8px 12px;
   font-family: var(--font-body); font-size: 13px; color: var(--cream);
+  line-height: 1.5;
   outline: none; width: 100%;
 }
 .task-add-input:focus { border-color: var(--gold); }
@@ -2071,7 +2076,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 400;
-  color: rgba(232,224,208,0.95);
+  color: var(--cream);
   line-height: 1.3;
   word-break: break-word;
 }
@@ -2079,15 +2084,15 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.1em;
-  color: rgba(232,224,208,0.5);
+  color: rgba(255,255,255,0.50);
   margin-top: 12px;
   text-transform: uppercase;
 }
 
 /* ═══ LISTS PAGE ════════════════════════════════════════ */
 .list-sidebar-card {
-  padding: 12px 14px;
-  border-radius: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s, border-left-color 0.15s;
   border-left: 3px solid transparent;
@@ -2179,7 +2184,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgba(255,255,255,0.50);
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -2201,8 +2206,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   display: flex;
   flex-direction: column;
   gap: 32px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
   max-width: 860px;
   width: 100%;
   margin: 0 auto;
@@ -2224,7 +2227,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .habits-v2-section-desc {
   font-family: var(--font-body);
   font-size: 12px;
-  color: var(--muted);
+  color: rgba(255,255,255,0.52);
   margin-top: -6px;
 }
 
@@ -2257,7 +2260,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   gap: 4px;
   align-items: center;
   padding: 6px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   animation: fadeUp 0.3s forwards;
   opacity: 0;
 }
@@ -2276,14 +2279,15 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   width: 28px; height: 28px;
   margin: 0 auto;
   border-radius: 6px;
-  border: 1.5px solid var(--border);
+  border: 1.5px solid rgba(255,255,255,0.18);
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   font-size: 12px;
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
   color: white;
 }
-.habit-check-v2:hover { border-color: var(--gold); transform: scale(1.05); }
+.habit-check-v2:hover:not(.done) { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.06); transform: scale(1.05); }
+.habit-check-v2:hover { transform: scale(1.05); }
 .habit-check-v2.done { background: var(--sage); border-color: var(--sage); }
 .habit-check-v2.today-col { border-color: rgba(255,255,255,0.4); }
 .habit-check-v2.done.today-col { background: var(--gold); border-color: var(--gold); }
@@ -2724,10 +2728,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   padding: 0 16px;
 }
 .ms-alt-milestone-card {
-  background: var(--elevated);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.13);
   border-radius: 14px;
-  padding: 16px;
+  padding: 16px 18px;
   animation: fadeUp 0.35s forwards;
   opacity: 0;
 }
@@ -2808,7 +2812,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   display: flex; align-items: stretch; padding: 0 16px; gap: 4px;
   height: 38px; min-height: 38px;
   border-bottom: 1px solid var(--border);
-  background: rgba(14,14,14,0.5); flex-shrink: 0;
+  background: rgba(255,255,255,0.04); flex-shrink: 0;
 }
 .plan-center-tab {
   background: none; border: none; border-bottom: 2px solid transparent;
@@ -2842,12 +2846,12 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   display: flex; align-items: center;
   padding: 0 10px 0 14px; gap: 8px;
   border-bottom: 1px solid var(--border);
-  background: rgba(14,14,14,0.5);
+  background: rgba(255,255,255,0.04);
 }
 .plan-panel-label {
   font-family: var(--font-mono); font-size: 10px;
   letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--muted); white-space: nowrap;
+  color: rgba(255,255,255,0.62); white-space: nowrap;
 }
 .plan-panel-toggle {
   background: none; border: 1px solid var(--border);
@@ -2873,8 +2877,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 .plan-left .ms-dash-grid { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
 .plan-left .ms-dash-card-inner { padding: 12px 12px 10px; gap: 8px; }
-.plan-left .ms-dash-card-title { font-size: 13px; }
-.plan-left .ms-dash-pct-label  { font-size: 15px; }
+.plan-left .ms-dash-card-title { font-size: 14px; color: var(--cream); }
+.plan-left .ms-dash-card-meta  { color: rgba(255,255,255,0.50); }
+.plan-left .ms-dash-pct-label  { font-size: 16px; color: var(--cream); }
 .plan-left .ms-dash-card-outer.ctx-active {
   box-shadow: 0 0 0 1.5px var(--gold-dim), 0 10px 40px rgba(0,0,0,0.65);
 }
@@ -2884,21 +2889,22 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 .plan-widget-label {
   font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
+  color: rgba(255,255,255,0.62);
+  margin-bottom: 8px;
   display: block;
 }
 .plan-widget-textarea {
-  background: var(--elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 10px;
   color: var(--cream);
   padding: 10px 12px;
   font-family: var(--font-display);
   font-size: 14px;
+  line-height: 1.6;
   resize: vertical;
   min-height: 60px;
   width: 100%;
@@ -2906,20 +2912,23 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   transition: border-color 150ms;
 }
 .plan-widget-textarea:focus { outline: none; border-color: var(--gold); }
+.plan-widget-textarea::placeholder { color: rgba(255,255,255,0.28); font-style: italic; }
 .plan-priority-input {
-  background: var(--elevated);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 8px;
   color: var(--cream);
-  padding: 8px 10px;
+  padding: 8px 12px;
   font-family: var(--font-display);
   font-size: 14px;
+  line-height: 1.6;
   width: 100%;
   box-sizing: border-box;
   margin-bottom: 6px;
   transition: border-color 150ms;
 }
 .plan-priority-input:focus { outline: none; border-color: var(--gold); }
+.plan-priority-input::placeholder { color: rgba(255,255,255,0.28); font-style: italic; }
 .plan-week-nav, .plan-month-nav {
   display: flex;
   align-items: center;
@@ -2927,20 +2936,21 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   margin-bottom: 16px;
 }
 .plan-nav-btn {
-  background: var(--elevated);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.13);
   border-radius: 6px;
-  color: var(--muted);
+  color: var(--cream);
   cursor: pointer;
-  padding: 4px 12px;
+  padding: 4px 14px;
   font-family: var(--font-mono);
   font-size: 11px;
   transition: background 150ms, color 150ms;
 }
-.plan-nav-btn:hover { background: rgba(255,255,255,0.12); color: var(--gold); border-color: var(--gold-dim); }
+.plan-nav-btn:hover { background: rgba(255,255,255,0.15); color: var(--gold); border-color: var(--gold-dim); }
 .plan-nav-label {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 300;
   color: var(--cream);
   flex: 1;
   text-align: center;
@@ -2953,16 +2963,19 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 .plan-week-grid-day {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--muted);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.55);
   text-align: center;
   padding: 2px 0;
+  margin-bottom: 4px;
 }
 .plan-week-grid-cell {
-  background: var(--elevated);
-  border-radius: 6px;
-  padding: 6px;
-  min-height: 56px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 7px;
+  min-height: 64px;
   font-size: 11px;
   font-family: var(--font-display);
   overflow: hidden;
@@ -2973,9 +2986,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   justify-content: space-between;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--muted);
+  color: rgba(255,255,255,0.60);
 }
-.plan-stat-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.plan-stat-bar-track { height: 6px; background: rgba(255,255,255,0.12); border-radius: 3px; overflow: hidden; }
 .plan-stat-bar-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 500ms cubic-bezier(0.25,0.46,0.45,0.94); }
 .plan-month-cal-grid {
   display: grid;
@@ -2985,7 +2998,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 .plan-month-day-cell {
   aspect-ratio: 1;
-  background: var(--elevated);
+  background: rgba(255,255,255,0.07);
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -2993,7 +3006,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   justify-content: center;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: var(--muted);
+  color: rgba(255,255,255,0.55);
   position: relative;
   overflow: hidden;
 }
@@ -3044,10 +3057,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .plan-due-section { margin-top: 16px; }
 .plan-due-section-title {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 9.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgba(255,255,255,0.60);
   margin-bottom: 8px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border);
@@ -3056,9 +3069,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  font-size: 12.5px;
 }
 .plan-due-row:last-child { border-bottom: none; }
 .plan-due-badge {
@@ -3161,8 +3174,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   z-index: 2;
 }
 .ms-action-card {
-  background: var(--elevated);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.09);
+  border: 1px solid rgba(255,255,255,0.13);
   border-radius: 12px;
   padding: 14px 16px;
 }
