@@ -1003,7 +1003,7 @@ body::after {
 
 .task-priority-select,
 .task-add-date {
-  background: var(--surface); border: 1px solid var(--border);
+  background: #181818; border: 1px solid var(--border);
   border-radius: 6px; padding: 5px 8px;
   font-family: var(--font-mono); font-size: 10px; color: var(--muted);
   outline: none; cursor: pointer;
@@ -1055,6 +1055,32 @@ body::after {
   display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none;
 }
 .pomo-col::-webkit-scrollbar { display: none; }
+/* Timedrift pomo column collapse */
+#td-pomo-col {
+  transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              opacity 0.28s ease;
+}
+#td-pomo-col.collapsed { width: 0 !important; min-width: 0 !important; opacity: 0; border-right-color: transparent; overflow: hidden; }
+#td-pomo-rail {
+  width: 0; min-width: 0; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+  border-right: 1px solid transparent;
+  transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
+              min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
+  padding-top: 8px; gap: 8px; background: #000;
+}
+#td-pomo-rail.visible { width: 36px; min-width: 36px; border-right-color: rgba(255,255,255,0.08); }
+.td-pomo-col-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 10px 0 14px; height: 38px; min-height: 38px; flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+}
+.td-pomo-col-header-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(255,255,255,0.5);
+}
 .pomo-body-inner {
   flex: 1; display: flex; flex-direction: column; align-items: center;
   padding: 14px 12px 14px; gap: 10px;
@@ -1536,15 +1562,19 @@ body::after {
 /* ═══════════════════════════════════════════════════════════
    OVERLAYS (shared base)
    ═══════════════════════════════════════════════════════════ */
+/* Global: fix native select/option dropdown in dark theme */
+select { color-scheme: dark; }
+select option { background: #181818; color: rgba(255,255,255,0.88); }
+
 .overlay {
   position: fixed; inset: 0;
   z-index: 820;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(7,7,7,0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(7,7,7,0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
@@ -1559,8 +1589,10 @@ body::after {
 }
 
 .overlay-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: rgba(12,12,12,0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 20px;
   width: min(700px, 92vw);
   max-height: 88dvh;
@@ -1568,6 +1600,7 @@ body::after {
   display: flex;
   flex-direction: column;
   position: relative;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 /* Gold shimmer top edge on overlays */
@@ -2050,6 +2083,7 @@ body::after {
   font-family: var(--font-body); font-size: 13px; color: var(--cream);
   outline: none; transition: border-color 0.2s; width: 100%; box-sizing: border-box;
 }
+select.form-input { background: #181818; }
 .form-input:focus { border-color: var(--gold); }
 textarea.form-input { resize: vertical; min-height: 60px; }
 
@@ -2832,6 +2866,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
               opacity 0.28s ease;
 }
 .plan-right-ctx.collapsed { width: 0; min-width: 0; opacity: 0; border-left-color: transparent; }
+.plan-right-ctx.maximized { width: 70%; min-width: 70%; }
 .plan-right-rail {
   width: 0; min-width: 0; overflow: hidden;
   display: flex; flex-direction: column; align-items: center;
@@ -3420,6 +3455,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   font-family:var(--font-body); font-size:13px; color:var(--cream);
   outline:none; transition:border-color 0.2s;
 }
+select.sched-input { background: #181818; }
 .sched-input:focus { border-color:var(--gold); }
 .sched-row { margin-top:12px; }
 .sched-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
@@ -3991,7 +4027,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
    ═══════════════════════════════════════════════════════════ */
 #ritual-overlay {
   position: fixed; inset: 0;
-  background: var(--bg);
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -4001,6 +4039,48 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   transition: opacity 0.4s ease;
 }
 #ritual-overlay.open { opacity: 1; pointer-events: auto; }
+.ritual-card {
+  width: min(480px, 92vw);
+  background: rgba(12,12,12,0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 36px 32px;
+  display: flex; flex-direction: column; gap: 20px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.ritual-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+}
+.ritual-card .ritual-header { display: flex; flex-direction: column; gap: 4px; }
+.ritual-card .ritual-icon { font-size: 22px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+.ritual-card .ritual-title {
+  font-family: var(--font-display); font-size: 26px; font-weight: 300;
+  color: var(--cream); letter-spacing: 0.02em;
+}
+.ritual-card .ritual-subtitle {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ritual-card .ritual-body { display: flex; flex-direction: column; gap: 14px; }
+.ritual-card .ritual-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.ritual-skip-btn {
+  padding: 8px 16px; border-radius: 8px; background: none;
+  border: 1px solid var(--border); color: var(--muted);
+  font-family: var(--font-mono); font-size: 10px; cursor: pointer;
+  transition: var(--ease-fast);
+}
+.ritual-skip-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--cream); }
+.ritual-start-btn {
+  padding: 8px 20px; border-radius: 8px;
+  background: var(--gold); border: none; color: var(--ink);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+  cursor: pointer; transition: var(--ease-fast); font-weight: 500;
+}
+.ritual-start-btn:hover { filter: brightness(1.1); }
 
 .ritual-panel {
   width: min(480px, 92vw);
@@ -4127,14 +4207,52 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* Re-entry snapshot */
 #reentry-modal {
   position: fixed; inset: 0;
-  background: rgba(7,7,7,0.88);
-  backdrop-filter: blur(12px);
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 870;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
   transition: opacity 0.25s ease;
 }
 #reentry-modal.open { opacity: 1; pointer-events: auto; }
+.reentry-card {
+  width: min(420px, 92vw);
+  background: rgba(12,12,12,0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.reentry-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+}
+.reentry-card .reentry-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 16px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.reentry-card .reentry-title {
+  font-family: var(--font-display); font-size: 16px; font-weight: 300;
+  color: var(--cream); flex: 1;
+}
+.reentry-close-btn {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 14px; padding: 2px 6px; line-height: 1; transition: color 0.15s;
+}
+.reentry-close-btn:hover { color: var(--cream); }
+.reentry-card .reentry-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.reentry-task-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+  color: var(--gold); opacity: 0.8;
+}
+.reentry-card .reentry-footer {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding: 12px 20px 16px; border-top: 1px solid rgba(255,255,255,0.06);
+}
 .reentry-panel {
   width: min(420px, 92vw);
   background: var(--surface);
@@ -4188,7 +4306,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
    ═══════════════════════════════════════════════════════════ */
 #commit-overlay {
   position: fixed; inset: 0;
-  background: var(--bg);
+  background: rgba(0,0,0,0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 950;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -4197,6 +4317,61 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   transition: opacity 0.3s ease;
 }
 #commit-overlay.open { opacity: 1; pointer-events: auto; }
+.commit-card {
+  width: min(480px, 92vw);
+  background: rgba(12,12,12,0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 28px 32px;
+  display: flex; flex-direction: column; gap: 18px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.commit-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+}
+.commit-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.commit-mode-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted);
+}
+.commit-exit-btn {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 6px; padding: 4px 10px;
+  font-family: var(--font-mono); font-size: 10px; cursor: pointer;
+  transition: var(--ease-fast);
+}
+.commit-exit-btn:hover { border-color: var(--rust); color: var(--rust); }
+.commit-timer {
+  font-family: var(--font-display); font-size: 52px; font-weight: 300;
+  color: var(--gold); font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; line-height: 1; text-align: center;
+}
+.commit-timer-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted); text-align: center; margin-top: -10px;
+}
+.commit-actions { display: flex; gap: 10px; }
+.commit-action-btn {
+  flex: 1; padding: 11px 0; border-radius: 8px;
+  background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--cream);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+  cursor: pointer; transition: var(--ease-fast);
+}
+.commit-action-btn:hover { background: rgba(255,255,255,0.06); }
+.commit-action-btn.done {
+  background: rgba(53,249,47,0.08); border-color: rgba(53,249,47,0.4); color: rgb(53,249,47);
+}
+.commit-action-btn.done:hover { background: rgba(53,249,47,0.14); }
+.commit-snapshot-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+}
 
 .commit-phase-label {
   font-family: var(--font-mono);
@@ -4264,14 +4439,71 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* Friction modal */
 #friction-modal {
   position: fixed; inset: 0;
-  background: rgba(7,7,7,0.9);
-  backdrop-filter: blur(14px);
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   z-index: 960;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
   transition: opacity 0.25s ease;
 }
 #friction-modal.open { opacity: 1; pointer-events: auto; }
+.friction-card {
+  width: min(400px, 92vw);
+  background: rgba(12,12,12,0.85);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(196,92,42,0.25);
+  border-radius: 16px;
+  display: flex; flex-direction: column;
+  position: relative; overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.friction-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(196,92,42,0.4), transparent);
+}
+.friction-card .friction-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 16px 20px 14px; border-bottom: 1px solid rgba(196,92,42,0.15);
+}
+.friction-close-btn {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  font-size: 14px; padding: 2px 6px; line-height: 1; margin-left: auto;
+  transition: color 0.15s;
+}
+.friction-close-btn:hover { color: var(--cream); }
+.friction-task-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+  color: var(--muted-readable); padding: 0 20px; margin-top: -4px;
+}
+.friction-card .friction-body { padding: 14px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+.friction-section-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+}
+.friction-reasons { display: flex; flex-direction: column; gap: 6px; }
+.friction-reason-btn {
+  padding: 9px 14px; border-radius: 8px; background: none;
+  border: 1px solid rgba(255,255,255,0.1); color: var(--muted-readable);
+  font-family: var(--font-body); font-size: 12px; text-align: left; cursor: pointer;
+  transition: var(--ease-fast);
+}
+.friction-reason-btn:hover { border-color: rgba(232,160,32,0.4); color: var(--cream); background: rgba(232,160,32,0.05); }
+.friction-reason-btn.selected { border-color: rgba(232,160,32,0.6); color: var(--cream); background: rgba(232,160,32,0.08); }
+.friction-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.friction-action-btn {
+  flex: 1; min-width: 100px; padding: 9px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12); background: none;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.05em;
+  cursor: pointer; transition: var(--ease-fast); color: var(--muted-readable);
+}
+.friction-action-btn.kill { border-color: rgba(196,92,42,0.35); color: var(--rust); }
+.friction-action-btn.kill:hover { background: rgba(196,92,42,0.1); }
+.friction-action-btn.someday { color: rgba(255,200,80,0.8); border-color: rgba(255,200,80,0.2); }
+.friction-action-btn.someday:hover { background: rgba(255,200,80,0.06); }
+.friction-action-btn.keep { border-color: rgba(53,249,47,0.3); color: rgba(53,249,47,0.8); }
+.friction-action-btn.keep:hover { background: rgba(53,249,47,0.06); }
 .friction-panel {
   width: min(400px, 92vw);
   background: var(--surface);
@@ -4485,9 +4717,13 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* ── Event Action Modal ───────────────────────────────── */
 #event-action-modal {
   position: fixed; z-index: 1200;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  background: rgba(12,12,12,0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255,255,255,0.13); border-radius: 12px;
   padding: 14px 16px; min-width: 248px; max-width: 300px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6); display: none; flex-direction: column; gap: 11px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
+  display: none; flex-direction: column; gap: 11px;
 }
 #event-action-modal.open { display: flex; }
 .eam-title {
@@ -4612,10 +4848,6 @@ textarea.form-input { resize: vertical; min-height: 60px; }
         <span class="nav-item-icon">◈</span>
         Insights
       </div>
-      <div class="nav-item" data-panel="cosmodex-bubble" id="nav-cosmodex-bubble">
-        <span class="nav-item-icon">◎</span>
-        Cosmodex Bubble
-      </div>
       <div class="nav-item" data-panel="articles" id="nav-articles">
         <span class="nav-item-icon">◧</span>
         Reading
@@ -4657,6 +4889,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
       </button>
       <button class="hdr-btn" id="btn-focus">
         ◎ Focus
+      </button>
+      <button class="hdr-btn" id="btn-cosmodex-bubble" data-panel="cosmodex-bubble">
+        ◉ Bubble
       </button>
       <button class="hdr-btn accent" id="btn-cosmos">
         ✦ Ask Cosmos
@@ -4842,6 +5077,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
             <span class="plan-panel-label" id="plan-ctx-title">Context</span>
             <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
               <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:5px 11px;display:none">+ Milestone</button>
+              <button class="plan-panel-toggle" id="plan-right-maximize" title="Expand to 70%" style="font-size:10px">⤢</button>
               <button class="plan-panel-toggle" id="plan-right-toggle" title="Collapse">›</button>
             </div>
           </div>
@@ -4870,6 +5106,10 @@ textarea.form-input { resize: vertical; min-height: 60px; }
     <div id="panel-timedrift" style="display:none;flex:1;flex-direction:row;overflow:hidden;position:relative;background:#000000">
       <!-- Left: Pomodoro timer -->
       <div id="td-pomo-col" style="width:260px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.08);overflow-y:auto;display:flex;flex-direction:column;background:#000">
+        <div class="td-pomo-col-header">
+          <span class="td-pomo-col-header-label">Focus Timer</span>
+          <button class="plan-panel-toggle" id="td-pomo-toggle" title="Collapse">‹</button>
+        </div>
         <div class="pomo-body-inner" style="padding:20px 16px">
           <div class="pomo-ev-label">Focus Session</div>
           <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
@@ -4928,6 +5168,11 @@ textarea.form-input { resize: vertical; min-height: 60px; }
           <div class="pomo-lock-text">Session in progress.<br>Stop the timer to close.</div>
           <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
         </div>
+      </div>
+      <!-- Pomo collapsed rail -->
+      <div id="td-pomo-rail">
+        <button class="plan-rail-btn" id="td-pomo-expand" title="Expand timer">›</button>
+        <span class="plan-rail-label" style="writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--font-mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">Focus</span>
       </div>
       <!-- Right: Timedrift visualization -->
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
@@ -7928,12 +8173,15 @@ function renderMilestones() {
 function updateMilestoneToolbar() {
   const toolbar = document.querySelector('#panel-milestones .panel-toolbar');
   if (!toolbar) return;
+  const archCount = MILESTONE_PROJECTS.filter(p => p.isArchived).length;
   toolbar.innerHTML = `
     <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Planning</span>
-    <div style="margin-left:auto">
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      ${archCount > 0 ? `<button id="ms-archived-btn" class="btn-ghost" style="font-size:10px;padding:5px 10px;color:var(--muted)">⊡ Archived (${archCount})</button>` : ''}
       <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:6px 12px">+ New</button>
     </div>`;
   document.getElementById('ms-add-project-btn')?.addEventListener('click', () => openMsProjectModal());
+  document.getElementById('ms-archived-btn')?.addEventListener('click', showArchivedProjectsOverlay);
 }
 
 /* ── Dashboard: card grid ────────────────────────────── */
@@ -8014,57 +8262,6 @@ function renderMilestoneDashboard() {
   if (activeProjs.length) body.appendChild(grid);
   else body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">All initiatives archived.</div>`;
 
-  // Archived section
-  if (archivedProjs.length) {
-    const archSection = document.createElement('div');
-    archSection.id = 'ms-archived-section';
-    let archOpen = false;
-    const archHeader = document.createElement('div');
-    archHeader.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 4px;cursor:pointer;border-top:1px solid var(--border);margin-top:16px';
-    archHeader.innerHTML = `<span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">▶ Archived (${archivedProjs.length})</span>`;
-    const archGrid = document.createElement('div');
-    archGrid.className = 'ms-dash-grid';
-    archGrid.style.display = 'none';
-    archHeader.addEventListener('click', () => {
-      archOpen = !archOpen;
-      archGrid.style.display = archOpen ? '' : 'none';
-      archHeader.querySelector('span').textContent = `${archOpen ? '▼' : '▶'} Archived (${archivedProjs.length})`;
-    });
-    archivedProjs.forEach(proj => {
-      const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
-      const allActs = events.flatMap(e => e.activities || []);
-      const doneActs = allActs.filter(a => a.done).length;
-      const totalActs = allActs.length;
-      const pct = totalActs > 0 ? Math.round(doneActs / totalActs * 100) : 0;
-      const outer = document.createElement('div');
-      outer.className = 'ms-dash-card-outer';
-      outer.style.cssText = `background:var(--border);opacity:0.6`;
-      outer.dataset.msDashCard = proj.id;
-      outer.innerHTML = `<div class="ms-dash-card-inner">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="ms-dash-card-title" style="flex:1">${escHtml(proj.title)}</div>
-          <span style="font-family:var(--font-mono);font-size:9px;color:var(--sage)">✓ done</span>
-        </div>
-        <div class="ms-dash-card-footer" style="margin-top:8px">
-          <div class="ms-dash-acts-label">${doneActs}/${totalActs} tasks · ${events.length} milestones</div>
-          <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
-        </div>
-      </div>`;
-      archGrid.appendChild(outer);
-    });
-    archGrid.querySelectorAll('[data-ms-dash-card]').forEach(card => {
-      card.addEventListener('click', e => {
-        if (e.target.closest('button')) return;
-        _msView = 'timeline';
-        _msFocusProj = card.dataset.msDashCard;
-        showPlanningTimeline(_msFocusProj);
-      });
-    });
-    archSection.appendChild(archHeader);
-    archSection.appendChild(archGrid);
-    body.appendChild(archSection);
-  }
-
   // Card click → open timeline in right panel
   grid.querySelectorAll('[data-ms-dash-card]').forEach(card => {
     card.addEventListener('click', e => {
@@ -8073,6 +8270,62 @@ function renderMilestoneDashboard() {
       _msFocusProj = card.dataset.msDashCard;
       showPlanningTimeline(_msFocusProj);
     });
+  });
+}
+
+/* ── Archived projects overlay ────────────────────────── */
+function showArchivedProjectsOverlay() {
+  const existing = document.getElementById('ms-archived-overlay');
+  if (existing) { existing.remove(); return; }
+
+  const archivedProjs = MILESTONE_PROJECTS.filter(p => p.isArchived);
+  const overlay = document.createElement('div');
+  overlay.id = 'ms-archived-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:flex-start;justify-content:flex-end;padding:56px 16px 0';
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:420px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
+      <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:8px">
+        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);flex:1">Archived Initiatives</span>
+        <button id="ms-arch-overlay-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px">×</button>
+      </div>
+      <div style="overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
+        ${archivedProjs.length === 0
+          ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:24px">No archived initiatives</div>`
+          : archivedProjs.map(proj => {
+              const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
+              const allActs = events.flatMap(e => e.activities || []);
+              const doneActs = allActs.filter(a => a.done).length;
+              return `<div class="ms-arch-item" data-arch-proj="${proj.id}" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:background 150ms">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="flex:1;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.7)">${escHtml(proj.title)}</div>
+                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--sage)">✓ done</span>
+                  <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
+                </div>
+                <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
+              </div>`;
+            }).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#ms-arch-overlay-close')?.addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelectorAll('.ms-arch-item').forEach(item => {
+    item.addEventListener('click', async e => {
+      const restoreBtn = e.target.closest('[data-ms-unarchive]');
+      if (restoreBtn) {
+        const projId = restoreBtn.dataset.msUnarchive;
+        await window.CDX_FB.updateDoc(_ud('milestoneProjects', projId), { isArchived: false });
+        overlay.remove();
+        return;
+      }
+      overlay.remove();
+      _msView = 'timeline';
+      _msFocusProj = item.dataset.archProj;
+      showPlanningTimeline(_msFocusProj);
+    });
+    item.addEventListener('mouseenter', () => { item.style.background = 'rgba(255,255,255,0.08)'; });
+    item.addEventListener('mouseleave', () => { item.style.background = 'rgba(255,255,255,0.04)'; });
   });
 }
 
@@ -9202,6 +9455,14 @@ function initMilestonesPanel() {
       document.getElementById('plan-right-toggle')?.addEventListener('click', () => togglePlanPanel('right'));
       document.getElementById('plan-left-expand')?.addEventListener('click',  () => togglePlanPanel('left'));
       document.getElementById('plan-right-expand')?.addEventListener('click', () => togglePlanPanel('right'));
+      document.getElementById('plan-right-maximize')?.addEventListener('click', () => {
+        const panel = document.getElementById('plan-right-panel');
+        const btn   = document.getElementById('plan-right-maximize');
+        const isMax = panel.classList.toggle('maximized');
+        if (btn) btn.title = isMax ? 'Restore width' : 'Expand to 70%';
+        if (btn) btn.textContent = isMax ? '⤡' : '⤢';
+        if (isMax && _planRightCollapsed) togglePlanPanel('right');
+      });
       restorePlanPanelStates();
     }
     buildWeekPlan(); // refresh data each time panel opens
@@ -9452,9 +9713,9 @@ function _tdDrawTimeline(now){
       ctx.fillStyle=isPast?'rgba(53,249,47,0.42)':'rgba(53,249,47,0.82)';
       ctx.textAlign='left';
       ctx.textBaseline='middle';
-      ctx.translate(sx,RULE_Y-8);
-      ctx.rotate(-Math.PI/2);
-      ctx.fillText(labelStr,6,0);
+      ctx.translate(sx, lineTop + 4);
+      ctx.rotate(Math.PI/2);
+      ctx.fillText(labelStr, 8, 0);
       ctx.restore();
     }
   });
@@ -12120,6 +12381,7 @@ document.addEventListener('click', e => {
 // Header action buttons
 document.getElementById('btn-notes')?.addEventListener('click', () => openOverlay('notes-overlay'));
 document.getElementById('btn-focus')?.addEventListener('click', () => { showMainPanel('timedrift'); document.getElementById('left-nav')?.classList.add('collapsed'); });
+document.getElementById('btn-cosmodex-bubble')?.addEventListener('click', () => showMainPanel('cosmodex-bubble'));
 document.getElementById('btn-cosmos')?.addEventListener('click', () => openOverlay('claude-panel'));
 
 // Nav footer overlays
@@ -13380,6 +13642,26 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   }
   document.getElementById('pomo-check-add-btn')?.addEventListener('click', addCheckItem);
   document.getElementById('pomo-check-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') addCheckItem(); });
+
+  // Pomo column collapse/expand
+  let _pomoCollapsed = localStorage.getItem('cosmodex_pomo_collapsed') === '1';
+  function togglePomoCol() {
+    const col    = document.getElementById('td-pomo-col');
+    const rail   = document.getElementById('td-pomo-rail');
+    const toggle = document.getElementById('td-pomo-toggle');
+    _pomoCollapsed = !_pomoCollapsed;
+    col.classList.toggle('collapsed', _pomoCollapsed);
+    rail.classList.toggle('visible', _pomoCollapsed);
+    if (toggle) toggle.textContent = _pomoCollapsed ? '›' : '‹';
+    localStorage.setItem('cosmodex_pomo_collapsed', _pomoCollapsed ? '1' : '0');
+  }
+  if (_pomoCollapsed) {
+    document.getElementById('td-pomo-col')?.classList.add('collapsed');
+    document.getElementById('td-pomo-rail')?.classList.add('visible');
+    const t = document.getElementById('td-pomo-toggle'); if (t) t.textContent = '›';
+  }
+  document.getElementById('td-pomo-toggle')?.addEventListener('click', togglePomoCol);
+  document.getElementById('td-pomo-expand')?.addEventListener('click', togglePomoCol);
 })();
 
 </script>
