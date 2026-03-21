@@ -2690,6 +2690,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* Central line container */
 .ms-alt-entries {
   position: relative;
+  margin-top: 28px;
 }
 .ms-alt-center-line {
   position: absolute;
@@ -6524,7 +6525,7 @@ select.sched-input { background: #181818; }
             <div class="settings-section">
               <div class="settings-section-title">Local Cache</div>
               <div class="settings-desc">Clear locally cached settings and preferences (does not affect Firebase data).</div>
-              <button class="btn-secondary" style="font-size:11px;padding:8px 16px;color:var(--rust);" onclick="if(confirm('Clear local cache? Firebase data is untouched.')){localStorage.clear();showToast('Local cache cleared');}">Clear Local Cache</button>
+              <button class="btn-secondary" style="font-size:11px;padding:8px 16px;color:var(--rust);" onclick="cdxConfirm('Clear local cache? Firebase data is untouched.',{okLabel:'Clear',okColor:'#e05555',okBg:'rgba(224,85,85,0.18)',okBorder:'rgba(224,85,85,0.4)'}).then(ok=>{if(ok){localStorage.clear();showToast('Local cache cleared');}})">Clear Local Cache</button>
             </div>
           </div>
 
@@ -8673,7 +8674,7 @@ function renderMilestoneTimeline(projId) {
     const doneCount = acts.filter(a => a.done).length;
     const isPast = new Date(ev.date) < new Date();
     const dotColor = doneCount === acts.length && acts.length > 0
-      ? 'rgb(53,249,47)' : (isPast ? proj.color : 'var(--border)');
+      ? 'rgb(53,249,47)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
 
     const actItems = acts.map(a => {
       const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
@@ -9008,7 +9009,7 @@ function initMilestonesPanel() {
   document.getElementById('ms-proj-delete-btn').addEventListener('click', async () => {
     if (!_msProjEdit) return;
     const proj = MILESTONE_PROJECTS.find(p => p.id === _msProjEdit);
-    if (confirm(`Delete initiative "${proj ? proj.title : ''}" and all its milestones?`)) {
+    if (await cdxConfirm(`Delete initiative "${proj ? proj.title : ''}" and all its milestones?`)) {
       await deleteMilestoneProject(_msProjEdit);
       closeOverlay('ms-project-modal');
     }
@@ -9023,7 +9024,7 @@ function initMilestonesPanel() {
     if (archBtn) {
       const projId = archBtn.dataset.msArchive;
       const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
-      if (proj && confirm(`Mark "${proj.title}" as done and archive it?`)) {
+      if (proj && await cdxConfirm(`Mark "${proj.title}" as done and archive it?`, { okLabel: 'Archive', okColor: 'var(--cream)', okBg: 'rgba(255,255,255,0.1)', okBorder: 'rgba(255,255,255,0.2)' })) {
         await window.CDX_FB.updateDoc(_ud('milestoneProjects', projId), { isArchived: true });
       }
       return;
@@ -9064,7 +9065,7 @@ function initMilestonesPanel() {
     const delEvBtn = e.target.closest('[data-ms-del-ev]');
     if (delEvBtn) {
       const evId = delEvBtn.dataset.msDelEv;
-      if (confirm('Delete this milestone?')) {
+      if (await cdxConfirm('Delete this milestone?')) {
         await deleteMilestoneEvent(evId);
       }
       return;
@@ -9282,7 +9283,7 @@ function initMilestonesPanel() {
   // Event detail — delete button
   document.getElementById('ms-detail-delete-btn').addEventListener('click', async () => {
     const evId = document.getElementById('ms-detail-delete-btn').dataset.delEvId;
-    if (confirm('Delete this milestone?')) {
+    if (await cdxConfirm('Delete this milestone?')) {
       await deleteMilestoneEvent(evId);
       closeOverlay('ms-event-detail');
     }
@@ -9295,7 +9296,7 @@ function initMilestonesPanel() {
       const editEvBtn = e.target.closest('[data-ms-edit-ev]');
       if (editEvBtn) { const ev = MILESTONE_EVENTS.find(ev => ev.id === editEvBtn.dataset.msEditEv); if (ev) openMsEventModal(ev.projectId, editEvBtn.dataset.msEditEv); return; }
       const delEvBtn = e.target.closest('[data-ms-del-ev]');
-      if (delEvBtn) { if (confirm('Delete this milestone?')) await deleteMilestoneEvent(delEvBtn.dataset.msDelEv); return; }
+      if (delEvBtn) { if (await cdxConfirm('Delete this milestone?')) await deleteMilestoneEvent(delEvBtn.dataset.msDelEv); return; }
       const actCheck = e.target.closest('[data-toggle-act]');
       if (actCheck) { await toggleMilestoneActivity(actCheck.dataset.evId, actCheck.dataset.toggleAct); return; }
       const rmAct = e.target.closest('[data-rm-act]');
@@ -10517,6 +10518,36 @@ function escHtml(s) {
 function escAttr(s) { return String(s ?? '').replace(/"/g,'&quot;'); }
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+/* ── Custom confirm dialog ───────────────────────────── */
+function cdxConfirm(msg, { okLabel = 'Delete', okColor = '#e05555', okBg = 'rgba(224,85,85,0.18)', okBorder = 'rgba(224,85,85,0.4)' } = {}) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('cdx-confirm-overlay');
+    const msgEl   = document.getElementById('cdx-confirm-msg');
+    const okBtn   = document.getElementById('cdx-confirm-ok');
+    const cancelBtn = document.getElementById('cdx-confirm-cancel');
+    if (!overlay) { resolve(window.confirm(msg)); return; }
+    msgEl.textContent = msg;
+    okBtn.textContent = okLabel;
+    okBtn.style.color = okColor;
+    okBtn.style.background = okBg;
+    okBtn.style.borderColor = okBorder;
+    overlay.style.display = 'flex';
+    const cleanup = (val) => {
+      overlay.style.display = 'none';
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      overlay.removeEventListener('click', onOverlay);
+      resolve(val);
+    };
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onOverlay = (e) => { if (e.target === overlay) cleanup(false); };
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    overlay.addEventListener('click', onOverlay);
+  });
 }
 
 /* ── Toast notifications ─────────────────────────────── */
@@ -11747,7 +11778,7 @@ function initEventModal() {
 
   document.getElementById('eam-delete')?.addEventListener('click', async () => {
     if (!_eamEvent || !deleteDoc) return;
-    if (!confirm(`Delete "${_eamEvent.title}"?`)) return;
+    if (!await cdxConfirm(`Delete "${_eamEvent.title}"?`)) return;
     try {
       await deleteDoc(_ud('calEvents', _eamEvent.id));
       hideEventModal();
@@ -13732,7 +13763,7 @@ function initFrictionModal() {
 
   document.getElementById('friction-kill-btn')?.addEventListener('click', async () => {
     if (!_frictionTaskId) return;
-    if (confirm('Delete this task permanently?')) {
+    if (await cdxConfirm('Delete this task permanently?')) {
       await deleteTask(_frictionTaskId);
       closeFrictionModal();
     }
@@ -14185,7 +14216,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
       delBtn.style.display = _pomoEvent ? 'inline-flex' : 'none';
       delBtn.onclick = async () => {
         if (!_pomoEvent) return;
-        if (!confirm(`Delete event "${_pomoEvent.title}"?`)) return;
+        if (!await cdxConfirm(`Delete event "${_pomoEvent.title}"?`)) return;
         const { deleteDoc } = window.CDX_FB;
         try { await deleteDoc(_ud('calEvents', _pomoEvent.id)); } catch(e) {}
         _pomoEvent = null; delBtn.style.display = 'none';
@@ -14368,6 +14399,17 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
       <div class="commit-snapshot-label">10 minutes in — quick snapshot:</div>
       <textarea class="commit-snapshot-input" id="commit-snapshot-input" placeholder="What have you done so far? Any blockers?…" rows="3"></textarea>
       <button class="btn-primary" id="commit-snapshot-save-btn" style="margin-top:8px;width:100%">Save &amp; continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirm Dialog ──────────────────────────────────── -->
+<div id="cdx-confirm-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center">
+  <div style="background:rgba(18,18,18,0.92);border:1px solid rgba(255,255,255,0.14);border-top:1px solid rgba(255,255,255,0.26);border-radius:20px;padding:28px 28px 22px;max-width:360px;width:calc(100% - 48px);box-shadow:0 8px 40px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.08);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6)">
+    <div id="cdx-confirm-msg" style="font-family:var(--font-body);font-size:13px;color:var(--cream);line-height:1.55;margin-bottom:22px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button id="cdx-confirm-cancel" style="padding:7px 18px;border-radius:100px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-family:var(--font-body);font-size:12px;cursor:pointer;transition:background 0.15s">Cancel</button>
+      <button id="cdx-confirm-ok" style="padding:7px 18px;border-radius:100px;border:1px solid rgba(224,85,85,0.4);background:rgba(224,85,85,0.18);color:#e05555;font-family:var(--font-body);font-size:12px;cursor:pointer;font-weight:600;transition:background 0.15s">Delete</button>
     </div>
   </div>
 </div>
