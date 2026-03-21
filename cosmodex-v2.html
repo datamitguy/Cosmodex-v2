@@ -222,11 +222,43 @@ body::after {
 }
 
 #left-nav.collapsed {
-  width: 0;
-  min-width: 0;
-  opacity: 0;
-  border-right-color: transparent;
+  width: 48px;
+  min-width: 48px;
+  opacity: 1;
+  border-right-color: var(--glass-border);
 }
+
+/* ── Collapsed icon-rail styles ── */
+#left-nav.collapsed .nav-workspace {
+  justify-content: center;
+  padding: 12px 0;
+}
+#left-nav.collapsed .nav-brand-block { display: none; }
+#left-nav.collapsed .nav-section-label { display: none; }
+#left-nav.collapsed .nav-section { margin-bottom: 4px; }
+#left-nav.collapsed .nav-item {
+  justify-content: center;
+  padding: 9px 0;
+  gap: 0;
+  font-size: 0;          /* hide text nodes without changing HTML */
+  border-left: 2px solid transparent;
+}
+#left-nav.collapsed .nav-item .nav-item-icon {
+  font-size: 15px;
+}
+#left-nav.collapsed .nav-item-count { display: none; }
+#left-nav.collapsed .nav-item.active {
+  border-radius: 8px;
+}
+
+/* Footer: only show the expand tribar when collapsed */
+#nav-expand-btn { display: none; }
+#left-nav.collapsed #nav-expand-btn { display: flex; }
+#left-nav.collapsed .nav-footer {
+  justify-content: center;
+  padding: 10px 0;
+}
+#left-nav.collapsed .nav-footer-btn:not(#nav-expand-btn) { display: none; }
 
 /* Nav workspace header */
 .nav-workspace {
@@ -4998,18 +5030,12 @@ select.sched-input { background: #181818; }
     <button class="nav-footer-btn" id="cmd-btn" title="Ctrl+Space">
       <span style="letter-spacing:0.06em">⌘␣</span>
     </button>
+    <button class="nav-footer-btn" id="nav-expand-btn" title="Expand nav">☰</button>
   </div>
 </nav>
 
 <!-- ══ APP SHELL ══ -->
 <div id="app-shell">
-
-  <!-- Page Header -->
-  <header id="page-header">
-    <button id="hamburger" title="Toggle nav">☰</button>
-    <h1 id="page-title">Today</h1>
-    <span id="page-date" class="page-date"></span>
-  </header>
 
   <!-- Main Content -->
   <div id="main-content">
@@ -6854,6 +6880,9 @@ document.getElementById('theme-btn')?.addEventListener('click', toggleTheme);
 document.getElementById('mob-theme-btn')?.addEventListener('click', toggleTheme);
 
 /* ── Nav collapse ──────────────────────────────────────── */
+document.getElementById('nav-expand-btn')?.addEventListener('click', () => {
+  document.getElementById('left-nav').classList.toggle('collapsed');
+});
 document.getElementById('hamburger')?.addEventListener('click', () => {
   document.getElementById('left-nav').classList.toggle('collapsed');
 });
