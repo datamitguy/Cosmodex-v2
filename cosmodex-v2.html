@@ -2751,15 +2751,23 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   padding: 0 16px;
 }
 .ms-alt-milestone-card {
-  background: rgba(255,255,255,0.09);
-  border: 1px solid rgba(255,255,255,0.13);
-  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.22);
+  border-radius: 16px;
   padding: 16px 18px;
   animation: fadeUp 0.35s forwards;
   opacity: 0;
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1);
 }
 
-.ms-alt-milestone-card:hover { border-color: rgba(255,255,255,0.3); }
+.ms-alt-milestone-card:hover {
+  border-color: rgba(255,255,255,0.25);
+  border-top-color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.07);
+}
 
 .ms-alt-card-title {
   font-family: var(--font-display);
@@ -8453,7 +8461,7 @@ function renderMilestoneDashboard() {
       <div class="ms-dash-card-inner">
         <div class="ms-dash-card-title">${escHtml(proj.title)}</div>
         <div class="ms-dash-card-meta">
-          ${cat ? `<span style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.12);padding:1px 7px;border-radius:100px">${cat.label}</span>` : ''}
+          ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.05em">${cat.label}</span>` : ''}
           <span>${escHtml(fmtDate(proj.startDate))} – ${escHtml(fmtDate(proj.endDate))}</span>
         </div>
         ${msListHtml}
@@ -8718,29 +8726,22 @@ function renderMilestoneTimeline(projId) {
     </div>`;
   }).join('');
 
-  // Build initiative metadata section (notes, mission, anti-goals)
-  const metaHtml = (() => {
-    const parts = [];
-    if (proj.notes) parts.push(`
-      <div style="margin-bottom:12px">
+  // Build initiative metadata section (notes, mission, anti-goals) — always editable inline
+  const metaHtml = `
+    <div style="padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
+      <div style="margin-bottom:14px">
         <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Notes & Context</div>
-        <div style="font-size:12px;color:var(--muted-readable);line-height:1.6;white-space:pre-wrap">${escHtml(proj.notes)}</div>
-      </div>`);
-    if (proj.missionBrief) parts.push(`
-      <div style="margin-bottom:12px">
+        <textarea id="ms-inline-notes" rows="2" placeholder="Add notes or context…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-body);font-size:12px;color:var(--cream);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
+      </div>
+      <div style="margin-bottom:14px">
         <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Mission Brief</div>
-        <div class="los-narrative">${escHtml(proj.missionBrief)}</div>
-      </div>`);
-    if (proj.antiGoals) {
-      const lines = proj.antiGoals.split('\n').map(l => l.trim()).filter(Boolean);
-      parts.push(`
-        <div style="margin-bottom:12px">
-          <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
-          <div class="los-anti-goals">${lines.map(l => `<div class="los-anti-goal-item">${escHtml(l)}</div>`).join('')}</div>
-        </div>`);
-    }
-    return parts.length ? `<div style="padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">${parts.join('')}</div>` : '';
-  })();
+        <textarea id="ms-inline-mission" rows="2" placeholder="Why this matters…" style="width:100%;background:transparent;border:none;border-left:2px solid rgba(255,255,255,0.12);outline:none;font-family:var(--font-body);font-size:12px;color:var(--cream);line-height:1.6;resize:none;padding-left:10px;transition:border-color 0.2s"></textarea>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
+        <textarea id="ms-inline-antigoals" rows="2" placeholder="What we will NOT do…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-mono);font-size:10px;color:var(--rust);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
+      </div>
+    </div>`;
 
   body.innerHTML = `
     <div class="ms-alt-timeline-wrap">
@@ -8777,6 +8778,39 @@ function renderMilestoneTimeline(projId) {
           No milestones yet. Click "+ Milestone" above to add one.
         </div>`}
     </div>`;
+
+  // Set textarea values and wire up blur-to-save for inline notes fields
+  const notesTA    = body.querySelector('#ms-inline-notes');
+  const missionTA  = body.querySelector('#ms-inline-mission');
+  const antiTA     = body.querySelector('#ms-inline-antigoals');
+  if (notesTA)   notesTA.value   = proj.notes       || '';
+  if (missionTA) missionTA.value = proj.missionBrief || '';
+  if (antiTA)    antiTA.value    = proj.antiGoals    || '';
+
+  const focusStyle = (el, isBorderLeft) => {
+    if (!el) return;
+    el.addEventListener('focus', () => {
+      if (isBorderLeft) el.style.borderLeftColor = 'rgba(255,255,255,0.4)';
+      else              el.style.borderBottomColor = 'rgba(255,255,255,0.25)';
+    });
+    el.addEventListener('blur', () => {
+      if (isBorderLeft) el.style.borderLeftColor = 'rgba(255,255,255,0.12)';
+      else              el.style.borderBottomColor = 'transparent';
+    });
+  };
+  focusStyle(notesTA,   false);
+  focusStyle(missionTA, true);
+  focusStyle(antiTA,    false);
+
+  const saveField = (el, field) => {
+    if (!el) return;
+    el.addEventListener('blur', () => {
+      updateMilestoneProject(proj.id, { [field]: el.value.trim() || null });
+    });
+  };
+  saveField(notesTA,   'notes');
+  saveField(missionTA, 'missionBrief');
+  saveField(antiTA,    'antiGoals');
 }
 
 function renderMsColorPicker(containerId, selectedColor) {
