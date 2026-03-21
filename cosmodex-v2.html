@@ -10318,17 +10318,15 @@ function _tdDrawTimeline(now){
       ctx.lineWidth=2.2; ctx.stroke();
     }
 
-    // Label rotated along the line (reads upward from bottom)
+    // Label drawn horizontally above the line top (always readable)
     if(ev.title){
       ctx.save();
       const labelStr=ev.title.length>28?ev.title.slice(0,27)+'…':ev.title;
       ctx.font="300 10px 'DM Mono',monospace";
       ctx.fillStyle=isPast?'rgba(53,249,47,0.42)':'rgba(53,249,47,0.82)';
       ctx.textAlign='left';
-      ctx.textBaseline='middle';
-      ctx.translate(sx, lineTop + 4);
-      ctx.rotate(Math.PI/2);
-      ctx.fillText(labelStr, 8, -7);
+      ctx.textBaseline='bottom';
+      ctx.fillText(labelStr, sx + 4, lineTop - 4);
       ctx.restore();
     }
   });
