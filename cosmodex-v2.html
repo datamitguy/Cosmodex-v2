@@ -10318,15 +10318,18 @@ function _tdDrawTimeline(now){
       ctx.lineWidth=2.2; ctx.stroke();
     }
 
-    // Label drawn horizontally above the line top (always readable)
+    // Label drawn character-by-character vertically downward (like a sign)
     if(ev.title){
       ctx.save();
-      const labelStr=ev.title.length>28?ev.title.slice(0,27)+'…':ev.title;
+      const labelStr=ev.title.length>18?ev.title.slice(0,17)+'…':ev.title;
       ctx.font="300 10px 'DM Mono',monospace";
       ctx.fillStyle=isPast?'rgba(53,249,47,0.42)':'rgba(53,249,47,0.82)';
-      ctx.textAlign='left';
-      ctx.textBaseline='bottom';
-      ctx.fillText(labelStr, sx + 4, lineTop - 4);
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      const charH=12;
+      [...labelStr].forEach((ch,i)=>{
+        ctx.fillText(ch, sx, lineTop+8+i*charH);
+      });
       ctx.restore();
     }
   });
