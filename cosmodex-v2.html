@@ -716,8 +716,8 @@ body::after {
   position: absolute;
   left: 48px; right: 0;
   height: 1px;
-  background: #ffffff;
-  box-shadow: 0 0 10px #fff, 0 0 20px rgba(255,255,255,0.6);
+  background: #00e676;
+  box-shadow: 0 0 8px #00e676, 0 0 20px rgba(0,230,118,0.5), 0 0 40px rgba(0,230,118,0.2);
   z-index: 5;
 }
 
@@ -726,8 +726,8 @@ body::after {
   left: 44px;
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 0 8px rgba(255,255,255,1), 0 0 16px rgba(255,255,255,0.6);
+  background: #00e676;
+  box-shadow: 0 0 8px #00e676, 0 0 16px rgba(0,230,118,0.7);
   transform: translateX(-50%) translateY(-3px);
 }
 
@@ -4966,6 +4966,26 @@ select.sched-input { background: #181818; }
         GetAbstract
       </div>
     </div>
+
+    <div class="nav-section" style="margin-top:auto;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07)">
+      <div class="nav-section-label">Tools</div>
+      <div class="nav-item" id="btn-notes">
+        <span class="nav-item-icon">✎</span>
+        Notes
+      </div>
+      <div class="nav-item" id="btn-focus">
+        <span class="nav-item-icon">◎</span>
+        Focus
+      </div>
+      <div class="nav-item" id="btn-cosmodex-bubble" data-panel="cosmodex-bubble">
+        <span class="nav-item-icon">◉</span>
+        Bubble
+      </div>
+      <div class="nav-item" id="btn-cosmos">
+        <span class="nav-item-icon">✦</span>
+        Ask Cosmos
+      </div>
+    </div>
   </div>
 
   <div class="nav-footer">
@@ -4989,21 +5009,6 @@ select.sched-input { background: #181818; }
     <button id="hamburger" title="Toggle nav">☰</button>
     <h1 id="page-title">Today</h1>
     <span id="page-date" class="page-date"></span>
-    <div class="header-sep"></div>
-    <div class="header-actions">
-      <button class="hdr-btn" id="btn-notes">
-        ✎ Notes
-      </button>
-      <button class="hdr-btn" id="btn-focus">
-        ◎ Focus
-      </button>
-      <button class="hdr-btn" id="btn-cosmodex-bubble" data-panel="cosmodex-bubble">
-        ◉ Bubble
-      </button>
-      <button class="hdr-btn accent" id="btn-cosmos">
-        ✦ Ask Cosmos
-      </button>
-    </div>
   </header>
 
   <!-- Main Content -->
@@ -5091,7 +5096,7 @@ select.sched-input { background: #181818; }
             <button type="button" class="energy-pill energy-quick"   data-energy="quick">⚡ Quick</button>
             <button type="button" class="energy-pill energy-deep"    data-energy="deep">Deep</button>
             <button type="button" class="energy-pill energy-shallow" data-energy="shallow">Shallow</button>
-            <button type="button" class="energy-pill energy-admin"   data-energy="admin">Admin</button>
+            <button type="button" class="energy-pill energy-admin"   data-energy="admin">Meeting</button>
           </div>
         </div>
       </div>
@@ -5524,7 +5529,7 @@ select.sched-input { background: #181818; }
                     </div>
                     <div class="hb-energy-chip admin" onclick="hbPickEnergy(this)">
                       <div class="hb-ec-icon">🟡</div>
-                      <div class="hb-ec-name">Admin Mode</div>
+                      <div class="hb-ec-name">Meeting Mode</div>
                     </div>
                   </div>
                   <div class="hb-energy-row">
@@ -5955,7 +5960,7 @@ select.sched-input { background: #181818; }
       <div style="font-size:2.5rem;opacity:0.7">⬡</div>
       <div style="color:var(--cream);font-family:var(--font-display);font-size:1.2rem;font-weight:300;letter-spacing:0.08em">GetAbstract</div>
       <div style="color:var(--muted);font-size:.875rem;text-align:center;max-width:380px;line-height:1.6">GetAbstract blocks embedding in external apps. Open it in a companion window — your browser login session is shared automatically.</div>
-      <button onclick="window.open('https://www.getabstract.com/en/my-library','getabstract-window','width=1200,height=800')" class="btn-primary" style="margin-top:4px">Open GetAbstract ↗</button>
+      <button onclick="window.open('https://www.getabstract.com/en/explore?u=hsbc','_blank')" class="btn-primary" style="margin-top:4px">Open GetAbstract ↗</button>
       <div style="color:var(--muted);font-size:.75rem;opacity:0.6">The window stays open as you navigate Cosmodex</div>
     </div>
 
@@ -6313,7 +6318,7 @@ select.sched-input { background: #181818; }
           <button type="button" class="energy-pill energy-quick"   data-energy="quick">⚡ Quick</button>
           <button type="button" class="energy-pill energy-deep"    data-energy="deep">🧠 Deep</button>
           <button type="button" class="energy-pill energy-shallow" data-energy="shallow">💬 Shallow</button>
-          <button type="button" class="energy-pill energy-admin"   data-energy="admin">📋 Admin</button>
+          <button type="button" class="energy-pill energy-admin"   data-energy="admin">📅 Meeting</button>
           <button type="button" class="energy-pill energy-creative" data-energy="creative">🎨 Creative</button>
         </div>
       </div>
@@ -6350,7 +6355,7 @@ select.sched-input { background: #181818; }
       </div>
       <div class="sched-row">
         <label class="sched-label">Duration (minutes)</label>
-        <input id="sched-duration" type="number" class="sched-input" value="60" min="15" step="15" />
+        <input id="sched-duration" type="number" class="sched-input" value="30" min="15" step="15" />
       </div>
       <div id="sched-subtasks-section" style="margin-top:14px;display:none">
         <label class="sched-label">Subtasks (will also be added after main task)</label>
@@ -6702,7 +6707,7 @@ const ENERGY_TYPES = {
   quick:   { label: 'Quick',   icon: '⚡', cssClass: 'energy-quick' },
   deep:    { label: 'Deep',    icon: '🧠', cssClass: 'energy-deep' },
   shallow: { label: 'Shallow', icon: '💬', cssClass: 'energy-shallow' },
-  admin:   { label: 'Admin',   icon: '📋', cssClass: 'energy-admin' },
+  admin:   { label: 'Meeting', icon: '📅', cssClass: 'energy-admin' },
 };
 
 const CAT_COLOR_PALETTE = ['#00cfff','#ff6fff','#00ff9f','#bf80ff','#ff9f00','#ff4f7b','#ffff00','#00ffcc','#ff3f3f','#80ff00'];
@@ -11349,7 +11354,7 @@ function openScheduleModal(date, startTime, taskId, subId) {
     : task.title;
   document.getElementById('sched-date').value = date;
   document.getElementById('sched-time').value = startTime;
-  document.getElementById('sched-duration').value = 60;
+  document.getElementById('sched-duration').value = 30;
   const subsSection = document.getElementById('sched-subtasks-section');
   const subsList    = document.getElementById('sched-subtasks-list');
   if (!subId && task.subtasks && task.subtasks.length > 0) {
@@ -11856,12 +11861,13 @@ function initCalDropZones() {
       const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
       const dateStr = localDateStr(_calDate);
       // Check if a multi-hour event spans this hour (chip only placed in start hour)
+      // Only mark hours AFTER the start hour as covered — the start hour's chip handles its own clicks
       const coveringEvent = CAL_EVENTS.find(ev => {
         if (ev.date !== dateStr || !ev.startTime) return false;
         const [sh, sm] = ev.startTime.split(':').map(Number);
         const startFrac = sh + sm / 60;
         const endFrac = startFrac + (ev.duration || 60) / 60;
-        return h >= Math.floor(startFrac) && h < Math.ceil(endFrac);
+        return h > Math.floor(startFrac) && h < Math.ceil(endFrac);
       });
       if (coveringEvent) {
         showEventModal(coveringEvent, e.clientX, e.clientY);
@@ -12997,7 +13003,7 @@ document.addEventListener('click', e => {
 
 // Header action buttons
 document.getElementById('btn-notes')?.addEventListener('click', () => openOverlay('notes-overlay'));
-document.getElementById('btn-focus')?.addEventListener('click', () => { showMainPanel('timedrift'); document.getElementById('left-nav')?.classList.add('collapsed'); });
+document.getElementById('btn-focus')?.addEventListener('click', () => { showMainPanel('timedrift'); });
 document.getElementById('btn-cosmodex-bubble')?.addEventListener('click', () => openOrb());
 document.getElementById('btn-cosmos')?.addEventListener('click', () => openOverlay('claude-panel'));
 
