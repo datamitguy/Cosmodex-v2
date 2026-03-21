@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="referrer" content="origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com wss://*.firebaseio.com; img-src 'self' data:; frame-src 'none'; object-src 'none';" />
   <title>Cosmodex v2</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,8 +20,9 @@
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
     onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
-    deleteField
+    deleteField, arrayUnion, arrayRemove, runTransaction
   } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+  import { signOut } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
 
   const firebaseConfig = {
     apiKey:            "AIzaSyCg5lL_Xga0ZiSqZovx4V1ccL3WF-8sVqw",
@@ -48,21 +50,25 @@
   window.CDX_FB   = {
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
     onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
-    deleteField, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
+    deleteField, arrayUnion, arrayRemove, runTransaction,
+    GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
   };
+  Object.freeze(window.CDX_FB);
 
   // Restore existing Google session automatically on page load
   onAuthStateChanged(auth, user => {
     window.CDX_USER = user || null;
-    if (user) window.dispatchEvent(new Event('cdx-auth-ready'));
+    if (user) {
+      window.dispatchEvent(new Event('cdx-auth-ready'));
+    } else {
+      window.dispatchEvent(new Event('cdx-auth-signout'));
+    }
   });
 </script>
 
 <style>
 
-/* ═══════════════════════════════════════════════════════════
-   DESIGN TOKENS
-   ═══════════════════════════════════════════════════════════ */
+/* ══ DESIGN TOKENS ══ */
 :root {
   /* Backgrounds — pure black base; surface used for left nav to differentiate */
   --bg:          #000000;
@@ -100,11 +106,16 @@
 
   /* Motion */
   --ease-fast:   all 0.2s ease;
+  --ease-panel:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-glass:  cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* Glass language — Liquid Glass OS */
+  --glass-bg:        rgba(255, 255, 255, 0.03);
+  --glass-border:    rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.20);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   RESET & BASE
-   ═══════════════════════════════════════════════════════════ */
+/* ══ RESET & BASE ══ */
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
 :focus-visible {
@@ -123,6 +134,13 @@ html { font-size:16px; -webkit-font-smoothing:antialiased; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.26); }
 * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
 
+/* ── Tabular numbers — prevent layout jitter on all time/metric displays ── */
+.orb-time-clock, #page-date, .cal-event-time, .stat-card-number,
+.nav-item-count, .orb-next-label, .habit-streak, .focus-timer-display,
+.pomo-time, .insight-count, .task-row-time {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Global placeholder ─────────────────────────────── */
 ::placeholder { color: rgba(255,255,255,0.32); }
 
@@ -135,14 +153,6 @@ body {
   overflow: hidden;
   display: flex;
   position: relative;
-}
-
-/* Subtle grid overlay — removed */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  pointer-events: none;
-  z-index: 0;
 }
 
 /* Paper grain texture */
@@ -164,9 +174,7 @@ body::after {
   opacity: 1; transition: opacity 400ms ease;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   KEYFRAMES
-   ═══════════════════════════════════════════════════════════ */
+/* ══ KEYFRAMES ══ */
 @keyframes fadeUp {
   from { opacity:0; transform:translateY(14px); }
   to   { opacity:1; transform:translateY(0); }
@@ -182,9 +190,7 @@ body::after {
   to   { transform: rotate(360deg); }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CURSOR SPOTLIGHT
-   ═══════════════════════════════════════════════════════════ */
+/* ══ CURSOR SPOTLIGHT ══ */
 #cursor-spotlight {
   position: fixed;
   width: 520px; height: 520px;
@@ -196,15 +202,15 @@ body::after {
   opacity: 0;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   LEFT NAV
-   ═══════════════════════════════════════════════════════════ */
+/* ══ LEFT NAV ══ */
 #left-nav {
   width: var(--nav-width);
   min-width: var(--nav-width);
   height: 100dvh;
-  background: var(--surface);
-  border-right: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -396,9 +402,7 @@ body::after {
   color: var(--cream);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   APP SHELL
-   ═══════════════════════════════════════════════════════════ */
+/* ══ APP SHELL ══ */
 #app-shell {
   flex: 1;
   display: flex;
@@ -410,9 +414,7 @@ body::after {
   min-width: 0;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   PAGE HEADER
-   ═══════════════════════════════════════════════════════════ */
+/* ══ PAGE HEADER ══ */
 #page-header {
   height: var(--header-h);
   min-height: var(--header-h);
@@ -504,9 +506,7 @@ body::after {
   border-color: var(--gold);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   MAIN CONTENT
-   ═══════════════════════════════════════════════════════════ */
+/* ══ MAIN CONTENT ══ */
 #main-content {
   flex: 1;
   display: flex;
@@ -716,8 +716,8 @@ body::after {
   position: absolute;
   left: 48px; right: 0;
   height: 1px;
-  background: rgba(53,249,47,0.85);
-  box-shadow: 0 0 4px rgba(53,249,47,0.6);
+  background: #ffffff;
+  box-shadow: 0 0 10px #fff, 0 0 20px rgba(255,255,255,0.6);
   z-index: 5;
 }
 
@@ -726,8 +726,8 @@ body::after {
   left: 44px;
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: rgba(53,249,47,1);
-  box-shadow: 0 0 6px rgba(53,249,47,0.9), 0 0 12px rgba(53,249,47,0.5);
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(255,255,255,1), 0 0 16px rgba(255,255,255,0.6);
   transform: translateX(-50%) translateY(-3px);
 }
 
@@ -1306,9 +1306,7 @@ body::after {
   outline-offset: -2px;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   COSMODEX ORB (floating, bottom-right)
-   ═══════════════════════════════════════════════════════════ */
+/* ══ COSMODEX ORB (floating, bottom-right) ══ */
 #cosmodex-orb {
   position: fixed;
   bottom: 24px; right: 24px;
@@ -1376,7 +1374,9 @@ body::after {
 #orb-backdrop {
   display: none;
   position: fixed; inset: 0;
-  background: rgba(7,7,7,0.75);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(8px) brightness(0.4);
+  -webkit-backdrop-filter: blur(8px) brightness(0.4);
   z-index: 497;
 }
 
@@ -1498,8 +1498,8 @@ body::after {
   position: fixed;
   inset: 0;
   z-index: 600;
-  background: rgba(7,7,7,0.82);
-  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(8px) brightness(0.4);
   align-items: center;
   justify-content: center;
 }
@@ -1559,9 +1559,7 @@ body::after {
   cursor: default;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   OVERLAYS (shared base)
-   ═══════════════════════════════════════════════════════════ */
+/* ══ OVERLAYS (shared base) ══ */
 /* Global: fix native select/option dropdown in dark theme */
 select { color-scheme: dark; }
 select option { background: #181818; color: rgba(255,255,255,0.88); }
@@ -1572,20 +1570,20 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(7,7,7,0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(8px) brightness(0.4);
+  -webkit-backdrop-filter: blur(8px) brightness(0.4);
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
-  transition: opacity 0.25s ease, visibility 0s linear 0.25s;
+  transition: opacity 0.3s var(--ease-glass), visibility 0s linear 0.3s;
 }
 
 .overlay.open {
   opacity: 1;
   pointer-events: all;
   visibility: visible;
-  transition: opacity 0.25s ease, visibility 0s linear 0s;
+  transition: opacity 0.3s var(--ease-glass), visibility 0s linear 0s;
 }
 
 .overlay-panel {
@@ -1677,9 +1675,7 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   color: var(--muted);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SIGN-IN OVERLAY (z-index 2000)
-   ═══════════════════════════════════════════════════════════ */
+/* ══ SIGN-IN OVERLAY (z-index 2000) ══ */
 #signin-overlay {
   position: fixed; inset: 0;
   z-index: 2000;
@@ -1759,9 +1755,7 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
 
 .signin-btn:hover { background: var(--gold-hover); transform: translateY(-1px); }
 
-/* ═══════════════════════════════════════════════════════════
-   COMMAND PALETTE (z-index 900)
-   ═══════════════════════════════════════════════════════════ */
+/* ══ COMMAND PALETTE (z-index 900) ══ */
 #cmd-palette {
   position: fixed; inset: 0;
   z-index: 900;
@@ -1769,11 +1763,12 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   align-items: flex-start;
   justify-content: center;
   padding-top: 15vh;
-  background: rgba(7,7,7,0.65);
-  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(8px) brightness(0.4);
+  -webkit-backdrop-filter: blur(8px) brightness(0.4);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s;
+  transition: opacity 0.25s var(--ease-glass);
 }
 
 #cmd-palette.open { opacity: 1; pointer-events: all; }
@@ -1859,9 +1854,7 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   color: var(--muted);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   MOBILE NAV
-   ═══════════════════════════════════════════════════════════ */
+/* ══ MOBILE NAV ══ */
 #mobile-nav {
   display: none;
   position: fixed;
@@ -1923,9 +1916,7 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
 
 #mob-fab:hover { transform: scale(1.05); background: var(--gold-hover); }
 
-/* ═══════════════════════════════════════════════════════════
-   MOBILE DRAWER
-   ═══════════════════════════════════════════════════════════ */
+/* ══ MOBILE DRAWER ══ */
 #mob-more-drawer {
   position: fixed;
   bottom: var(--mobile-nav-h);
@@ -1979,9 +1970,7 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
 /* Hide mobile shortcut bar globally */
 #mobile-nav, #mob-fab, #mob-more-drawer { display: none !important; }
 
-/* ═══════════════════════════════════════════════════════════
-   RESPONSIVE — MOBILE (≤720px)
-   ═══════════════════════════════════════════════════════════ */
+/* ══ RESPONSIVE — MOBILE (≤720px) ══ */
 @media (max-width: 720px) {
   body { flex-direction: column; }
 
@@ -2005,9 +1994,7 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   .header-actions .hdr-btn:not(.always-visible) { display: none; }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   STAT CARDS (for overlays)
-   ═══════════════════════════════════════════════════════════ */
+/* ══ STAT CARDS (for overlays) ══ */
 .stat-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -2022,6 +2009,12 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   padding: 16px;
   position: relative;
   overflow: hidden;
+  transition: transform 0.3s var(--ease-glass), border-color 0.3s var(--ease-glass), box-shadow 0.3s var(--ease-glass);
+}
+.stat-card:hover {
+  transform: scale(1.02) translateY(-2px);
+  border-color: rgba(255,255,255,0.3);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.9);
 }
 
 .stat-card::before {
@@ -2051,9 +2044,7 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   display: block;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SHARED BUTTON + FORM UTILITIES
-   ═══════════════════════════════════════════════════════════ */
+/* ══ SHARED BUTTON + FORM UTILITIES ══ */
 .btn-primary {
   background: var(--gold); color: var(--ink);
   border: none; border-radius: 8px; padding: 8px 16px;
@@ -2088,9 +2079,7 @@ select.form-input { background: #181818; }
 .form-input:focus { border-color: var(--gold); }
 textarea.form-input { resize: vertical; min-height: 60px; }
 
-/* ═══════════════════════════════════════════════════════════
-   LISTS PANEL (legacy styles kept for compatibility)
-   ═══════════════════════════════════════════════════════════ */
+/* ══ LISTS PANEL (legacy styles kept for compatibility) ══ */
 .lists-tile-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -2100,13 +2089,13 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   border-radius: 16px;
   padding: 20px 16px 16px;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s;
+  transition: transform 0.3s var(--ease-glass), border-color 0.3s var(--ease-glass), box-shadow 0.3s var(--ease-glass);
   min-height: 100px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
-.list-tile:hover { transform: translateY(-2px); opacity: 0.9; }
+.list-tile:hover { transform: scale(1.02) translateY(-2px); border-color: rgba(255,255,255,0.3); box-shadow: 0 20px 50px rgba(0,0,0,0.9); }
 .list-tile-name {
   font-family: var(--font-display);
   font-size: 15px;
@@ -2433,14 +2422,12 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .keystone-row-v2:hover .keystone-del { opacity: 0.5; }
 .keystone-del:hover { opacity: 1 !important; color: var(--rust); }
 
-/* ═══════════════════════════════════════════════════════════
-   MILESTONES PANEL
-   ═══════════════════════════════════════════════════════════ */
+/* ══ MILESTONES PANEL ══ */
 
 /* ── Planning dashboard card grid ──────────────────────── */
 .ms-dash-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
   padding: 24px;
 }
@@ -2448,23 +2435,22 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .ms-card-milestones {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 .ms-card-milestone-item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--muted);
-  line-height: 1.4;
+  line-height: 1.3;
 }
 .ms-card-milestone-dot {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 3px;
 }
 .ms-card-milestone-name {
   flex: 1;
@@ -2479,12 +2465,9 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   color: var(--muted);
   font-size: 9px;
 }
-/* Task chips inside card */
+/* Task chips inside card — hidden on card, visible in detail view */
 .ms-card-tasks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 2px;
+  display: none !important;
 }
 .ms-card-task-chip {
   font-family: var(--font-mono);
@@ -2507,44 +2490,41 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 /* Outer wrapper — liquid glass rim (acts as the 1px border via padding trick) */
 .ms-dash-card-outer {
   padding: 1px;
-  border-radius: 22px;
+  border-radius: 18px;
   cursor: pointer;
-  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+  transition: transform 0.25s var(--ease-glass), box-shadow 0.25s var(--ease-glass);
   position: relative;
-  /* Glass rim: bright top-left highlight, fading around the edges, faint bottom-right catch-light */
   background: linear-gradient(
     145deg,
-    rgba(255,255,255,0.32) 0%,
-    rgba(255,255,255,0.10) 20%,
-    rgba(255,255,255,0.02) 48%,
-    rgba(255,255,255,0.02) 55%,
-    rgba(255,255,255,0.08) 78%,
-    rgba(255,255,255,0.20) 100%
+    rgba(255,255,255,0.22) 0%,
+    rgba(255,255,255,0.07) 25%,
+    rgba(255,255,255,0.01) 50%,
+    rgba(255,255,255,0.06) 75%,
+    rgba(255,255,255,0.14) 100%
   );
   box-shadow:
-    0 10px 40px rgba(0,0,0,0.65),
-    0 2px 10px rgba(0,0,0,0.5),
-    0 0 80px rgba(0,0,0,0.3),
-    inset 0 0 0 0.5px rgba(255,255,255,0.04);
+    0 8px 32px rgba(0,0,0,0.6),
+    0 2px 8px rgba(0,0,0,0.4),
+    inset 0 0 0 0.5px rgba(255,255,255,0.03);
 }
 .ms-dash-card-outer:hover {
-  transform: translateY(-6px) scale(1.005);
+  transform: translateY(-2px);
   box-shadow:
-    0 24px 64px rgba(0,0,0,0.72),
-    0 6px 20px rgba(0,0,0,0.55),
+    0 16px 48px rgba(0,0,0,0.68),
+    0 4px 16px rgba(0,0,0,0.45),
     inset 0 0 0 0.5px rgba(255,255,255,0.06);
 }
 
 .ms-dash-card-inner {
   /* Semi-transparent surface — lets the blur show through */
-  background: rgba(16, 16, 22, 0.52);
-  backdrop-filter: blur(48px) saturate(160%) brightness(1.04);
-  -webkit-backdrop-filter: blur(48px) saturate(160%) brightness(1.04);
-  border-radius: 21px;
-  padding: 20px 20px 16px;
+  background: rgba(14, 14, 20, 0.58);
+  backdrop-filter: blur(32px) saturate(140%);
+  -webkit-backdrop-filter: blur(32px) saturate(140%);
+  border-radius: 17px;
+  padding: 14px 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
   height: 100%;
   box-sizing: border-box;
   position: relative;
@@ -2554,39 +2534,41 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .ms-dash-card-inner::before {
   content: '';
   position: absolute;
-  top: 0; left: 5%; right: 5%;
+  top: 0; left: 8%; right: 8%;
   height: 1px;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255,255,255,0.18) 15%,
-    rgba(255,255,255,0.55) 38%,
-    rgba(255,255,255,0.65) 50%,
-    rgba(255,255,255,0.55) 62%,
-    rgba(255,255,255,0.18) 85%,
+    rgba(255,255,255,0.12) 20%,
+    rgba(255,255,255,0.38) 40%,
+    rgba(255,255,255,0.44) 50%,
+    rgba(255,255,255,0.38) 60%,
+    rgba(255,255,255,0.12) 80%,
     transparent 100%
   );
   pointer-events: none;
   z-index: 1;
 }
-/* Inner light refraction — soft radial coming from top-left as if light hits the glass */
+/* Inner light refraction */
 .ms-dash-card-inner::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 21px;
+  border-radius: 17px;
   background:
-    radial-gradient(ellipse at 18% -5%, rgba(255,255,255,0.09) 0%, transparent 45%),
-    radial-gradient(ellipse at 82% 105%, rgba(255,255,255,0.04) 0%, transparent 40%);
+    radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.05) 0%, transparent 50%);
   pointer-events: none;
 }
 
 .ms-dash-card-title {
   font-family: var(--font-display);
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 400;
   color: var(--cream);
-  line-height: 1.3;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ms-dash-card-meta {
@@ -2618,34 +2600,37 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-wrap: nowrap;
+  gap: 8px;
 }
 
 .ms-dash-pct-label {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 300;
   line-height: 1;
 }
 
 .ms-dash-acts-label {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 8px;
   color: var(--muted);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
 }
 
 .ms-dash-milestones-count {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: rgba(255,255,255,0.4);
-  letter-spacing: 0.08em;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 8px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.06em;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 100px;
-  padding: 3px 8px;
+  padding: 2px 7px;
+  white-space: nowrap;
 }
 
 /* ── Alternating timeline (single-project view) ──────── */
@@ -3383,9 +3368,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 .ms-activity-row:hover .ms-activity-del { opacity: 1; }
 
-/* ═══════════════════════════════════════════════════════════
-   CATEGORIES
-   ═══════════════════════════════════════════════════════════ */
+/* ══ CATEGORIES ══ */
 .cat-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 .cat-badge {
   font-family:var(--font-mono); font-size:9px;
@@ -3400,9 +3383,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .cat-creative { background:rgba(196,154,108,0.12); color:#c49a6c; border:1px solid rgba(196,154,108,0.3); }
 .cat-admin    { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.55); border:1px solid rgba(255,255,255,0.15); }
 
-/* ═══════════════════════════════════════════════════════════
-   CALENDAR — WEEK VIEW
-   ═══════════════════════════════════════════════════════════ */
+/* ══ CALENDAR — WEEK VIEW ══ */
 .week-header-row {
   display:grid; grid-template-columns:48px repeat(7,1fr);
   border-bottom:1px solid var(--border); flex-shrink:0;
@@ -3429,10 +3410,13 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .week-event-chip {
   font-size:9px; padding:2px 5px; border-radius:4px;
   margin:2px 2px 0; overflow:hidden; border-left:2px solid;
+  border-top: 1px solid var(--glass-highlight);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  transition: transform 0.2s var(--ease-panel);
 }
+.week-event-chip:hover { transform: translateX(4px); }
 .week-event-chip .chip-title {
   font-weight:500; white-space:nowrap; overflow:hidden;
   text-overflow:ellipsis; display:block;
@@ -3442,9 +3426,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   font-family:var(--font-mono); font-size:8px; color:var(--muted);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CALENDAR — MONTH VIEW
-   ═══════════════════════════════════════════════════════════ */
+/* ══ CALENDAR — MONTH VIEW ══ */
 .month-dow-header {
   display:grid; grid-template-columns:repeat(7,1fr);
   border-bottom:1px solid var(--border); flex-shrink:0;
@@ -3484,14 +3466,13 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   padding:2px 5px; border-radius:4px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   margin-bottom:2px; display:block;
+  border-top: 1px solid var(--glass-highlight);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SCHEDULE MODAL
-   ═══════════════════════════════════════════════════════════ */
+/* ══ SCHEDULE MODAL ══ */
 .sched-label {
   font-family:var(--font-mono); font-size:9px; letter-spacing:0.12em;
   text-transform:uppercase; color:var(--muted); margin-bottom:5px; display:block;
@@ -3525,9 +3506,7 @@ select.sched-input { background: #181818; }
   border:1px solid rgba(107,159,212,0.25); color:var(--blue); white-space:nowrap;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   SETTINGS OVERLAY
-   ═══════════════════════════════════════════════════════════ */
+/* ══ SETTINGS OVERLAY ══ */
 .settings-section { margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--border); }
 .settings-section:last-child { border-bottom:none; }
 .settings-section-title { font-family:var(--font-display); font-size:16px; font-weight:300; color:var(--cream); margin-bottom:4px; }
@@ -3586,9 +3565,7 @@ select.sched-input { background: #181818; }
 /* ── Day view — active tab default ─────────────────────── */
 .view-tab[data-view="day"] { /* initially set by JS */ }
 
-/* ═══════════════════════════════════════════════════════════
-   HABIT BUILDER — ADDITIONAL TOKENS
-   ═══════════════════════════════════════════════════════════ */
+/* ══ HABIT BUILDER — ADDITIONAL TOKENS ══ */
 :root {
   --elev2:       rgba(255,255,255,0.05);
   --border2:     rgba(255,255,255,0.10);
@@ -3602,9 +3579,7 @@ select.sched-input { background: #181818; }
   --ease:        cubic-bezier(0.16,1,0.3,1);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   HABIT BUILDER — LAUNCHER TAB
-   ═══════════════════════════════════════════════════════════ */
+/* ══ HABIT BUILDER — LAUNCHER TAB ══ */
 .hb-launcher-wrap { display:flex; flex-direction:column; gap:28px; max-width:1100px; }
 
 .hb-hero {
@@ -3721,9 +3696,7 @@ select.sched-input { background: #181818; }
 .hb-launch-btn:active { transform:translateY(0); }
 .hb-lb-sub { font-family:var(--font-mono); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; margin-top:4px; display:block; opacity:.7; }
 
-/* ═══════════════════════════════════════════════════════════
-   HABIT BUILDER — BUILDER TAB
-   ═══════════════════════════════════════════════════════════ */
+/* ══ HABIT BUILDER — BUILDER TAB ══ */
 .hb-builder-layout { display:grid; grid-template-columns:320px 1fr; gap:24px; align-items:start; max-width:1100px; }
 
 .hb-library { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
@@ -3811,9 +3784,7 @@ select.sched-input { background: #181818; }
 
 .hb-divider { border:none; border-top:1px solid var(--border); margin:20px 0; }
 
-/* ═══════════════════════════════════════════════════════════
-   HABIT BUILDER — PROGRESS TAB
-   ═══════════════════════════════════════════════════════════ */
+/* ══ HABIT BUILDER — PROGRESS TAB ══ */
 .hb-progress-layout { max-width:1100px; }
 .hb-prog-top { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:20px; }
 .hb-prog-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
@@ -3856,9 +3827,7 @@ select.sched-input { background: #181818; }
 .hb-ab-fill { height:100%; border-radius:2px; transition:width 1s var(--ease); }
 .hb-stack-note { font-size:11px; color:var(--muted); font-style:italic; padding:8px 12px; background:var(--elevated); border-radius:var(--r-sm); }
 
-/* ═══════════════════════════════════════════════════════════
-   HABIT BUILDER — INSIGHTS (for insights overlay)
-   ═══════════════════════════════════════════════════════════ */
+/* ══ HABIT BUILDER — INSIGHTS (for insights overlay) ══ */
 .hb-insight-layout { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
 .hb-insight-card { background:var(--elevated); border:1px solid var(--border); border-radius:var(--r-lg); padding:24px; }
 .hb-friction-insight { margin-bottom:16px; }
@@ -3924,9 +3893,7 @@ select.sched-input { background: #181818; }
   .hb-routine-grid,.hb-prog-top,.hb-habits-grid,.hb-cue-grid,.hb-why-reward,.hb-insight-layout { grid-template-columns:1fr; }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   TOAST NOTIFICATIONS
-   ═══════════════════════════════════════════════════════════ */
+/* ══ TOAST NOTIFICATIONS ══ */
 #cdx-toast-container {
   position: fixed;
   bottom: 80px;
@@ -4069,14 +4036,12 @@ select.sched-input { background: #181818; }
 .energy-pill.active.energy-creative { background: rgba(255,255,255,0.12);  border-color: var(--gold);  color: var(--gold); }
 .energy-pill.active.energy-quick    { background: rgba(74,124,94,0.12);   border-color: var(--sage);  color: var(--sage); }
 
-/* ═══════════════════════════════════════════════════════════
-   DAILY RITUAL OVERLAY
-   ═══════════════════════════════════════════════════════════ */
+/* ══ DAILY RITUAL OVERLAY ══ */
 #ritual-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px) brightness(0.4);
+  -webkit-backdrop-filter: blur(8px) brightness(0.4);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -4255,8 +4220,8 @@ select.sched-input { background: #181818; }
 #reentry-modal {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px) brightness(0.4);
+  -webkit-backdrop-filter: blur(8px) brightness(0.4);
   z-index: 870;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
@@ -4348,14 +4313,12 @@ select.sched-input { background: #181818; }
 }
 .reentry-skip-btn:hover { border-color: var(--gold); color: var(--cream); }
 
-/* ═══════════════════════════════════════════════════════════
-   COMMIT MODE
-   ═══════════════════════════════════════════════════════════ */
+/* ══ COMMIT MODE ══ */
 #commit-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.78);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px) brightness(0.4);
+  -webkit-backdrop-filter: blur(8px) brightness(0.4);
   z-index: 950;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -4487,8 +4450,8 @@ select.sched-input { background: #181818; }
 #friction-modal {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(8px) brightness(0.4);
+  -webkit-backdrop-filter: blur(8px) brightness(0.4);
   z-index: 960;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
@@ -4604,9 +4567,7 @@ select.sched-input { background: #181818; }
 }
 .friction-someday-btn:hover { border-color: var(--gold); color: var(--gold); }
 
-/* ═══════════════════════════════════════════════════════════
-   DONE WALL
-   ═══════════════════════════════════════════════════════════ */
+/* ══ DONE WALL ══ */
 .done-wall-stats {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
   padding: 16px 0; border-bottom: 1px solid var(--border);
@@ -4914,9 +4875,7 @@ select.sched-input { background: #181818; }
 <!-- Cursor spotlight -->
 <div id="cursor-spotlight"></div>
 
-<!-- ═══════════════════════════════════════════════════════
-     LEFT NAV
-     ═══════════════════════════════════════════════════════ -->
+<!-- ══ LEFT NAV ══ -->
 <nav id="left-nav">
 
   <div class="nav-workspace">
@@ -5013,9 +4972,7 @@ select.sched-input { background: #181818; }
   </div>
 </nav>
 
-<!-- ═══════════════════════════════════════════════════════
-     APP SHELL
-     ═══════════════════════════════════════════════════════ -->
+<!-- ══ APP SHELL ══ -->
 <div id="app-shell">
 
   <!-- Page Header -->
@@ -5153,7 +5110,7 @@ select.sched-input { background: #181818; }
           <div class="plan-panel-header">
             <span class="plan-panel-label">Projects</span>
             <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
-              <button id="ms-archived-btn" class="btn-ghost" style="font-size:10px;padding:3px 8px;display:none;color:var(--muted)">⊡ Archived</button>
+              <button id="ms-archived-btn" class="btn-ghost" style="font-size:10px;padding:3px 8px;color:var(--muted)">⊡ Archived</button>
               <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:5px 11px">+ New</button>
               <button class="plan-panel-toggle" id="plan-left-toggle" title="Collapse">‹</button>
             </div>
@@ -5985,12 +5942,12 @@ select.sched-input { background: #181818; }
     </div><!-- /panel-insights -->
 
     <!-- Articles / Reading Panel -->
-    <div id="panel-getabstract" style="display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:#1a1612;gap:20px">
-      <div style="font-size:2.5rem">⬡</div>
-      <div style="color:#c9a227;font-size:1.2rem;font-weight:600">GetAbstract</div>
-      <div style="color:#888;font-size:.875rem;text-align:center;max-width:380px;line-height:1.6">GetAbstract blocks embedding in external apps. Open it in a companion window — your browser login session is shared automatically.</div>
-      <button onclick="window.open('https://www.getabstract.com/en/my-library','getabstract-window','width=1200,height=800')" style="margin-top:4px;padding:11px 28px;background:#c9a227;color:#1a1612;border:none;border-radius:6px;font-size:.9rem;font-weight:700;cursor:pointer;letter-spacing:.02em">Open GetAbstract ↗</button>
-      <div style="color:#555;font-size:.75rem">The window stays open as you navigate Cosmodex</div>
+    <div id="panel-getabstract" style="display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;gap:20px">
+      <div style="font-size:2.5rem;opacity:0.7">⬡</div>
+      <div style="color:var(--cream);font-family:var(--font-display);font-size:1.2rem;font-weight:300;letter-spacing:0.08em">GetAbstract</div>
+      <div style="color:var(--muted);font-size:.875rem;text-align:center;max-width:380px;line-height:1.6">GetAbstract blocks embedding in external apps. Open it in a companion window — your browser login session is shared automatically.</div>
+      <button onclick="window.open('https://www.getabstract.com/en/my-library','getabstract-window','width=1200,height=800')" class="btn-primary" style="margin-top:4px">Open GetAbstract ↗</button>
+      <div style="color:var(--muted);font-size:.75rem;opacity:0.6">The window stays open as you navigate Cosmodex</div>
     </div>
 
     <div id="panel-articles" style="display:none;flex:1;flex-direction:row;overflow:hidden">
@@ -6033,9 +5990,7 @@ select.sched-input { background: #181818; }
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
 
-<!-- ═══════════════════════════════════════════════════════
-     COSMODEX ORB
-     ═══════════════════════════════════════════════════════ -->
+<!-- ══ COSMODEX ORB ══ -->
 <div id="cosmodex-orb" title="Open Cosmodex dial">
   <canvas id="cosmodex-canvas"></canvas>
   <div id="orb-header">
@@ -6067,9 +6022,7 @@ select.sched-input { background: #181818; }
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     OVERLAYS
-     ═══════════════════════════════════════════════════════ -->
+<!-- ══ OVERLAYS ══ -->
 
 <!-- Sign-in -->
 <div id="signin-overlay">
@@ -6633,9 +6586,7 @@ select.sched-input { background: #181818; }
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     MOBILE BOTTOM NAV
-     ═══════════════════════════════════════════════════════ -->
+<!-- ══ MOBILE BOTTOM NAV ══ -->
 <nav id="mobile-nav">
   <button class="mob-nav-btn active" data-mob="calendar">
     <span class="mob-nav-icon">◻</span>
@@ -6706,9 +6657,7 @@ select.sched-input { background: #181818; }
 <script>
 'use strict';
 
-/* ══════════════════════════════════════════════════════════
-   CONSTANTS
-   ══════════════════════════════════════════════════════════ */
+/* ══ CONSTANTS ══ */
 let CATEGORIES = {};
 
 // Load saved categories from localStorage
@@ -6797,9 +6746,7 @@ const HK_HOLIDAYS = [
   { date:'2026-12-26', name:'Boxing Day',               type:'public' },
 ];
 
-/* ══════════════════════════════════════════════════════════
-   STATE
-   ══════════════════════════════════════════════════════════ */
+/* ══ STATE ══ */
 let TASKS      = [];
 let CAL_EVENTS = [];
 let HOLIDAYS   = {};
@@ -6832,6 +6779,21 @@ let _behavSaveTimer    = null;
 // Orb petal state
 let _orbGeometry  = null; // set by drawCosmodex when expanded
 let _orbClickHour = 9;    // hour of last petal click
+
+// Data listeners — stored so they can be cleaned up on signout
+let _tasksUnsub       = null;
+let _calEventsUnsub   = null;
+let _holidaysUnsub    = null;
+let _listsUnsub       = null;
+let _msProjUnsub      = null;
+let _msEventsUnsub    = null;
+let _msListsUnsub     = null;
+let _catUnsub         = null;
+let _peopleUnsub      = null;
+
+// Interval IDs — stored so they can be cleared on signout
+let _calNowLineInterval = null;
+let _cosmodexInterval   = null;
 
 // Milestones state
 let MILESTONE_PROJECTS = [];
@@ -6956,9 +6918,7 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
   });
 });
 
-/* ══════════════════════════════════════════════════════════
-   PANEL SWITCHING (Calendar/Tasks ↔ Milestones)
-   ══════════════════════════════════════════════════════════ */
+/* ══ PANEL SWITCHING (Calendar/Tasks ↔ Milestones) ══ */
 function showMainPanel(name) {
   _mainPanel = name;
   document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
@@ -6984,20 +6944,31 @@ function showMainPanel(name) {
   else { stopTimedrift(); }
 }
 
-/* ══════════════════════════════════════════════════════════
-   LISTS — FIRESTORE CRUD
-   ══════════════════════════════════════════════════════════ */
+/* ══ LISTS — FIRESTORE CRUD ══ */
 async function addList(title) {
+  if (!title?.trim()) { showToast('List name cannot be empty', 'error'); return; }
   const { addDoc, serverTimestamp } = window.CDX_FB;
   const color = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
-  await addDoc(_uc('lists'), {
-    title, color, items: [], why: '', notes: '', createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-  });
+  try {
+    await addDoc(_uc('lists'), {
+      title: title.trim(), color, items: [], why: '', notes: '',
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+  } catch (err) {
+    console.error('addList error:', err);
+    showToast('Failed to create list', 'error');
+  }
 }
 
 async function updateList(id, data) {
   const { updateDoc, serverTimestamp } = window.CDX_FB;
-  await updateDoc(_ud('lists', id), { ...data, updatedAt: serverTimestamp() });
+  try {
+    await updateDoc(_ud('lists', id), { ...data, updatedAt: serverTimestamp() });
+  } catch (err) {
+    console.error('updateList error:', err);
+    showToast('Failed to save list changes', 'error');
+    throw err; // re-throw so callers can handle if needed
+  }
 }
 
 async function deleteList(id) {
@@ -7006,28 +6977,50 @@ async function deleteList(id) {
 }
 
 async function addListItem(listId, text) {
-  const list = LISTS.find(l => l.id === listId);
-  if (!list) return;
-  const newItem = { id: crypto.randomUUID(), text, done: false, createdAt: new Date().toISOString() };
-  await updateList(listId, { items: [...list.items, newItem] });
+  if (!text?.trim()) return;
+  const { updateDoc, serverTimestamp, arrayUnion } = window.CDX_FB;
+  const newItem = { id: crypto.randomUUID(), text: text.trim(), done: false, createdAt: new Date().toISOString() };
+  try {
+    await updateDoc(_ud('lists', listId), { items: arrayUnion(newItem), updatedAt: serverTimestamp() });
+  } catch (err) {
+    console.error('addListItem error:', err);
+    showToast('Failed to add item', 'error');
+  }
 }
 
 async function toggleListItem(listId, itemId) {
-  const list = LISTS.find(l => l.id === listId);
-  if (!list) return;
-  const items = list.items.map(i => i.id === itemId ? { ...i, done: !i.done } : i);
-  await updateList(listId, { items });
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  try {
+    await runTransaction(window.CDX_DB, async (transaction) => {
+      const ref = _ud('lists', listId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) throw new Error('List not found');
+      const items = (snap.data().items || []).map(i => i.id === itemId ? { ...i, done: !i.done } : i);
+      transaction.update(ref, { items, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('toggleListItem error:', err);
+    showToast('Failed to update item', 'error');
+  }
 }
 
 async function deleteListItem(listId, itemId) {
-  const list = LISTS.find(l => l.id === listId);
-  if (!list) return;
-  await updateList(listId, { items: list.items.filter(i => i.id !== itemId) });
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  try {
+    await runTransaction(window.CDX_DB, async (transaction) => {
+      const ref = _ud('lists', listId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) throw new Error('List not found');
+      const items = (snap.data().items || []).filter(i => i.id !== itemId);
+      transaction.update(ref, { items, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('deleteListItem error:', err);
+    showToast('Failed to delete item', 'error');
+  }
 }
 
-/* ══════════════════════════════════════════════════════════
-   LISTS PAGE — RENDER
-   ══════════════════════════════════════════════════════════ */
+/* ══ LISTS PAGE — RENDER ══ */
 function renderLists() {
   const sidebar = document.getElementById('lists-sidebar-items');
   if (!sidebar) return;
@@ -7191,9 +7184,7 @@ function initListsPage() {
   });
 }
 
-/* ══════════════════════════════════════════════════════════
-   HABITS — HELPERS
-   ══════════════════════════════════════════════════════════ */
+/* ══ HABITS — HELPERS ══ */
 function getHabitsUid() { return window.CDX_USER?.uid || null; }
 
 function last7Days() {
@@ -7202,9 +7193,7 @@ function last7Days() {
   return days;
 }
 
-/* ══════════════════════════════════════════════════════════
-   HABITS — SUBSCRIBE
-   ══════════════════════════════════════════════════════════ */
+/* ══ HABITS — SUBSCRIBE ══ */
 function habitsSubscribe() {
   const uid = getHabitsUid();
   if (!uid || !window.CDX_DB) return;
@@ -7283,9 +7272,7 @@ function hbSettingsSubscribe() {
   }, err => console.warn('hbSettings onSnapshot:', err.message));
 }
 
-/* ══════════════════════════════════════════════════════════
-   HABITS — TAB SWITCH
-   ══════════════════════════════════════════════════════════ */
+/* ══ HABITS — TAB SWITCH ══ */
 function switchHabitsTab(tab) {
   _habitsTab = tab;
   ['tracker','launcher','builder','progress'].forEach(t => {
@@ -7300,9 +7287,7 @@ function switchHabitsTab(tab) {
   if (tab === 'progress') { hbBuildHeatmap(); }
 }
 
-/* ══════════════════════════════════════════════════════════
-   HABITS — RENDER
-   ══════════════════════════════════════════════════════════ */
+/* ══ HABITS — RENDER ══ */
 function renderHabits() {
   const days     = last7Days();
   const todayStr = localDateStr(new Date());
@@ -7367,9 +7352,7 @@ function habitsStreak(h) {
   return s;
 }
 
-/* ══════════════════════════════════════════════════════════
-   HABITS — CRUD
-   ══════════════════════════════════════════════════════════ */
+/* ══ HABITS — CRUD ══ */
 async function habitsAddNew() {
   const inp  = document.getElementById('habit-new-inp');
   const name = inp.value.trim();
@@ -7434,9 +7417,7 @@ async function habitDelete(habitId) {
   }
 }
 
-/* ══════════════════════════════════════════════════════════
-   ROUTINES
-   ══════════════════════════════════════════════════════════ */
+/* ══ ROUTINES ══ */
 function renderRoutines() {
   ['morning','evening'].forEach(slot => {
     const list  = document.getElementById('routines-'+slot+'-list');
@@ -7490,9 +7471,7 @@ function routinesSave(data) {
   }, 800);
 }
 
-/* ══════════════════════════════════════════════════════════
-   BEHAVIOURS
-   ══════════════════════════════════════════════════════════ */
+/* ══ BEHAVIOURS ══ */
 function renderBehaviours() {
   const idEl = document.getElementById('behav-identity');
   const notesEl = document.getElementById('behav-notes');
@@ -7552,9 +7531,7 @@ function behavKeystoneDelete(i) {
   renderBehaviours();
 }
 
-/* ══════════════════════════════════════════════════════════
-   HABITS — INIT
-   ══════════════════════════════════════════════════════════ */
+/* ══ HABITS — INIT ══ */
 function initHabitsPage() {
   // Tab buttons
   document.querySelectorAll('.habits-v2-tab[data-htab]').forEach(btn => {
@@ -7578,9 +7555,7 @@ function initHabitsPage() {
   renderHabits();
 }
 
-/* ══════════════════════════════════════════════════════════
-   HABIT BUILDER — LIBRARY & CLOCK
-   ══════════════════════════════════════════════════════════ */
+/* ══ HABIT BUILDER — LIBRARY & CLOCK ══ */
 const HB_HABITS = [
   {icon:'📖',name:'Read 15 pages',cat:'mind',dur:'20 min',tag:'Compound Knowledge',identity:'"I am a curious, continuous learner who compounds knowledge daily."',sbNew:'I will read for 15 min'},
   {icon:'📓',name:'10-min journaling',cat:'mind',dur:'10 min',tag:'Mental Clarity',identity:'"I am a reflective, intentional person who thinks before I act."',sbNew:'I will write in my journal for 10 min'},
@@ -7955,9 +7930,7 @@ function hbBuildHeatmap() {
   }
 }
 
-/* ══════════════════════════════════════════════════════════
-   INSIGHTS — RENDER
-   ══════════════════════════════════════════════════════════ */
+/* ══ INSIGHTS — RENDER ══ */
 function renderInsights() {
   const logs    = _habitLogs;   // { dateStr: { date, completions: { habitId: true } } }
   const habits  = _habits;      // active habits
@@ -8234,9 +8207,7 @@ function _weekPct(dates, habits) {
   return Math.round(done / (dates.length * habits.length) * 100);
 }
 
-/* ══════════════════════════════════════════════════════════
-   MILESTONES — FIRESTORE CRUD
-   ══════════════════════════════════════════════════════════ */
+/* ══ MILESTONES — FIRESTORE CRUD ══ */
 async function addMilestoneProject(title, startDate, endDate, color, category='', notes='', missionBrief='', antiGoals='') {
   const { addDoc, serverTimestamp } = window.CDX_FB;
   const ref = await addDoc(_uc('milestoneProjects'),
@@ -8369,9 +8340,7 @@ async function addMilestoneActivity(eventId, text, taskId=null) {
   await updateMilestoneEvent(eventId, { activities: [...(ev.activities||[]), newAct] });
 }
 
-/* ══════════════════════════════════════════════════════════
-   MILESTONES — RENDER
-   ══════════════════════════════════════════════════════════ */
+/* ══ MILESTONES — RENDER ══ */
 function msDateToPercent(dateStr, startDate, endDate) {
   const d = new Date(dateStr).getTime();
   const s = new Date(startDate).getTime();
@@ -8424,10 +8393,14 @@ function renderMilestoneDashboard() {
   if (archBtn) {
     if (archivedProjs.length) {
       archBtn.textContent = `⊡ Archived (${archivedProjs.length})`;
-      archBtn.style.display = '';
+      archBtn.style.opacity = '1';
+      archBtn.style.pointerEvents = '';
       archBtn.onclick = showArchivedProjectsOverlay;
     } else {
-      archBtn.style.display = 'none';
+      archBtn.textContent = '⊡ Archived';
+      archBtn.style.opacity = '0.35';
+      archBtn.style.pointerEvents = 'none';
+      archBtn.onclick = null;
     }
   }
 
@@ -8487,10 +8460,10 @@ function renderMilestoneDashboard() {
         <div class="ms-dash-card-footer">
           <div>
             <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
-            <div class="ms-dash-acts-label">${doneActs} / ${totalActs} tasks done</div>
+            <div class="ms-dash-acts-label">${doneActs}/${totalActs} done</div>
           </div>
           <div style="text-align:right;display:flex;align-items:center;gap:8px">
-            <div class="ms-dash-milestones-count">${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
+            <div class="ms-dash-milestones-count">${events.length} ms</div>
             <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
           </div>
         </div>
@@ -9335,9 +9308,7 @@ function initMilestonesPanel() {
   }
 }
 
-/* ══════════════════════════════════════════════════════════
-   PLANNING WIDGETS (Week / Month panels in Planning page)
-   ══════════════════════════════════════════════════════════ */
+/* ══ PLANNING WIDGETS (Week / Month panels in Planning page) ══ */
 (function(){
   let _planWeekOffset = 0;
   let _planMonthOffset = 0;
@@ -9401,25 +9372,7 @@ function initMilestonesPanel() {
 
     // 7-column task grid
     const days = Array.from({length:7}, (_,i) => { const d = new Date(ws); d.setDate(ws.getDate()+i); return localDateStr(d); });
-    const grid = document.getElementById('pw-task-grid');
-    if (grid) grid.innerHTML = `<div class="plan-week-grid">
-      ${days.map(d => `<div class="plan-week-grid-day">${new Date(d+'T00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'})}</div>`).join('')}
-      ${days.map(d => {
-        const dt = TASKS.filter(t => (t.dueDate||t.due) === d && !t._parent);
-        return `<div class="plan-week-grid-cell">
-          ${dt.map(t => `<div style="padding:1px 0;color:${t.done?'var(--muted)':'var(--cream)'};text-decoration:${t.done?'line-through':'none'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px" title="${escAttr(t.title||'')}">${escHtml(t.title||'')}</div>`).join('')}
-        </div>`;
-      }).join('')}
-    </div>`;
-
-    const done = TASKS.filter(t => t.done && days.includes(t.dueDate||t.due)).length;
-    const total = TASKS.filter(t => days.includes(t.dueDate||t.due)).length;
-    const stats = document.getElementById('pw-stats');
-    if (stats) stats.innerHTML = `<div class="plan-stat-bar" style="margin-top:8px">
-      <div class="plan-stat-bar-label"><span>Tasks Done</span><span>${done}/${total}</span></div>
-      <div class="plan-stat-bar-track"><div class="plan-stat-bar-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div>
-    </div>`;
-    renderWeekDueSection(days);
+    renderWeekTaskData(days);
   }
 
   async function buildMonthPlan() {
@@ -9464,6 +9417,31 @@ function initMilestonesPanel() {
 
     renderPlanMilestones(data.milestones || [], key);
 
+    renderMonthTaskData(key);
+  }
+
+  function renderWeekTaskData(days) {
+    const grid = document.getElementById('pw-task-grid');
+    if (grid) grid.innerHTML = `<div class="plan-week-grid">
+      ${days.map(d => `<div class="plan-week-grid-day">${new Date(d+'T00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric'})}</div>`).join('')}
+      ${days.map(d => {
+        const dt = TASKS.filter(t => (t.dueDate||t.due) === d && !t._parent);
+        return `<div class="plan-week-grid-cell">
+          ${dt.map(t => `<div style="padding:1px 0;color:${t.done?'var(--muted)':'var(--cream)'};text-decoration:${t.done?'line-through':'none'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px" title="${escAttr(t.title||'')}">${escHtml(t.title||'')}</div>`).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
+    const done = TASKS.filter(t => t.done && days.includes(t.dueDate||t.due)).length;
+    const total = TASKS.filter(t => days.includes(t.dueDate||t.due)).length;
+    const stats = document.getElementById('pw-stats');
+    if (stats) stats.innerHTML = `<div class="plan-stat-bar" style="margin-top:8px">
+      <div class="plan-stat-bar-label"><span>Tasks Done</span><span>${done}/${total}</span></div>
+      <div class="plan-stat-bar-track"><div class="plan-stat-bar-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div>
+    </div>`;
+    renderWeekDueSection(days);
+  }
+
+  function renderMonthTaskData(key) {
     const done = TASKS.filter(t => t.done && (t.dueDate||t.due)?.startsWith(key)).length;
     const total = TASKS.filter(t => (t.dueDate||t.due)?.startsWith(key)).length;
     const stats = document.getElementById('pm-stats');
@@ -9472,6 +9450,19 @@ function initMilestonesPanel() {
       <div class="plan-stat-bar-track"><div class="plan-stat-bar-fill" style="width:${total?Math.round(done/total*100):0}%"></div></div>
     </div>`;
     renderMonthDueSection(key);
+  }
+
+  function refreshPlanTaskViews() {
+    const calView = document.getElementById('plan-view-calendar');
+    if (!calView || calView.style.display === 'none') return;
+    const weekEl = document.getElementById('plan-right-week');
+    if (weekEl && weekEl.style.display !== 'none') {
+      const days = Array.from({length:7}, (_,i) => { const d = new Date(getWeekStart(_planWeekOffset)); d.setDate(d.getDate()+i); return localDateStr(d); });
+      renderWeekTaskData(days);
+    } else {
+      const target = new Date(new Date().getFullYear(), new Date().getMonth() + _planMonthOffset, 1);
+      renderMonthTaskData(monthKey(target));
+    }
   }
 
   function renderWeekDueSection(days) {
@@ -9585,6 +9576,7 @@ function initMilestonesPanel() {
   }
   window._schedulePlanSave = scheduleSave;
   window.togglePlanPanel = togglePlanPanel;
+  window._refreshPlanTaskViews = refreshPlanTaskViews;
 
   async function savePlanData(tab, key) {
     const uid = window.CDX_USER?.uid;
@@ -9709,9 +9701,7 @@ function initMilestonesPanel() {
   };
 })();
 
-/* ══════════════════════════════════════════════════════════
-   RSS FEED READER
-   ══════════════════════════════════════════════════════════ */
+/* ══ RSS FEED READER ══ */
 (function() {
   const RSS_SOURCES = [
     // Product Management (Substack-first)
@@ -9991,9 +9981,7 @@ function initMilestonesPanel() {
   };
 })();
 
-/* ══════════════════════════════════════════════════════════
-   ORB PETAL QUICK-ADD
-   ══════════════════════════════════════════════════════════ */
+/* ══ ORB PETAL QUICK-ADD ══ */
 function openOrbAddTaskModal(hour) {
   _orbClickHour = hour;
   const label = hour === 0 ? '12am' : hour < 12 ? `${hour}am` : hour === 12 ? '12pm' : `${hour - 12}pm`;
@@ -10061,22 +10049,20 @@ function initOrbAddTask() {
 })();
 
 function updateCalNowLine() {
+  const line = document.getElementById('cal-now-line');
+  // Skip update when element is not visible (panel is hidden)
+  if (!line || !line.offsetParent) return;
   const now = new Date();
   const h = now.getHours();
   const m = now.getMinutes();
   const minutesSince5am = (h - 5) * 60 + m;
   const px = Math.max(0, minutesSince5am); // 1 hour = 60px, so 1 min = 1px
-  const line = document.getElementById('cal-now-line');
-  if (line) {
-    line.style.top = px + 'px';
-  }
+  line.style.top = px + 'px';
 }
 // Update every minute so it stays accurate
-setInterval(updateCalNowLine, 60 * 1000);
+_calNowLineInterval = setInterval(updateCalNowLine, 60 * 1000);
 
-/* ══════════════════════════════════════════════════════════
-   TIMEDRIFT — SVG rotating rings (cosmodex-timedrift v9)
-   ══════════════════════════════════════════════════════════ */
+/* ══ TIMEDRIFT — SVG rotating rings (cosmodex-timedrift v9) ══ */
 const _TD_NS = 'http://www.w3.org/2000/svg';
 const _tdMk = t => document.createElementNS(_TD_NS, t);
 const _TD_CX = 500, _TD_CY = 500;
@@ -10490,9 +10476,7 @@ function stopTimedrift(){
 }
 
 
-/* ══════════════════════════════════════════════════════════
-   HELPERS
-   ══════════════════════════════════════════════════════════ */
+/* ══ HELPERS ══ */
 function escHtml(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -10548,17 +10532,13 @@ function updateNavCounts() {
   if (todayEl) todayEl.textContent = TASKS.filter(t => !t.done && t.dueDate === today).length || '—';
 }
 
-/* ══════════════════════════════════════════════════════════
-   FIREBASE HELPERS
-   ══════════════════════════════════════════════════════════ */
+/* ══ FIREBASE HELPERS ══ */
 function waitForFirebase(fn) {
   if (window.CDX_DB && window.CDX_FB) { fn(); return; }
   setTimeout(() => waitForFirebase(fn), 120);
 }
 
-/* ══════════════════════════════════════════════════════════
-   USER-SCOPED FIRESTORE HELPERS
-   ══════════════════════════════════════════════════════════ */
+/* ══ USER-SCOPED FIRESTORE HELPERS ══ */
 function _uc(name) { // user-scoped collection ref
   const uid = window.CDX_USER?.uid;
   if (!uid) throw new Error('Not authenticated');
@@ -10570,51 +10550,65 @@ function _ud(name, id) { // user-scoped doc ref
   return window.CDX_FB.doc(window.CDX_DB, 'users', uid, name, id);
 }
 
-/* ══════════════════════════════════════════════════════════
-   DATA INIT
-   ══════════════════════════════════════════════════════════ */
+/* ══ DATA INIT ══ */
 function initData() {
   const { onSnapshot, query, orderBy } = window.CDX_FB;
 
-  onSnapshot(query(_uc('tasks'), orderBy('createdAt', 'asc')), snap => {
+  // Restart intervals in case they were cleared by a previous signout
+  if (!_calNowLineInterval) _calNowLineInterval = setInterval(updateCalNowLine, 60 * 1000);
+  if (!_cosmodexInterval)   _cosmodexInterval   = setInterval(drawCosmodex, 1000);
+
+  // Clean up any existing listeners before creating new ones
+  if (_tasksUnsub)     { _tasksUnsub();     _tasksUnsub     = null; }
+  if (_calEventsUnsub) { _calEventsUnsub(); _calEventsUnsub = null; }
+  if (_holidaysUnsub)  { _holidaysUnsub();  _holidaysUnsub  = null; }
+  if (_listsUnsub)     { _listsUnsub();     _listsUnsub     = null; }
+  if (_msProjUnsub)    { _msProjUnsub();    _msProjUnsub    = null; }
+  if (_msEventsUnsub)  { _msEventsUnsub();  _msEventsUnsub  = null; }
+  if (_msListsUnsub)   { _msListsUnsub();   _msListsUnsub   = null; }
+
+  _tasksUnsub = onSnapshot(query(_uc('tasks'), orderBy('createdAt', 'asc')), snap => {
     TASKS = snap.docs.map(d => ({ id: d.id, subtasks: [], ...d.data() }));
     renderTasks(); renderCalendar(); updateNavCounts();
     drawCosmodex(); // immediate orb sync on task change
     if (_mainPanel === 'insights') renderInsights();
+    window._refreshPlanTaskViews?.();
   });
 
-  onSnapshot(query(_uc('calEvents'), orderBy('date', 'asc')), snap => {
+  _calEventsUnsub = onSnapshot(query(_uc('calEvents'), orderBy('date', 'asc')), snap => {
     CAL_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTasks(); renderCalendar();
     drawCosmodex(); // immediate orb sync on calendar change
     if (_mainPanel === 'insights') renderInsights();
   });
 
-  onSnapshot(_uc('holidays'), snap => {
+  _holidaysUnsub = onSnapshot(_uc('holidays'), snap => {
     HOLIDAYS = {};
     snap.docs.forEach(d => { HOLIDAYS[d.id] = { docId: d.id, ...d.data() }; });
     renderCalendar(); renderSettingsHolidays();
   });
 
-  onSnapshot(query(_uc('lists'), orderBy('createdAt', 'asc')), snap => {
+  _listsUnsub = onSnapshot(query(_uc('lists'), orderBy('createdAt', 'asc')), snap => {
     LISTS = snap.docs.map(d => ({ id: d.id, items: [], ...d.data() }));
+    // Reset stale list selection if the viewed list was deleted
+    if (_listView && !LISTS.find(l => l.id === _listView)) _listView = null;
     if (_mainPanel === 'lists') {
       renderLists();
       if (_listView) renderListDetail(_listView);
     }
   });
 
-  onSnapshot(query(_uc('milestoneProjects'), orderBy('startDate', 'asc')), snap => {
+  _msProjUnsub = onSnapshot(query(_uc('milestoneProjects'), orderBy('startDate', 'asc')), snap => {
     MILESTONE_PROJECTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderMilestones();
   });
 
-  onSnapshot(query(_uc('milestoneEvents'), orderBy('date', 'asc')), snap => {
+  _msEventsUnsub = onSnapshot(query(_uc('milestoneEvents'), orderBy('date', 'asc')), snap => {
     MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data(), activities: d.data().activities || [] }));
     renderMilestones();
   });
 
-  onSnapshot(_uc('milestone_lists'), snap => {
+  _msListsUnsub = onSnapshot(_uc('milestone_lists'), snap => {
     MILESTONE_LISTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (_mainPanel === 'milestones' && _msView === 'timeline' && _msFocusProj) renderMilestoneListsPanel(_msFocusProj);
   });
@@ -10622,9 +10616,7 @@ function initData() {
   seedHolidays();
 }
 
-/* ══════════════════════════════════════════════════════════
-   HOLIDAYS
-   ══════════════════════════════════════════════════════════ */
+/* ══ HOLIDAYS ══ */
 async function seedHolidays() {
   const { getDoc, writeBatch } = window.CDX_FB;
   const db = window.CDX_DB;
@@ -10648,9 +10640,7 @@ async function deleteHoliday(docId) {
   await deleteDoc(_ud('holidays', docId));
 }
 
-/* ══════════════════════════════════════════════════════════
-   RENDER TASKS
-   ══════════════════════════════════════════════════════════ */
+/* ══ RENDER TASKS ══ */
 function renderTasks() {
   const body = document.getElementById('tasks-body');
   if (!body) return;
@@ -11092,6 +11082,7 @@ function initTaskEditModal() {
 
 /* ── Firestore CRUD ───────────────────────────────────── */
 async function addTask(title, priority = 'med', dueDate = '', category = '', recurrence = '', energyType = '', people = []) {
+  if (!title?.trim()) { showToast('Task title cannot be empty', 'error'); return; }
   const { addDoc, serverTimestamp } = window.CDX_FB;
   try {
     await addDoc(_uc('tasks'), {
@@ -11202,23 +11193,31 @@ function initTimePickerPopover() {
   }, true);
 }
 
+/* ── Safe calendar event delete helper ──────────────────── */
+async function _safeDeleteCalEvent(eventId) {
+  if (!eventId) return;
+  try {
+    await window.CDX_FB.deleteDoc(_ud('calEvents', eventId));
+  } catch (err) {
+    console.warn('calEvent delete failed (may already be gone):', eventId, err.message);
+  }
+}
+
 async function deleteTask(taskId) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
   const { deleteDoc } = window.CDX_FB;
   try {
-    if (task.calEventId) {
-      try { await deleteDoc(_ud('calEvents', task.calEventId)); } catch (_) {}
-    }
+    // Delete the task's own linked calendar event
+    await _safeDeleteCalEvent(task.calEventId);
+    // Delete any subtask calendar events
     for (const sub of (task.subtasks || [])) {
-      if (sub.calEventId) {
-        try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
-      }
+      await _safeDeleteCalEvent(sub.calEventId);
     }
-    // Also clean up any orphaned calEvents that reference this task by taskId
+    // Clean up orphaned calEvents that reference this task by taskId
     // (handles cases where task.calEventId was null/mismatched)
     for (const ev of CAL_EVENTS.filter(e => e.taskId === taskId && e.id !== task.calEventId)) {
-      try { await deleteDoc(_ud('calEvents', ev.id)); } catch (_) {}
+      await _safeDeleteCalEvent(ev.id);
     }
     await deleteDoc(_ud('tasks', taskId));
     showToast('Task deleted', 'info');
@@ -11229,29 +11228,50 @@ async function deleteTask(taskId) {
 }
 
 async function addSubtask(taskId, title) {
-  const task = TASKS.find(t => t.id === taskId);
-  if (!task) return;
-  const sub = { id: crypto.randomUUID(), title, done: false, createdAt: new Date().toISOString() };
-  await updateTask(taskId, { subtasks: [...(task.subtasks || []), sub] });
+  if (!title?.trim()) return;
+  const { arrayUnion, serverTimestamp, updateDoc } = window.CDX_FB;
+  const sub = { id: crypto.randomUUID(), title: title.trim(), done: false, createdAt: new Date().toISOString() };
+  try {
+    await updateDoc(_ud('tasks', taskId), { subtasks: arrayUnion(sub), updatedAt: serverTimestamp() });
+  } catch (err) {
+    console.error('addSubtask error:', err);
+    showToast('Failed to add subtask', 'error');
+  }
 }
 
 async function toggleSubtask(taskId, subId) {
-  const task = TASKS.find(t => t.id === taskId);
-  if (!task) return;
-  await updateTask(taskId, {
-    subtasks: task.subtasks.map(s => s.id === subId ? { ...s, done: !s.done } : s)
-  });
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  try {
+    await runTransaction(window.CDX_DB, async (transaction) => {
+      const ref = _ud('tasks', taskId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) throw new Error('Task not found');
+      const subtasks = (snap.data().subtasks || []).map(s => s.id === subId ? { ...s, done: !s.done } : s);
+      transaction.update(ref, { subtasks, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('toggleSubtask error:', err);
+    showToast('Failed to update subtask', 'error');
+  }
 }
 
 async function deleteSubtask(taskId, subId) {
-  const task = TASKS.find(t => t.id === taskId);
-  if (!task) return;
-  const sub = task.subtasks?.find(s => s.id === subId);
-  if (sub?.calEventId) {
-    const { deleteDoc } = window.CDX_FB;
-    try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  // Find the calEventId from local state before transacting
+  const sub = TASKS.find(t => t.id === taskId)?.subtasks?.find(s => s.id === subId);
+  if (sub?.calEventId) await _safeDeleteCalEvent(sub.calEventId);
+  try {
+    await runTransaction(window.CDX_DB, async (transaction) => {
+      const ref = _ud('tasks', taskId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) throw new Error('Task not found');
+      const subtasks = (snap.data().subtasks || []).filter(s => s.id !== subId);
+      transaction.update(ref, { subtasks, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('deleteSubtask error:', err);
+    showToast('Failed to delete subtask', 'error');
   }
-  await updateTask(taskId, { subtasks: task.subtasks.filter(s => s.id !== subId) });
 }
 
 /* ── Schedule Modal ───────────────────────────────────── */
@@ -11300,9 +11320,7 @@ async function confirmSchedule() {
   if (subId) {
     const sub = task.subtasks?.find(s => s.id === subId);
     if (!sub) return;
-    if (sub.calEventId) {
-      try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
-    }
+    await _safeDeleteCalEvent(sub.calEventId);
     const ref = await addDoc(_uc('calEvents'), {
       title, taskId, subId, date, startTime, endTime, duration, color,
       createdAt: serverTimestamp()
@@ -11311,9 +11329,7 @@ async function confirmSchedule() {
       subtasks: task.subtasks.map(s => s.id === subId ? { ...s, calEventId: ref.id } : s)
     });
   } else {
-    if (task.calEventId) {
-      try { await deleteDoc(_ud('calEvents', task.calEventId)); } catch (_) {}
-    }
+    await _safeDeleteCalEvent(task.calEventId);
     const ref = await addDoc(_uc('calEvents'), {
       title, taskId, date, startTime, endTime, duration, color,
       createdAt: serverTimestamp()
@@ -11327,9 +11343,7 @@ async function confirmSchedule() {
       const freshTask = TASKS.find(t => t.id === taskId);
       const sub = freshTask?.subtasks?.find(s => s.id === sid);
       if (!sub) continue;
-      if (sub.calEventId) {
-        try { await deleteDoc(_ud('calEvents', sub.calEventId)); } catch (_) {}
-      }
+      await _safeDeleteCalEvent(sub.calEventId);
       const sref = await addDoc(_uc('calEvents'), {
         title: sub.title, taskId, subId: sid, date,
         startTime: st, endTime: addMinutes(st, 30), duration: 30, color,
@@ -12609,8 +12623,12 @@ function drawCosmodex() {
   const W = orb.offsetWidth, H = orb.offsetHeight;
   if (W < 4) return;
 
-  canvas.width  = W * dpr; canvas.height = H * dpr;
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  // Only resize canvas backing store when dimensions actually change (avoids costly clears)
+  if (canvas.dataset.cw !== String(W) || canvas.dataset.ch !== String(H)) {
+    canvas.width  = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    canvas.dataset.cw = String(W); canvas.dataset.ch = String(H);
+  }
 
   const geo = _cosmodexDrawCore(canvas.getContext('2d'), W, H, expanded, dpr);
 
@@ -12707,7 +12725,7 @@ function drawCosmodex() {
 }
 
 // Tick every second (drives both mini and expanded states)
-setInterval(drawCosmodex, 1000);
+_cosmodexInterval = setInterval(drawCosmodex, 1000);
 drawCosmodex(); // immediate first draw
 
 /* ── Dice Gadget ───────────────────────────────────────── */
@@ -13361,7 +13379,7 @@ function renderSomedaySection(body, somedayTasks, startIdx) {
   header.addEventListener('click', () => {
     header.classList.toggle('open');
     list.style.display = header.classList.contains('open') ? '' : 'none';
-    localStorage.setItem('cdx_someday_open', header.classList.contains('open'));
+    localStorage.setItem('cdx_someday_open', header.classList.contains('open') ? 'true' : 'false');
   });
 
   const list = document.createElement('div');
@@ -13801,6 +13819,38 @@ function initDoneWall() {
   header?.addEventListener('click', toggle);
 }
 
+/* ── Teardown — call on signout to prevent listener leaks ── */
+function cleanupAllListeners() {
+  // Data collection listeners
+  if (_tasksUnsub)       { _tasksUnsub();       _tasksUnsub       = null; }
+  if (_calEventsUnsub)   { _calEventsUnsub();   _calEventsUnsub   = null; }
+  if (_holidaysUnsub)    { _holidaysUnsub();    _holidaysUnsub    = null; }
+  if (_listsUnsub)       { _listsUnsub();       _listsUnsub       = null; }
+  if (_msProjUnsub)      { _msProjUnsub();      _msProjUnsub      = null; }
+  if (_msEventsUnsub)    { _msEventsUnsub();    _msEventsUnsub    = null; }
+  if (_msListsUnsub)     { _msListsUnsub();     _msListsUnsub     = null; }
+  // Config listeners
+  if (_catUnsub)         { _catUnsub();         _catUnsub         = null; }
+  if (_peopleUnsub)      { _peopleUnsub();      _peopleUnsub      = null; }
+  // Habits/routines/behaviour listeners
+  if (_habitsUnsub)      { _habitsUnsub();      _habitsUnsub      = null; }
+  if (_habitLogsUnsub)   { _habitLogsUnsub();   _habitLogsUnsub   = null; }
+  if (_routinesUnsub)    { _routinesUnsub();    _routinesUnsub    = null; }
+  if (_behavUnsub)       { _behavUnsub();       _behavUnsub       = null; }
+  if (_hbSettingsUnsub)  { _hbSettingsUnsub();  _hbSettingsUnsub  = null; }
+  // Intervals
+  if (_calNowLineInterval) { clearInterval(_calNowLineInterval); _calNowLineInterval = null; }
+  if (_cosmodexInterval)   { clearInterval(_cosmodexInterval);   _cosmodexInterval   = null; }
+  // Reset global data state so a subsequent login starts clean
+  TASKS = []; CAL_EVENTS = []; HOLIDAYS = {}; LISTS = [];
+  MILESTONE_PROJECTS = []; MILESTONE_EVENTS = []; MILESTONE_LISTS = [];
+  _listView = null;
+}
+
+window.addEventListener('cdx-auth-signout', () => {
+  cleanupAllListeners();
+});
+
 /* ── Boot task system after auth ──────────────────────── */
 window.addEventListener('cdx-auth-ready', () => {
   waitForFirebase(() => {
@@ -13808,11 +13858,14 @@ window.addEventListener('cdx-auth-ready', () => {
     const _catUser = window.CDX_USER;
     if (_catUser && window.CDX_FB && window.CDX_DB) {
       const { doc, onSnapshot } = window.CDX_FB;
-      onSnapshot(doc(window.CDX_DB, 'users', _catUser.uid, 'config', 'categories'), snap => {
+
+      if (_catUnsub) { _catUnsub(); _catUnsub = null; }
+      _catUnsub = onSnapshot(doc(window.CDX_DB, 'users', _catUser.uid, 'config', 'categories'), snap => {
         if (snap.exists()) {
           const data = snap.data();
           if (data?.categories && typeof data.categories === 'object') {
-            CATEGORIES = data.categories;
+            // Merge: Firestore wins for existing keys; preserve local-only keys
+            CATEGORIES = Object.assign({}, CATEGORIES, data.categories);
             saveCategoriesLocal();
             renderSettingsCatList?.();
             renderSettingsCats?.();
@@ -13822,11 +13875,16 @@ window.addEventListener('cdx-auth-ready', () => {
       }, err => console.warn('Categories snapshot error:', err));
 
       // Subscribe to people config
-      onSnapshot(doc(window.CDX_DB, 'users', _catUser.uid, 'config', 'people'), snap => {
+      if (_peopleUnsub) { _peopleUnsub(); _peopleUnsub = null; }
+      _peopleUnsub = onSnapshot(doc(window.CDX_DB, 'users', _catUser.uid, 'config', 'people'), snap => {
         if (snap.exists()) {
           const data = snap.data();
           if (Array.isArray(data?.people)) {
-            PEOPLE = data.people;
+            // Merge: keep local-only people (by name) not yet in Firestore
+            const remotePeople = data.people;
+            const remoteNames = new Set(remotePeople.map(p => p.name));
+            const localOnly = PEOPLE.filter(p => !remoteNames.has(p.name));
+            PEOPLE = [...remotePeople, ...localOnly];
             localStorage.setItem('cdx_people', JSON.stringify(PEOPLE));
             renderSettingsPeople?.();
           }
@@ -14335,7 +14393,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
       </div>
       <div id="qcal-dur-wrap">
         <label class="sched-label">Duration (min)</label>
-        <input id="qcal-duration" type="number" class="sched-input" value="30" min="15" step="15" />
+        <input id="qcal-duration" type="number" class="sched-input" value="30" min="5" step="5" />
       </div>
       <div>
         <label class="sched-label">Category</label>
