@@ -251,9 +251,8 @@ body::after {
   border-radius: 8px;
 }
 
-/* Footer: only show the expand tribar when collapsed */
-#nav-expand-btn { display: none; }
-#left-nav.collapsed #nav-expand-btn { display: flex; }
+/* Footer: tribar always visible; hide other buttons when collapsed */
+#nav-expand-btn { display: flex; }
 #left-nav.collapsed .nav-footer {
   justify-content: center;
   padding: 10px 0;
@@ -319,6 +318,25 @@ body::after {
   padding: 4px 10px 6px;
   white-space: nowrap;
 }
+
+/* Tools section collapsible */
+.nav-tools-toggle {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+.nav-tools-toggle:hover { color: rgba(255,255,255,0.8); }
+.tools-chevron {
+  font-size: 11px;
+  transition: transform 0.2s ease;
+  transform: rotate(90deg);
+}
+.nav-tools-section.collapsed .tools-chevron { transform: rotate(0deg); }
+.nav-tools-items { overflow: hidden; }
+.nav-tools-section.collapsed .nav-tools-items { display: none; }
+#left-nav.collapsed .tools-chevron { display: none; }
 
 .nav-item {
   display: flex;
@@ -680,6 +698,7 @@ body::after {
   transition: var(--ease-fast);
   border-left: 2px solid;
   overflow: hidden;
+  z-index: 2;
 }
 
 .cal-event:hover {
@@ -4999,23 +5018,25 @@ select.sched-input { background: #181818; }
       </div>
     </div>
 
-    <div class="nav-section" style="margin-top:auto;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07)">
-      <div class="nav-section-label">Tools</div>
-      <div class="nav-item" id="btn-notes">
-        <span class="nav-item-icon">✎</span>
-        Notes
-      </div>
-      <div class="nav-item" id="btn-focus">
-        <span class="nav-item-icon">◎</span>
-        Focus
-      </div>
-      <div class="nav-item" id="btn-cosmodex-bubble" data-panel="cosmodex-bubble">
-        <span class="nav-item-icon">◉</span>
-        Bubble
-      </div>
-      <div class="nav-item" id="btn-cosmos">
-        <span class="nav-item-icon">✦</span>
-        Ask Cosmos
+    <div class="nav-section nav-tools-section collapsed" style="margin-top:auto;padding-top:8px;border-top:1px solid rgba(255,255,255,0.07)">
+      <div class="nav-section-label nav-tools-toggle" id="tools-toggle" title="Toggle tools">Tools <span class="tools-chevron">›</span></div>
+      <div class="nav-tools-items">
+        <div class="nav-item" id="btn-notes">
+          <span class="nav-item-icon">✎</span>
+          Notes
+        </div>
+        <div class="nav-item" id="btn-focus">
+          <span class="nav-item-icon">◎</span>
+          Focus
+        </div>
+        <div class="nav-item" id="btn-cosmodex-bubble" data-panel="cosmodex-bubble">
+          <span class="nav-item-icon">◉</span>
+          Bubble
+        </div>
+        <div class="nav-item" id="btn-cosmos">
+          <span class="nav-item-icon">✦</span>
+          Ask Cosmos
+        </div>
       </div>
     </div>
   </div>
@@ -6885,6 +6906,11 @@ document.getElementById('nav-expand-btn')?.addEventListener('click', () => {
 });
 document.getElementById('hamburger')?.addEventListener('click', () => {
   document.getElementById('left-nav').classList.toggle('collapsed');
+});
+
+/* ── Tools section toggle ──────────────────────────────── */
+document.getElementById('tools-toggle')?.addEventListener('click', () => {
+  document.querySelector('.nav-tools-section')?.classList.toggle('collapsed');
 });
 
 /* ── Nav items ─────────────────────────────────────────── */
