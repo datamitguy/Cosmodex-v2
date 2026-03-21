@@ -6957,7 +6957,8 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     item.classList.add('active');
     const title = item.textContent.trim().replace(/[0-9—\s]+$/, '').trim();
-    document.getElementById('page-title').textContent = title;
+    const ptEl = document.getElementById('page-title');
+    if (ptEl) ptEl.textContent = title;
   });
 });
 
@@ -10095,10 +10096,10 @@ function initOrbAddTask() {
 (function setPageDate() {
   const now = new Date();
   const opts = { weekday: 'short', month: 'short', day: 'numeric' };
-  document.getElementById('page-date').textContent =
-    now.toLocaleDateString('en-GB', opts).toUpperCase();
-  document.getElementById('cal-date-label').textContent =
-    now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const pdEl = document.getElementById('page-date');
+  if (pdEl) pdEl.textContent = now.toLocaleDateString('en-GB', opts).toUpperCase();
+  const calEl = document.getElementById('cal-date-label');
+  if (calEl) calEl.textContent = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 })();
 
 /* ── Build day view skeleton ───────────────────────────── */
