@@ -10535,7 +10535,7 @@ function _tdDrawTimeline(now){
   const bandH=Math.max(14, H*0.09);
   // Radius sized so arc spans ~94% of canvas width at the ±3 h endpoints
   const R=(W*0.47)/Math.sin(HALF_SPAN);
-  const arcTopY=H*0.10;    // y of the arc peak (current time marker)
+  const arcTopY=H*0.65;    // y of the arc peak (current time marker)
   const cy_arc=arcTopY+R; // circle centre — below canvas bottom
   const innerR=R-bandH/2, outerR=R+bandH/2, midR=R;
   const aStart=-Math.PI/2-HALF_SPAN, aEnd=-Math.PI/2+HALF_SPAN;
@@ -10550,12 +10550,7 @@ function _tdDrawTimeline(now){
   // Canvas point on a circle of given radius at angle-offset theta from top
   const tPt=(theta,r)=>[cx+r*Math.sin(theta), cy_arc-r*Math.cos(theta)];
 
-  // ── Arc band background ──────────────────────────────────
-  ctx.beginPath();
-  ctx.arc(cx,cy_arc,outerR,aStart,aEnd);
-  ctx.arc(cx,cy_arc,innerR,aEnd,aStart,true);
-  ctx.closePath();
-  ctx.fillStyle='rgba(255,255,255,0.03)'; ctx.fill();
+  // ── Arc band — naked strokes only (no fill) ───────────────
   ctx.beginPath(); ctx.arc(cx,cy_arc,outerR,aStart,aEnd);
   ctx.strokeStyle='rgba(255,255,255,0.13)'; ctx.lineWidth=0.7; ctx.stroke();
   ctx.beginPath(); ctx.arc(cx,cy_arc,innerR,aStart,aEnd);
@@ -10649,16 +10644,17 @@ function _tdDrawTimeline(now){
     }
   });
 
-  // ── Fixed blue needle at arc peak (current time) ─────────
-  const nTop=arcTopY-14, nBot=arcTopY+bandH*0.75;
-  ctx.beginPath(); ctx.moveTo(cx,nBot); ctx.lineTo(cx,nTop);
+  // ── Fixed blue needle below arc (current time) ───────────
+  const nTop=arcTopY+bandH/2+6, nBot=arcTopY+bandH/2+38;
+  ctx.beginPath(); ctx.moveTo(cx,nTop); ctx.lineTo(cx,nBot);
   ctx.strokeStyle='rgba(41,182,246,0.08)'; ctx.lineWidth=10; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx,nBot); ctx.lineTo(cx,nTop);
+  ctx.beginPath(); ctx.moveTo(cx,nTop); ctx.lineTo(cx,nBot);
   ctx.strokeStyle='rgba(41,182,246,0.22)'; ctx.lineWidth=4; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx,nBot); ctx.lineTo(cx,nTop);
+  ctx.beginPath(); ctx.moveTo(cx,nTop); ctx.lineTo(cx,nBot);
   ctx.strokeStyle='rgba(41,182,246,0.95)'; ctx.lineWidth=1.5;
   ctx.shadowColor='rgba(41,182,246,0.8)'; ctx.shadowBlur=8;
   ctx.stroke(); ctx.shadowBlur=0;
+  // Arrowhead at top, pointing up toward arc
   ctx.beginPath();
   ctx.moveTo(cx,nTop); ctx.lineTo(cx-4,nTop+8); ctx.lineTo(cx+4,nTop+8);
   ctx.closePath();
@@ -10666,8 +10662,8 @@ function _tdDrawTimeline(now){
   ctx.shadowColor='rgba(41,182,246,0.7)'; ctx.shadowBlur=6;
   ctx.fill(); ctx.shadowBlur=0;
 
-  // ── Time display below arc peak ───────────────────────────
-  const tY=arcTopY+bandH+18;
+  // ── Time display below needle ─────────────────────────────
+  const tY=arcTopY+bandH/2+54;
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
   const ss=String(now.getSeconds()).padStart(2,'0');
