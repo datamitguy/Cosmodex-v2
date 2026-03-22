@@ -10550,11 +10550,32 @@ function _tdDrawTimeline(now){
   // Canvas point on a circle of given radius at angle-offset theta from top
   const tPt=(theta,r)=>[cx+r*Math.sin(theta), cy_arc-r*Math.cos(theta)];
 
-  // ── Single white arc ──────────────────────────────────────
-  ctx.beginPath(); ctx.arc(cx,cy_arc,midR,aStart,aEnd);
+  // ── Pre-compute event angular spans ───────────────────────
+  const todayEvts=(CAL_EVENTS||[]).filter(e=>e.date===todayStr&&e.startTime&&!e.allDay);
+  const evtSpans=[];
+  todayEvts.forEach(ev=>{
+    const [sh,sm]=(ev.startTime||'0:0').split(':').map(Number);
+    const sFrac=(sh*60+sm)/1440;
+    const isPast=sFrac<curFrac;
+    let eFrac=sFrac+1/24;
+    if(ev.endTime){const [eh,em]=(ev.endTime||'0:0').split(':').map(Number);eFrac=(eh*60+em)/1440;}
+    const sT=toTheta(sFrac), eT=toTheta(eFrac);
+    const cS=Math.max(sT,-HALF_SPAN), cE=Math.min(eT,HALF_SPAN);
+    if(cS>=cE) return;
+    evtSpans.push({aS:-Math.PI/2+cS, aE2:-Math.PI/2+cE, cS, cE, isPast, ev});
+  });
+  evtSpans.sort((a,b)=>a.aS-b.aS);
+
+  // ── White arc drawn in gaps between events ─────────────────
   ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=1.2;
   ctx.shadowColor='rgba(255,255,255,0.35)'; ctx.shadowBlur=6;
-  ctx.stroke(); ctx.shadowBlur=0;
+  let arcPos=aStart;
+  evtSpans.forEach(({aS,aE2})=>{
+    if(arcPos<aS){ctx.beginPath();ctx.arc(cx,cy_arc,midR,arcPos,aS);ctx.stroke();}
+    arcPos=Math.max(arcPos,aE2);
+  });
+  if(arcPos<aEnd){ctx.beginPath();ctx.arc(cx,cy_arc,midR,arcPos,aEnd);ctx.stroke();}
+  ctx.shadowBlur=0;
 
   // ── Hour ticks & labels ──────────────────────────────────
   for(let h=0;h<24;h++){
@@ -10578,29 +10599,19 @@ function _tdDrawTimeline(now){
       ctx.fillText(String(h).padStart(2,'0'),0,0);
       ctx.restore();
     }
-    // Half-hour sub-tick
+    // Half-hour tick — white, shorter than hour tick
     const ht=toTheta((h+0.5)/24);
     if(Math.abs(ht)<=HALF_SPAN){
       const [h0x,h0y]=tPt(ht, innerR+(outerR-innerR)*0.28);
-      const [h1x,h1y]=tPt(ht, innerR+(outerR-innerR)*0.58);
+      const [h1x,h1y]=tPt(ht, innerR+(outerR-innerR)*0.72);
       ctx.beginPath(); ctx.moveTo(h0x,h0y); ctx.lineTo(h1x,h1y);
-      ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.3; ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,255,0.38)'; ctx.lineWidth=0.6; ctx.stroke();
     }
   }
 
   // ── Calendar event arcs ──────────────────────────────────
   const phase=performance.now()*0.001;
-  const todayEvts=(CAL_EVENTS||[]).filter(e=>e.date===todayStr&&e.startTime&&!e.allDay);
-  todayEvts.forEach(ev=>{
-    const [sh,sm]=(ev.startTime||'0:0').split(':').map(Number);
-    const sFrac=(sh*60+sm)/1440;
-    const isPast=sFrac<curFrac;
-    let eFrac=sFrac+1/24;
-    if(ev.endTime){const [eh,em]=(ev.endTime||'0:0').split(':').map(Number);eFrac=(eh*60+em)/1440;}
-    const sT=toTheta(sFrac), eT=toTheta(eFrac);
-    const cS=Math.max(sT,-HALF_SPAN), cE=Math.min(eT,HALF_SPAN);
-    if(cS>=cE) return;
-    const aS=-Math.PI/2+cS, aE2=-Math.PI/2+cE;
+  evtSpans.forEach(({aS,aE2,cS,cE,isPast,ev})=>{
     const evG='rgba(53,249,47,';
     // Thin fill around single arc
     ctx.beginPath();
@@ -10632,15 +10643,29 @@ function _tdDrawTimeline(now){
     ctx.fillStyle=isPast?evG+'0.55)':evG+'1.0)';
     if(!isPast){ctx.shadowColor=evG+'0.7)';ctx.shadowBlur=6;}
     ctx.fill(); ctx.shadowBlur=0;
-    // Label tangent to arc at start
-    if(ev.title&&Math.abs(cS)<HALF_SPAN*0.90){
-      const [llx,lly]=tPt(cS, midR+14);
-      ctx.save(); ctx.translate(llx,lly); ctx.rotate(cS);
-      ctx.font="300 8px 'DM Mono',monospace";
-      ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillStyle=isPast?evG+'0.45)':evG+'0.85)';
-      ctx.fillText((ev.title.length>16?ev.title.slice(0,15)+'…':ev.title),0,0);
-      ctx.restore();
+    // Pill label above arc
+    if(ev.title&&Math.abs(cS)<HALF_SPAN*0.85){
+      const title=ev.title.length>16?ev.title.slice(0,15)+'…':ev.title;
+      ctx.font="500 11px 'Instrument Sans',sans-serif";
+      const tw=ctx.measureText(title).width;
+      const ph=20, pw=tw+18, pr=10;
+      const [px,py]=tPt(cS, midR+36);
+      // Stem from arc to pill bottom
+      const [sx,sy]=tPt(cS, midR+3);
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(px,py+ph/2);
+      ctx.strokeStyle='rgba(255,255,255,0.30)'; ctx.lineWidth=1; ctx.stroke();
+      // Pill background
+      ctx.beginPath();
+      ctx.roundRect(px-pw/2, py-ph/2, pw, ph, pr);
+      ctx.fillStyle=isPast?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.13)';
+      ctx.fill();
+      ctx.strokeStyle=isPast?'rgba(255,255,255,0.18)':'rgba(255,255,255,0.50)';
+      ctx.lineWidth=0.8; ctx.stroke();
+      // Pill text
+      ctx.font="500 11px 'Instrument Sans',sans-serif";
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=isPast?'rgba(255,255,255,0.45)':'rgba(255,255,255,0.92)';
+      ctx.fillText(title, px, py);
     }
   });
 
@@ -10673,32 +10698,45 @@ function _tdDrawTimeline(now){
   ctx.fillText(hh+':'+mm,cx,tY);
   ctx.shadowBlur=0;
 
-  // ── Upcoming events ───────────────────────────────────────
+  // ── Upcoming events (next 30 mins) ───────────────────────
   const nowMins=now.getHours()*60+now.getMinutes();
-  const upcoming=(CAL_EVENTS||[])
+  const allTodayEvts=(CAL_EVENTS||[])
     .filter(ev=>ev.date===todayStr&&ev.startTime&&!ev.allDay)
-    .map(ev=>{const[eh,em]=ev.startTime.split(':').map(Number);return{...ev,evMins:eh*60+em};})
-    .filter(ev=>ev.evMins>nowMins)
-    .sort((a,b)=>a.evMins-b.evMins)
-    .slice(0,3);
-  ctx.textBaseline='top';
-  if(upcoming.length===0){
-    ctx.font="300 8px 'DM Mono',monospace";
-    ctx.textAlign='center';
-    ctx.fillStyle='rgba(255,255,255,0.18)';
-    ctx.fillText('no upcoming events',cx,tY+32);
-  } else {
-    let ey=tY+32;
-    upcoming.forEach(ev=>{
-      const[eh,em]=ev.startTime.split(':').map(Number);
-      const tStr=String(eh).padStart(2,'0')+':'+String(em).padStart(2,'0');
-      const title=ev.title?(ev.title.length>18?ev.title.slice(0,17)+'…':ev.title):'';
-      ctx.font="300 8px 'DM Mono',monospace";
-      ctx.textAlign='center';
-      ctx.fillStyle='rgba(53,249,47,0.72)';
-      ctx.fillText(tStr+'  '+title,cx,ey);
-      ey+=14;
+    .map(ev=>{
+      const[sh,sm]=ev.startTime.split(':').map(Number);
+      const sMins=sh*60+sm;
+      let eMins=sMins+60;
+      if(ev.endTime){const[eh,em]=ev.endTime.split(':').map(Number);eMins=eh*60+em;}
+      return{...ev,sMins,eMins};
     });
+  const ongoing=allTodayEvts.find(ev=>ev.sMins<=nowMins&&nowMins<ev.eMins);
+  const soon=allTodayEvts.filter(ev=>ev.sMins>nowMins&&ev.sMins-nowMins<=30).sort((a,b)=>a.sMins-b.sMins);
+  ctx.textBaseline='top'; ctx.textAlign='center';
+  let ey=tY+32;
+  if(ongoing){
+    const label=ongoing.title?(ongoing.title.length>20?ongoing.title.slice(0,19)+'…':ongoing.title):'event';
+    ctx.font="300 10px 'DM Mono',monospace";
+    ctx.fillStyle='rgba(53,249,47,0.60)';
+    ctx.fillText('ongoing · '+label,cx,ey); ey+=15;
+    ctx.font="300 9px 'DM Mono',monospace";
+    ctx.fillStyle='rgba(53,249,47,0.38)';
+    ctx.fillText('continues '+(ongoing.eMins-nowMins)+'m more',cx,ey); ey+=20;
+  }
+  if(soon.length>0){
+    soon.slice(0,2).forEach(ev=>{
+      const delta=ev.sMins-nowMins;
+      const label=ev.title?(ev.title.length>22?ev.title.slice(0,21)+'…':ev.title):'event';
+      ctx.font="400 11px 'DM Mono',monospace";
+      ctx.fillStyle='rgba(255,255,255,0.88)';
+      ctx.fillText(label,cx,ey); ey+=15;
+      ctx.font="300 9px 'DM Mono',monospace";
+      ctx.fillStyle='rgba(53,249,47,0.65)';
+      ctx.fillText('in '+delta+'m',cx,ey); ey+=20;
+    });
+  } else if(!ongoing){
+    ctx.font="300 10px 'DM Mono',monospace";
+    ctx.fillStyle='rgba(255,255,255,0.22)';
+    ctx.fillText('nothing in next 30m',cx,ey);
   }
 
 }
