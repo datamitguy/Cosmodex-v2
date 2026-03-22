@@ -1125,20 +1125,33 @@ body::after {
   50%      { box-shadow: 0 0 0 1px rgba(255,255,255,0.14) inset, 0 24px 56px rgba(0,0,0,0.50), 0 8px 20px rgba(0,0,0,0.25), 0 0 44px 10px rgba(107,159,212,0.18); }
   75%      { box-shadow: 0 0 0 1px rgba(255,255,255,0.10) inset, 0 24px 56px rgba(0,0,0,0.55), 0 8px 20px rgba(0,0,0,0.30), 0 0 28px 6px rgba(107,159,212,0.12); }
 }
-/* Blob background inside panel */
-.pf-bg { position: absolute; inset: 0; overflow: hidden; border-radius: 20px; pointer-events: none; }
-.pf-blob {
-  position: absolute; border-radius: 50%; filter: blur(48px);
-  animation: pfFloat linear infinite;
+/* Box breathing background inside panel */
+.pf-bg {
+  position: absolute; inset: 0; overflow: hidden; border-radius: 20px;
+  pointer-events: none; display: flex; align-items: center; justify-content: center;
 }
-.pf-blob-1 { width: 200px; height: 200px; opacity: 0.35; background: radial-gradient(circle, #7c3aed 0%, transparent 70%); top: -60px; left: -50px; animation-duration: 16s; }
-.pf-blob-2 { width: 180px; height: 180px; opacity: 0.30; background: radial-gradient(circle, #0ea5e9 0%, transparent 70%); bottom: -50px; right: -40px; animation-duration: 22s; animation-delay: -8s; }
-.pf-blob-3 { width: 160px; height: 160px; opacity: 0.22; background: radial-gradient(circle, #c45c2a 0%, transparent 70%); top: 45%; left: 25%; animation-duration: 19s; animation-delay: -12s; }
-@keyframes pfFloat {
-  0%,100% { transform: translate(0,0) scale(1); }
-  25%      { transform: translate(22px,-18px) scale(1.07); }
-  50%      { transform: translate(-18px,22px) scale(0.93); }
-  75%      { transform: translate(-22px,-12px) scale(1.10); }
+.pf-breath-bg-outer {
+  position: absolute;
+  width: 320px; height: 320px; border-radius: 50%;
+  border: 1px solid rgba(57,255,20,0.20);
+  box-shadow: 0 0 80px rgba(57,255,20,0.14), 0 0 160px rgba(57,255,20,0.07);
+  animation: pfBoxBreath 16s linear infinite;
+}
+.pf-breath-bg-inner {
+  position: absolute;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(57,255,20,0.10) 0%, rgba(57,255,20,0.03) 55%, transparent 75%);
+  border: 1px solid rgba(57,255,20,0.15);
+  box-shadow: 0 0 50px rgba(57,255,20,0.10), 0 0 100px rgba(57,255,20,0.05);
+  animation: pfBoxBreath 16s linear infinite;
+  animation-delay: -0.4s;
+}
+@keyframes pfBoxBreath {
+  0%   { transform: scale(0.68); opacity: 0.30; }   /* hold (exhaled) */
+  25%  { transform: scale(1.10); opacity: 0.80; }   /* inhale complete */
+  50%  { transform: scale(1.10); opacity: 0.80; }   /* hold (inhaled) */
+  75%  { transform: scale(0.68); opacity: 0.30; }   /* exhale complete */
+  100% { transform: scale(0.68); opacity: 0.30; }   /* hold (exhaled) */
 }
 /* Specular top edge */
 .pf-specular {
@@ -5572,9 +5585,8 @@ select.sched-input { background: #181818; }
         <!-- Floating Pomodoro Panel -->
         <div id="td-pomo-float">
           <div class="pf-bg">
-            <div class="pf-blob pf-blob-1"></div>
-            <div class="pf-blob pf-blob-2"></div>
-            <div class="pf-blob pf-blob-3"></div>
+            <div class="pf-breath-bg-outer"></div>
+            <div class="pf-breath-bg-inner"></div>
           </div>
           <div class="pf-specular"></div>
           <div class="pf-header">
@@ -5621,11 +5633,6 @@ select.sched-input { background: #181818; }
               <div class="pomo-sess" id="pomo-sess">
                 <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
                 <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-              </div>
-              <div class="pomo-breath-section">
-                <div class="breath-ring-outer"><div class="breath-ring-inner"></div></div>
-                <div class="pomo-breath-phase" id="pomo-breath-phase">Breathe in</div>
-                <div class="pomo-breath-hint">Box breathing · 4-4-4-4</div>
               </div>
               <div class="pomo-checklist">
                 <div class="pomo-checklist-lbl">Session checklist</div>
@@ -14697,7 +14704,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   window.setPomoEvent = function(ev) {
     _pomoEvent = ev || null;
     if (ev && ev.duration) {
-      const mins = Math.max(1, Math.round(ev.duration / 60));
+      const mins = Math.max(1, Math.round(ev.duration));
       setDuration(mins);
     }
     // Show/hide delete event button
