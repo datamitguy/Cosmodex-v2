@@ -81,6 +81,7 @@
 <style>
 
 /* ══ DESIGN TOKENS ══ */
+/* → future file: cosmodex-tokens.css */
 :root {
   /* Backgrounds — pure black base; surface used for left nav to differentiate */
   --bg:          #000000;
@@ -121,10 +122,22 @@
   --ease-panel:  cubic-bezier(0.16, 1, 0.3, 1);
   --ease-glass:  cubic-bezier(0.25, 1, 0.5, 1);
 
-  /* Glass language — Liquid Glass OS */
+  /* Glass language — surfaces */
   --glass-bg:        rgba(255, 255, 255, 0.03);
   --glass-border:    rgba(255, 255, 255, 0.08);
   --glass-highlight: rgba(255, 255, 255, 0.20);
+
+  /* Glass language — backdrop-filter levels
+     These are the canonical blur values used across every glass surface.
+     All components reference these tokens so the depth language stays consistent
+     and each component file remains self-contained when the monolith is split. */
+  --glass-blur-overlay:    blur(8px) brightness(0.4);   /* modal backdrops / dimming scrim */
+  --glass-blur-panel:      blur(18px);                  /* overlay panels, page header, ritual/commit cards */
+  --glass-blur-nav:        blur(24px);                  /* left nav background */
+  --glass-blur-nav-active: blur(28px) saturate(150%);   /* left nav active item */
+  --glass-blur-card:       blur(32px) saturate(140%);   /* milestone dashboard cards */
+  --glass-blur-deep:       blur(40px) saturate(160%);   /* liquid glass card, orb wheel (maximum depth) */
+  --glass-blur-button:     blur(20px) saturate(160%);   /* liquid glass buttons (trial/future components) */
 }
 
 /* ══ RESET & BASE ══ */
@@ -220,8 +233,8 @@ body::after {
   min-width: var(--nav-width);
   height: 100dvh;
   background: var(--glass-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: var(--glass-blur-nav);
+  -webkit-backdrop-filter: var(--glass-blur-nav);
   border-right: 1px solid var(--glass-border);
   display: flex;
   flex-direction: column;
@@ -395,8 +408,8 @@ body::after {
     inset -1px 0 0 rgba(255,255,255,0.08),
     0 4px 28px rgba(0,0,0,0.45),
     0 1px 4px rgba(0,0,0,0.25);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  backdrop-filter: var(--glass-blur-nav-active);
+  -webkit-backdrop-filter: var(--glass-blur-nav-active);
   text-shadow: 0 1px 2px rgba(0,0,0,0.25), 0 0 18px rgba(255,255,255,0.45);
 }
 
@@ -484,8 +497,8 @@ body::after {
   gap: 12px;
   padding: 0 16px;
   background: rgba(7,7,7,0.82);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
   position: relative;
   z-index: 20;
 }
@@ -1120,8 +1133,8 @@ body::after {
   position: absolute; top: 16px; right: 16px; z-index: 40;
   width: 248px; border-radius: 20px; overflow: hidden;
   background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(40px) saturate(160%);
-  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
   border: 1px solid rgba(255,255,255,0.11);
   box-shadow:
     0 0 0 1px rgba(255,255,255,0.05) inset,
@@ -1495,8 +1508,8 @@ body::after {
   display: none;
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(8px) brightness(0.4);
-  -webkit-backdrop-filter: blur(8px) brightness(0.4);
+  backdrop-filter: var(--glass-blur-overlay);
+  -webkit-backdrop-filter: var(--glass-blur-overlay);
   z-index: 497;
 }
 
@@ -1619,7 +1632,7 @@ body::after {
   inset: 0;
   z-index: 600;
   background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(8px) brightness(0.4);
+  backdrop-filter: var(--glass-blur-overlay);
   align-items: center;
   justify-content: center;
 }
@@ -1680,6 +1693,7 @@ body::after {
 }
 
 /* ══ OVERLAYS (shared base) ══ */
+/* → future file: cosmodex-components.css */
 /* Global: fix native select/option dropdown in dark theme */
 select { color-scheme: dark; }
 select option { background: #181818; color: rgba(255,255,255,0.88); }
@@ -1691,8 +1705,8 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(8px) brightness(0.4);
-  -webkit-backdrop-filter: blur(8px) brightness(0.4);
+  backdrop-filter: var(--glass-blur-overlay);
+  -webkit-backdrop-filter: var(--glass-blur-overlay);
   opacity: 0;
   pointer-events: none;
   visibility: hidden;
@@ -1708,8 +1722,8 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
 
 .overlay-panel {
   background: rgba(12,12,12,0.82);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 20px;
   width: min(700px, 92vw);
@@ -1884,8 +1898,8 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   justify-content: center;
   padding-top: 15vh;
   background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(8px) brightness(0.4);
-  -webkit-backdrop-filter: blur(8px) brightness(0.4);
+  backdrop-filter: var(--glass-blur-overlay);
+  -webkit-backdrop-filter: var(--glass-blur-overlay);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s var(--ease-glass);
@@ -2165,6 +2179,7 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
 }
 
 /* ══ SHARED BUTTON + FORM UTILITIES ══ */
+/* → future file: cosmodex-components.css */
 .btn-primary {
   background: var(--gold); color: var(--ink);
   border: none; border-radius: 8px; padding: 8px 16px;
@@ -2234,6 +2249,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 }
 
 /* ═══ LISTS PAGE ════════════════════════════════════════ */
+/* → future file: cosmodex-lists.css */
 .list-sidebar-card {
   padding: 10px 14px;
   border-radius: 8px;
@@ -2323,6 +2339,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .list-detail-item-del:hover { color: var(--rust); background: rgba(196,92,42,0.08); }
 
 /* ═══ HABITS V2 PAGE ════════════════════════════════════ */
+/* → future file: cosmodex-habits.css */
 .habits-v2-tab {
   font-family: var(--font-mono);
   font-size: 9px;
@@ -2543,6 +2560,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .keystone-del:hover { opacity: 1 !important; color: var(--rust); }
 
 /* ══ MILESTONES PANEL ══ */
+/* → future file: cosmodex-planning.css */
 
 /* ── Planning dashboard card grid ──────────────────────── */
 .ms-dash-grid {
@@ -2638,8 +2656,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .ms-dash-card-inner {
   /* Semi-transparent surface — lets the blur show through */
   background: rgba(14, 14, 20, 0.58);
-  backdrop-filter: blur(32px) saturate(140%);
-  -webkit-backdrop-filter: blur(32px) saturate(140%);
+  backdrop-filter: var(--glass-blur-card);
+  -webkit-backdrop-filter: var(--glass-blur-card);
   border-radius: 17px;
   padding: 14px 16px 12px;
   display: flex;
@@ -2943,11 +2961,29 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .plan-layout { display: flex; flex: 1; overflow: hidden; min-height: 0; }
 .plan-left {
   width: 300px; min-width: 300px;
-  border-right: 1px solid var(--border);
+  position: relative;
+  background: rgba(255,255,255,0.035);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
+  border-right: 1px solid rgba(255,255,255,0.09);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,0.04), 4px 0 28px rgba(0,0,0,0.45);
   display: flex; flex-direction: column; overflow: hidden;
   transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
               min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
               opacity 0.28s ease;
+}
+/* Specular top edge — same glass language as pomo float / liquid-glass-card */
+.plan-left::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,255,0.30) 20%,
+    rgba(255,255,255,0.65) 50%,
+    rgba(255,255,255,0.30) 80%,
+    transparent 100%);
+  z-index: 4; pointer-events: none;
 }
 .plan-left.collapsed { width: 0; min-width: 0; opacity: 0; border-right-color: transparent; }
 .plan-left-rail {
@@ -3513,6 +3549,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .cat-admin    { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.55); border:1px solid rgba(255,255,255,0.15); }
 
 /* ══ CALENDAR — WEEK VIEW ══ */
+/* → future file: cosmodex-calendar.css */
 .week-header-row {
   display:grid; grid-template-columns:48px repeat(7,1fr);
   border-bottom:1px solid var(--border); flex-shrink:0;
@@ -4032,6 +4069,7 @@ select.sched-input { background: #181818; }
 }
 
 /* ══ TOAST NOTIFICATIONS ══ */
+/* → future file: cosmodex-components.css */
 #cdx-toast-container {
   position: fixed;
   bottom: 80px;
@@ -4175,11 +4213,12 @@ select.sched-input { background: #181818; }
 .energy-pill.active.energy-quick    { background: rgba(74,124,94,0.12);   border-color: var(--sage);  color: var(--sage); }
 
 /* ══ DAILY RITUAL OVERLAY ══ */
+/* → future file: cosmodex-ritual.css */
 #ritual-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.72);
-  backdrop-filter: blur(8px) brightness(0.4);
-  -webkit-backdrop-filter: blur(8px) brightness(0.4);
+  backdrop-filter: var(--glass-blur-overlay);
+  -webkit-backdrop-filter: var(--glass-blur-overlay);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -4192,8 +4231,8 @@ select.sched-input { background: #181818; }
 .ritual-card {
   width: min(480px, 92vw);
   background: rgba(12,12,12,0.85);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 20px;
   padding: 36px 32px;
@@ -4358,8 +4397,8 @@ select.sched-input { background: #181818; }
 #reentry-modal {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.72);
-  backdrop-filter: blur(8px) brightness(0.4);
-  -webkit-backdrop-filter: blur(8px) brightness(0.4);
+  backdrop-filter: var(--glass-blur-overlay);
+  -webkit-backdrop-filter: var(--glass-blur-overlay);
   z-index: 870;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
@@ -4369,8 +4408,8 @@ select.sched-input { background: #181818; }
 .reentry-card {
   width: min(420px, 92vw);
   background: rgba(12,12,12,0.85);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 16px;
   display: flex; flex-direction: column;
@@ -4452,11 +4491,12 @@ select.sched-input { background: #181818; }
 .reentry-skip-btn:hover { border-color: var(--gold); color: var(--cream); }
 
 /* ══ COMMIT MODE ══ */
+/* → future file: cosmodex-ritual.css */
 #commit-overlay {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.78);
-  backdrop-filter: blur(8px) brightness(0.4);
-  -webkit-backdrop-filter: blur(8px) brightness(0.4);
+  backdrop-filter: var(--glass-blur-overlay);
+  -webkit-backdrop-filter: var(--glass-blur-overlay);
   z-index: 950;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
@@ -4468,8 +4508,8 @@ select.sched-input { background: #181818; }
 .commit-card {
   width: min(480px, 92vw);
   background: rgba(12,12,12,0.85);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 20px;
   padding: 28px 32px;
@@ -4588,8 +4628,8 @@ select.sched-input { background: #181818; }
 #friction-modal {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.72);
-  backdrop-filter: blur(8px) brightness(0.4);
-  -webkit-backdrop-filter: blur(8px) brightness(0.4);
+  backdrop-filter: var(--glass-blur-overlay);
+  -webkit-backdrop-filter: var(--glass-blur-overlay);
   z-index: 960;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none;
@@ -4599,8 +4639,8 @@ select.sched-input { background: #181818; }
 .friction-card {
   width: min(400px, 92vw);
   background: rgba(12,12,12,0.85);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
   border: 1px solid rgba(196,92,42,0.25);
   border-radius: 16px;
   display: flex; flex-direction: column;
@@ -4954,8 +4994,8 @@ select.sched-input { background: #181818; }
 #event-action-modal {
   position: fixed; z-index: 1200;
   background: rgba(12,12,12,0.88);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
   border: 1px solid rgba(255,255,255,0.13); border-radius: 12px;
   padding: 14px 16px; min-width: 248px; max-width: 300px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
@@ -5020,6 +5060,7 @@ select.sched-input { background: #181818; }
 .mm-tool-btn.active { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.35); color: #fff; }
 
 /* ══ TRIAL PANEL — Stitch Mesh Background + Liquid Glass ══ */
+/* → future file: cosmodex-trial.css  (liquid glass card = the canonical component reference) */
 .trial-bg {
   position: absolute;
   inset: 0;
@@ -5107,8 +5148,8 @@ select.sched-input { background: #181818; }
   border-radius: 24px;
   overflow: hidden;
   background: rgba(255,255,255,0.04);
-  backdrop-filter: blur(40px) saturate(160%);
-  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
   border: 1px solid rgba(255,255,255,0.10);
   box-shadow:
     0 0 0 1px rgba(255,255,255,0.04) inset,
@@ -5185,8 +5226,8 @@ select.sched-input { background: #181818; }
   border-radius: 100px;
   border: 1px solid rgba(255,255,255,0.12);
   background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: var(--glass-blur-button);
+  -webkit-backdrop-filter: var(--glass-blur-button);
   color: rgba(255,255,255,0.78);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -5460,7 +5501,7 @@ select.sched-input { background: #181818; }
     </div>
 
     <!-- Milestones Panel (shown via Planning nav item) -->
-    <div id="panel-milestones" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden">
+    <div id="panel-milestones" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000">
       <!-- View switcher -->
       <div class="plan-switcher-bar">
         <div class="plan-switcher-track">
@@ -7076,6 +7117,7 @@ select.sched-input { background: #181818; }
 'use strict';
 
 /* ══ CONSTANTS ══ */
+// → future file: cosmodex-state.js  (shared global state + constants)
 let CATEGORIES = {};
 
 // Load saved categories from localStorage
@@ -7360,6 +7402,7 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
 });
 
 /* ══ PANEL SWITCHING (Calendar/Tasks ↔ Milestones) ══ */
+// → future file: cosmodex-shell.js  (nav, routing, overlay open/close)
 function showMainPanel(name) {
   _mainPanel = name;
   document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
@@ -7389,6 +7432,7 @@ function showMainPanel(name) {
 }
 
 /* ══ LISTS — FIRESTORE CRUD ══ */
+// → future file: cosmodex-lists.js
 async function addList(title) {
   if (!title?.trim()) { showToast('List name cannot be empty', 'error'); return; }
   const { addDoc, serverTimestamp } = window.CDX_FB;
@@ -7629,6 +7673,7 @@ function initListsPage() {
 }
 
 /* ══ HABITS — HELPERS ══ */
+// → future file: cosmodex-habits.js
 function getHabitsUid() { return window.CDX_USER?.uid || null; }
 
 function last7Days() {
@@ -8375,6 +8420,7 @@ function hbBuildHeatmap() {
 }
 
 /* ══ INSIGHTS — RENDER ══ */
+// → future file: cosmodex-insights.js
 function renderInsights() {
   const logs    = _habitLogs;   // { dateStr: { date, completions: { habitId: true } } }
   const habits  = _habits;      // active habits
@@ -8652,6 +8698,7 @@ function _weekPct(dates, habits) {
 }
 
 /* ══ MILESTONES — FIRESTORE CRUD ══ */
+// → future file: cosmodex-planning.js
 async function addMilestoneProject(title, startDate, endDate, color, category='', notes='', missionBrief='', antiGoals='') {
   const { addDoc, serverTimestamp } = window.CDX_FB;
   const ref = await addDoc(_uc('milestoneProjects'),
@@ -9319,7 +9366,11 @@ function openMsEventModal(projectId, eventId = null, prefilledDate = '') {
   document.getElementById('ms-event-project-id').value = projectId;
   document.getElementById('ms-event-id').value = eventId || '';
   document.getElementById('ms-event-title').value = ev ? ev.title : '';
-  document.getElementById('ms-event-date').value  = ev ? ev.date : (prefilledDate || '');
+  const _evProj = MILESTONE_PROJECTS.find(p => p.id === projectId);
+  const _dateInput = document.getElementById('ms-event-date');
+  _dateInput.value  = ev ? ev.date : (prefilledDate || '');
+  _dateInput.min = _evProj?.startDate || '';
+  _dateInput.max = _evProj?.endDate   || '';
   document.getElementById('ms-event-desc').value  = ev ? (ev.description || '') : '';
   // Clear task search
   const searchInp = document.getElementById('ms-activity-input');
@@ -9425,6 +9476,7 @@ function initMilestonesPanel() {
     const missionBrief = document.getElementById('ms-proj-mission')?.value.trim() || '';
     const antiGoals   = document.getElementById('ms-proj-antigoals')?.value.trim() || '';
     if (!title || !start || !end) { showToast('Title, Start Date, and End Date are required.', 'error'); return; }
+    if (end < start) { showToast('End date must be on or after start date.', 'error'); return; }
     try {
       if (_msProjEdit) {
         await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes, missionBrief: missionBrief||null, antiGoals: antiGoals||null });
@@ -9674,6 +9726,17 @@ function initMilestonesPanel() {
     const projId = document.getElementById('ms-event-project-id').value;
     const evId   = document.getElementById('ms-event-id').value;
     if (!title || !date) { _msEventSaving = false; return; }
+    const _evProj = MILESTONE_PROJECTS.find(p => p.id === projId);
+    if (_evProj) {
+      if (_evProj.startDate && date < _evProj.startDate) {
+        showToast(`Milestone date cannot be before the initiative start date (${_evProj.startDate}).`, 'error');
+        _msEventSaving = false; return;
+      }
+      if (_evProj.endDate && date > _evProj.endDate) {
+        showToast(`Milestone date cannot be after the initiative end date (${_evProj.endDate}).`, 'error');
+        _msEventSaving = false; return;
+      }
+    }
 
     try {
       // For new tasks (taskId=null), create real tasks in Firestore before saving
@@ -10533,6 +10596,7 @@ function updateCalNowLine() {
 _calNowLineInterval = setInterval(updateCalNowLine, 60 * 1000);
 
 /* ══ TIMEDRIFT — SVG rotating rings (cosmodex-timedrift v9) ══ */
+// → future file: cosmodex-timedrift.js
 const _TD_NS = 'http://www.w3.org/2000/svg';
 const _tdMk = t => document.createElementNS(_TD_NS, t);
 const _TD_CX = 500, _TD_CY = 500;
@@ -11002,6 +11066,9 @@ function stopTimedrift(){
 
 
 /* ══ HELPERS ══ */
+// → future file: cosmodex-utils.js
+// Exports: escHtml, escAttr, localDateStr, fmtDate, fmtTimeSched, fmtHour,
+//          minutesToDuration, addMinutes, cdxConfirm, showToast, updateNavCounts
 function escHtml(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -11088,6 +11155,8 @@ function updateNavCounts() {
 }
 
 /* ══ FIREBASE HELPERS ══ */
+// → future file: cosmodex-firebase.js
+// Exports: waitForFirebase, getUserUid, getHabitsUid, _uc, _ud
 function waitForFirebase(fn) {
   if (window.CDX_DB && window.CDX_FB) { fn(); return; }
   setTimeout(() => waitForFirebase(fn), 120);
@@ -11196,6 +11265,7 @@ async function deleteHoliday(docId) {
 }
 
 /* ══ RENDER TASKS ══ */
+// → future file: cosmodex-tasks.js
 function renderTasks() {
   const body = document.getElementById('tasks-body');
   if (!body) return;
