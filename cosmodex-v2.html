@@ -1168,6 +1168,7 @@ body::after {
   border: 1px solid rgba(57,255,20,0.20);
   box-shadow: 0 0 80px rgba(57,255,20,0.14), 0 0 160px rgba(57,255,20,0.07);
   animation: pfBoxBreath 16s linear infinite;
+  pointer-events: none;
 }
 .pf-breath-bg-inner {
   position: absolute;
@@ -1178,6 +1179,7 @@ body::after {
   box-shadow: 0 0 50px rgba(57,255,20,0.10), 0 0 100px rgba(57,255,20,0.05);
   animation: pfBoxBreath 16s linear infinite;
   animation-delay: -0.4s;
+  pointer-events: none;
 }
 @keyframes pfBoxBreath {
   0%   { transform: translate(-50%, -50%) scale(0.68); opacity: 0.30; }   /* hold (exhaled) */
@@ -1281,17 +1283,17 @@ body::after {
 .pomo-tick { width: 2px; border-radius: 1px; background: var(--border); }
 .pomo-tick.major { height: 9px; }
 .pomo-tick.current { background: var(--gold); width: 3px; }
-.pomo-btns { display: flex; gap: 7px; width: 100%; }
+.pomo-btns { display: flex; gap: 7px; width: 100%; position: relative; z-index: 5; }
 .pomo-btn {
-  flex: 1; padding: 8px 0; font-family: var(--font-mono); font-size: 9px;
+  flex: 1; padding: 10px 0; font-family: var(--font-mono); font-size: 9px;
   letter-spacing: 0.10em; text-transform: uppercase;
   border: 1px solid var(--border); background: none; color: var(--muted);
-  cursor: pointer; border-radius: 6px; min-height: 36px; transition: var(--ease-fast);
+  cursor: pointer; border-radius: 6px; min-height: 44px; transition: var(--ease-fast);
 }
 .pomo-btn.pomo-primary { background: rgba(255,255,255,.1); border-color: var(--gold); color: var(--gold); }
 .pomo-btn.pomo-primary:hover { background: rgba(255,255,255,.2); }
-.pomo-btn.pomo-danger { border-color: var(--rust); color: var(--rust); }
-.pomo-btn.pomo-danger:hover { background: rgba(196,92,42,.08); }
+.pomo-btn.pomo-danger { border-color: var(--border); color: var(--muted); }
+.pomo-btn.pomo-danger:hover { background: rgba(255,255,255,.06); }
 .pomo-sess { display: flex; gap: 5px; }
 .pomo-sess-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(255,255,255,.4); }
 .pomo-sess-dot.done { background: var(--gold); border-color: var(--gold); }
