@@ -10526,70 +10526,74 @@ function _tdDrawTimeline(now){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,cssW,cssH);
   const W=cssW, H=cssH;
-  const cx=W/2, cy=H/2;
-  const maxR=Math.min(W,H)*0.42;
-  const innerR=maxR*0.52;
-  const outerR=maxR;
-  const midR=(innerR+outerR)/2;
   const TWO_PI=Math.PI*2;
+  const cx=W/2;
+
+  // ── Horizon arc parameters ───────────────────────────────
+  // Shows ±3 hours (6 h total) = ±π/4 radians around the arc peak
+  const HALF_SPAN=Math.PI/4;
+  const bandH=Math.max(14, H*0.09);
+  // Radius sized so arc spans ~94% of canvas width at the ±3 h endpoints
+  const R=(W*0.47)/Math.sin(HALF_SPAN);
+  const arcTopY=H*0.10;    // y of the arc peak (current time marker)
+  const cy_arc=arcTopY+R; // circle centre — below canvas bottom
+  const innerR=R-bandH/2, outerR=R+bandH/2, midR=R;
+  const aStart=-Math.PI/2-HALF_SPAN, aEnd=-Math.PI/2+HALF_SPAN;
+
+  // ── Time helpers ─────────────────────────────────────────
   const todayStr=localDateStr(now);
   const curFrac=(now.getHours()*3600+now.getMinutes()*60+now.getSeconds())/86400;
-  // Wheel rotates so current time is always at top (−π/2)
-  const wRot=-curFrac*TWO_PI;
-  const toAngle=frac=>frac*TWO_PI+wRot-Math.PI/2;
+  // theta: angular offset of a time fraction from current time (rad)
+  const toTheta=frac=>{
+    let d=frac-curFrac; if(d>0.5)d-=1; if(d<-0.5)d+=1; return d*TWO_PI;
+  };
+  // Canvas point on a circle of given radius at angle-offset theta from top
+  const tPt=(theta,r)=>[cx+r*Math.sin(theta), cy_arc-r*Math.cos(theta)];
 
-  // ── Donut ring background ──────────────────────────────
+  // ── Arc band background ──────────────────────────────────
   ctx.beginPath();
-  ctx.arc(cx,cy,outerR,0,TWO_PI);
-  ctx.arc(cx,cy,innerR,0,TWO_PI,true);
-  ctx.fillStyle='rgba(255,255,255,0.03)';
-  ctx.fill();
-  ctx.beginPath(); ctx.arc(cx,cy,outerR,0,TWO_PI);
-  ctx.strokeStyle='rgba(255,255,255,0.10)'; ctx.lineWidth=0.5; ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx,cy,innerR,0,TWO_PI);
-  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.4; ctx.stroke();
+  ctx.arc(cx,cy_arc,outerR,aStart,aEnd);
+  ctx.arc(cx,cy_arc,innerR,aEnd,aStart,true);
+  ctx.closePath();
+  ctx.fillStyle='rgba(255,255,255,0.03)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy_arc,outerR,aStart,aEnd);
+  ctx.strokeStyle='rgba(255,255,255,0.13)'; ctx.lineWidth=0.7; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy_arc,innerR,aStart,aEnd);
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.4; ctx.stroke();
 
-  // ── 24-hour arc segments ───────────────────────────────
+  // ── Hour ticks & labels ──────────────────────────────────
   for(let h=0;h<24;h++){
-    const a0=toAngle(h/24), a1=toAngle((h+1)/24);
-    const isEven=h%2===0;
-    ctx.beginPath();
-    ctx.arc(cx,cy,outerR,a0,a1);
-    ctx.arc(cx,cy,innerR,a1,a0,true);
-    ctx.closePath();
-    ctx.fillStyle=isEven?'rgba(255,255,255,0.015)':'rgba(255,255,255,0.008)';
-    ctx.fill();
-    // Hour divider tick
-    const tx0=cx+innerR*Math.cos(a0), ty0=cy+innerR*Math.sin(a0);
-    const tx1=cx+outerR*Math.cos(a0), ty1=cy+outerR*Math.sin(a0);
-    ctx.beginPath(); ctx.moveTo(tx0,ty0); ctx.lineTo(tx1,ty1);
-    ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=0.4; ctx.stroke();
-    // Half-hour tick
-    const ha=toAngle((h+0.5)/24);
-    const ri0=innerR+(outerR-innerR)*0.28, ri1=innerR+(outerR-innerR)*0.55;
-    ctx.beginPath();
-    ctx.moveTo(cx+ri0*Math.cos(ha),cy+ri0*Math.sin(ha));
-    ctx.lineTo(cx+ri1*Math.cos(ha),cy+ri1*Math.sin(ha));
-    ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.3; ctx.stroke();
+    const theta=toTheta(h/24);
+    if(Math.abs(theta)>HALF_SPAN*1.05) continue;
+    // Tick — radial line across most of the band
+    const [t0x,t0y]=tPt(theta, innerR+(outerR-innerR)*0.18);
+    const [t1x,t1y]=tPt(theta, outerR-(outerR-innerR)*0.08);
+    ctx.beginPath(); ctx.moveTo(t0x,t0y); ctx.lineTo(t1x,t1y);
+    ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=0.7; ctx.stroke();
+    // Label outside the outer edge
+    if(Math.abs(theta)<=HALF_SPAN*0.97){
+      const [lx,ly]=tPt(theta, outerR+15);
+      const fade=1-Math.abs(theta)/HALF_SPAN*0.65;
+      ctx.save();
+      ctx.translate(lx,ly);
+      ctx.rotate(theta); // tangential rotation follows arc curvature
+      ctx.font="300 9px 'DM Mono',monospace";
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=`rgba(255,255,255,${(fade*0.50).toFixed(2)})`;
+      ctx.fillText(String(h).padStart(2,'0'),0,0);
+      ctx.restore();
+    }
+    // Half-hour sub-tick
+    const ht=toTheta((h+0.5)/24);
+    if(Math.abs(ht)<=HALF_SPAN){
+      const [h0x,h0y]=tPt(ht, innerR+(outerR-innerR)*0.28);
+      const [h1x,h1y]=tPt(ht, innerR+(outerR-innerR)*0.58);
+      ctx.beginPath(); ctx.moveTo(h0x,h0y); ctx.lineTo(h1x,h1y);
+      ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.3; ctx.stroke();
+    }
   }
 
-  // ── Hour labels (rotate with wheel, flip bottom half) ──
-  const labelR=innerR+(outerR-innerR)*0.78;
-  for(let h=0;h<24;h++){
-    const a=toAngle((h+0.5)/24);
-    const lx=cx+labelR*Math.cos(a), ly=cy+labelR*Math.sin(a);
-    let la=a+Math.PI/2;
-    if(Math.sin(a)>0.05) la+=Math.PI;
-    ctx.save();
-    ctx.translate(lx,ly); ctx.rotate(la);
-    ctx.font="300 9px 'DM Mono',monospace";
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillStyle='rgba(255,255,255,0.35)';
-    ctx.fillText(String(h).padStart(2,'0'),0,0);
-    ctx.restore();
-  }
-
-  // ── Calendar event arcs ────────────────────────────────
+  // ── Calendar event arcs ──────────────────────────────────
   const phase=performance.now()*0.001;
   const todayEvts=(CAL_EVENTS||[]).filter(e=>e.date===todayStr&&e.startTime&&!e.allDay);
   todayEvts.forEach(ev=>{
@@ -10597,100 +10601,88 @@ function _tdDrawTimeline(now){
     const sFrac=(sh*60+sm)/1440;
     const isPast=sFrac<curFrac;
     let eFrac=sFrac+1/24;
-    if(ev.endTime){ const [eh,em]=(ev.endTime||'0:0').split(':').map(Number); eFrac=(eh*60+em)/1440; }
-    const a0=toAngle(sFrac), a1=toAngle(eFrac);
+    if(ev.endTime){const [eh,em]=(ev.endTime||'0:0').split(':').map(Number);eFrac=(eh*60+em)/1440;}
+    const sT=toTheta(sFrac), eT=toTheta(eFrac);
+    const cS=Math.max(sT,-HALF_SPAN), cE=Math.min(eT,HALF_SPAN);
+    if(cS>=cE) return;
+    const aS=-Math.PI/2+cS, aE2=-Math.PI/2+cE;
     const evG='rgba(53,249,47,';
-    // Arc fill
+    // Band fill
     ctx.beginPath();
-    ctx.arc(cx,cy,outerR-1,a0,a1);
-    ctx.arc(cx,cy,innerR+1,a1,a0,true);
+    ctx.arc(cx,cy_arc,outerR-1,aS,aE2);
+    ctx.arc(cx,cy_arc,innerR+1,aE2,aS,true);
     ctx.closePath();
-    ctx.fillStyle=isPast?evG+'0.04)':evG+'0.08)'; ctx.fill();
-    // Outer arc edge
-    ctx.beginPath(); ctx.arc(cx,cy,outerR-1,a0,a1);
-    ctx.strokeStyle=isPast?evG+'0.30)':evG+'0.70)';
-    ctx.lineWidth=isPast?1.0:1.5; ctx.stroke();
-    // Start dot
-    const dm=cx+midR*Math.cos(a0), dm2=cy+midR*Math.sin(a0);
-    ctx.beginPath(); ctx.arc(dm,dm2,2.5,0,TWO_PI);
-    ctx.fillStyle=isPast?evG+'0.55)':evG+'1.0)';
-    if(!isPast){ctx.shadowColor=evG+'0.7)';ctx.shadowBlur=6;}
-    ctx.fill(); ctx.shadowBlur=0;
-    // Animated waveform along midR
-    const wA0=a0, wA1=a1<a0?a1+TWO_PI:a1, wSpan=wA1-wA0;
+    ctx.fillStyle=isPast?evG+'0.04)':evG+'0.10)'; ctx.fill();
+    // Glow edge
+    ctx.beginPath(); ctx.arc(cx,cy_arc,outerR-1,aS,aE2);
+    ctx.strokeStyle=isPast?evG+'0.28)':evG+'0.72)';
+    ctx.lineWidth=isPast?1.0:1.8; ctx.stroke();
+    // Animated waveform along mid arc
+    const wSpan=cE-cS;
     if(wSpan>0.01){
       const steps=Math.max(20,Math.round(wSpan*midR));
       ctx.beginPath();
       for(let i=0;i<=steps;i++){
-        const t=i/steps, wa=wA0+t*wSpan;
-        const edgeFade=Math.min(t*6,(1-t)*6,1);
-        const wr=midR+Math.sin(t*wSpan*midR*0.3+phase*2.8)*(outerR-innerR)*0.12*edgeFade;
-        const wx=cx+wr*Math.cos(wa), wy=cy+wr*Math.sin(wa);
-        i===0?ctx.moveTo(wx,wy):ctx.lineTo(wx,wy);
+        const t=i/steps, wa=-Math.PI/2+cS+t*wSpan;
+        const ef=Math.min(t*6,(1-t)*6,1);
+        const wr=midR+Math.sin(t*wSpan*midR*0.3+phase*2.8)*(bandH*0.6)*ef;
+        i===0?ctx.moveTo(cx+wr*Math.cos(wa),cy_arc+wr*Math.sin(wa))
+             :ctx.lineTo(cx+wr*Math.cos(wa),cy_arc+wr*Math.sin(wa));
       }
-      ctx.strokeStyle=isPast?evG+'0.22)':evG+'0.52)';
-      ctx.lineWidth=1.8; ctx.stroke();
+      ctx.strokeStyle=isPast?evG+'0.22)':evG+'0.52)'; ctx.lineWidth=1.8; ctx.stroke();
     }
-    // Label outside ring near start angle
-    if(ev.title){
-      const ld=outerR+14;
-      const lx2=cx+ld*Math.cos(a0), ly2=cy+ld*Math.sin(a0);
-      let la2=a0+Math.PI/2;
-      if(Math.sin(a0)>0.05) la2+=Math.PI;
-      ctx.save();
-      ctx.translate(lx2,ly2); ctx.rotate(la2);
-      ctx.font="300 8.5px 'DM Mono',monospace";
+    // Start dot
+    const [dx,dy]=tPt(cS,midR);
+    ctx.beginPath(); ctx.arc(dx,dy,2.5,0,TWO_PI);
+    ctx.fillStyle=isPast?evG+'0.55)':evG+'1.0)';
+    if(!isPast){ctx.shadowColor=evG+'0.7)';ctx.shadowBlur=6;}
+    ctx.fill(); ctx.shadowBlur=0;
+    // Label tangent to arc at start
+    if(ev.title&&Math.abs(cS)<HALF_SPAN*0.90){
+      const [llx,lly]=tPt(cS, outerR+14);
+      ctx.save(); ctx.translate(llx,lly); ctx.rotate(cS);
+      ctx.font="300 8px 'DM Mono',monospace";
       ctx.textAlign='left'; ctx.textBaseline='middle';
       ctx.fillStyle=isPast?evG+'0.45)':evG+'0.85)';
-      const title=ev.title.length>18?ev.title.slice(0,17)+'…':ev.title;
-      ctx.fillText(title,0,0);
+      ctx.fillText((ev.title.length>16?ev.title.slice(0,15)+'…':ev.title),0,0);
       ctx.restore();
     }
   });
 
-  // ── Fixed blue needle at 12 o'clock (−π/2) ────────────
-  const nA=-Math.PI/2;
-  const nx0=cx+innerR*Math.cos(nA), ny0=cy+innerR*Math.sin(nA);
-  const nx1=cx+(outerR+4)*Math.cos(nA), ny1=cy+(outerR+4)*Math.sin(nA);
-  ctx.beginPath(); ctx.moveTo(nx0,ny0); ctx.lineTo(nx1,ny1);
+  // ── Fixed blue needle at arc peak (current time) ─────────
+  const nTop=arcTopY-14, nBot=arcTopY+bandH*0.75;
+  ctx.beginPath(); ctx.moveTo(cx,nBot); ctx.lineTo(cx,nTop);
   ctx.strokeStyle='rgba(41,182,246,0.08)'; ctx.lineWidth=10; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(nx0,ny0); ctx.lineTo(nx1,ny1);
+  ctx.beginPath(); ctx.moveTo(cx,nBot); ctx.lineTo(cx,nTop);
   ctx.strokeStyle='rgba(41,182,246,0.22)'; ctx.lineWidth=4; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(nx0,ny0); ctx.lineTo(nx1,ny1);
+  ctx.beginPath(); ctx.moveTo(cx,nBot); ctx.lineTo(cx,nTop);
   ctx.strokeStyle='rgba(41,182,246,0.95)'; ctx.lineWidth=1.5;
   ctx.shadowColor='rgba(41,182,246,0.8)'; ctx.shadowBlur=8;
   ctx.stroke(); ctx.shadowBlur=0;
-  // Tip triangle pointing up
-  const tipX=cx+(outerR+10)*Math.cos(nA), tipY=cy+(outerR+10)*Math.sin(nA);
   ctx.beginPath();
-  ctx.moveTo(tipX,tipY);
-  ctx.lineTo(tipX-4,tipY+8);
-  ctx.lineTo(tipX+4,tipY+8);
+  ctx.moveTo(cx,nTop); ctx.lineTo(cx-4,nTop+8); ctx.lineTo(cx+4,nTop+8);
   ctx.closePath();
   ctx.fillStyle='rgba(41,182,246,0.90)';
   ctx.shadowColor='rgba(41,182,246,0.7)'; ctx.shadowBlur=6;
   ctx.fill(); ctx.shadowBlur=0;
 
-  // ── Center hub with time display ───────────────────────
-  const hubR=innerR*0.72;
-  ctx.beginPath(); ctx.arc(cx,cy,hubR,0,TWO_PI);
-  ctx.fillStyle='#000000'; ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=0.6; ctx.stroke();
+  // ── Time display below arc peak ───────────────────────────
+  const tY=arcTopY+bandH+18;
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
   const ss=String(now.getSeconds()).padStart(2,'0');
-  ctx.font="300 18px 'DM Mono',monospace";
-  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font="300 20px 'DM Mono',monospace";
+  ctx.textAlign='center'; ctx.textBaseline='top';
   ctx.fillStyle='rgba(255,255,255,0.92)';
-  ctx.shadowColor='rgba(255,255,255,0.5)'; ctx.shadowBlur=8;
-  ctx.fillText(hh+':'+mm,cx,cy-9);
+  ctx.shadowColor='rgba(255,255,255,0.4)'; ctx.shadowBlur=8;
+  ctx.fillText(hh+':'+mm,cx,tY);
   ctx.shadowBlur=0;
   ctx.font="300 9px 'DM Mono',monospace";
-  ctx.fillStyle='rgba(255,255,255,0.40)';
-  ctx.fillText(ss,cx,cy+6);
+  ctx.fillStyle='rgba(255,255,255,0.38)';
+  ctx.fillText(ss+'s',cx,tY+24);
   ctx.font="300 7px 'DM Mono',monospace";
-  ctx.fillStyle='rgba(41,182,246,0.65)';
-  ctx.fillText('NOW',cx,cy+18);
+  ctx.fillStyle='rgba(41,182,246,0.60)';
+  ctx.fillText('NOW',cx,tY+37);
 
 }
 
