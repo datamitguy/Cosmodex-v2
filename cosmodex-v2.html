@@ -14,7 +14,7 @@
 <script type="module">
   import { initializeApp }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
-  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
@@ -51,9 +51,18 @@
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
     onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
     deleteField, arrayUnion, arrayRemove, runTransaction,
-    GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+    GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
   };
   Object.freeze(window.CDX_FB);
+
+  // Handle redirect sign-in result (new device / popup-blocked fallback)
+  getRedirectResult(auth).then(result => {
+    if (result && result.user) {
+      // onAuthStateChanged will fire and dispatch cdx-auth-ready
+    }
+  }).catch(err => {
+    console.error('Redirect sign-in error:', err);
+  });
 
   // Restore existing Google session automatically on page load
   onAuthStateChanged(auth, user => {
@@ -10698,28 +10707,20 @@ function _tdDrawTimeline(now){
     ctx.fill(); ctx.shadowBlur=0;
     // Pill label above arc
     if(ev.title&&Math.abs(cS)<HALF_SPAN*0.85){
-      const title=ev.title;
-      ctx.font="500 11px 'Instrument Sans',sans-serif";
-      const tw=ctx.measureText(title).width;
-      const ph=20, pw=tw+18, pr=10;
       const midAngle=(cS+cE)/2;
-      const [px,py]=tPt(midAngle, midR+36);
-      // Stem from arc to pill bottom
-      const [sx,sy]=tPt(midAngle, midR+3);
-      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(px,py+ph/2);
-      ctx.strokeStyle='rgba(255,255,255,0.30)'; ctx.lineWidth=1; ctx.stroke();
-      // Pill background
-      ctx.beginPath();
-      ctx.roundRect(px-pw/2, py-ph/2, pw, ph, pr);
-      ctx.fillStyle=isPast?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.13)';
-      ctx.fill();
-      ctx.strokeStyle=isPast?'rgba(255,255,255,0.18)':'rgba(255,255,255,0.50)';
-      ctx.lineWidth=0.8; ctx.stroke();
-      // Pill text
-      ctx.font="500 11px 'Instrument Sans',sans-serif";
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle=isPast?'rgba(255,255,255,0.45)':'rgba(255,255,255,0.92)';
-      ctx.fillText(title, px, py);
+      const [lx0,ly0]=tPt(midAngle, midR+6);
+      const [lx1,ly1]=tPt(midAngle, midR+44);
+      const glowAlpha=isPast?0.35:0.9;
+      // Soft outer glow pass
+      ctx.save();
+      ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
+      ctx.strokeStyle=`rgba(53,249,47,${(glowAlpha*0.30).toFixed(2)})`;
+      ctx.lineWidth=6; ctx.shadowColor='rgba(53,249,47,0.6)'; ctx.shadowBlur=14; ctx.stroke();
+      // Core bright line
+      ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
+      ctx.strokeStyle=`rgba(53,249,47,${glowAlpha.toFixed(2)})`;
+      ctx.lineWidth=1.2; ctx.shadowColor='rgba(53,249,47,0.9)'; ctx.shadowBlur=8; ctx.stroke();
+      ctx.restore();
     }
   });
 
@@ -10918,7 +10919,10 @@ function _tdUpdateRing(info,now,animEase){
   const n=ring.items.length;
   const cur=ring.cur(now), frac=ring.sub(now), exact=cur+frac;
   const rot=180-(exact/n)*360;
-  const animRot = animEase < 1 ? rot + 90*(1-animEase) : rot;
+  const isMin = ring.id === 'min';
+  const animRot = animEase < 1
+    ? (isMin ? rot - 360*(1-animEase) : rot + 90*(1-animEase))
+    : rot;
   g.setAttribute('transform',`rotate(${animRot},${_TD_CX},${_TD_CY})`);
   // Counter-rotate text so labels stay upright
   textEls.forEach(txt=>{
@@ -13922,10 +13926,13 @@ document.getElementById('signin-btn')?.addEventListener('click', () => {
       .then(() => { /* onAuthStateChanged → cdx-auth-ready → dismiss overlay */ })
       .catch(err => {
         console.error('Google sign-in failed:', err);
+        // Popup blocked or internal error (e.g. third-party cookies disabled) — fall back to redirect
+        if (err.code === 'auth/popup-blocked' || err.code === 'auth/internal-error') {
+          window.CDX_FB.signInWithRedirect(window.CDX_AUTH, provider);
+          return;
+        }
         const msg = err.code === 'auth/popup-closed-by-user'
           ? 'Sign-in cancelled. Click the button to try again.'
-          : err.code === 'auth/popup-blocked'
-          ? 'Pop-up was blocked. Please allow pop-ups for this site and retry.'
           : `Sign-in failed: ${err.message}`;
         resetBtn(msg);
       });
