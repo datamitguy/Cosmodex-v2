@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <meta name="referrer" content="origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com wss://*.firebaseio.com; img-src 'self' data:; frame-src 'none'; object-src 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com wss://*.firebaseio.com https://*.firebaseapp.com; img-src 'self' data:; frame-src https://cosmodex-fffbe.firebaseapp.com; object-src 'none';" />
   <title>Cosmodex v2</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -62,6 +62,9 @@
     }
   }).catch(err => {
     console.error('Redirect sign-in error:', err);
+    // Surface the error on the login page if it's visible
+    window.__cdxRedirectAuthError = err.message || err.code || 'Redirect sign-in failed';
+    window.dispatchEvent(new CustomEvent('cdx-redirect-auth-error', { detail: err }));
   });
 
   // Restore existing Google session automatically on page load
@@ -13906,6 +13909,28 @@ function waitForFirebaseAuth(fn) {
 
 // onAuthStateChanged in the ESM module handles returning Google sessions automatically.
 // No silent sign-in attempt needed — Google persists the session via IndexedDB.
+
+// Show redirect auth errors on the login page
+window.addEventListener('cdx-redirect-auth-error', (e) => {
+  const errEl = document.getElementById('signin-error');
+  const btn = document.getElementById('signin-btn');
+  if (!errEl) return;
+  const err = e.detail;
+  const msg = err.code === 'auth/unauthorized-domain'
+    ? 'This domain is not authorised for sign-in. Please contact the app owner.'
+    : `Sign-in failed: ${err.message || err.code}`;
+  errEl.textContent = msg;
+  errEl.style.display = 'block';
+  if (btn) { btn.disabled = false; btn.textContent = 'Continue with Google'; }
+});
+
+// If a redirect error was already dispatched before the DOM was ready, show it now
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.__cdxRedirectAuthError) {
+    const errEl = document.getElementById('signin-error');
+    if (errEl) { errEl.textContent = `Sign-in failed: ${window.__cdxRedirectAuthError}`; errEl.style.display = 'block'; }
+  }
+});
 
 document.getElementById('signin-btn')?.addEventListener('click', () => {
   const btn = document.getElementById('signin-btn');
