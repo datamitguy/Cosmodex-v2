@@ -394,7 +394,7 @@ body::after {
   border-radius: 100px;
   border: 1px solid rgba(255,255,255,0.15);
   border-bottom-color: rgba(255,255,255,0.05);
-  background: rgba(255,255,255,0.055);
+  background: transparent;
   box-shadow:
     inset 0 -1px 0 rgba(0,0,0,0.12),
     0 4px 28px rgba(0,0,0,0.50),
@@ -5391,6 +5391,10 @@ select.sched-input { background: #181818; }
         <span class="nav-item-icon">◫</span>
         Trial
       </div>
+      <div class="nav-item" id="btn-archived" data-panel="archived">
+        <span class="nav-item-icon">⊡</span>
+        Archived
+      </div>
     </div>
   </div>
 
@@ -5719,6 +5723,22 @@ select.sched-input { background: #181818; }
           <canvas id="td-tl-cvs" style="display:block;flex:1;width:100%;min-height:0;"></canvas>
         </div>
       </div>
+    </div>
+
+    <!-- Archived Panel (shown via Archived nav item) -->
+    <div id="panel-archived" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000">
+      <div style="padding:20px 28px 16px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:12px">
+        <span style="font-family:var(--font-display);font-size:22px;color:#fff;font-weight:600">Archived Initiatives</span>
+        <span id="archived-count-badge" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:2px 8px"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 120px 160px 140px 120px;gap:0;padding:8px 28px;border-bottom:1px solid rgba(255,255,255,0.06)">
+        <span style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Project</span>
+        <span style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Category</span>
+        <span style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Date Range</span>
+        <span style="font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Progress</span>
+        <span></span>
+      </div>
+      <div id="archived-page-body" style="flex:1;overflow-y:auto;padding:8px 0"></div>
     </div>
 
     <!-- Lists Panel (full page) -->
@@ -7392,6 +7412,13 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       showMainPanel('trial');
       return;
     }
+    // Archived → full page
+    if (panel === 'archived') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('archived');
+      return;
+    }
     // Cosmodex Bubble → open orb modal
     if (panel === 'cosmodex-bubble') {
       openOrb();
@@ -7414,6 +7441,7 @@ function showMainPanel(name) {
   document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
   document.getElementById('panel-tasks').style.display       = name === 'default' ? '' : 'none';
   document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
+  document.getElementById('panel-archived').style.display    = name === 'archived' ? 'flex' : 'none';
   document.getElementById('panel-lists').style.display       = name === 'lists' ? 'flex' : 'none';
   document.getElementById('panel-habits').style.display      = name === 'habits' ? 'flex' : 'none';
   document.getElementById('panel-insights').style.display    = name === 'insights' ? 'flex' : 'none';
@@ -7422,10 +7450,11 @@ function showMainPanel(name) {
   document.getElementById('panel-getabstract').style.display = name === 'getabstract' ? 'flex' : 'none';
   document.getElementById('panel-mindmap').style.display     = name === 'mindmap' ? 'flex' : 'none';
   document.getElementById('panel-trial').style.display       = name === 'trial' ? 'flex' : 'none';
-  const titles = { default:'Today', milestones:'Planning', lists:'Lists', habits:'Habits & Routines', insights:'Insights', timedrift:'Timedrift', articles:'Reading', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
+  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', habits:'Habits & Routines', insights:'Insights', timedrift:'Timedrift', articles:'Reading', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
+  if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
   if (name === 'habits') { switchHabitsTab(_habitsTab || 'habits'); }
   if (name === 'insights') { habitsSubscribe(); renderInsights(); loadDoneWall(); }
@@ -9034,6 +9063,56 @@ function showArchivedProjectsOverlay() {
     });
     item.addEventListener('mouseenter', () => { item.style.background = 'rgba(255,255,255,0.08)'; });
     item.addEventListener('mouseleave', () => { item.style.background = 'rgba(255,255,255,0.04)'; });
+  });
+}
+
+/* ── Archived page (full panel) ────────────────────────── */
+function renderArchivedPage() {
+  const body  = document.getElementById('archived-page-body');
+  const badge = document.getElementById('archived-count-badge');
+  if (!body) return;
+  const archivedProjs = MILESTONE_PROJECTS.filter(p => p.isArchived);
+  if (badge) badge.textContent = `${archivedProjs.length} archived`;
+  if (archivedProjs.length === 0) {
+    body.innerHTML = `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:64px">No archived initiatives</div>`;
+    return;
+  }
+  body.innerHTML = archivedProjs.map(proj => {
+    const events  = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
+    const allActs = events.flatMap(e => e.activities || []);
+    const doneActs = allActs.filter(a => a.done).length;
+    const pct   = allActs.length ? Math.round(doneActs / allActs.length * 100) : 0;
+    const start = proj.startDate ? proj.startDate.slice(0, 10) : '—';
+    const end   = proj.endDate   ? proj.endDate.slice(0, 10)   : '—';
+    const cat   = proj.category  || '—';
+    return `<div class="archived-row" data-arch-proj="${proj.id}" style="display:grid;grid-template-columns:1fr 120px 160px 140px 120px;gap:0;padding:13px 28px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;transition:background 120ms;cursor:default">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:7px;height:7px;border-radius:50%;background:${proj.color || '#888'};flex-shrink:0"></div>
+        <span style="font-size:13px;color:rgba(255,255,255,0.85)">${escHtml(proj.title)}</span>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${escHtml(cat)}</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${start} → ${end}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;max-width:80px">
+          <div style="height:2px;background:var(--sage);border-radius:2px;width:${pct}%"></div>
+        </div>
+        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${doneActs}/${allActs.length}</span>
+      </div>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="btn-ghost arch-page-unarchive-btn" data-arch-unarchive="${proj.id}" style="font-size:9px;padding:4px 10px;color:var(--muted)">Unarchive</button>
+      </div>
+    </div>`;
+  }).join('');
+  body.querySelectorAll('.archived-row').forEach(row => {
+    row.addEventListener('mouseenter', () => { row.style.background = 'rgba(255,255,255,0.03)'; });
+    row.addEventListener('mouseleave', () => { row.style.background = ''; });
+  });
+  body.querySelectorAll('.arch-page-unarchive-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const projId = btn.dataset.archUnarchive;
+      await window.CDX_FB.updateDoc(_ud('milestoneProjects', projId), { isArchived: false });
+    });
   });
 }
 
