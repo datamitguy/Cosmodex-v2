@@ -1103,32 +1103,79 @@ body::after {
   display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none;
 }
 .pomo-col::-webkit-scrollbar { display: none; }
-/* Timedrift pomo column collapse */
-#td-pomo-col {
-  transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
-              min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
-              opacity 0.28s ease;
+/* ── Floating Pomodoro Panel ── */
+#td-pomo-float {
+  position: absolute; top: 16px; right: 16px; z-index: 40;
+  width: 248px; border-radius: 20px; overflow: hidden;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.11);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.05) inset,
+    0 24px 56px rgba(0,0,0,0.60),
+    0 8px 20px rgba(0,0,0,0.35),
+    0 0 0 0 rgba(107,159,212,0);
+  animation: pomoBoxBreath 8s ease-in-out infinite;
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
-#td-pomo-col.collapsed { width: 0 !important; min-width: 0 !important; opacity: 0; border-right-color: transparent; overflow: hidden; }
-#td-pomo-rail {
-  width: 0; min-width: 0; overflow: hidden;
-  display: flex; flex-direction: column; align-items: center;
-  border-right: 1px solid transparent;
-  transition: width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),
-              min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94);
-  padding-top: 8px; gap: 8px; background: #000;
+@keyframes pomoBoxBreath {
+  0%,100% { box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset, 0 24px 56px rgba(0,0,0,0.60), 0 8px 20px rgba(0,0,0,0.35), 0 0 0 0 rgba(107,159,212,0); }
+  25%      { box-shadow: 0 0 0 1px rgba(255,255,255,0.10) inset, 0 24px 56px rgba(0,0,0,0.55), 0 8px 20px rgba(0,0,0,0.30), 0 0 28px 6px rgba(107,159,212,0.12); }
+  50%      { box-shadow: 0 0 0 1px rgba(255,255,255,0.14) inset, 0 24px 56px rgba(0,0,0,0.50), 0 8px 20px rgba(0,0,0,0.25), 0 0 44px 10px rgba(107,159,212,0.18); }
+  75%      { box-shadow: 0 0 0 1px rgba(255,255,255,0.10) inset, 0 24px 56px rgba(0,0,0,0.55), 0 8px 20px rgba(0,0,0,0.30), 0 0 28px 6px rgba(107,159,212,0.12); }
 }
-#td-pomo-rail.visible { width: 36px; min-width: 36px; border-right-color: rgba(255,255,255,0.08); }
-.td-pomo-col-header {
+/* Blob background inside panel */
+.pf-bg { position: absolute; inset: 0; overflow: hidden; border-radius: 20px; pointer-events: none; }
+.pf-blob {
+  position: absolute; border-radius: 50%; filter: blur(48px);
+  animation: pfFloat linear infinite;
+}
+.pf-blob-1 { width: 200px; height: 200px; opacity: 0.35; background: radial-gradient(circle, #7c3aed 0%, transparent 70%); top: -60px; left: -50px; animation-duration: 16s; }
+.pf-blob-2 { width: 180px; height: 180px; opacity: 0.30; background: radial-gradient(circle, #0ea5e9 0%, transparent 70%); bottom: -50px; right: -40px; animation-duration: 22s; animation-delay: -8s; }
+.pf-blob-3 { width: 160px; height: 160px; opacity: 0.22; background: radial-gradient(circle, #c45c2a 0%, transparent 70%); top: 45%; left: 25%; animation-duration: 19s; animation-delay: -12s; }
+@keyframes pfFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  25%      { transform: translate(22px,-18px) scale(1.07); }
+  50%      { transform: translate(-18px,22px) scale(0.93); }
+  75%      { transform: translate(-22px,-12px) scale(1.10); }
+}
+/* Specular top edge */
+.pf-specular {
+  position: absolute; top: 0; left: 0; right: 0; height: 1px; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 25%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.35) 75%, transparent 100%);
+}
+/* Header */
+.pf-header {
+  position: relative; z-index: 3;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 10px 0 14px; height: 38px; min-height: 38px; flex-shrink: 0;
+  padding: 0 12px 0 16px; height: 40px; flex-shrink: 0;
   border-bottom: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
 }
-.td-pomo-col-header-label {
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: rgba(255,255,255,0.5);
+.pf-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55);
 }
+.pf-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(107,159,212,0.55);
+  border: none; cursor: pointer; padding: 0;
+  box-shadow: 0 0 8px rgba(107,159,212,0.4);
+  transition: background 0.2s, box-shadow 0.2s;
+  animation: pfDotBreath 8s ease-in-out infinite;
+}
+@keyframes pfDotBreath {
+  0%,100% { background: rgba(107,159,212,0.40); box-shadow: 0 0 6px rgba(107,159,212,0.30); }
+  50%      { background: rgba(107,159,212,0.80); box-shadow: 0 0 14px rgba(107,159,212,0.60); }
+}
+.pf-dot:hover { background: rgba(107,159,212,0.95) !important; box-shadow: 0 0 16px rgba(107,159,212,0.70) !important; }
+/* Body with collapse animation */
+.pf-body {
+  position: relative; z-index: 3;
+  max-height: 700px; overflow: hidden;
+  transition: max-height 0.45s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.35s ease;
+}
+#td-pomo-float.pf-collapsed .pf-body { max-height: 0; opacity: 0; }
 .pomo-body-inner {
   flex: 1; display: flex; flex-direction: column; align-items: center;
   padding: 14px 12px 14px; gap: 10px;
@@ -5520,78 +5567,81 @@ select.sched-input { background: #181818; }
 
     <!-- Timedrift Panel -->
     <div id="panel-timedrift" style="display:none;flex:1;flex-direction:row;overflow:hidden;position:relative;background:#000000">
-      <!-- Left: Pomodoro timer -->
-      <div id="td-pomo-col" style="width:260px;flex-shrink:0;border-right:1px solid rgba(255,255,255,0.08);overflow-y:auto;display:flex;flex-direction:column;background:#000">
-        <div class="td-pomo-col-header">
-          <span class="td-pomo-col-header-label">Focus Timer</span>
-          <button class="plan-panel-toggle" id="td-pomo-toggle" title="Collapse">‹</button>
-        </div>
-        <div class="pomo-body-inner" style="padding:20px 16px">
-          <div class="pomo-ev-label">Focus Session</div>
-          <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
-          <div class="pomo-ring-wrap">
-            <canvas id="pomo-ring" width="130" height="130"></canvas>
-            <div class="pomo-center">
-              <div class="pomo-time" id="pomo-time">25:00</div>
-              <div class="pomo-phase-label" id="pomo-phase">Ready</div>
-            </div>
+      <!-- Right: Timedrift visualization (floating pomo panel lives here) -->
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative">
+        <!-- Floating Pomodoro Panel -->
+        <div id="td-pomo-float">
+          <div class="pf-bg">
+            <div class="pf-blob pf-blob-1"></div>
+            <div class="pf-blob pf-blob-2"></div>
+            <div class="pf-blob pf-blob-3"></div>
           </div>
-          <div class="pomo-swipe-section">
-            <div class="pomo-swipe-ctrl">
-              <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
-              <div class="pomo-swipe-track" id="pomo-sw-track">
-                <div class="pomo-swipe-inner">
-                  <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
-                    <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
-                    <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:9px;color:var(--muted)">min</div>
-                  </div>
-                  <div class="pomo-ticks" id="pomo-ticks"></div>
+          <div class="pf-specular"></div>
+          <div class="pf-header">
+            <span class="pf-label">Focus Timer</span>
+            <button class="pf-dot" id="td-pomo-toggle" title="Collapse / expand"></button>
+          </div>
+          <div class="pf-body">
+            <div class="pomo-body-inner" style="padding:16px 16px 14px">
+              <div class="pomo-ev-label">Focus Session</div>
+              <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
+              <div class="pomo-ring-wrap">
+                <canvas id="pomo-ring" width="130" height="130"></canvas>
+                <div class="pomo-center">
+                  <div class="pomo-time" id="pomo-time">25:00</div>
+                  <div class="pomo-phase-label" id="pomo-phase">Ready</div>
                 </div>
               </div>
-              <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
+              <div class="pomo-swipe-section">
+                <div class="pomo-swipe-ctrl">
+                  <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
+                  <div class="pomo-swipe-track" id="pomo-sw-track">
+                    <div class="pomo-swipe-inner">
+                      <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
+                        <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
+                        <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:9px;color:var(--muted)">min</div>
+                      </div>
+                      <div class="pomo-ticks" id="pomo-ticks"></div>
+                    </div>
+                  </div>
+                  <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
+                </div>
+              </div>
+              <div class="pomo-btns">
+                <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
+                <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
+              </div>
+              <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
+                <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--gold);margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
+                <div style="display:flex;gap:8px;justify-content:center">
+                  <button id="pomo-done-yes" style="background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
+                  <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
+                </div>
+              </div>
+              <div class="pomo-sess" id="pomo-sess">
+                <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+                <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+              </div>
+              <div class="pomo-breath-section">
+                <div class="breath-ring-outer"><div class="breath-ring-inner"></div></div>
+                <div class="pomo-breath-phase" id="pomo-breath-phase">Breathe in</div>
+                <div class="pomo-breath-hint">Box breathing · 4-4-4-4</div>
+              </div>
+              <div class="pomo-checklist">
+                <div class="pomo-checklist-lbl">Session checklist</div>
+                <div class="pomo-check-items" id="pomo-check-items"></div>
+                <div class="pomo-check-add">
+                  <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
+                  <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="pomo-btns">
-            <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
-            <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
-          </div>
-          <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
-            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--gold);margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
-            <div style="display:flex;gap:8px;justify-content:center">
-              <button id="pomo-done-yes" style="background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
-              <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
-            </div>
-          </div>
-          <div class="pomo-sess" id="pomo-sess">
-            <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-            <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-          </div>
-          <div class="pomo-breath-section">
-            <div class="breath-ring-outer"><div class="breath-ring-inner"></div></div>
-            <div class="pomo-breath-phase" id="pomo-breath-phase">Breathe in</div>
-            <div class="pomo-breath-hint">Box breathing · 4-4-4-4</div>
-          </div>
-          <div class="pomo-checklist">
-            <div class="pomo-checklist-lbl">Session checklist</div>
-            <div class="pomo-check-items" id="pomo-check-items"></div>
-            <div class="pomo-check-add">
-              <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
-              <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
+            <div id="pomo-lock-msg">
+              <div class="pomo-lock-text">Session in progress.<br>Stop the timer to close.</div>
+              <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
             </div>
           </div>
         </div>
-        <div id="pomo-lock-msg">
-          <div class="pomo-lock-text">Session in progress.<br>Stop the timer to close.</div>
-          <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
-        </div>
-      </div>
-      <!-- Pomo collapsed rail -->
-      <div id="td-pomo-rail">
-        <button class="plan-rail-btn" id="td-pomo-expand" title="Expand timer">›</button>
-        <span class="plan-rail-label" style="writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--font-mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">Focus</span>
-      </div>
-      <!-- Right: Timedrift visualization -->
-      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
         <!-- Top 50%: timedrift visualization -->
         <div id="td-top" style="position:relative;height:50%;overflow:hidden;flex-shrink:0;">
           <div id="td-stage" style="position:absolute;left:50%;transform:translateX(-50%);top:0;">
@@ -10619,10 +10669,6 @@ function _tdDrawTimeline(now){
     ctx.arc(cx,cy_arc,midR-4,aE2,aS,true);
     ctx.closePath();
     ctx.fillStyle=isPast?evG+'0.04)':evG+'0.10)'; ctx.fill();
-    // Glow edge on arc
-    ctx.beginPath(); ctx.arc(cx,cy_arc,midR,aS,aE2);
-    ctx.strokeStyle=isPast?evG+'0.28)':evG+'0.72)';
-    ctx.lineWidth=isPast?1.0:1.8; ctx.stroke();
     // Animated waveform originating from arc line
     const wSpan=cE-cS;
     if(wSpan>0.01){
@@ -10645,13 +10691,14 @@ function _tdDrawTimeline(now){
     ctx.fill(); ctx.shadowBlur=0;
     // Pill label above arc
     if(ev.title&&Math.abs(cS)<HALF_SPAN*0.85){
-      const title=ev.title.length>16?ev.title.slice(0,15)+'…':ev.title;
+      const title=ev.title;
       ctx.font="500 11px 'Instrument Sans',sans-serif";
       const tw=ctx.measureText(title).width;
       const ph=20, pw=tw+18, pr=10;
-      const [px,py]=tPt(cS, midR+36);
+      const midAngle=(cS+cE)/2;
+      const [px,py]=tPt(midAngle, midR+36);
       // Stem from arc to pill bottom
-      const [sx,sy]=tPt(cS, midR+3);
+      const [sx,sy]=tPt(midAngle, midR+3);
       ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(px,py+ph/2);
       ctx.strokeStyle='rgba(255,255,255,0.30)'; ctx.lineWidth=1; ctx.stroke();
       // Pill background
@@ -14763,25 +14810,19 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   document.getElementById('pomo-check-add-btn')?.addEventListener('click', addCheckItem);
   document.getElementById('pomo-check-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') addCheckItem(); });
 
-  // Pomo column collapse/expand
-  let _pomoCollapsed = localStorage.getItem('cosmodex_pomo_collapsed') !== '0';
+  // Floating pomo panel collapse/expand
+  let _pomoCollapsed = localStorage.getItem('cosmodex_pomo_collapsed') === '1';
   function togglePomoCol() {
-    const col    = document.getElementById('td-pomo-col');
-    const rail   = document.getElementById('td-pomo-rail');
-    const toggle = document.getElementById('td-pomo-toggle');
+    const panel = document.getElementById('td-pomo-float');
+    if (!panel) return;
     _pomoCollapsed = !_pomoCollapsed;
-    col.classList.toggle('collapsed', _pomoCollapsed);
-    rail.classList.toggle('visible', _pomoCollapsed);
-    if (toggle) toggle.textContent = _pomoCollapsed ? '›' : '‹';
+    panel.classList.toggle('pf-collapsed', _pomoCollapsed);
     localStorage.setItem('cosmodex_pomo_collapsed', _pomoCollapsed ? '1' : '0');
   }
   if (_pomoCollapsed) {
-    document.getElementById('td-pomo-col')?.classList.add('collapsed');
-    document.getElementById('td-pomo-rail')?.classList.add('visible');
-    const t = document.getElementById('td-pomo-toggle'); if (t) t.textContent = '›';
+    document.getElementById('td-pomo-float')?.classList.add('pf-collapsed');
   }
   document.getElementById('td-pomo-toggle')?.addEventListener('click', togglePomoCol);
-  document.getElementById('td-pomo-expand')?.addEventListener('click', togglePomoCol);
 })();
 
 /* ══ MIND MAP ENGINE ══════════════════════════════════════════════════════ */
