@@ -2631,85 +2631,80 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   opacity: 0.5;
 }
 
-/* Outer wrapper — liquid glass rim (acts as the 1px border via padding trick) */
+/* Liquid glass card surface — matches trial panel card style */
 .ms-dash-card-outer {
-  padding: 1px;
-  border-radius: 18px;
-  cursor: pointer;
-  transition: transform 0.25s var(--ease-glass), box-shadow 0.25s var(--ease-glass);
   position: relative;
-  background: linear-gradient(
-    145deg,
-    rgba(255,255,255,0.22) 0%,
-    rgba(255,255,255,0.07) 25%,
-    rgba(255,255,255,0.01) 50%,
-    rgba(255,255,255,0.06) 75%,
-    rgba(255,255,255,0.14) 100%
-  );
+  border-radius: 24px;
+  cursor: pointer;
+  overflow: hidden;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  border: 1px solid rgba(255,255,255,0.10);
   box-shadow:
-    0 8px 32px rgba(0,0,0,0.6),
-    0 2px 8px rgba(0,0,0,0.4),
-    inset 0 0 0 0.5px rgba(255,255,255,0.03);
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 32px 64px rgba(0,0,0,0.55),
+    0 8px 24px rgba(0,0,0,0.30);
+  transition: transform 0.25s var(--ease-glass), box-shadow 0.25s var(--ease-glass), border-color 0.25s var(--ease-glass);
+}
+/* Prismatic tint — same as trial liquid glass card */
+.ms-dash-card-outer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  background: linear-gradient(135deg,
+    rgba(124,58,237,0.09) 0%,
+    rgba(14,165,233,0.06) 40%,
+    rgba(6,182,212,0.08) 70%,
+    rgba(139,92,246,0.05) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 .ms-dash-card-outer:hover {
   transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.18);
   box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06) inset,
     0 16px 48px rgba(0,0,0,0.68),
-    0 4px 16px rgba(0,0,0,0.45),
-    inset 0 0 0 0.5px rgba(255,255,255,0.06);
+    0 4px 16px rgba(0,0,0,0.45);
 }
 
 .ms-dash-card-inner {
-  /* Semi-transparent surface — lets the blur show through */
-  background: rgba(14, 14, 20, 0.58);
-  backdrop-filter: var(--glass-blur-card);
-  -webkit-backdrop-filter: var(--glass-blur-card);
-  border-radius: 17px;
-  padding: 14px 16px 12px;
+  position: relative;
+  z-index: 2;
+  padding: 20px 22px 14px;
   display: flex;
   flex-direction: column;
   gap: 7px;
   height: 100%;
   box-sizing: border-box;
-  position: relative;
   overflow: hidden;
 }
-/* Top-edge specular — the sharp catchlight of glass */
+/* Top-edge specular — bright catchlight matching trial card */
 .ms-dash-card-inner::before {
   content: '';
   position: absolute;
-  top: 0; left: 8%; right: 8%;
+  top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
+  background: linear-gradient(90deg,
     transparent 0%,
-    rgba(255,255,255,0.12) 20%,
-    rgba(255,255,255,0.38) 40%,
-    rgba(255,255,255,0.44) 50%,
-    rgba(255,255,255,0.38) 60%,
-    rgba(255,255,255,0.12) 80%,
-    transparent 100%
-  );
+    rgba(255,255,255,0.40) 25%,
+    rgba(255,255,255,0.80) 50%,
+    rgba(255,255,255,0.40) 75%,
+    transparent 100%);
   pointer-events: none;
-  z-index: 1;
-}
-/* Inner light refraction */
-.ms-dash-card-inner::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 17px;
-  background:
-    radial-gradient(ellipse at 20% 0%, rgba(255,255,255,0.05) 0%, transparent 50%);
-  pointer-events: none;
+  z-index: 3;
 }
 
 .ms-dash-card-title {
   font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 400;
-  color: var(--cream);
+  font-size: 16px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.88);
   line-height: 1.25;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2744,8 +2739,8 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
   flex-wrap: nowrap;
   gap: 8px;
 }
@@ -3071,11 +3066,14 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   transform: rotate(180deg); white-space: nowrap;
 }
 .plan-left .ms-dash-grid { grid-template-columns: 1fr; gap: 10px; padding: 10px; }
-.plan-left .ms-dash-card-inner { padding: 12px 12px 10px; gap: 8px; }
+.plan-left .ms-dash-card-outer { border-radius: 18px; }
+.plan-left .ms-dash-card-outer::before { border-radius: 18px; }
+.plan-left .ms-dash-card-inner { padding: 12px 14px 10px; gap: 8px; }
 .plan-left .ms-dash-card-title { font-size: 14px; color: var(--cream); }
 .plan-left .ms-dash-card-meta  { color: rgba(255,255,255,0.50); }
 .plan-left .ms-dash-pct-label  { font-size: 16px; color: var(--cream); }
 .plan-left .ms-dash-card-outer.ctx-active {
+  border-color: rgba(255,255,255,0.22);
   box-shadow: 0 0 0 1.5px var(--gold-dim), 0 10px 40px rgba(0,0,0,0.65);
 }
 .planning-right-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
@@ -5528,8 +5526,7 @@ select.sched-input { background: #181818; }
           <div class="plan-panel-header">
             <span class="plan-panel-label">Projects</span>
             <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
-              <button id="ms-archived-btn" class="btn-ghost" style="font-size:10px;padding:3px 8px;color:var(--muted)">⊡ Archived</button>
-              <button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:5px 11px">+ New</button>
+<button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:5px 11px">+ New</button>
               <button class="plan-panel-toggle" id="plan-left-toggle" title="Collapse">‹</button>
             </div>
           </div>
@@ -8914,21 +8911,6 @@ function renderMilestoneDashboard() {
   const activeProjs   = MILESTONE_PROJECTS.filter(p => !p.isArchived);
   const archivedProjs = MILESTONE_PROJECTS.filter(p => p.isArchived);
 
-  // Update the archived button in the left panel header
-  const archBtn = document.getElementById('ms-archived-btn');
-  if (archBtn) {
-    if (archivedProjs.length) {
-      archBtn.textContent = `⊡ Archived (${archivedProjs.length})`;
-      archBtn.style.opacity = '1';
-      archBtn.style.pointerEvents = '';
-      archBtn.onclick = showArchivedProjectsOverlay;
-    } else {
-      archBtn.textContent = '⊡ Archived';
-      archBtn.style.opacity = '0.35';
-      archBtn.style.pointerEvents = 'none';
-      archBtn.onclick = null;
-    }
-  }
 
   if (!MILESTONE_PROJECTS.length) {
     body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:60px">No initiatives yet.<br><br>Click "+ Initiative" to start.</div>`;
@@ -11310,6 +11292,7 @@ function initData() {
   _msProjUnsub = onSnapshot(query(_uc('milestoneProjects'), orderBy('startDate', 'asc')), snap => {
     MILESTONE_PROJECTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderMilestones();
+    if (_mainPanel === 'archived') renderArchivedPage();
   });
 
   _msEventsUnsub = onSnapshot(query(_uc('milestoneEvents'), orderBy('date', 'asc')), snap => {
