@@ -10525,186 +10525,172 @@ function _tdDrawTimeline(now){
   }
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,cssW,cssH);
-
   const W=cssW, H=cssH;
-  const PAD=52;
-  const TW=W-PAD*2;
-  const RULE_Y=Math.round(H*0.82);
-
+  const cx=W/2, cy=H/2;
+  const maxR=Math.min(W,H)*0.42;
+  const innerR=maxR*0.52;
+  const outerR=maxR;
+  const midR=(innerR+outerR)/2;
+  const TWO_PI=Math.PI*2;
   const todayStr=localDateStr(now);
-  const nowMins=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
-  const nowFrac=nowMins/(24*60);
-  const nowX=PAD+nowFrac*TW;
+  const curFrac=(now.getHours()*3600+now.getMinutes()*60+now.getSeconds())/86400;
+  // Wheel rotates so current time is always at top (−π/2)
+  const wRot=-curFrac*TWO_PI;
+  const toAngle=frac=>frac*TWO_PI+wRot-Math.PI/2;
 
-  // ── Horizontal rule — white at needle, fades both sides ──
-  const rg=ctx.createLinearGradient(PAD,0,PAD+TW,0);
-  const nf=nowFrac, rs=0.18;
-  rg.addColorStop(0,'rgba(255,255,255,0)');
-  rg.addColorStop(Math.max(0.02,nf-rs),'rgba(255,255,255,0.12)');
-  rg.addColorStop(nf,'rgba(255,255,255,0.85)');
-  rg.addColorStop(Math.min(0.98,nf+rs),'rgba(255,255,255,0.12)');
-  rg.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.beginPath(); ctx.moveTo(PAD,RULE_Y); ctx.lineTo(PAD+TW,RULE_Y);
-  ctx.strokeStyle=rg; ctx.lineWidth=0.7; ctx.stroke();
+  // ── Donut ring background ──────────────────────────────
+  ctx.beginPath();
+  ctx.arc(cx,cy,outerR,0,TWO_PI);
+  ctx.arc(cx,cy,innerR,0,TWO_PI,true);
+  ctx.fillStyle='rgba(255,255,255,0.03)';
+  ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,outerR,0,TWO_PI);
+  ctx.strokeStyle='rgba(255,255,255,0.10)'; ctx.lineWidth=0.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cy,innerR,0,TWO_PI);
+  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=0.4; ctx.stroke();
 
-  // ── Event markers ────────────────────────────────────────
-  const todayEvts=(CAL_EVENTS||[]).filter(e=>
-    e.date===todayStr && e.startTime && !e.allDay
-  );
+  // ── 24-hour arc segments ───────────────────────────────
+  for(let h=0;h<24;h++){
+    const a0=toAngle(h/24), a1=toAngle((h+1)/24);
+    const isEven=h%2===0;
+    ctx.beginPath();
+    ctx.arc(cx,cy,outerR,a0,a1);
+    ctx.arc(cx,cy,innerR,a1,a0,true);
+    ctx.closePath();
+    ctx.fillStyle=isEven?'rgba(255,255,255,0.015)':'rgba(255,255,255,0.008)';
+    ctx.fill();
+    // Hour divider tick
+    const tx0=cx+innerR*Math.cos(a0), ty0=cy+innerR*Math.sin(a0);
+    const tx1=cx+outerR*Math.cos(a0), ty1=cy+outerR*Math.sin(a0);
+    ctx.beginPath(); ctx.moveTo(tx0,ty0); ctx.lineTo(tx1,ty1);
+    ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=0.4; ctx.stroke();
+    // Half-hour tick
+    const ha=toAngle((h+0.5)/24);
+    const ri0=innerR+(outerR-innerR)*0.28, ri1=innerR+(outerR-innerR)*0.55;
+    ctx.beginPath();
+    ctx.moveTo(cx+ri0*Math.cos(ha),cy+ri0*Math.sin(ha));
+    ctx.lineTo(cx+ri1*Math.cos(ha),cy+ri1*Math.sin(ha));
+    ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.3; ctx.stroke();
+  }
+
+  // ── Hour labels (rotate with wheel, flip bottom half) ──
+  const labelR=innerR+(outerR-innerR)*0.78;
+  for(let h=0;h<24;h++){
+    const a=toAngle((h+0.5)/24);
+    const lx=cx+labelR*Math.cos(a), ly=cy+labelR*Math.sin(a);
+    let la=a+Math.PI/2;
+    if(Math.sin(a)>0.05) la+=Math.PI;
+    ctx.save();
+    ctx.translate(lx,ly); ctx.rotate(la);
+    ctx.font="300 9px 'DM Mono',monospace";
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(255,255,255,0.35)';
+    ctx.fillText(String(h).padStart(2,'0'),0,0);
+    ctx.restore();
+  }
+
+  // ── Calendar event arcs ────────────────────────────────
   const phase=performance.now()*0.001;
-  const LINE_TOP=Math.max(36,RULE_Y-Math.round(H*0.38)); // fixed equal height for all lines
+  const todayEvts=(CAL_EVENTS||[]).filter(e=>e.date===todayStr&&e.startTime&&!e.allDay);
   todayEvts.forEach(ev=>{
     const [sh,sm]=(ev.startTime||'0:0').split(':').map(Number);
-    const sFrac=(sh*60+sm)/(24*60);
-    const sx=PAD+sFrac*TW;
-    const isPast=sFrac<nowFrac;
-    const lineTop=LINE_TOP;
-
-    // Compute end x upfront (needed for waveform + fill)
-    let ex=null;
-    if(ev.endTime){
-      const [eh,em]=(ev.endTime||'0:0').split(':').map(Number);
-      const eFrac=(eh*60+em)/(24*60);
-      ex=PAD+eFrac*TW;
-    }
-
-    // Duration fill
-    if(ex!==null){
-      ctx.fillStyle=isPast?'rgba(53,249,47,0.025)':'rgba(53,249,47,0.05)';
-      ctx.fillRect(sx,lineTop,Math.max(2,ex-sx),RULE_Y-lineTop);
-    }
-
-    // Wide glow
-    const ge1=ctx.createLinearGradient(0,lineTop,0,RULE_Y);
-    ge1.addColorStop(0,isPast?'rgba(53,249,47,0.05)':'rgba(53,249,47,0.10)');
-    ge1.addColorStop(1,'rgba(53,249,47,0)');
-    ctx.beginPath(); ctx.moveTo(sx,lineTop); ctx.lineTo(sx,RULE_Y);
-    ctx.strokeStyle=ge1; ctx.lineWidth=9; ctx.stroke();
-
-    // Core line
-    const ge2=ctx.createLinearGradient(0,lineTop,0,RULE_Y);
-    ge2.addColorStop(0,isPast?'rgba(53,249,47,0.50)':'rgba(53,249,47,1.0)');
-    ge2.addColorStop(0.7,isPast?'rgba(53,249,47,0.20)':'rgba(53,249,47,0.50)');
-    ge2.addColorStop(1,'rgba(53,249,47,0)');
-    ctx.beginPath(); ctx.moveTo(sx,lineTop); ctx.lineTo(sx,RULE_Y);
-    ctx.strokeStyle=ge2; ctx.lineWidth=2.5; ctx.stroke();
-
-    // Top dot
-    ctx.beginPath(); ctx.arc(sx,lineTop,2.4,0,Math.PI*2);
-    ctx.fillStyle=isPast?'rgba(53,249,47,0.50)':'rgba(53,249,47,1.0)';
-    if(!isPast){ ctx.shadowColor='rgba(53,249,47,0.7)'; ctx.shadowBlur=6; }
+    const sFrac=(sh*60+sm)/1440;
+    const isPast=sFrac<curFrac;
+    let eFrac=sFrac+1/24;
+    if(ev.endTime){ const [eh,em]=(ev.endTime||'0:0').split(':').map(Number); eFrac=(eh*60+em)/1440; }
+    const a0=toAngle(sFrac), a1=toAngle(eFrac);
+    const evG='rgba(53,249,47,';
+    // Arc fill
+    ctx.beginPath();
+    ctx.arc(cx,cy,outerR-1,a0,a1);
+    ctx.arc(cx,cy,innerR+1,a1,a0,true);
+    ctx.closePath();
+    ctx.fillStyle=isPast?evG+'0.04)':evG+'0.08)'; ctx.fill();
+    // Outer arc edge
+    ctx.beginPath(); ctx.arc(cx,cy,outerR-1,a0,a1);
+    ctx.strokeStyle=isPast?evG+'0.30)':evG+'0.70)';
+    ctx.lineWidth=isPast?1.0:1.5; ctx.stroke();
+    // Start dot
+    const dm=cx+midR*Math.cos(a0), dm2=cy+midR*Math.sin(a0);
+    ctx.beginPath(); ctx.arc(dm,dm2,2.5,0,TWO_PI);
+    ctx.fillStyle=isPast?evG+'0.55)':evG+'1.0)';
+    if(!isPast){ctx.shadowColor=evG+'0.7)';ctx.shadowBlur=6;}
     ctx.fill(); ctx.shadowBlur=0;
-
-    // Animated waveform spanning full event duration
-    const wStartX=sx;
-    const wEndX=ex!==null?ex:sx+88;
-    const wSpan=wEndX-wStartX;
-    if(wSpan>1){
+    // Animated waveform along midR
+    const wA0=a0, wA1=a1<a0?a1+TWO_PI:a1, wSpan=wA1-wA0;
+    if(wSpan>0.01){
+      const steps=Math.max(20,Math.round(wSpan*midR));
       ctx.beginPath();
-      const wStep=Math.max(0.5,wSpan/300);
-      let wFirst=true;
-      for(let wx=wStartX;wx<=wEndX;wx+=wStep){
-        const t=(wx-wStartX)/wSpan;
-        const edgeFade=Math.min(t*8,(1-t)*8,1);
-        const wy=Math.sin((wx-wStartX)*0.42+phase*2.8)*3.8*edgeFade;
-        if(wFirst){ctx.moveTo(wx,RULE_Y+wy);wFirst=false;}
-        else{ctx.lineTo(wx,RULE_Y+wy);}
+      for(let i=0;i<=steps;i++){
+        const t=i/steps, wa=wA0+t*wSpan;
+        const edgeFade=Math.min(t*6,(1-t)*6,1);
+        const wr=midR+Math.sin(t*wSpan*midR*0.3+phase*2.8)*(outerR-innerR)*0.12*edgeFade;
+        const wx=cx+wr*Math.cos(wa), wy=cy+wr*Math.sin(wa);
+        i===0?ctx.moveTo(wx,wy):ctx.lineTo(wx,wy);
       }
-      ctx.strokeStyle=isPast?'rgba(53,249,47,0.22)':'rgba(53,249,47,0.58)';
-      ctx.lineWidth=2.2; ctx.stroke();
+      ctx.strokeStyle=isPast?evG+'0.22)':evG+'0.52)';
+      ctx.lineWidth=1.8; ctx.stroke();
     }
-
-    // Label: drawn horizontally to the right of the event line, wrapping only when no space
+    // Label outside ring near start angle
     if(ev.title){
+      const ld=outerR+14;
+      const lx2=cx+ld*Math.cos(a0), ly2=cy+ld*Math.sin(a0);
+      let la2=a0+Math.PI/2;
+      if(Math.sin(a0)>0.05) la2+=Math.PI;
       ctx.save();
-      ctx.font="300 10px 'DM Mono',monospace";
-      ctx.fillStyle=isPast?'rgba(53,249,47,0.42)':'rgba(53,249,47,0.82)';
-      ctx.textAlign='left';
-      ctx.textBaseline='top';
-      const labelX = sx + 5;
-      const labelY = lineTop + 6;
-      // Available width = to next event's x or canvas right edge
-      const sortedToday = [...todayEvts].sort((a,b)=>{
-        const [ah,am]=(a.startTime||'0:0').split(':').map(Number);
-        const [bh,bm]=(b.startTime||'0:0').split(':').map(Number);
-        return (ah*60+am)-(bh*60+bm);
-      });
-      const evIdx = sortedToday.findIndex(e=>e===ev);
-      const nextEv = sortedToday[evIdx+1];
-      let nextX = PAD+TW;
-      if(nextEv){
-        const [nh,nm]=(nextEv.startTime||'0:0').split(':').map(Number);
-        nextX = PAD+((nh*60+nm)/(24*60))*TW;
-      }
-      const availW = Math.max(40, nextX - labelX - 6);
-      const fullLabel = ev.title.length > 28 ? ev.title.slice(0,27)+'…' : ev.title;
-      // Measure to see if label fits on one line
-      const totalW = ctx.measureText(fullLabel).width;
-      if(totalW <= availW){
-        ctx.fillText(fullLabel, labelX, labelY);
-      } else {
-        // Wrap: split at the point where it overflows
-        let ci=0, w=0;
-        for(;ci<fullLabel.length;ci++){
-          const cw=ctx.measureText(fullLabel[ci]).width;
-          if(w+cw>availW) break;
-          w+=cw;
-        }
-        const line1=fullLabel.slice(0,ci);
-        const line2=fullLabel.slice(ci).trimStart();
-        ctx.fillText(line1, labelX, labelY);
-        ctx.fillText(line2, labelX, labelY+13);
-      }
+      ctx.translate(lx2,ly2); ctx.rotate(la2);
+      ctx.font="300 8.5px 'DM Mono',monospace";
+      ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle=isPast?evG+'0.45)':evG+'0.85)';
+      const title=ev.title.length>18?ev.title.slice(0,17)+'…':ev.title;
+      ctx.fillText(title,0,0);
       ctx.restore();
     }
   });
 
-  // ── Hour ticks and labels ────────────────────────────────
-  for(let h=0;h<=24;h++){
-    const x=PAD+(h/24)*TW;
-    const isEven=h%2===0;
-    ctx.beginPath(); ctx.moveTo(x,RULE_Y); ctx.lineTo(x,RULE_Y-(isEven?11:5));
-    ctx.strokeStyle=isEven?'rgba(255,255,255,0.28)':'rgba(255,255,255,0.12)';
-    ctx.lineWidth=isEven?0.8:0.4; ctx.stroke();
-    if(isEven){
-      ctx.font="300 10px 'DM Mono',monospace";
-      ctx.textAlign='center';
-      ctx.fillStyle='rgba(255,255,255,0.38)';
-      ctx.shadowColor='rgba(255,255,255,0.9)'; ctx.shadowBlur=14;
-      ctx.fillText(String(h).padStart(2,'0'),x,RULE_Y-15);
-      ctx.shadowBlur=0;
-    }
-    // 30-minute tick
-    if(h<24){
-      const hx=PAD+((h+0.5)/24)*TW;
-      ctx.beginPath(); ctx.moveTo(hx,RULE_Y); ctx.lineTo(hx,RULE_Y-4);
-      ctx.strokeStyle='rgba(255,255,255,0.10)';
-      ctx.lineWidth=0.4; ctx.stroke();
-    }
-  }
+  // ── Fixed blue needle at 12 o'clock (−π/2) ────────────
+  const nA=-Math.PI/2;
+  const nx0=cx+innerR*Math.cos(nA), ny0=cy+innerR*Math.sin(nA);
+  const nx1=cx+(outerR+4)*Math.cos(nA), ny1=cy+(outerR+4)*Math.sin(nA);
+  ctx.beginPath(); ctx.moveTo(nx0,ny0); ctx.lineTo(nx1,ny1);
+  ctx.strokeStyle='rgba(41,182,246,0.08)'; ctx.lineWidth=10; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(nx0,ny0); ctx.lineTo(nx1,ny1);
+  ctx.strokeStyle='rgba(41,182,246,0.22)'; ctx.lineWidth=4; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(nx0,ny0); ctx.lineTo(nx1,ny1);
+  ctx.strokeStyle='rgba(41,182,246,0.95)'; ctx.lineWidth=1.5;
+  ctx.shadowColor='rgba(41,182,246,0.8)'; ctx.shadowBlur=8;
+  ctx.stroke(); ctx.shadowBlur=0;
+  // Tip triangle pointing up
+  const tipX=cx+(outerR+10)*Math.cos(nA), tipY=cy+(outerR+10)*Math.sin(nA);
+  ctx.beginPath();
+  ctx.moveTo(tipX,tipY);
+  ctx.lineTo(tipX-4,tipY+8);
+  ctx.lineTo(tipX+4,tipY+8);
+  ctx.closePath();
+  ctx.fillStyle='rgba(41,182,246,0.90)';
+  ctx.shadowColor='rgba(41,182,246,0.7)'; ctx.shadowBlur=6;
+  ctx.fill(); ctx.shadowBlur=0;
 
-  // ── Blue current-time needle (starts at RULE_Y, goes down) ──
-  const needleLen=Math.round((H-RULE_Y)*0.85);
-  const needleBottom=RULE_Y+needleLen;
-  // Soft ambient glow
-  const b1=ctx.createLinearGradient(0,RULE_Y,0,needleBottom);
-  b1.addColorStop(0,'rgba(41,182,246,0.06)');
-  b1.addColorStop(1,'rgba(41,182,246,0)');
-  ctx.beginPath(); ctx.moveTo(nowX,RULE_Y); ctx.lineTo(nowX,needleBottom);
-  ctx.strokeStyle=b1; ctx.lineWidth=8; ctx.stroke();
-  // Mid glow
-  const b2=ctx.createLinearGradient(0,RULE_Y,0,needleBottom);
-  b2.addColorStop(0,'rgba(41,182,246,0.18)');
-  b2.addColorStop(1,'rgba(41,182,246,0)');
-  ctx.beginPath(); ctx.moveTo(nowX,RULE_Y); ctx.lineTo(nowX,needleBottom);
-  ctx.strokeStyle=b2; ctx.lineWidth=3; ctx.stroke();
-  // Core needle
-  const b3=ctx.createLinearGradient(0,RULE_Y,0,needleBottom);
-  b3.addColorStop(0,'rgba(41,182,246,0.90)');
-  b3.addColorStop(0.55,'rgba(41,182,246,0.55)');
-  b3.addColorStop(1,'rgba(41,182,246,0)');
-  ctx.beginPath(); ctx.moveTo(nowX,RULE_Y); ctx.lineTo(nowX,needleBottom);
-  ctx.strokeStyle=b3; ctx.lineWidth=1.5; ctx.stroke();
+  // ── Center hub with time display ───────────────────────
+  const hubR=innerR*0.72;
+  ctx.beginPath(); ctx.arc(cx,cy,hubR,0,TWO_PI);
+  ctx.fillStyle='#000000'; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=0.6; ctx.stroke();
+  const hh=String(now.getHours()).padStart(2,'0');
+  const mm=String(now.getMinutes()).padStart(2,'0');
+  const ss=String(now.getSeconds()).padStart(2,'0');
+  ctx.font="300 18px 'DM Mono',monospace";
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.shadowColor='rgba(255,255,255,0.5)'; ctx.shadowBlur=8;
+  ctx.fillText(hh+':'+mm,cx,cy-9);
+  ctx.shadowBlur=0;
+  ctx.font="300 9px 'DM Mono',monospace";
+  ctx.fillStyle='rgba(255,255,255,0.40)';
+  ctx.fillText(ss,cx,cy+6);
+  ctx.font="300 7px 'DM Mono',monospace";
+  ctx.fillStyle='rgba(41,182,246,0.65)';
+  ctx.fillText('NOW',cx,cy+18);
 
 }
 
