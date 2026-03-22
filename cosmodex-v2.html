@@ -326,7 +326,7 @@ body::after {
 .nav-sections {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 8px;
+  padding: 20px 8px 8px;
   scrollbar-width: none;
 }
 
@@ -1163,6 +1163,7 @@ body::after {
 }
 .pf-breath-bg-outer {
   position: absolute;
+  top: 50%; left: 50%;
   width: 320px; height: 320px; border-radius: 50%;
   border: 1px solid rgba(57,255,20,0.20);
   box-shadow: 0 0 80px rgba(57,255,20,0.14), 0 0 160px rgba(57,255,20,0.07);
@@ -1170,6 +1171,7 @@ body::after {
 }
 .pf-breath-bg-inner {
   position: absolute;
+  top: 50%; left: 50%;
   width: 200px; height: 200px; border-radius: 50%;
   background: radial-gradient(circle, rgba(57,255,20,0.10) 0%, rgba(57,255,20,0.03) 55%, transparent 75%);
   border: 1px solid rgba(57,255,20,0.15);
@@ -1178,11 +1180,11 @@ body::after {
   animation-delay: -0.4s;
 }
 @keyframes pfBoxBreath {
-  0%   { transform: scale(0.68); opacity: 0.30; }   /* hold (exhaled) */
-  25%  { transform: scale(1.10); opacity: 0.80; }   /* inhale complete */
-  50%  { transform: scale(1.10); opacity: 0.80; }   /* hold (inhaled) */
-  75%  { transform: scale(0.68); opacity: 0.30; }   /* exhale complete */
-  100% { transform: scale(0.68); opacity: 0.30; }   /* hold (exhaled) */
+  0%   { transform: translate(-50%, -50%) scale(0.68); opacity: 0.30; }   /* hold (exhaled) */
+  25%  { transform: translate(-50%, -50%) scale(1.10); opacity: 0.80; }   /* inhale complete */
+  50%  { transform: translate(-50%, -50%) scale(1.10); opacity: 0.80; }   /* hold (inhaled) */
+  75%  { transform: translate(-50%, -50%) scale(0.68); opacity: 0.30; }   /* exhale complete */
+  100% { transform: translate(-50%, -50%) scale(0.68); opacity: 0.30; }   /* hold (exhaled) */
 }
 /* Specular top edge */
 .pf-specular {
@@ -1233,7 +1235,7 @@ body::after {
   color: var(--gold); text-align: center; width: 100%;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pomo-ring-wrap { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+.pomo-ring-wrap { position: relative; width: 130px; height: 130px; flex-shrink: 0; overflow: visible; }
 #pomo-ring { position: absolute; inset: 0; }
 .pomo-center {
   position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -5652,10 +5654,6 @@ select.sched-input { background: #181818; }
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative">
         <!-- Floating Pomodoro Panel -->
         <div id="td-pomo-float">
-          <div class="pf-bg">
-            <div class="pf-breath-bg-outer"></div>
-            <div class="pf-breath-bg-inner"></div>
-          </div>
           <div class="pf-specular"></div>
           <div class="pf-header">
             <span class="pf-label">Focus Timer</span>
@@ -5666,6 +5664,8 @@ select.sched-input { background: #181818; }
               <div class="pomo-ev-label">Focus Session</div>
               <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
               <div class="pomo-ring-wrap">
+                <div class="pf-breath-bg-outer"></div>
+                <div class="pf-breath-bg-inner"></div>
                 <canvas id="pomo-ring" width="130" height="130"></canvas>
                 <div class="pomo-center">
                   <div class="pomo-time" id="pomo-time">25:00</div>
@@ -10866,22 +10866,20 @@ function _tdDrawTimeline(now){
     }
   });
 
-  // ── Fixed blue needle below arc (current time) ───────────
+  // ── Current-time needle below arc ────────────────────────
   const nTop=arcTopY+bandH/2+6, nBot=arcTopY+bandH/2+38;
-  ctx.beginPath(); ctx.moveTo(cx,nTop); ctx.lineTo(cx,nBot);
-  ctx.strokeStyle='rgba(41,182,246,0.08)'; ctx.lineWidth=10; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx,nTop); ctx.lineTo(cx,nBot);
-  ctx.strokeStyle='rgba(41,182,246,0.22)'; ctx.lineWidth=4; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx,nTop); ctx.lineTo(cx,nBot);
-  ctx.strokeStyle='rgba(41,182,246,0.95)'; ctx.lineWidth=1.5;
-  ctx.shadowColor='rgba(41,182,246,0.8)'; ctx.shadowBlur=8;
+  // Soft glow halo
+  ctx.beginPath(); ctx.moveTo(cx,nTop+4); ctx.lineTo(cx,nBot);
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=8; ctx.stroke();
+  // Main hairline
+  ctx.beginPath(); ctx.moveTo(cx,nTop+4); ctx.lineTo(cx,nBot);
+  ctx.strokeStyle='rgba(255,255,255,0.70)'; ctx.lineWidth=1;
+  ctx.shadowColor='rgba(255,255,255,0.5)'; ctx.shadowBlur=4;
   ctx.stroke(); ctx.shadowBlur=0;
-  // Arrowhead at top, pointing up toward arc
-  ctx.beginPath();
-  ctx.moveTo(cx,nTop); ctx.lineTo(cx-4,nTop+8); ctx.lineTo(cx+4,nTop+8);
-  ctx.closePath();
-  ctx.fillStyle='rgba(41,182,246,0.90)';
-  ctx.shadowColor='rgba(41,182,246,0.7)'; ctx.shadowBlur=6;
+  // Small circle at top of needle
+  ctx.beginPath(); ctx.arc(cx, nTop+4, 3, 0, Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,0.95)';
+  ctx.shadowColor='rgba(255,255,255,0.6)'; ctx.shadowBlur=8;
   ctx.fill(); ctx.shadowBlur=0;
 
   // ── Time display below needle ─────────────────────────────
@@ -14831,7 +14829,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 10; ctx.stroke();
     // Progress
     if (frac < 1) {
-      const col = pomo.running ? '#c45c2a' : pomo.remainSecs < pomo.totalSecs ? '#e4e4e4' : 'rgba(255,255,255,0.4)';
+      const col = pomo.running ? 'rgba(107,159,212,0.95)' : pomo.remainSecs < pomo.totalSecs ? '#e4e4e4' : 'rgba(255,255,255,0.4)';
       ctx.beginPath(); ctx.arc(cx, cy, R, sa, ea);
       ctx.strokeStyle = col; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
     }
