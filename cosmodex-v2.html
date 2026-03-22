@@ -10550,11 +10550,11 @@ function _tdDrawTimeline(now){
   // Canvas point on a circle of given radius at angle-offset theta from top
   const tPt=(theta,r)=>[cx+r*Math.sin(theta), cy_arc-r*Math.cos(theta)];
 
-  // ── Arc band — naked strokes only (no fill) ───────────────
-  ctx.beginPath(); ctx.arc(cx,cy_arc,outerR,aStart,aEnd);
-  ctx.strokeStyle='rgba(255,255,255,0.13)'; ctx.lineWidth=0.7; ctx.stroke();
-  ctx.beginPath(); ctx.arc(cx,cy_arc,innerR,aStart,aEnd);
-  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.4; ctx.stroke();
+  // ── Single white arc ──────────────────────────────────────
+  ctx.beginPath(); ctx.arc(cx,cy_arc,midR,aStart,aEnd);
+  ctx.strokeStyle='rgba(255,255,255,0.85)'; ctx.lineWidth=1.2;
+  ctx.shadowColor='rgba(255,255,255,0.35)'; ctx.shadowBlur=6;
+  ctx.stroke(); ctx.shadowBlur=0;
 
   // ── Hour ticks & labels ──────────────────────────────────
   for(let h=0;h<24;h++){
@@ -10602,17 +10602,17 @@ function _tdDrawTimeline(now){
     if(cS>=cE) return;
     const aS=-Math.PI/2+cS, aE2=-Math.PI/2+cE;
     const evG='rgba(53,249,47,';
-    // Band fill
+    // Thin fill around single arc
     ctx.beginPath();
-    ctx.arc(cx,cy_arc,outerR-1,aS,aE2);
-    ctx.arc(cx,cy_arc,innerR+1,aE2,aS,true);
+    ctx.arc(cx,cy_arc,midR+4,aS,aE2);
+    ctx.arc(cx,cy_arc,midR-4,aE2,aS,true);
     ctx.closePath();
     ctx.fillStyle=isPast?evG+'0.04)':evG+'0.10)'; ctx.fill();
-    // Glow edge
-    ctx.beginPath(); ctx.arc(cx,cy_arc,outerR-1,aS,aE2);
+    // Glow edge on arc
+    ctx.beginPath(); ctx.arc(cx,cy_arc,midR,aS,aE2);
     ctx.strokeStyle=isPast?evG+'0.28)':evG+'0.72)';
     ctx.lineWidth=isPast?1.0:1.8; ctx.stroke();
-    // Animated waveform along mid arc
+    // Animated waveform originating from arc line
     const wSpan=cE-cS;
     if(wSpan>0.01){
       const steps=Math.max(20,Math.round(wSpan*midR));
@@ -10620,7 +10620,7 @@ function _tdDrawTimeline(now){
       for(let i=0;i<=steps;i++){
         const t=i/steps, wa=-Math.PI/2+cS+t*wSpan;
         const ef=Math.min(t*6,(1-t)*6,1);
-        const wr=midR+Math.sin(t*wSpan*midR*0.3+phase*2.8)*(bandH*0.6)*ef;
+        const wr=midR+Math.sin(t*wSpan*midR*0.3+phase*2.8)*(bandH*0.3)*ef;
         i===0?ctx.moveTo(cx+wr*Math.cos(wa),cy_arc+wr*Math.sin(wa))
              :ctx.lineTo(cx+wr*Math.cos(wa),cy_arc+wr*Math.sin(wa));
       }
@@ -10634,7 +10634,7 @@ function _tdDrawTimeline(now){
     ctx.fill(); ctx.shadowBlur=0;
     // Label tangent to arc at start
     if(ev.title&&Math.abs(cS)<HALF_SPAN*0.90){
-      const [llx,lly]=tPt(cS, outerR+14);
+      const [llx,lly]=tPt(cS, midR+14);
       ctx.save(); ctx.translate(llx,lly); ctx.rotate(cS);
       ctx.font="300 8px 'DM Mono',monospace";
       ctx.textAlign='left'; ctx.textBaseline='middle';
@@ -10666,19 +10666,40 @@ function _tdDrawTimeline(now){
   const tY=arcTopY+bandH/2+54;
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
-  const ss=String(now.getSeconds()).padStart(2,'0');
   ctx.font="300 20px 'DM Mono',monospace";
   ctx.textAlign='center'; ctx.textBaseline='top';
   ctx.fillStyle='rgba(255,255,255,0.92)';
   ctx.shadowColor='rgba(255,255,255,0.4)'; ctx.shadowBlur=8;
   ctx.fillText(hh+':'+mm,cx,tY);
   ctx.shadowBlur=0;
-  ctx.font="300 9px 'DM Mono',monospace";
-  ctx.fillStyle='rgba(255,255,255,0.38)';
-  ctx.fillText(ss+'s',cx,tY+24);
-  ctx.font="300 7px 'DM Mono',monospace";
-  ctx.fillStyle='rgba(41,182,246,0.60)';
-  ctx.fillText('NOW',cx,tY+37);
+
+  // ── Upcoming events ───────────────────────────────────────
+  const nowMins=now.getHours()*60+now.getMinutes();
+  const upcoming=(CAL_EVENTS||[])
+    .filter(ev=>ev.date===todayStr&&ev.startTime&&!ev.allDay)
+    .map(ev=>{const[eh,em]=ev.startTime.split(':').map(Number);return{...ev,evMins:eh*60+em};})
+    .filter(ev=>ev.evMins>nowMins)
+    .sort((a,b)=>a.evMins-b.evMins)
+    .slice(0,3);
+  ctx.textBaseline='top';
+  if(upcoming.length===0){
+    ctx.font="300 8px 'DM Mono',monospace";
+    ctx.textAlign='center';
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    ctx.fillText('no upcoming events',cx,tY+32);
+  } else {
+    let ey=tY+32;
+    upcoming.forEach(ev=>{
+      const[eh,em]=ev.startTime.split(':').map(Number);
+      const tStr=String(eh).padStart(2,'0')+':'+String(em).padStart(2,'0');
+      const title=ev.title?(ev.title.length>18?ev.title.slice(0,17)+'…':ev.title):'';
+      ctx.font="300 8px 'DM Mono',monospace";
+      ctx.textAlign='center';
+      ctx.fillStyle='rgba(53,249,47,0.72)';
+      ctx.fillText(tStr+'  '+title,cx,ey);
+      ey+=14;
+    });
+  }
 
 }
 
