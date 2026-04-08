@@ -5961,7 +5961,7 @@ select.sched-input { background: #181818; }
             <button class="plan-center-tab active" data-ptab="focus">Focus</button>
           </div>
           <!-- Week pane -->
-          <div id="plan-right-week" class="planning-right-body" style="display:none"
+          <div id="plan-right-week" class="planning-right-body" style="display:none">
             <div class="plan-week-nav">
               <button class="plan-nav-btn" id="plan-week-prev">←</button>
               <span class="plan-nav-label" id="plan-week-label">—</span>
@@ -6012,7 +6012,7 @@ select.sched-input { background: #181818; }
             </div>
           </div>
           <!-- Focus Buckets pane -->
-          <div id="plan-right-focus" class="planning-right-body"
+          <div id="plan-right-focus" class="planning-right-body">
             <div class="focus-header">
               <span class="plan-widget-label" style="margin-bottom:0">Focus Buckets</span>
               <button class="plan-nav-btn" id="focus-add-bucket-btn">+ Bucket</button>
@@ -12015,12 +12015,14 @@ function initData() {
   _msProjUnsub = onSnapshot(query(_uc('milestoneProjects'), orderBy('startDate', 'asc')), snap => {
     MILESTONE_PROJECTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderMilestones();
+    renderTasks(); // re-render task panel so initiative grouping updates
     if (_mainPanel === 'archived') renderArchivedPage();
   });
 
   _msEventsUnsub = onSnapshot(query(_uc('milestoneEvents'), orderBy('date', 'asc')), snap => {
     MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data(), activities: d.data().activities || [] }));
     renderMilestones();
+    renderTasks(); // re-render task panel so initiative grouping updates
   });
 
   _msListsUnsub = onSnapshot(_uc('milestone_lists'), snap => {
