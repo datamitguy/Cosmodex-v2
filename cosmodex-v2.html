@@ -6,6 +6,7 @@
   <meta name="referrer" content="origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com wss://*.firebaseio.com https://*.firebaseapp.com; img-src 'self' data:; frame-src https://cosmodex-fffbe.firebaseapp.com; object-src 'none';" />
   <title>Cosmodex v2</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23000' stroke='%23fff' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%23fff' stroke-width='0.8' opacity='0.4'/%3E%3Ccircle cx='16' cy='8' r='1.5' fill='%23fff'/%3E%3Cline x1='16' y1='16' x2='16' y2='9' stroke='%23fff' stroke-width='0.8' opacity='0.6'/%3E%3C/svg%3E" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -589,8 +590,114 @@ body::after {
 #main-content {
   flex: 1;
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   min-height: 0;
+}
+#main-content-panels {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Dashboard Hero Summary Strip ────────────────────── */
+.dashboard-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: rgba(255,255,255,0.025);
+  backdrop-filter: var(--glass-blur-panel);
+  -webkit-backdrop-filter: var(--glass-blur-panel);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: relative;
+  z-index: 5;
+  min-height: 52px;
+}
+.dashboard-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.20) 20%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0.20) 80%, transparent 100%);
+}
+.hero-time-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 100px;
+}
+.hero-time {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--cream);
+  text-shadow: 0 0 40px rgba(255,255,255,0.06);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hero-date {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hero-stats {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.hero-pill {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--muted-readable);
+  white-space: nowrap;
+  animation: fadeUp 0.3s forwards;
+  opacity: 0;
+}
+.hero-pill-val {
+  color: var(--cream);
+  font-weight: 500;
+}
+.hero-pill.overdue { border-color: rgba(196,92,42,0.3); color: var(--rust); }
+.hero-pill.overdue .hero-pill-val { color: var(--rust); }
+.hero-next {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  min-width: 120px;
+  text-align: right;
+}
+.hero-next-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hero-next-event {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hero-next-countdown {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(53,249,47,0.65);
+  letter-spacing: 0.06em;
 }
 
 /* ───────────── Calendar Panel ───────────── */
@@ -598,7 +705,6 @@ body::after {
   flex: 6;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border);
   overflow: hidden;
   min-width: 0;
 }
@@ -667,9 +773,10 @@ body::after {
 .toolbar-nav-btn:hover { border-color: var(--gold); color: var(--cream); }
 
 .toolbar-date-label {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
   color: var(--cream);
   padding: 0 8px;
   min-width: 110px;
@@ -687,10 +794,12 @@ body::after {
   display: flex;
   min-height: 60px;
   height: 60px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   position: relative;
   background: var(--bg);
 }
+.cal-hour-row:nth-child(even) { background: rgba(255,255,255,0.012); }
+.cal-hour-row.current-hour { background: rgba(255,255,255,0.035); border-left: 2px solid rgba(255,255,255,0.15); }
 
 .cal-hour-label {
   width: 48px;
@@ -737,10 +846,10 @@ body::after {
 .cal-event-title { color: var(--cream); font-weight: 500; display: block; }
 .cal-event-time  { font-family: var(--font-mono); font-size: 9px; color: var(--muted); display: block; margin-top: 1px; }
 
-.cal-event.gold   { background: rgba(255,255,255,0.12); border-color: var(--gold); }
-.cal-event.sage   { background: rgba(74,124,94,0.12);  border-color: var(--sage); }
-.cal-event.blue   { background: rgba(107,159,212,0.12); border-color: var(--blue); }
-.cal-event.rust   { background: rgba(196,92,42,0.12);  border-color: var(--rust); }
+.cal-event.gold   { background: rgba(255,255,255,0.12); border-color: var(--gold); box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
+.cal-event.sage   { background: rgba(74,124,94,0.12);  border-color: var(--sage); box-shadow: inset 0 1px 0 rgba(74,124,94,0.15), -2px 0 8px rgba(74,124,94,0.08); }
+.cal-event.blue   { background: rgba(107,159,212,0.12); border-color: var(--blue); box-shadow: inset 0 1px 0 rgba(107,159,212,0.15), -2px 0 8px rgba(107,159,212,0.08); }
+.cal-event.rust   { background: rgba(196,92,42,0.12);  border-color: var(--rust); box-shadow: inset 0 1px 0 rgba(196,92,42,0.15), -2px 0 8px rgba(196,92,42,0.08); }
 
 /* All-day event row */
 .cal-allday-row {
@@ -795,8 +904,8 @@ body::after {
   position: absolute;
   left: 48px; right: 0;
   height: 1px;
-  background: #00e676;
-  box-shadow: 0 0 8px #00e676, 0 0 20px rgba(0,230,118,0.5), 0 0 40px rgba(0,230,118,0.2);
+  background: rgba(255,255,255,0.5);
+  box-shadow: 0 0 12px rgba(255,255,255,0.15), 0 0 4px rgba(255,255,255,0.25);
   z-index: 5;
 }
 
@@ -805,9 +914,21 @@ body::after {
   left: 44px;
   width: 7px; height: 7px;
   border-radius: 50%;
-  background: #00e676;
-  box-shadow: 0 0 8px #00e676, 0 0 16px rgba(0,230,118,0.7);
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 0 8px rgba(255,255,255,0.3), 0 0 16px rgba(255,255,255,0.15);
   transform: translateX(-50%) translateY(-3px);
+  animation: nowPulse 3s ease-in-out infinite;
+}
+@keyframes nowPulse {
+  0%, 100% { opacity: 0.5; box-shadow: 0 0 6px rgba(255,255,255,0.2); }
+  50%      { opacity: 1;   box-shadow: 0 0 12px rgba(255,255,255,0.4), 0 0 20px rgba(255,255,255,0.15); }
+}
+
+/* ── Panel separator ── */
+.panel-separator {
+  width: 1px;
+  background: linear-gradient(to bottom, transparent 0%, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.06) 80%, transparent 100%);
+  flex-shrink: 0;
 }
 
 /* ───────────── Tasks Panel ───────────── */
@@ -875,7 +996,17 @@ body::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--border);
+  background: linear-gradient(90deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%);
+}
+.tasks-group-label.overdue { color: var(--rust); }
+.tasks-group-count {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
+  letter-spacing: 0.04em;
 }
 
 .tasks-initiative-label {
@@ -895,6 +1026,7 @@ body::after {
   width: 7px; height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
 }
 .tasks-initiative-label::after {
   content: '';
@@ -923,9 +1055,12 @@ body::after {
 }
 
 .task-row:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border-left-color: rgba(255,255,255,0.2);
   transform: perspective(800px) rotateX(0.5deg) translateX(2px);
+  border-radius: 4px;
 }
 
 .task-check {
@@ -5792,6 +5927,22 @@ select.sched-input { background: #181818; }
   <!-- Main Content -->
   <div id="main-content">
 
+    <!-- Hero Summary Strip -->
+    <div id="dashboard-hero" class="dashboard-hero">
+      <div class="hero-time-block">
+        <span class="hero-time" id="hero-time">--:--</span>
+        <span class="hero-date" id="hero-date">Loading…</span>
+      </div>
+      <div class="hero-stats" id="hero-stats"></div>
+      <div class="hero-next" id="hero-next">
+        <span class="hero-next-label">Next</span>
+        <span class="hero-next-event" id="hero-next-event">—</span>
+        <span class="hero-next-countdown" id="hero-next-countdown"></span>
+      </div>
+    </div>
+
+    <div id="main-content-panels">
+
     <!-- Calendar Panel -->
     <div id="panel-calendar">
       <div class="panel-toolbar">
@@ -5826,6 +5977,9 @@ select.sched-input { background: #181818; }
         </div>
       </div>
     </div>
+
+    <!-- Panel Separator -->
+    <div class="panel-separator"></div>
 
     <!-- Tasks Panel -->
     <div id="panel-tasks">
@@ -5883,6 +6037,8 @@ select.sched-input { background: #181818; }
         <!-- Populated by renderTasks() via Firebase onSnapshot -->
       </div>
     </div>
+
+    </div><!-- /main-content-panels -->
 
     <!-- Milestones Panel (shown via Planning nav item) -->
     <div id="panel-milestones" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000">
@@ -7818,6 +7974,8 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
 // → future file: cosmodex-shell.js  (nav, routing, overlay open/close)
 function showMainPanel(name) {
   _mainPanel = name;
+  document.getElementById('dashboard-hero').style.display     = name === 'default' ? '' : 'none';
+  document.getElementById('main-content-panels').style.display = name === 'default' ? '' : 'none';
   document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
   document.getElementById('panel-tasks').style.display       = name === 'default' ? '' : 'none';
   document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
@@ -11392,6 +11550,80 @@ function updateCalNowLine() {
 // Update every minute so it stays accurate
 _calNowLineInterval = setInterval(updateCalNowLine, 60 * 1000);
 
+/* ── Dashboard Hero Summary Strip ────────────────────── */
+function updateDashboardHero() {
+  const heroEl = document.getElementById('dashboard-hero');
+  if (!heroEl) return;
+
+  const now = new Date();
+  const today = localDateStr(now);
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+
+  // Time
+  const timeEl = document.getElementById('hero-time');
+  if (timeEl) timeEl.textContent = `${hh}:${mm}`;
+
+  // Date
+  const dateEl = document.getElementById('hero-date');
+  if (dateEl) dateEl.textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+
+  // Stats
+  const statsEl = document.getElementById('hero-stats');
+  if (statsEl) {
+    const todayTasks = TASKS.filter(t => !t.someday && !t.done && t.dueDate === today).length;
+    const overdue = TASKS.filter(t => !t.someday && !t.done && t.dueDate && t.dueDate < today).length;
+    const todayEvents = CAL_EVENTS.filter(e => e.date === today).length;
+    const momentum = typeof computeMomentumScore === 'function' ? computeMomentumScore().score : 0;
+    const pills = [
+      `<span class="hero-pill" style="animation-delay:0ms"><span class="hero-pill-val">${todayTasks}</span> today</span>`,
+      overdue > 0 ? `<span class="hero-pill overdue" style="animation-delay:80ms"><span class="hero-pill-val">${overdue}</span> overdue</span>` : '',
+      `<span class="hero-pill" style="animation-delay:160ms"><span class="hero-pill-val">${todayEvents}</span> events</span>`,
+      `<span class="hero-pill" style="animation-delay:240ms">momentum <span class="hero-pill-val">${momentum}</span></span>`,
+    ].filter(Boolean);
+    statsEl.innerHTML = pills.join('');
+  }
+
+  // Next event
+  const nextEvEl = document.getElementById('hero-next-event');
+  const nextCdEl = document.getElementById('hero-next-countdown');
+  if (nextEvEl) {
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+    const upcoming = CAL_EVENTS
+      .filter(e => e.date === today && e.startTime)
+      .map(e => { const [h, m] = e.startTime.split(':').map(Number); return { ...e, mins: h * 60 + m }; })
+      .filter(e => e.mins > nowMins)
+      .sort((a, b) => a.mins - b.mins);
+    if (upcoming.length) {
+      const next = upcoming[0];
+      const diff = next.mins - nowMins;
+      const title = next.title || 'Event';
+      nextEvEl.textContent = title.length > 28 ? title.slice(0, 27) + '…' : title;
+      if (nextCdEl) nextCdEl.textContent = diff < 60 ? `in ${diff}m` : `in ${Math.floor(diff / 60)}h ${diff % 60}m`;
+    } else {
+      nextEvEl.textContent = 'Nothing planned';
+      nextEvEl.style.color = 'var(--muted)';
+      if (nextCdEl) nextCdEl.textContent = '';
+    }
+  }
+
+  // Current hour highlight on calendar rows
+  const rows = document.querySelectorAll('.cal-hour-row');
+  const currentH = now.getHours();
+  rows.forEach(row => {
+    const label = row.querySelector('.cal-hour-label');
+    if (!label) return;
+    const rowHour = parseInt(label.textContent);
+    const isPm = label.textContent.toLowerCase().includes('pm');
+    const isAm = label.textContent.toLowerCase().includes('am');
+    let h24 = rowHour;
+    if (isPm && rowHour !== 12) h24 = rowHour + 12;
+    if (isAm && rowHour === 12) h24 = 0;
+    row.classList.toggle('current-hour', h24 === currentH);
+  });
+}
+setInterval(updateDashboardHero, 30 * 1000); // update every 30s
+
 /* ══ TIMEDRIFT — SVG rotating rings (cosmodex-timedrift v9) ══ */
 // → future file: cosmodex-timedrift.js
 const _TD_NS = 'http://www.w3.org/2000/svg';
@@ -11992,7 +12224,7 @@ function initData() {
 
   _tasksUnsub = onSnapshot(query(_uc('tasks'), orderBy('createdAt', 'asc')), snap => {
     TASKS = snap.docs.map(d => ({ id: d.id, subtasks: [], ...d.data() }));
-    renderTasks(); renderCalendar(); updateNavCounts();
+    renderTasks(); renderCalendar(); updateNavCounts(); updateDashboardHero();
     drawCosmodex(); // immediate orb sync on task change
     if (_mainPanel === 'insights') renderInsights();
     window._refreshPlanTaskViews?.();
@@ -12000,7 +12232,7 @@ function initData() {
 
   _calEventsUnsub = onSnapshot(query(_uc('calEvents'), orderBy('date', 'asc')), snap => {
     CAL_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTasks(); renderCalendar();
+    renderTasks(); renderCalendar(); updateDashboardHero();
     drawCosmodex(); // immediate orb sync on calendar change
     if (_mainPanel === 'insights') renderInsights();
   });
@@ -12210,11 +12442,12 @@ function renderTasks() {
     );
 
     const labelEl = document.createElement('div');
-    labelEl.className = 'tasks-group-label';
+    labelEl.className = 'tasks-group-label' + (group.label === 'Overdue' ? ' overdue' : '');
     labelEl.style.cursor = isCollapsible ? 'pointer' : 'default';
+    const countBadge = `<span class="tasks-group-count">${group.tasks.length}</span>`;
     labelEl.innerHTML = isCollapsible
-      ? `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;${isCollapsed ? '' : 'transform:rotate(90deg)'}">›</span>${group.label}`
-      : group.label;
+      ? `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;${isCollapsed ? '' : 'transform:rotate(90deg)'}">›</span>${group.label} ${countBadge}`
+      : `${group.label} ${countBadge}`;
 
     const taskContainer = document.createElement('div');
     taskContainer.style.display = isCollapsed ? 'none' : '';
@@ -15536,6 +15769,7 @@ window.addEventListener('cdx-auth-ready', () => {
     initCommitMode();
     initFrictionModal();
     initDoneWall();
+    updateDashboardHero();
     setTimeout(openDailyRitual, 1200);
   });
 }, { once: true });
