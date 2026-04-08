@@ -878,6 +878,37 @@ body::after {
   background: var(--border);
 }
 
+.tasks-initiative-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  color: var(--muted);
+  padding: 6px 14px 4px 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.tasks-initiative-label:hover { color: var(--cream); }
+.tasks-initiative-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tasks-initiative-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+}
+.tasks-initiative-count {
+  font-size: 9px;
+  color: rgba(255,255,255,0.30);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
 .task-row {
   display: flex;
   align-items: flex-start;
@@ -5925,12 +5956,12 @@ select.sched-input { background: #181818; }
       <div id="plan-view-calendar" style="flex:1;display:none;overflow:hidden;min-height:0">
         <div class="plan-center" style="flex:1">
           <div class="plan-center-tabs">
-            <button class="plan-center-tab active" data-ptab="week">Week</button>
+            <button class="plan-center-tab" data-ptab="week">Week</button>
             <button class="plan-center-tab" data-ptab="month">Month</button>
-            <button class="plan-center-tab" data-ptab="focus">Focus</button>
+            <button class="plan-center-tab active" data-ptab="focus">Focus</button>
           </div>
           <!-- Week pane -->
-          <div id="plan-right-week" class="planning-right-body">
+          <div id="plan-right-week" class="planning-right-body" style="display:none"
             <div class="plan-week-nav">
               <button class="plan-nav-btn" id="plan-week-prev">←</button>
               <span class="plan-nav-label" id="plan-week-label">—</span>
@@ -5981,7 +6012,7 @@ select.sched-input { background: #181818; }
             </div>
           </div>
           <!-- Focus Buckets pane -->
-          <div id="plan-right-focus" class="planning-right-body" style="display:none">
+          <div id="plan-right-focus" class="planning-right-body"
             <div class="focus-header">
               <span class="plan-widget-label" style="margin-bottom:0">Focus Buckets</span>
               <button class="plan-nav-btn" id="focus-add-bucket-btn">+ Bucket</button>
@@ -10763,13 +10794,13 @@ function initMilestonesPanel() {
           pill.style.transform = isCalendar ? 'translateX(100%)' : '';
           document.getElementById('plan-view-projects').style.display = isCalendar ? 'none' : 'flex';
           document.getElementById('plan-view-calendar').style.display = isCalendar ? 'flex' : 'none';
-          if (isCalendar) buildWeekPlan();
+          if (isCalendar) switchPlanRightTab('focus');
           else renderMilestones();
         });
       });
       restorePlanPanelStates();
     }
-    buildWeekPlan(); // refresh data each time panel opens
+    switchPlanRightTab('focus'); // default to Focus tab each time panel opens
   };
 })();
 
@@ -12026,6 +12057,62 @@ async function deleteHoliday(docId) {
 
 /* ══ RENDER TASKS ══ */
 // → future file: cosmodex-tasks.js
+function _buildTaskToProjectMap() {
+  const map = {}; // taskId → { projectId, projectTitle, projectColor }
+  if (typeof MILESTONE_EVENTS === 'undefined' || typeof MILESTONE_PROJECTS === 'undefined') return map;
+  MILESTONE_EVENTS.forEach(ev => {
+    const proj = MILESTONE_PROJECTS.find(p => p.id === ev.projectId);
+    if (!proj || proj.isArchived) return;
+    (ev.activities || []).forEach(act => {
+      if (act.taskId) map[act.taskId] = { projectId: proj.id, projectTitle: proj.title, projectColor: proj.color || '#8a8070' };
+    });
+  });
+  return map;
+}
+
+function _renderTaskGroup(container, tasks, taskProjMap, rowIdxRef) {
+  // Separate tasks into initiative-linked and standalone
+  const byProject = {};
+  const standalone = [];
+  tasks.forEach(task => {
+    const proj = taskProjMap[task.id];
+    if (proj) {
+      if (!byProject[proj.projectId]) byProject[proj.projectId] = { ...proj, tasks: [] };
+      byProject[proj.projectId].tasks.push(task);
+    } else {
+      standalone.push(task);
+    }
+  });
+
+  // Render standalone tasks first
+  standalone.forEach(task => container.appendChild(buildTaskRow(task, rowIdxRef.idx++)));
+
+  // Render initiative sub-groups (collapsed by default)
+  Object.values(byProject).forEach(projGroup => {
+    const storageKey = 'cdx_init_collapsed_' + projGroup.projectId;
+    const isCollapsed = localStorage.getItem(storageKey) !== 'false'; // collapsed by default
+
+    const initLabel = document.createElement('div');
+    initLabel.className = 'tasks-initiative-label';
+    initLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:8px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:${escAttr(projGroup.projectColor)}"></span>${escHtml(projGroup.projectTitle)}<span class="tasks-initiative-count">${projGroup.tasks.length}</span>`;
+
+    const initContainer = document.createElement('div');
+    initContainer.style.display = isCollapsed ? 'none' : '';
+
+    initLabel.addEventListener('click', () => {
+      const collapsed = initContainer.style.display === 'none';
+      initContainer.style.display = collapsed ? '' : 'none';
+      const arrow = initLabel.querySelector('span');
+      if (arrow) arrow.style.transform = collapsed ? 'rotate(90deg)' : '';
+      localStorage.setItem(storageKey, !collapsed);
+    });
+
+    container.appendChild(initLabel);
+    projGroup.tasks.forEach(task => initContainer.appendChild(buildTaskRow(task, rowIdxRef.idx++)));
+    container.appendChild(initContainer);
+  });
+}
+
 function renderTasks() {
   const body = document.getElementById('tasks-body');
   if (!body) return;
@@ -12044,7 +12131,8 @@ function renderTasks() {
     { label: 'Done',     tasks: active.filter(t =>  t.done && t.doneDate === today) },
   ];
 
-  let rowIdx = 0;
+  const taskProjMap = _buildTaskToProjectMap();
+  const rowIdxRef = { idx: 0 };
   const collapsibleGroups = ['No date', 'Upcoming', 'Done'];
   groups.forEach(group => {
     if (!group.tasks.length) return;
@@ -12078,12 +12166,12 @@ function renderTasks() {
     }
 
     body.appendChild(labelEl);
-    group.tasks.forEach(task => taskContainer.appendChild(buildTaskRow(task, rowIdx++)));
+    _renderTaskGroup(taskContainer, group.tasks, taskProjMap, rowIdxRef);
     body.appendChild(taskContainer);
   });
 
   // Someday Graveyard
-  renderSomedaySection(body, filtered.filter(t => t.someday), rowIdx);
+  renderSomedaySection(body, filtered.filter(t => t.someday), rowIdxRef.idx);
 }
 
 /* ── Task Decay helper ───────────────────────────────── */
