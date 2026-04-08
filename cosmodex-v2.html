@@ -9356,9 +9356,16 @@ async function addMilestoneActivity(eventId, text, taskId=null) {
       title: text, done: false, priority: 'med',
       dueDate: ev.date || null, category: _settings.defaultCategory || null,
       calEventId: null, subtasks: [],
+      projectId: ev.projectId || null,
       createdAt: serverTimestamp()
     });
     realTaskId = ref.id;
+  } else if (taskId && ev.projectId) {
+    // Stamp projectId on existing task if not already set
+    const task = TASKS.find(t => t.id === taskId);
+    if (task && !task.projectId) {
+      updateTask(taskId, { projectId: ev.projectId });
+    }
   }
   const newAct = { id: crypto.randomUUID(), text: text||'', taskId: realTaskId||null, done: false };
   await updateMilestoneEvent(eventId, { activities: [...(ev.activities||[]), newAct] });
@@ -12031,6 +12038,21 @@ function initData() {
   });
 
   seedHolidays();
+
+  // One-time backfill: stamp projectId on tasks linked via milestone activities
+  setTimeout(() => {
+    if (!MILESTONE_EVENTS.length || !TASKS.length) return;
+    MILESTONE_EVENTS.forEach(ev => {
+      if (!ev.projectId) return;
+      (ev.activities || []).forEach(act => {
+        if (!act.taskId) return;
+        const task = TASKS.find(t => t.id === act.taskId);
+        if (task && !task.projectId) {
+          updateTask(act.taskId, { projectId: ev.projectId });
+        }
+      });
+    });
+  }, 3000); // delay to ensure all data is loaded
 }
 
 /* ══ HOLIDAYS ══ */
@@ -12061,14 +12083,31 @@ async function deleteHoliday(docId) {
 // → future file: cosmodex-tasks.js
 function _buildTaskToProjectMap() {
   const map = {}; // taskId → { projectId, projectTitle, projectColor }
-  if (typeof MILESTONE_EVENTS === 'undefined' || typeof MILESTONE_PROJECTS === 'undefined') return map;
-  MILESTONE_EVENTS.forEach(ev => {
-    const proj = MILESTONE_PROJECTS.find(p => p.id === ev.projectId);
-    if (!proj || proj.isArchived) return;
-    (ev.activities || []).forEach(act => {
-      if (act.taskId) map[act.taskId] = { projectId: proj.id, projectTitle: proj.title, projectColor: proj.color || '#8a8070' };
+  if (typeof MILESTONE_PROJECTS === 'undefined') return map;
+
+  // 1. Direct: task has projectId field (set when created via addMilestoneActivity)
+  if (typeof TASKS !== 'undefined') {
+    TASKS.forEach(task => {
+      if (!task.projectId) return;
+      const proj = MILESTONE_PROJECTS.find(p => p.id === task.projectId);
+      if (!proj || proj.isArchived) return;
+      map[task.id] = { projectId: proj.id, projectTitle: proj.title, projectColor: proj.color || '#8a8070' };
     });
-  });
+  }
+
+  // 2. Fallback: scan milestone event activities for taskId links
+  if (typeof MILESTONE_EVENTS !== 'undefined') {
+    MILESTONE_EVENTS.forEach(ev => {
+      const proj = MILESTONE_PROJECTS.find(p => p.id === ev.projectId);
+      if (!proj || proj.isArchived) return;
+      (ev.activities || []).forEach(act => {
+        if (act.taskId && !map[act.taskId]) {
+          map[act.taskId] = { projectId: proj.id, projectTitle: proj.title, projectColor: proj.color || '#8a8070' };
+        }
+      });
+    });
+  }
+
   return map;
 }
 
