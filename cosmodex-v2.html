@@ -2345,8 +2345,116 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   padding: 4px 6px;
   border-radius: 4px;
 }
-.list-detail-item:hover .list-detail-item-del { opacity: 1; }
+.list-detail-item:hover .list-detail-item-del,
+.list-detail-item:hover .list-detail-item-addsub { opacity: 1; }
 .list-detail-item-del:hover { color: var(--rust); background: rgba(196,92,42,0.08); }
+.list-detail-item-addsub {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.list-detail-item-addsub:hover { color: var(--cream); background: rgba(255,255,255,0.06); }
+
+.list-detail-item-wrap {
+  animation: fadeUp 0.25s forwards;
+  opacity: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.list-detail-item-wrap:last-child { border-bottom: none; }
+
+.list-subitems {
+  padding-left: 34px;
+}
+.list-subitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  transition: background 0.15s;
+}
+.list-subitem:hover { background: rgba(255,255,255,0.025); }
+.list-subitem-check {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.list-subitem-check:hover { border-color: rgba(255,255,255,0.3); color: var(--cream); }
+.list-subitem.done .list-subitem-check { color: var(--sage); border-color: var(--sage); }
+.list-subitem-text {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.4;
+}
+.list-subitem.done .list-subitem-text { text-decoration: line-through; opacity: 0.45; }
+.list-subitem-del {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 9px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  padding: 3px 5px;
+  border-radius: 4px;
+}
+.list-subitem:hover .list-subitem-del { opacity: 1; }
+.list-subitem-del:hover { color: var(--rust); background: rgba(196,92,42,0.08); }
+
+.list-subitem-input-row {
+  padding: 4px 8px 6px 34px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.list-subitem-input {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--cream);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.list-subitem-input:focus { border-color: rgba(255,255,255,0.2); }
+.list-subitem-input-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.list-subitem-input-btn:hover { background: rgba(255,255,255,0.1); }
+
+.list-link {
+  color: var(--blue);
+  text-decoration: underline;
+  text-decoration-color: rgba(107,159,212,0.35);
+  text-underline-offset: 2px;
+  transition: text-decoration-color 0.15s;
+  word-break: break-all;
+}
+.list-link:hover { text-decoration-color: var(--blue); }
 
 /* ═══ HABITS V2 PAGE ════════════════════════════════════ */
 /* → future file: cosmodex-habits.css */
@@ -7550,6 +7658,65 @@ async function deleteListItem(listId, itemId) {
   }
 }
 
+async function addListSubItem(listId, itemId, text) {
+  if (!text?.trim()) return;
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  const newSub = { id: crypto.randomUUID(), text: text.trim(), done: false, createdAt: new Date().toISOString() };
+  try {
+    await runTransaction(window.CDX_DB, async (transaction) => {
+      const ref = _ud('lists', listId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) throw new Error('List not found');
+      const items = (snap.data().items || []).map(i => {
+        if (i.id === itemId) return { ...i, subitems: [...(i.subitems || []), newSub] };
+        return i;
+      });
+      transaction.update(ref, { items, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('addListSubItem error:', err);
+    showToast('Failed to add sub-item', 'error');
+  }
+}
+
+async function deleteListSubItem(listId, itemId, subId) {
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  try {
+    await runTransaction(window.CDX_DB, async (transaction) => {
+      const ref = _ud('lists', listId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) throw new Error('List not found');
+      const items = (snap.data().items || []).map(i => {
+        if (i.id === itemId) return { ...i, subitems: (i.subitems || []).filter(s => s.id !== subId) };
+        return i;
+      });
+      transaction.update(ref, { items, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('deleteListSubItem error:', err);
+    showToast('Failed to delete sub-item', 'error');
+  }
+}
+
+async function toggleListSubItem(listId, itemId, subId) {
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  try {
+    await runTransaction(window.CDX_DB, async (transaction) => {
+      const ref = _ud('lists', listId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) throw new Error('List not found');
+      const items = (snap.data().items || []).map(i => {
+        if (i.id === itemId) return { ...i, subitems: (i.subitems || []).map(s => s.id === subId ? { ...s, done: !s.done } : s) };
+        return i;
+      });
+      transaction.update(ref, { items, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('toggleListSubItem error:', err);
+    showToast('Failed to update sub-item', 'error');
+  }
+}
+
 /* ══ LISTS PAGE — RENDER ══ */
 function renderLists() {
   const sidebar = document.getElementById('lists-sidebar-items');
@@ -7609,12 +7776,28 @@ function renderListDetail(listId) {
     return;
   }
   const accentColor = list.color || 'var(--gold)';
-  body.innerHTML = items.map((item, idx) => `
-    <div class="list-detail-item" style="animation-delay:${idx*20}ms" data-item-id="${escAttr(item.id)}">
-      <div class="list-item-marker" style="background:${accentColor}18;color:${accentColor};border:1px solid ${accentColor}33">◆</div>
-      <span class="list-detail-item-text" data-item-id="${escAttr(item.id)}">${escHtml(item.text)}</span>
-      <span class="list-detail-item-del" data-del-item="${escAttr(item.id)}">✕</span>
-    </div>`).join('');
+  body.innerHTML = items.map((item, idx) => {
+    const subs = item.subitems || [];
+    return `
+    <div class="list-detail-item-wrap" style="animation-delay:${idx*20}ms">
+      <div class="list-detail-item" data-item-id="${escAttr(item.id)}">
+        <div class="list-item-marker" style="background:${accentColor}18;color:${accentColor};border:1px solid ${accentColor}33">◆</div>
+        <span class="list-detail-item-text" data-item-id="${escAttr(item.id)}">${linkifyText(item.text)}</span>
+        <span class="list-detail-item-addsub" data-addsub-item="${escAttr(item.id)}" title="Add sub-item">⊕</span>
+        <span class="list-detail-item-del" data-del-item="${escAttr(item.id)}">✕</span>
+      </div>
+      ${subs.length ? `<div class="list-subitems">${subs.map(s => `
+        <div class="list-subitem ${s.done ? 'done' : ''}" data-parent-id="${escAttr(item.id)}" data-sub-id="${escAttr(s.id)}">
+          <span class="list-subitem-check" data-toggle-sub="${escAttr(s.id)}" data-toggle-parent="${escAttr(item.id)}">${s.done ? '✓' : '○'}</span>
+          <span class="list-subitem-text">${linkifyText(s.text)}</span>
+          <span class="list-subitem-del" data-del-sub="${escAttr(s.id)}" data-del-sub-parent="${escAttr(item.id)}">✕</span>
+        </div>`).join('')}</div>` : ''}
+      <div class="list-subitem-input-row" data-subinput-parent="${escAttr(item.id)}" style="display:none">
+        <input class="list-subitem-input" type="text" placeholder="Add sub-item..." maxlength="200" />
+        <button class="list-subitem-input-btn" data-confirm-sub="${escAttr(item.id)}">Add</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function openListDetail(listId) {
@@ -7689,10 +7872,53 @@ function initListsPage() {
   addBtn?.addEventListener('click', doAddItem);
   inp?.addEventListener('keydown', e => { if (e.key === 'Enter') doAddItem(); });
 
-  // Item deletes
+  // Item deletes + subitem actions (delegated)
   document.getElementById('lists-detail-items')?.addEventListener('click', async e => {
+    // Delete top-level item
     const del = e.target.closest('[data-del-item]');
-    if (del && _listView) await deleteListItem(_listView, del.dataset.delItem);
+    if (del && _listView) { await deleteListItem(_listView, del.dataset.delItem); return; }
+
+    // Show sub-item input row
+    const addSub = e.target.closest('[data-addsub-item]');
+    if (addSub) {
+      const parentId = addSub.dataset.addsubItem;
+      const row = document.querySelector(`[data-subinput-parent="${parentId}"]`);
+      if (row) { row.style.display = row.style.display === 'none' ? 'flex' : 'none'; row.querySelector('input')?.focus(); }
+      return;
+    }
+
+    // Confirm add sub-item
+    const confirmSub = e.target.closest('[data-confirm-sub]');
+    if (confirmSub && _listView) {
+      const parentId = confirmSub.dataset.confirmSub;
+      const inp = document.querySelector(`[data-subinput-parent="${parentId}"] input`);
+      if (inp && inp.value.trim()) { await addListSubItem(_listView, parentId, inp.value); inp.value = ''; }
+      return;
+    }
+
+    // Toggle sub-item done
+    const toggleSub = e.target.closest('[data-toggle-sub]');
+    if (toggleSub && _listView) {
+      await toggleListSubItem(_listView, toggleSub.dataset.toggleParent, toggleSub.dataset.toggleSub);
+      return;
+    }
+
+    // Delete sub-item
+    const delSub = e.target.closest('[data-del-sub]');
+    if (delSub && _listView) {
+      await deleteListSubItem(_listView, delSub.dataset.delSubParent, delSub.dataset.delSub);
+      return;
+    }
+  });
+
+  // Enter key to add sub-item
+  document.getElementById('lists-detail-items')?.addEventListener('keydown', async e => {
+    if (e.key !== 'Enter') return;
+    const inp = e.target.closest('.list-subitem-input');
+    if (inp && _listView) {
+      const parentId = inp.closest('[data-subinput-parent]')?.dataset.subinputParent;
+      if (parentId && inp.value.trim()) { await addListSubItem(_listView, parentId, inp.value); inp.value = ''; }
+    }
   });
 
   // Inline title rename (blur = save)
@@ -11148,6 +11374,10 @@ function escHtml(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function escAttr(s) { return String(s ?? '').replace(/"/g,'&quot;'); }
+function linkifyText(s) {
+  const esc = escHtml(s);
+  return esc.replace(/https?:\/\/[^\s<>&"]+/g, url => `<a href="${url}" target="_blank" rel="noopener" class="list-link">${url}</a>`);
+}
 function localDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
