@@ -10145,6 +10145,8 @@ function initMilestonesPanel() {
     if (rmAct) {
       const ev = MILESTONE_EVENTS.find(ev => ev.id === rmAct.dataset.evId);
       if (ev) {
+        const removedAct = ev.activities.find(a => a.id === rmAct.dataset.rmAct);
+        if (removedAct?.taskId) await updateTask(removedAct.taskId, { projectId: null });
         const activities = ev.activities.filter(a => a.id !== rmAct.dataset.rmAct);
         await updateMilestoneEvent(rmAct.dataset.evId, { activities });
       }
@@ -10373,7 +10375,7 @@ function initMilestonesPanel() {
       const actCheck = e.target.closest('[data-toggle-act]');
       if (actCheck) { await toggleMilestoneActivity(actCheck.dataset.evId, actCheck.dataset.toggleAct); return; }
       const rmAct = e.target.closest('[data-rm-act]');
-      if (rmAct) { const ev = MILESTONE_EVENTS.find(ev => ev.id === rmAct.dataset.evId); if (ev) { const activities = ev.activities.filter(a => a.id !== rmAct.dataset.rmAct); await updateMilestoneEvent(rmAct.dataset.evId, { activities }); } return; }
+      if (rmAct) { const ev = MILESTONE_EVENTS.find(ev => ev.id === rmAct.dataset.evId); if (ev) { const removedAct = ev.activities.find(a => a.id === rmAct.dataset.rmAct); if (removedAct?.taskId) await updateTask(removedAct.taskId, { projectId: null }); const activities = ev.activities.filter(a => a.id !== rmAct.dataset.rmAct); await updateMilestoneEvent(rmAct.dataset.evId, { activities }); } return; }
       const addTaskEvBtn = e.target.closest('[data-add-task-ev]');
       if (addTaskEvBtn) {
         const evId = addTaskEvBtn.dataset.addTaskEv;
@@ -12125,8 +12127,29 @@ function _renderTaskGroup(container, tasks, taskProjMap, rowIdxRef) {
     }
   });
 
-  // Render standalone tasks first
-  standalone.forEach(task => container.appendChild(buildTaskRow(task, rowIdxRef.idx++)));
+  // Render standalone tasks as collapsible "Independent" group (only if there are also initiative tasks)
+  const hasInitiatives = Object.keys(byProject).length > 0;
+  if (standalone.length && hasInitiatives) {
+    const storageKey = 'cdx_init_collapsed_independent';
+    const isCollapsed = localStorage.getItem(storageKey) !== 'false';
+    const indLabel = document.createElement('div');
+    indLabel.className = 'tasks-initiative-label';
+    indLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:8px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:var(--muted)"></span>Independent<span class="tasks-initiative-count">${standalone.length}</span>`;
+    const indContainer = document.createElement('div');
+    indContainer.style.display = isCollapsed ? 'none' : '';
+    indLabel.addEventListener('click', () => {
+      const collapsed = indContainer.style.display === 'none';
+      indContainer.style.display = collapsed ? '' : 'none';
+      const arrow = indLabel.querySelector('span');
+      if (arrow) arrow.style.transform = collapsed ? 'rotate(90deg)' : '';
+      localStorage.setItem(storageKey, !collapsed);
+    });
+    container.appendChild(indLabel);
+    standalone.forEach(task => indContainer.appendChild(buildTaskRow(task, rowIdxRef.idx++)));
+    container.appendChild(indContainer);
+  } else {
+    standalone.forEach(task => container.appendChild(buildTaskRow(task, rowIdxRef.idx++)));
+  }
 
   // Render initiative sub-groups (collapsed by default)
   Object.values(byProject).forEach(projGroup => {
@@ -12505,11 +12528,24 @@ function startInlineEdit(titleEl) {
   input.focus(); input.select();
 }
 
+function syncTaskTitleToMilestone(taskId, newTitle) {
+  for (const msEv of MILESTONE_EVENTS) {
+    const act = (msEv.activities || []).find(a => a.taskId === taskId);
+    if (act && act.text !== newTitle) {
+      const activities = msEv.activities.map(a => a.taskId === taskId ? { ...a, text: newTitle } : a);
+      updateMilestoneEvent(msEv.id, { activities });
+    }
+  }
+}
+
 function commitInlineEdit(input) {
   const title  = input.value.trim();
   const taskId = input.dataset.taskId;
   const orig   = input.dataset.original;
-  if (title && title !== orig) updateTask(taskId, { title });
+  if (title && title !== orig) {
+    updateTask(taskId, { title });
+    syncTaskTitleToMilestone(taskId, title);
+  }
   // Firestore onSnapshot will re-render and restore the span
   const span = document.createElement('span');
   span.className = 'task-title';
@@ -12568,6 +12604,7 @@ async function confirmTaskEdit() {
 
   if (!title) { showToast('Title is required', 'error'); return; }
   await updateTask(_editTaskId, { title, dueDate, priority, category, notes, energyType });
+  syncTaskTitleToMilestone(_editTaskId, title);
   closeOverlay('task-edit-modal');
   _editTaskId = null;
   showToast('Task updated', 'success');
@@ -12636,6 +12673,15 @@ async function toggleTask(taskId, timeSpentMinutes = null) {
     if (timeSpentMinutes != null) updates.timeSpentMinutes = timeSpentMinutes;
   }
   await updateTask(taskId, updates);
+  // Sync done status to linked milestone activities
+  const newDone = !task.done;
+  for (const msEv of MILESTONE_EVENTS) {
+    const act = (msEv.activities || []).find(a => a.taskId === taskId);
+    if (act && act.done !== newDone) {
+      const activities = msEv.activities.map(a => a.taskId === taskId ? { ...a, done: newDone } : a);
+      updateMilestoneEvent(msEv.id, { activities });
+    }
+  }
 }
 
 /* ── Time-to-complete popover ─────────────────────────── */
@@ -12732,6 +12778,12 @@ async function deleteTask(taskId) {
     // (handles cases where task.calEventId was null/mismatched)
     for (const ev of CAL_EVENTS.filter(e => e.taskId === taskId && e.id !== task.calEventId)) {
       await _safeDeleteCalEvent(ev.id);
+    }
+    // Remove from any milestone activities that reference this task
+    for (const msEv of MILESTONE_EVENTS) {
+      if ((msEv.activities || []).some(a => a.taskId === taskId)) {
+        await updateMilestoneEvent(msEv.id, { activities: msEv.activities.filter(a => a.taskId !== taskId) });
+      }
     }
     await deleteDoc(_ud('tasks', taskId));
     showToast('Task deleted', 'info');
@@ -13256,6 +13308,11 @@ function initEventModal() {
     if (!await cdxConfirm(`Delete "${_eamEvent.title}"?`)) return;
     try {
       await deleteDoc(_ud('calEvents', _eamEvent.id));
+      // Clear calEventId on linked task
+      const linkedTask = _eamEvent.taskId
+        ? TASKS.find(t => t.id === _eamEvent.taskId)
+        : TASKS.find(t => t.calEventId === _eamEvent.id);
+      if (linkedTask) await updateTask(linkedTask.id, { calEventId: null });
       hideEventModal();
       showToast('Event deleted', 'success');
     } catch(e) { showToast('Could not delete event', 'error'); }
