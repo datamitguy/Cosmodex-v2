@@ -12059,11 +12059,11 @@ function _tdUpdateRing(info,now,animEase){
   const {g,ring,textEls}=info;
   const n=ring.items.length;
   const cur=ring.cur(now), frac=ring.sub(now), exact=cur+frac;
-  const rot=180+(exact/n)*360;
+  const rot=180-(exact/n)*360;
   let animRot = rot;
   if (animEase < 1) {
     const ringIdx = TD_RINGS.indexOf(ring);
-    const dir = (ringIdx % 2 === 0) ? 1 : -1; // alternate: even=CW, odd=CCW
+    const dir = (ringIdx % 2 === 0) ? 1 : -1;
     const sweep = 360 * (1 - animEase) * dir;
     animRot = rot + sweep;
   }
