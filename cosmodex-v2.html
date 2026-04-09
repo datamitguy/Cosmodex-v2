@@ -5350,14 +5350,14 @@ select.sched-input { background: #181818; }
   display: flex; flex-direction: column; gap: 16px;
 }
 .ins-hero {
-  display: flex; align-items: center; gap: 24px;
-  padding: 24px 28px;
+  display: flex; align-items: center; gap: 20px;
+  padding: 16px 24px;
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(60px) saturate(150%);
   -webkit-backdrop-filter: blur(60px) saturate(150%);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 18px;
-  position: relative; overflow: hidden;
+  position: relative; min-height: 0;
 }
 .ins-hero::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
@@ -5365,7 +5365,7 @@ select.sched-input { background: #181818; }
 }
 .ins-hero-left { display: flex; flex-direction: column; align-items: center; min-width: 80px; flex-shrink: 0; }
 .ins-hero-score {
-  font-family: var(--font-display); font-size: 56px; font-weight: 300; line-height: 1;
+  font-family: var(--font-display); font-size: 42px; font-weight: 300; line-height: 1;
   color: rgb(53,249,47); text-shadow: 0 0 40px rgba(53,249,47,0.3), 0 0 80px rgba(53,249,47,0.1);
 }
 .ins-hero-label {
@@ -6888,7 +6888,7 @@ select.sched-input { background: #181818; }
             <div class="ins-hero-label">Momentum</div>
           </div>
           <div class="ins-hero-center">
-            <canvas id="ins-spark-canvas" width="200" height="60"></canvas>
+            <canvas id="ins-spark-canvas" width="180" height="44"></canvas>
             <div class="ins-hero-delta" id="ins-hero-delta"></div>
           </div>
           <div class="ins-hero-right">
