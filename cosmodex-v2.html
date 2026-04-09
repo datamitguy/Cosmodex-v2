@@ -385,9 +385,10 @@ body::after {
 }
 
 .nav-item:hover {
-  background: rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.05);
   color: #ffffff;
-  border-left-color: rgba(255,255,255,0.3);
+  border-radius: 100px;
+  border-color: rgba(255,255,255,0.08);
 }
 
 .nav-item.active {
@@ -11260,9 +11261,9 @@ const TD_RINGS = [
     cur:d=>d.getHours(),
     sub:d=>_tdHrSnapFrac,
     maj:1,th:4.8,tm:2.0,fs:6.8,lr:163,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.18)',dimA:0.44 },
-  { id:'min', r:202, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
-    cur:d=>d.getMinutes(),
-    sub:d=>_tdMinSnapFrac,
+  { id:'min', r:202, bw:32, items:Array.from({length:60},(_,i)=>String((60-i)%60).padStart(2,'0')),
+    cur:d=>(60-d.getMinutes())%60,
+    sub:d=>-_tdMinSnapFrac,
     maj:1,th:4.4,tm:1.6,fs:6.2,lr:195,bandFill:'rgba(255,255,255,0)',bandStroke:'rgba(255,255,255,0.14)',dimA:0.38 },
   { id:'sec', r:234, bw:32, items:Array.from({length:60},(_,i)=>String(i).padStart(2,'0')),
     cur:d=>d.getSeconds(),
@@ -11590,7 +11591,7 @@ function _tdInit(){
     const textEls=[];
     ring.items.forEach((label,i)=>{
       const isMaj=(i%ring.maj===0), tH=isMaj?ring.th:ring.tm;
-      const aDeg=(ring.id==='min' ? -i*step : i*step)-90, aRad=aDeg*Math.PI/180;
+      const aDeg=i*step-90, aRad=aDeg*Math.PI/180;
       const cosA=Math.cos(aRad), sinA=Math.sin(aRad);
       const ig=_tdMk('g'); ig.setAttribute('class','td-ri'); ig.dataset.i=i; ig.dataset.maj=isMaj?'1':'0';
       const ox=_TD_CX+ring.r*cosA, oy=_TD_CY+ring.r*sinA;
