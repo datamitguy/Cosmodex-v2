@@ -11440,24 +11440,20 @@ function _tdDrawTimeline(now){
     }
   });
 
-  // ── Current-time needle below arc ────────────────────────
-  const nTop=arcTopY+bandH/2+6, nBot=arcTopY+bandH/2+38;
-  // Soft glow halo
-  ctx.beginPath(); ctx.moveTo(cx,nTop+4); ctx.lineTo(cx,nBot);
-  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=8; ctx.stroke();
-  // Main hairline
-  ctx.beginPath(); ctx.moveTo(cx,nTop+4); ctx.lineTo(cx,nBot);
-  ctx.strokeStyle='rgba(255,255,255,0.70)'; ctx.lineWidth=1;
-  ctx.shadowColor='rgba(255,255,255,0.5)'; ctx.shadowBlur=4;
-  ctx.stroke(); ctx.shadowBlur=0;
-  // Small circle at top of needle
-  ctx.beginPath(); ctx.arc(cx, nTop+4, 3, 0, Math.PI*2);
-  ctx.fillStyle='rgba(255,255,255,0.95)';
-  ctx.shadowColor='rgba(255,255,255,0.6)'; ctx.shadowBlur=8;
+  // ── Current-time arrow below arc ─────────────────────────
+  const arrowY=arcTopY+bandH/2+4;
+  // Tiny upward arrow (▲)
+  ctx.beginPath();
+  ctx.moveTo(cx, arrowY);        // tip
+  ctx.lineTo(cx-4, arrowY+7);    // bottom-left
+  ctx.lineTo(cx+4, arrowY+7);    // bottom-right
+  ctx.closePath();
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.shadowColor='rgba(255,255,255,0.5)'; ctx.shadowBlur=6;
   ctx.fill(); ctx.shadowBlur=0;
 
-  // ── Time display below needle ─────────────────────────────
-  const tY=arcTopY+bandH/2+54;
+  // ── Time display below arrow ──────────────────────────────
+  const tY=arcTopY+bandH/2+16;
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
   ctx.font="300 20px 'DM Mono',monospace";
@@ -11594,7 +11590,7 @@ function _tdInit(){
     const textEls=[];
     ring.items.forEach((label,i)=>{
       const isMaj=(i%ring.maj===0), tH=isMaj?ring.th:ring.tm;
-      const aDeg=i*step-90, aRad=aDeg*Math.PI/180;
+      const aDeg=(ring.id==='min' ? -i*step : i*step)-90, aRad=aDeg*Math.PI/180;
       const cosA=Math.cos(aRad), sinA=Math.sin(aRad);
       const ig=_tdMk('g'); ig.setAttribute('class','td-ri'); ig.dataset.i=i; ig.dataset.maj=isMaj?'1':'0';
       const ox=_TD_CX+ring.r*cosA, oy=_TD_CY+ring.r*sinA;
