@@ -5363,9 +5363,9 @@ select.sched-input { background: #181818; }
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(53,249,47,0.15) 20%, rgba(53,249,47,0.4) 50%, rgba(53,249,47,0.15) 80%, transparent 100%);
 }
-.ins-hero-left { display: flex; flex-direction: column; align-items: center; min-width: 120px; }
+.ins-hero-left { display: flex; flex-direction: column; align-items: center; min-width: 80px; flex-shrink: 0; }
 .ins-hero-score {
-  font-family: var(--font-display); font-size: 80px; font-weight: 300; line-height: 1;
+  font-family: var(--font-display); font-size: 56px; font-weight: 300; line-height: 1;
   color: rgb(53,249,47); text-shadow: 0 0 40px rgba(53,249,47,0.3), 0 0 80px rgba(53,249,47,0.1);
 }
 .ins-hero-label {
@@ -5377,7 +5377,7 @@ select.sched-input { background: #181818; }
 .ins-hero-delta {
   font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--muted);
 }
-.ins-hero-right { min-width: 140px; display: flex; flex-direction: column; gap: 4px; }
+.ins-hero-right { min-width: 120px; max-width: 160px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
 .ins-hero-breakdown-item {
   display: flex; justify-content: space-between; gap: 8px;
   font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em;
@@ -5397,7 +5397,7 @@ select.sched-input { background: #181818; }
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 50%, transparent);
 }
 .ins-stat-number {
-  font-family: var(--font-display); font-size: 42px; font-weight: 300;
+  font-family: var(--font-display); font-size: 36px; font-weight: 300;
   color: var(--cream); line-height: 1;
 }
 .ins-stat-label {
@@ -6929,10 +6929,13 @@ select.sched-input { background: #181818; }
           </div>
         </div>
 
-        <!-- ROW 4: Week Debrief | Completed Tasks -->
+        <!-- ROW 4: Activity Rings | Completed Tasks -->
         <div class="ins-detail-row">
-          <div class="ins-detail-card">
-            <div id="ins-week-debrief"></div>
+          <div class="ins-detail-card" style="display:flex;flex-direction:column;align-items:center">
+            <div class="ins-chart-label" style="align-self:flex-start">Activity Rings</div>
+            <canvas id="ins-rings-canvas" width="260" height="260" style="margin:8px 0"></canvas>
+            <div id="ins-rings-legend" style="display:flex;gap:16px;margin-top:4px"></div>
+            <div id="ins-week-debrief" style="width:100%;margin-top:14px"></div>
           </div>
           <div class="ins-detail-card">
             <div class="ins-chart-label">Completed Tasks</div>
@@ -9167,6 +9170,59 @@ function _insDrawSparkline(canvasId, data, color) {
   ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0;
 }
 
+function _insDrawRings(canvasId, rings) {
+  // rings = [{ label, pct, color, max }] — up to 3
+  const cvs = document.getElementById(canvasId); if (!cvs) return;
+  const ctx = cvs.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = cvs.clientWidth || 260, H = cvs.clientHeight || 260;
+  cvs.width = W * dpr; cvs.height = H * dpr;
+  cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2;
+  const startAngle = -Math.PI / 2; // 12 o'clock
+  const ringWidth = 14, gap = 6;
+  rings.forEach((ring, i) => {
+    const r = (W / 2) - 20 - i * (ringWidth + gap);
+    const pct = Math.min(ring.pct / (ring.max || 100), 1);
+    const endAngle = startAngle + pct * Math.PI * 2;
+    // Track (background)
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = ringWidth; ctx.lineCap = 'round'; ctx.stroke();
+    // Fill arc
+    if (pct > 0) {
+      ctx.beginPath(); ctx.arc(cx, cy, r, startAngle, endAngle);
+      ctx.strokeStyle = ring.color; ctx.lineWidth = ringWidth; ctx.lineCap = 'round';
+      ctx.shadowColor = ring.color; ctx.shadowBlur = 12; ctx.stroke(); ctx.shadowBlur = 0;
+    }
+    // Percentage text at end of arc
+    if (pct > 0.05) {
+      const labelAngle = endAngle;
+      const lx = cx + (r) * Math.cos(labelAngle);
+      const ly = cy + (r) * Math.sin(labelAngle);
+      ctx.font = "500 9px 'DM Mono',monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = ring.color; ctx.shadowColor = ring.color; ctx.shadowBlur = 6;
+      ctx.fillText(Math.round(ring.pct) + '%', lx, ly);
+      ctx.shadowBlur = 0;
+    }
+  });
+  // Center text
+  ctx.font = "300 11px 'DM Mono',monospace";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillText('THIS WEEK', cx, cy);
+  // Legend
+  const legendEl = document.getElementById('ins-rings-legend');
+  if (legendEl) {
+    legendEl.innerHTML = rings.map(r =>
+      `<div style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.04em">` +
+      `<span style="width:8px;height:8px;border-radius:50%;background:${r.color};box-shadow:0 0 6px ${r.color}60"></span>${r.label}</div>`
+    ).join('');
+  }
+}
+
 function _insDrawTrend(canvasId, data, labels) {
   const cvs = document.getElementById(canvasId); if (!cvs) return;
   const ctx = cvs.getContext('2d');
@@ -9307,6 +9363,18 @@ function renderInsights() {
       overdueSub.textContent = `avg ${avgAge}d overdue`;
     } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(53,249,47,0.6)'; }
   }
+
+  // ── Activity Rings ─────────────────────────────────────
+  const focusGoalSecs = 8 * 3600; // 8h weekly goal
+  const focusPct = Math.min(100, Math.round(weekSecs / focusGoalSecs * 100));
+  const tasksDoneToday = TASKS.filter(t => t.done && t.doneDate === today).length;
+  const taskGoal = 5; // daily goal
+  const taskPct = Math.min(100, Math.round(tasksDoneToday / taskGoal * 100));
+  _insDrawRings('ins-rings-canvas', [
+    { label: 'Focus', pct: focusPct, color: 'rgb(53,249,47)', max: 100 },
+    { label: 'Tasks', pct: taskPct, color: 'rgba(255,255,255,0.7)', max: 100 },
+    { label: 'Habits', pct: h7Pct, color: 'rgb(107,159,212)', max: 100 },
+  ]);
 
   // ── Completion Trend (28-day) ─────────────────────────
   const trendData = [], trendLabels = [];
