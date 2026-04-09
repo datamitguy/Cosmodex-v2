@@ -5343,6 +5343,132 @@ select.sched-input { background: #181818; }
 }
 .friction-someday-btn:hover { border-color: var(--gold); color: var(--gold); }
 
+/* ══ INSIGHTS PAGE (redesigned) ══ */
+.ins-page {
+  flex: 1; overflow-y: auto; padding: 24px 28px 40px;
+  max-width: 1200px; margin: 0 auto; width: 100%;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.ins-hero {
+  display: flex; align-items: center; gap: 24px;
+  padding: 24px 28px;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(60px) saturate(150%);
+  -webkit-backdrop-filter: blur(60px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  position: relative; overflow: hidden;
+}
+.ins-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(53,249,47,0.15) 20%, rgba(53,249,47,0.4) 50%, rgba(53,249,47,0.15) 80%, transparent 100%);
+}
+.ins-hero-left { display: flex; flex-direction: column; align-items: center; min-width: 120px; }
+.ins-hero-score {
+  font-family: var(--font-display); font-size: 80px; font-weight: 300; line-height: 1;
+  color: rgb(53,249,47); text-shadow: 0 0 40px rgba(53,249,47,0.3), 0 0 80px rgba(53,249,47,0.1);
+}
+.ins-hero-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: rgba(255,255,255,0.35); margin-top: 4px;
+}
+.ins-hero-center { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ins-hero-center canvas { display: block; max-width: 100%; }
+.ins-hero-delta {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--muted);
+}
+.ins-hero-right { min-width: 140px; display: flex; flex-direction: column; gap: 4px; }
+.ins-hero-breakdown-item {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em;
+}
+.ins-hero-breakdown-item .val { color: var(--cream); }
+
+.ins-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.ins-stat-card {
+  padding: 20px 22px;
+  background: rgba(255,255,255,0.035);
+  backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px; position: relative;
+}
+.ins-stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 50%, transparent);
+}
+.ins-stat-number {
+  font-family: var(--font-display); font-size: 42px; font-weight: 300;
+  color: var(--cream); line-height: 1;
+}
+.ins-stat-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.35); margin-top: 4px;
+}
+.ins-stat-bar-track {
+  height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 12px; overflow: hidden;
+}
+.ins-stat-bar-fill {
+  height: 100%; background: rgb(53,249,47); border-radius: 2px;
+  box-shadow: 0 0 8px rgba(53,249,47,0.3); transition: width 0.6s ease;
+}
+.ins-stat-sub {
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 6px;
+}
+.ins-habit-dots {
+  display: flex; gap: 5px; margin-top: 12px;
+}
+.ins-habit-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.ins-habit-dot.filled {
+  background: rgb(53,249,47);
+  box-shadow: 0 0 6px rgba(53,249,47,0.4);
+}
+
+.ins-charts-row { display: grid; grid-template-columns: 1.8fr 1fr; gap: 14px; }
+.ins-chart-card {
+  padding: 20px 22px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+}
+.ins-chart-card canvas { display: block; width: 100%; height: auto; }
+.ins-chart-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 14px;
+}
+.ins-time-bar-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+}
+.ins-time-bar-label {
+  font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+  width: 80px; flex-shrink: 0; text-transform: capitalize;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ins-time-bar-track {
+  flex: 1; height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px; overflow: hidden;
+}
+.ins-time-bar-fill {
+  height: 100%; border-radius: 3px; transition: width 0.5s ease;
+}
+.ins-time-bar-val {
+  font-family: var(--font-mono); font-size: 10px; color: var(--cream);
+  width: 40px; text-align: right; flex-shrink: 0;
+}
+
+.ins-detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ins-detail-card {
+  padding: 20px 22px;
+  background: rgba(255,255,255,0.025);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 16px;
+}
+
 /* ══ DONE WALL ══ */
 .done-wall-stats {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
@@ -6753,69 +6879,77 @@ select.sched-input { background: #181818; }
 
     <!-- Insights full-page panel -->
     <div id="panel-insights" style="display:none;flex:1;flex-direction:column;overflow:hidden">
-      <div style="flex:1;overflow-y:auto;padding:24px 32px 40px">
+      <div class="ins-page">
 
-        <!-- Row 1: Time Investment (left) | Completed Tasks summary (right) -->
-        <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:0;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-
-          <!-- Left: Time Investment -->
-          <div style="padding-right:24px">
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Time Investment</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-              <div class="stat-card"><span class="stat-card-number" id="ins-time-total">—</span><span class="stat-card-label">Total logged</span></div>
-              <div class="stat-card"><span class="stat-card-number" id="ins-time-week">—</span><span class="stat-card-label">This week</span></div>
-              <div class="stat-card"><span class="stat-card-number" id="ins-time-pomo">—</span><span class="stat-card-label">Pomodoro</span></div>
-              <div class="stat-card"><span class="stat-card-number" id="ins-time-commit">—</span><span class="stat-card-label">Commit mode</span></div>
-            </div>
-            <div id="ins-time-breakdown" style="display:flex;flex-direction:column;gap:8px"></div>
+        <!-- ROW 1: Hero — Momentum Score -->
+        <div class="ins-hero">
+          <div class="ins-hero-left">
+            <div class="ins-hero-score" id="ins-hero-score">0</div>
+            <div class="ins-hero-label">Momentum</div>
           </div>
+          <div class="ins-hero-center">
+            <canvas id="ins-spark-canvas" width="200" height="60"></canvas>
+            <div class="ins-hero-delta" id="ins-hero-delta"></div>
+          </div>
+          <div class="ins-hero-right">
+            <div class="ins-hero-breakdown" id="ins-hero-breakdown"></div>
+          </div>
+        </div>
 
-          <!-- Center divider line -->
-          <div style="background:var(--border);width:1px;margin:0 0"></div>
+        <!-- ROW 2: Three Key Stat Cards -->
+        <div class="ins-stats-row">
+          <div class="ins-stat-card">
+            <div class="ins-stat-number" id="ins-focus-time">—</div>
+            <div class="ins-stat-label">Focus Time This Week</div>
+            <div class="ins-stat-bar-track"><div class="ins-stat-bar-fill" id="ins-focus-bar" style="width:0%"></div></div>
+            <div class="ins-stat-sub" id="ins-focus-sub"></div>
+          </div>
+          <div class="ins-stat-card">
+            <div class="ins-stat-number" id="ins-habit-rate">—</div>
+            <div class="ins-stat-label">Habit Rate (7 day)</div>
+            <div class="ins-habit-dots" id="ins-habit-dots"></div>
+            <div class="ins-stat-sub" id="ins-habit-sub"></div>
+          </div>
+          <div class="ins-stat-card">
+            <div class="ins-stat-number" id="ins-overdue-count">0</div>
+            <div class="ins-stat-label">Overdue Tasks</div>
+            <div class="ins-stat-sub" id="ins-overdue-sub" style="color:var(--muted)"></div>
+          </div>
+        </div>
 
-          <!-- Right: Completed Tasks summary -->
-          <div style="padding-left:24px">
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Completed Tasks</div>
-            <div class="done-wall-stats" id="done-wall-stats" style="padding:0;border:none;margin-bottom:14px;gap:8px"></div>
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Filter</div>
-            <div class="done-filter-bar" id="done-filter-bar">
+        <!-- ROW 3: Charts — Completion Trend | Time by Category -->
+        <div class="ins-charts-row">
+          <div class="ins-chart-card">
+            <div class="ins-chart-label">Completion Trend — 28 Days</div>
+            <canvas id="ins-trend-canvas" width="600" height="180"></canvas>
+          </div>
+          <div class="ins-chart-card">
+            <div class="ins-chart-label">Time by Category</div>
+            <div id="ins-time-breakdown"></div>
+          </div>
+        </div>
+
+        <!-- ROW 4: Week Debrief | Completed Tasks -->
+        <div class="ins-detail-row">
+          <div class="ins-detail-card">
+            <div id="ins-week-debrief"></div>
+          </div>
+          <div class="ins-detail-card">
+            <div class="ins-chart-label">Completed Tasks</div>
+            <div class="done-wall-stats" id="done-wall-stats" style="padding:0;border:none;margin-bottom:10px;gap:8px"></div>
+            <div class="done-filter-bar" id="done-filter-bar" style="margin-bottom:10px">
               <button class="done-filter-btn active" data-filter="all">All</button>
               <button class="done-filter-btn" data-filter="today">Today</button>
               <button class="done-filter-btn" data-filter="week">This week</button>
               <button class="done-filter-btn" data-filter="month">This month</button>
             </div>
-          </div>
-        </div>
-
-        <!-- Row 2: Week Debrief (left) | Habit stats (right) -->
-        <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:0;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-          <div style="padding-right:24px">
-            <div id="ins-week-debrief"><!-- populated by renderInsights() --></div>
-          </div>
-          <div style="background:var(--border);width:1px"></div>
-          <div style="padding-left:24px">
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Habit Insights</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              <div class="stat-card"><span class="stat-card-number" id="ins-total">—</span><span class="stat-card-label">Habit completions</span></div>
-              <div class="stat-card"><span class="stat-card-number" id="ins-week">—</span><span class="stat-card-label">This week</span></div>
-              <div class="stat-card"><span class="stat-card-number" id="ins-best">—</span><span class="stat-card-label">Best day</span></div>
-              <div class="stat-card"><span class="stat-card-number" id="ins-days">—</span><span class="stat-card-label">Days active</span></div>
+            <div id="done-grid-wrap" style="max-height:240px;overflow-y:auto">
+              <div class="done-grid" id="done-grid"></div>
             </div>
           </div>
         </div>
 
-        <!-- Row 3: Done wall — compact list, collapsible -->
-        <div style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;cursor:pointer;user-select:none" id="done-wall-header">
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">Task Log</div>
-            <button id="done-wall-fold-btn" style="background:none;border:1px solid var(--border);border-radius:100px;padding:2px 10px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted);cursor:pointer;transition:var(--ease-fast)">▲ fold</button>
-          </div>
-          <div id="done-grid-wrap">
-            <div class="done-grid" id="done-grid"></div>
-          </div>
-        </div>
-
-        <!-- Row 4: Friction Detector + Context Patterns (bottom) -->
+        <!-- ROW 5: Friction Detector + Context Patterns (preserved) -->
         <div class="hb-insight-layout">
           <div class="hb-insight-card">
             <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
@@ -9003,89 +9137,203 @@ function hbBuildHeatmap() {
 
 /* ══ INSIGHTS — RENDER ══ */
 // → future file: cosmodex-insights.js
-function renderInsights() {
-  const logs    = _habitLogs;   // { dateStr: { date, completions: { habitId: true } } }
-  const habits  = _habits;      // active habits
+function _insFmtHrs(s) { return s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s/60)}m` : `${(s/3600).toFixed(1)}h`; }
 
-  // ── Stat cards ──────────────────────────────────────────
-  const allDates   = Object.keys(logs);
-  const today      = localDateStr(new Date());
-  const weekStart  = localDateStr(new Date(Date.now() - 6 * 86400000));
+function _insDrawSparkline(canvasId, data, color) {
+  const cvs = document.getElementById(canvasId); if (!cvs) return;
+  const ctx = cvs.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = cvs.clientWidth || 200, H = cvs.clientHeight || 60;
+  cvs.width = W * dpr; cvs.height = H * dpr;
+  cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  if (!data.length) return;
+  const max = Math.max(...data, 1), pad = 8;
+  const stepX = (W - pad * 2) / Math.max(data.length - 1, 1);
+  const pts = data.map((v, i) => [pad + i * stepX, H - pad - (v / max) * (H - pad * 2)]);
+  // Fill area
+  ctx.beginPath(); ctx.moveTo(pts[0][0], H);
+  pts.forEach(p => ctx.lineTo(p[0], p[1]));
+  ctx.lineTo(pts[pts.length - 1][0], H); ctx.closePath();
+  ctx.fillStyle = color.replace(')', ',0.08)').replace('rgb', 'rgba');
+  ctx.fill();
+  // Stroke line
+  ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
+  // Glow dot on last point
+  const last = pts[pts.length - 1];
+  ctx.beginPath(); ctx.arc(last[0], last[1], 4, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0;
+}
 
-  let totalCompletions = 0, weekCompletions = 0, bestCount = 0, bestDate = '', activeDays = 0;
-
-  allDates.forEach(ds => {
-    const comps = Object.values(logs[ds]?.completions || {}).filter(Boolean);
-    const cnt   = comps.length;
-    if (cnt > 0) { totalCompletions += cnt; activeDays++; }
-    if (ds >= weekStart) weekCompletions += cnt;
-    if (cnt > bestCount) { bestCount = cnt; bestDate = ds; }
-  });
-
-  const setCard = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  setCard('ins-total', totalCompletions || '—');
-  setCard('ins-week',  weekCompletions  || '—');
-  setCard('ins-best',  bestCount > 0 ? bestCount + (bestDate ? ' (' + bestDate.slice(5).replace('-','/') + ')' : '') : '—');
-  setCard('ins-days',  activeDays || '—');
-
-  // ── Time Investment consolidation ────────────────────────
-  (function renderTimeInvestment() {
-    const weekAgo = localDateStr(new Date(Date.now() - 6 * 86400000));
-    let totalSecs = 0, weekSecs = 0, pomoSecs = 0, commitSecs = 0;
-    const byCat = {}; // { category: totalSecs }
-
-    TASKS.forEach(task => {
-      const pomo   = task.sessionTimeSecs || 0;    // Pomodoro session time
-      const commit = task.timeSpentSeconds || 0;   // Commit mode time
-      // Avoid double-counting: if both exist, pomo is subset of a session; use max-of-pomo or commit
-      // They track different sessions so sum is correct
-      const taskSecs = pomo + commit;
-      if (taskSecs <= 0) return;
-      totalSecs += taskSecs;
-      pomoSecs  += pomo;
-      commitSecs += commit;
-      const doneDate = task.doneDate || task.dueDate || '';
-      if (doneDate >= weekAgo) weekSecs += taskSecs;
-      const cat = task.category || 'uncategorised';
-      byCat[cat] = (byCat[cat] || 0) + taskSecs;
-    });
-
-    // Calendar events (only events whose linked task has NO time tracking, to avoid duplication)
-    CAL_EVENTS.forEach(ev => {
-      if (ev.allDay || !ev.duration) return;
-      const linkedTask = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : null;
-      if (linkedTask && (linkedTask.sessionTimeSecs || linkedTask.timeSpentSeconds)) return; // already counted
-      const secs = (ev.duration || 0) * 60;
-      totalSecs += secs;
-      if (ev.date >= weekAgo) weekSecs += secs;
-      const cat = (linkedTask?.category) || 'scheduled';
-      byCat[cat] = (byCat[cat] || 0) + secs;
-    });
-
-    const fmtHrs = s => s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s/60)}m` : `${(s/3600).toFixed(1)}h`;
-    setCard('ins-time-total',  totalSecs  > 0 ? fmtHrs(totalSecs)  : '—');
-    setCard('ins-time-week',   weekSecs   > 0 ? fmtHrs(weekSecs)   : '—');
-    setCard('ins-time-pomo',   pomoSecs   > 0 ? fmtHrs(pomoSecs)   : '—');
-    setCard('ins-time-commit', commitSecs > 0 ? fmtHrs(commitSecs) : '—');
-
-    const breakdownEl = document.getElementById('ins-time-breakdown');
-    if (breakdownEl) {
-      const sorted = Object.entries(byCat).sort((a,b) => b[1]-a[1]);
-      const max = sorted[0]?.[1] || 1;
-      breakdownEl.innerHTML = sorted.map(([cat, secs]) => {
-        const pct  = Math.round(secs / max * 100);
-        const color = getCatColor(cat);
-        const catLabel = CATEGORIES[cat]?.label || cat;
-        return `<div style="display:flex;align-items:center;gap:10px">
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);width:90px;flex-shrink:0;text-transform:capitalize;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${catLabel}</div>
-          <div style="flex:1;height:6px;background:var(--elevated);border-radius:3px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.4s"></div>
-          </div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--cream);width:36px;text-align:right;flex-shrink:0">${fmtHrs(secs)}</div>
-        </div>`;
-      }).join('') || `<div style="font-size:11px;color:var(--muted);font-family:var(--font-mono)">No time logged yet — complete tasks via Pomodoro or Commit mode to start tracking.</div>`;
+function _insDrawTrend(canvasId, data, labels) {
+  const cvs = document.getElementById(canvasId); if (!cvs) return;
+  const ctx = cvs.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = cvs.clientWidth || 600, H = cvs.clientHeight || 180;
+  cvs.width = W * dpr; cvs.height = H * dpr;
+  cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const max = Math.max(...data, 1), padL = 4, padR = 4, padT = 10, padB = 20;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const stepX = plotW / Math.max(data.length - 1, 1);
+  // Gridlines
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) {
+    const y = padT + (g / 4) * plotH;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+  }
+  const pts = data.map((v, i) => [padL + i * stepX, padT + plotH - (v / max) * plotH]);
+  // Fill
+  ctx.beginPath(); ctx.moveTo(pts[0][0], padT + plotH);
+  pts.forEach(p => ctx.lineTo(p[0], p[1]));
+  ctx.lineTo(pts[pts.length - 1][0], padT + plotH); ctx.closePath();
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+  grad.addColorStop(0, 'rgba(53,249,47,0.12)'); grad.addColorStop(1, 'rgba(53,249,47,0.01)');
+  ctx.fillStyle = grad; ctx.fill();
+  // Stroke
+  ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
+  ctx.strokeStyle = 'rgb(53,249,47)'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(53,249,47,0.4)'; ctx.shadowBlur = 6; ctx.stroke(); ctx.shadowBlur = 0;
+  // Dot on today
+  const last = pts[pts.length - 1];
+  ctx.beginPath(); ctx.arc(last[0], last[1], 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgb(53,249,47)'; ctx.shadowColor = 'rgba(53,249,47,0.6)'; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0;
+  // X-axis labels (every 7th day)
+  ctx.font = "300 9px 'DM Mono',monospace"; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  labels.forEach((lbl, i) => { if (lbl) ctx.fillText(lbl, pts[i][0], padT + plotH + 4); });
+  // White vertical bars for each data point (subtle pulse effect)
+  pts.forEach((p, i) => {
+    if (data[i] > 0) {
+      ctx.beginPath(); ctx.moveTo(p[0], padT + plotH); ctx.lineTo(p[0], p[1]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 3; ctx.stroke();
     }
-  })();
+  });
+}
+
+function renderInsights() {
+  const logs = _habitLogs, habits = _habits;
+  const today = localDateStr(new Date());
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  // ── Hero: Momentum Score ──────────────────────────────
+  const momentum = typeof computeMomentumScore === 'function' ? computeMomentumScore() : { score: 0, habitPts: 0, taskPts: 0, overduePenalty: 0 };
+  setEl('ins-hero-score', momentum.score);
+  // Delta: compare to a week ago (approximate via task patterns)
+  const heroBreakdown = document.getElementById('ins-hero-breakdown');
+  if (heroBreakdown) {
+    heroBreakdown.innerHTML = `
+      <div class="ins-hero-breakdown-item"><span>Habits</span><span class="val">+${momentum.habitPts}</span></div>
+      <div class="ins-hero-breakdown-item"><span>Tasks today</span><span class="val">+${momentum.taskPts}</span></div>
+      <div class="ins-hero-breakdown-item"><span>Overdue penalty</span><span class="val" style="color:${momentum.overduePenalty > 0 ? 'var(--rust)' : 'var(--muted)'}">-${momentum.overduePenalty}</span></div>`;
+  }
+  // 7-day sparkline: task completions per day
+  const sparkData = [];
+  for (let i = 6; i >= 0; i--) {
+    const ds = localDateStr(new Date(Date.now() - i * 86400000));
+    sparkData.push(TASKS.filter(t => t.done && t.doneDate === ds).length);
+  }
+  _insDrawSparkline('ins-spark-canvas', sparkData, 'rgb(53,249,47)');
+  const deltaEl = document.getElementById('ins-hero-delta');
+  if (deltaEl) {
+    const thisWeek = sparkData.reduce((a, b) => a + b, 0);
+    const prevData = [];
+    for (let i = 13; i >= 7; i--) {
+      const ds = localDateStr(new Date(Date.now() - i * 86400000));
+      prevData.push(TASKS.filter(t => t.done && t.doneDate === ds).length);
+    }
+    const prevWeek = prevData.reduce((a, b) => a + b, 0);
+    const diff = thisWeek - prevWeek;
+    deltaEl.textContent = diff > 0 ? `▲ ${diff} more than last week` : diff < 0 ? `▼ ${Math.abs(diff)} fewer than last week` : 'Same as last week';
+    deltaEl.style.color = diff > 0 ? 'rgba(53,249,47,0.7)' : 'var(--muted)';
+  }
+
+  // ── Focus Time ────────────────────────────────────────
+  const weekAgo = localDateStr(new Date(Date.now() - 6 * 86400000));
+  let weekSecs = 0, pomoSecs = 0, commitSecs = 0;
+  const byCat = {};
+  TASKS.forEach(task => {
+    const pomo = task.sessionTimeSecs || 0, commit = task.timeSpentSeconds || 0;
+    const taskSecs = pomo + commit;
+    if (taskSecs <= 0) return;
+    pomoSecs += pomo; commitSecs += commit;
+    const dd = task.doneDate || task.dueDate || '';
+    if (dd >= weekAgo) weekSecs += taskSecs;
+    const cat = task.category || 'uncategorised';
+    byCat[cat] = (byCat[cat] || 0) + taskSecs;
+  });
+  CAL_EVENTS.forEach(ev => {
+    if (ev.allDay || !ev.duration) return;
+    const lt = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : null;
+    if (lt && (lt.sessionTimeSecs || lt.timeSpentSeconds)) return;
+    const secs = (ev.duration || 0) * 60;
+    if (ev.date >= weekAgo) weekSecs += secs;
+    const cat = (lt?.category) || 'scheduled';
+    byCat[cat] = (byCat[cat] || 0) + secs;
+  });
+  setEl('ins-focus-time', weekSecs > 0 ? _insFmtHrs(weekSecs) : '—');
+  const focusBar = document.getElementById('ins-focus-bar');
+  if (focusBar) focusBar.style.width = Math.min(100, Math.round(weekSecs / (8 * 3600) * 100)) + '%'; // 8h goal
+  const focusSub = document.getElementById('ins-focus-sub');
+  if (focusSub) focusSub.textContent = `Pomo ${_insFmtHrs(pomoSecs)} · Commit ${_insFmtHrs(commitSecs)}`;
+
+  // ── Habit Rate (7-day) ────────────────────────────────
+  const last7 = []; let h7Done = 0, h7Total = 0;
+  for (let i = 6; i >= 0; i--) {
+    const ds = localDateStr(new Date(Date.now() - i * 86400000));
+    const log = logs[ds];
+    const cnt = log ? Object.values(log.completions || {}).filter(Boolean).length : 0;
+    const possible = habits.length;
+    h7Done += cnt; h7Total += possible;
+    last7.push(possible > 0 ? cnt >= possible : false);
+  }
+  const h7Pct = h7Total > 0 ? Math.round(h7Done / h7Total * 100) : 0;
+  setEl('ins-habit-rate', habits.length ? h7Pct + '%' : '—');
+  const dotsEl = document.getElementById('ins-habit-dots');
+  if (dotsEl) dotsEl.innerHTML = last7.map(ok => `<div class="ins-habit-dot ${ok ? 'filled' : ''}"></div>`).join('');
+  const habitSub = document.getElementById('ins-habit-sub');
+  if (habitSub) habitSub.textContent = habits.length ? `${h7Done}/${h7Total} completions` : 'No habits tracked';
+
+  // ── Overdue ───────────────────────────────────────────
+  const overdueTasks = TASKS.filter(t => !t.someday && !t.done && t.dueDate && t.dueDate < today);
+  setEl('ins-overdue-count', overdueTasks.length);
+  const overdueSub = document.getElementById('ins-overdue-sub');
+  if (overdueSub) {
+    if (overdueTasks.length) {
+      const avgAge = Math.round(overdueTasks.reduce((s, t) => s + (Date.now() - new Date(t.dueDate + 'T00:00').getTime()) / 86400000, 0) / overdueTasks.length);
+      overdueSub.textContent = `avg ${avgAge}d overdue`;
+    } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(53,249,47,0.6)'; }
+  }
+
+  // ── Completion Trend (28-day) ─────────────────────────
+  const trendData = [], trendLabels = [];
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const ds = localDateStr(d);
+    trendData.push(TASKS.filter(t => t.done && t.doneDate === ds).length);
+    trendLabels.push(i % 7 === 0 ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '');
+  }
+  _insDrawTrend('ins-trend-canvas', trendData, trendLabels);
+
+  // ── Time by Category ──────────────────────────────────
+  const breakdownEl = document.getElementById('ins-time-breakdown');
+  if (breakdownEl) {
+    const sorted = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    const max = sorted[0]?.[1] || 1;
+    breakdownEl.innerHTML = sorted.map(([cat, secs], idx) => {
+      const pct = Math.round(secs / max * 100);
+      const opacity = Math.max(0.25, 1 - idx * 0.15);
+      const catLabel = CATEGORIES[cat]?.label || cat;
+      return `<div class="ins-time-bar-row">
+        <div class="ins-time-bar-label">${catLabel}</div>
+        <div class="ins-time-bar-track"><div class="ins-time-bar-fill" style="width:${pct}%;background:rgba(255,255,255,${opacity})"></div></div>
+        <div class="ins-time-bar-val">${_insFmtHrs(secs)}</div>
+      </div>`;
+    }).join('') || '<div style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">No time logged yet</div>';
+  }
 
   if (!habits.length) {
     _renderInsightsEmpty();
