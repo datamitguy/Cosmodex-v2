@@ -8024,7 +8024,7 @@ function showMainPanel(name) {
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
   if (name === 'habits') { switchHabitsTab(_habitsTab || 'habits'); }
-  if (name === 'insights') { habitsSubscribe(); renderInsights(); loadDoneWall(); }
+  if (name === 'insights') { habitsSubscribe(); requestAnimationFrame(() => { renderInsights(); loadDoneWall(); }); }
   const orbEl = document.getElementById('cosmodex-orb');
   if (orbEl) orbEl.style.display = name === 'timedrift' ? 'none' : '';
   if (name === 'timedrift') { startTimedrift(); window.initPomoOverlay?.(); }
@@ -9277,6 +9277,8 @@ function renderInsights() {
   const logs = _habitLogs, habits = _habits;
   const today = localDateStr(new Date());
   const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  // Defer canvas drawing if panel not visible (clientWidth=0)
+  const panelVisible = document.getElementById('panel-insights')?.offsetParent !== null;
 
   // ── Hero: Momentum Score ──────────────────────────────
   const momentum = typeof computeMomentumScore === 'function' ? computeMomentumScore() : { score: 0, habitPts: 0, taskPts: 0, overduePenalty: 0 };
@@ -9302,7 +9304,7 @@ function renderInsights() {
     sparkData.push(TASKS.filter(t => t.done && t.doneDate === ds).length);
   }
   const sparkColor = sparkData.reduce((a, b) => a + b, 0) >= 5 ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)';
-  _insDrawSparkline('ins-spark-canvas', sparkData, sparkColor);
+  if (panelVisible) _insDrawSparkline('ins-spark-canvas', sparkData, sparkColor);
   const deltaEl = document.getElementById('ins-hero-delta');
   if (deltaEl) {
     const thisWeek = sparkData.reduce((a, b) => a + b, 0);
@@ -9388,7 +9390,7 @@ function renderInsights() {
   const taskPct = Math.min(100, Math.round(tasksDoneToday / taskGoal * 100));
   const taskColor = tasksDoneToday >= taskGoal ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.55)';
   const habitColor = h7Pct >= 80 ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.55)';
-  _insDrawRings('ins-rings-canvas', [
+  if (panelVisible) _insDrawRings('ins-rings-canvas', [
     { label: 'Focus', pct: focusPct, color: focusColor, max: 100 },
     { label: 'Tasks', pct: taskPct, color: taskColor, max: 100 },
     { label: 'Habits', pct: h7Pct, color: habitColor, max: 100 },
@@ -9405,7 +9407,7 @@ function renderInsights() {
   // Use green if weekly average >= 5 tasks/day, else white
   const weekAvg = trendData.slice(-7).reduce((a, b) => a + b, 0) / 7;
   const trendColor = weekAvg >= 5 ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)';
-  _insDrawTrend('ins-trend-canvas', trendData, trendLabels, trendColor);
+  if (panelVisible) _insDrawTrend('ins-trend-canvas', trendData, trendLabels, trendColor);
 
   // ── Time by Category ──────────────────────────────────
   const breakdownEl = document.getElementById('ins-time-breakdown');
