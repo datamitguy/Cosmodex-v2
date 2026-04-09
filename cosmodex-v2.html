@@ -14304,13 +14304,21 @@ function initSettingsPanel() {
     rebuildCategorySelects();
   });
   document.getElementById('holiday-add-btn')?.addEventListener('click', async () => {
-    const date = document.getElementById('holiday-date').value;
-    const name = document.getElementById('holiday-name').value.trim();
-    const type = document.getElementById('holiday-type').value;
-    if (!date || !name) return;
-    await addHoliday(date, name, type);
-    document.getElementById('holiday-date').value = '';
-    document.getElementById('holiday-name').value = '';
+    const dateEl = document.getElementById('holiday-date');
+    const nameEl = document.getElementById('holiday-name');
+    const date = dateEl?.value;
+    const name = nameEl?.value.trim();
+    const type = document.getElementById('holiday-type')?.value;
+    if (!date || !name) { showToast('Please enter both date and name', 'error'); return; }
+    try {
+      await addHoliday(date, name, type);
+      if (dateEl) dateEl.value = '';
+      if (nameEl) nameEl.value = '';
+      showToast('Holiday added', 'success');
+    } catch (err) {
+      console.error('addHoliday error:', err);
+      showToast('Failed to add holiday', 'error');
+    }
   });
   // Initialize manage categories section
   renderSettingsCatList();
