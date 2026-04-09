@@ -9320,6 +9320,7 @@ function renderInsights() {
   }
 
   // ── Focus Time ────────────────────────────────────────
+  const focusThreshold = 4 * 3600; // 4h = neon green threshold
   const weekAgo = localDateStr(new Date(Date.now() - 6 * 86400000));
   let weekSecs = 0, pomoSecs = 0, commitSecs = 0;
   const byCat = {};
@@ -9382,7 +9383,6 @@ function renderInsights() {
 
   // ── Activity Rings ─────────────────────────────────────
   const focusGoalSecs = 8 * 3600; // 8h weekly goal
-  const focusThreshold = 4 * 3600; // 4h = neon green
   const focusPct = Math.min(100, Math.round(weekSecs / focusGoalSecs * 100));
   const focusColor = weekSecs >= focusThreshold ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.55)';
   const tasksDoneToday = TASKS.filter(t => t.done && t.doneDate === today).length;
