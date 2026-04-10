@@ -2740,6 +2740,1117 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   box-sizing: border-box;
 }
 
+/* ── Reflect tab (Phase 5) ─────────────────────────────── */
+#hpane-reflect { gap: 20px; }
+
+.reflect-week-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  padding: 8px 14px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7); white-space: nowrap; flex-shrink: 0;
+}
+
+.reflect-fresh-start {
+  padding: 16px 20px;
+  background: rgba(53,249,47,0.06);
+  border: 1px solid rgba(53,249,47,0.3);
+  border-radius: 14px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 0 20px rgba(53,249,47,0.1);
+}
+.reflect-fresh-icon { font-size: 22px; flex-shrink: 0; }
+.reflect-fresh-text {
+  flex: 1;
+  font-family: var(--font-body); font-size: 13px;
+  color: rgba(255,255,255,0.9); line-height: 1.5;
+}
+.reflect-fresh-text strong {
+  color: rgb(53,249,47);
+  text-shadow: 0 0 8px rgba(53,249,47,0.3);
+}
+
+.reflect-season-wrap {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-top: 8px;
+}
+.reflect-season-name {
+  font-family: var(--font-display); font-size: 24px; font-weight: 300;
+  color: var(--cream); line-height: 1.2;
+}
+.reflect-season-sub {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5); text-transform: uppercase;
+}
+.reflect-season-identity {
+  font-family: var(--font-display); font-style: italic;
+  font-size: 13px; color: rgba(255,255,255,0.7);
+  line-height: 1.6; margin-top: 4px;
+}
+
+.reflect-week-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; margin: 10px 0 18px;
+}
+.reflect-stat {
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+.reflect-stat-num {
+  font-family: var(--font-display); font-size: 28px; font-weight: 300;
+  color: var(--cream); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.reflect-stat-num.green { color: rgb(53,249,47); text-shadow: 0 0 8px rgba(53,249,47,0.3); }
+.reflect-stat-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4); margin-top: 4px;
+}
+
+.reflect-week-grid-wrap {
+  margin-top: 8px;
+}
+.reflect-week-grid-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 10px;
+}
+.reflect-week-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+.reflect-week-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 6px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.reflect-week-cell:hover { background: rgba(255,255,255,0.05); }
+.reflect-week-cell.today { border-color: rgba(53,249,47,0.35); background: rgba(53,249,47,0.04); }
+.reflect-week-cell.rest { background: rgba(107,159,212,0.06); border-color: rgba(107,159,212,0.25); }
+.reflect-week-dow {
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+}
+.reflect-week-ratio {
+  font-family: var(--font-display); font-size: 15px; font-weight: 300;
+  color: var(--cream); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.reflect-week-ratio.green { color: rgb(53,249,47); text-shadow: 0 0 6px rgba(53,249,47,0.3); }
+.reflect-week-ratio.rest-label {
+  font-size: 10px; font-style: italic; color: rgba(107,159,212,0.9);
+}
+.reflect-week-bar {
+  width: 100%; height: 3px; border-radius: 2px; overflow: hidden;
+  background: rgba(255,255,255,0.05);
+}
+.reflect-week-bar-fill {
+  height: 100%; border-radius: 2px;
+  background: rgba(255,255,255,0.5); transition: width 0.4s;
+}
+.reflect-week-bar-fill.green { background: rgb(53,249,47); box-shadow: 0 0 4px rgba(53,249,47,0.4); }
+
+.reflect-list { display: flex; flex-direction: column; gap: 8px; }
+.reflect-list-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+}
+.reflect-list-row.win { border-color: rgba(53,249,47,0.2); background: rgba(53,249,47,0.04); }
+.reflect-list-icon { font-size: 14px; flex-shrink: 0; }
+.reflect-list-name {
+  flex: 1; min-width: 0;
+  font-family: var(--font-body); font-size: 12px; color: var(--cream);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.reflect-list-pct {
+  font-family: var(--font-mono); font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  font-variant-numeric: tabular-nums;
+}
+.reflect-list-pct.green { color: rgb(53,249,47); text-shadow: 0 0 6px rgba(53,249,47,0.35); }
+
+.reflect-values-wrap {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 8px;
+}
+.reflect-value-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.reflect-value-emoji { font-size: 14px; width: 22px; flex-shrink: 0; text-align: center; }
+.reflect-value-name {
+  font-family: var(--font-body); font-size: 12px; color: var(--cream);
+  min-width: 110px;
+}
+.reflect-value-bar {
+  flex: 1; height: 6px; border-radius: 3px; overflow: hidden;
+  background: rgba(255,255,255,0.05);
+}
+.reflect-value-bar-fill {
+  height: 100%; border-radius: 3px;
+  background: rgba(255,255,255,0.4); transition: width 0.5s;
+}
+.reflect-value-bar-fill.green { background: rgb(53,249,47); box-shadow: 0 0 6px rgba(53,249,47,0.35); }
+.reflect-value-count {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.55);
+  min-width: 50px; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.reflect-rest {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 8px;
+}
+.reflect-rest-chip {
+  padding: 8px 14px;
+  background: rgba(107,159,212,0.06);
+  border: 1px solid rgba(107,159,212,0.25);
+  border-radius: 100px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em;
+  color: rgba(107,159,212,0.95);
+}
+.reflect-rest-empty {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--muted); letter-spacing: 0.04em;
+  padding: 8px 0;
+}
+
+.reflect-review-form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.reflect-review-q { display: flex; flex-direction: column; gap: 6px; }
+.reflect-review-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55);
+}
+.reflect-review-textarea {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: var(--font-body); font-size: 13px;
+  color: var(--cream);
+  line-height: 1.5;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s, background 0.15s;
+}
+.reflect-review-textarea:focus {
+  border-color: rgba(53,249,47,0.4);
+  background: rgba(255,255,255,0.05);
+}
+.reflect-review-save {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.35); margin-top: 4px;
+}
+.reflect-review-save.saving { color: rgba(53,249,47,0.8); }
+
+.reflect-ledger {
+  display: flex; flex-direction: column; gap: 8px;
+  margin-top: 8px;
+}
+.reflect-ledger-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
+  background: rgba(53,249,47,0.04);
+  border: 1px solid rgba(53,249,47,0.2);
+  border-radius: 10px;
+}
+.reflect-ledger-icon { font-size: 16px; flex-shrink: 0; }
+.reflect-ledger-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.reflect-ledger-name {
+  font-family: var(--font-body); font-size: 13px; color: var(--cream);
+}
+.reflect-ledger-identity {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.04em;
+  color: rgba(53,249,47,0.7);
+  text-transform: lowercase;
+}
+.reflect-ledger-date {
+  font-family: var(--font-mono); font-size: 9px;
+  color: rgba(255,255,255,0.4); letter-spacing: 0.04em;
+}
+
+/* ── Habits Insights tab (Phase 4) ─────────────────────── */
+#hpane-hinsights { gap: 20px; }
+
+.hins-section {
+  background: rgba(255,255,255,0.025);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 14px;
+  padding: 18px 20px;
+  position: relative;
+}
+.hins-section::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent);
+}
+.hins-desc {
+  font-family: var(--font-body); font-size: 11px;
+  color: rgba(255,255,255,0.45); line-height: 1.5;
+  margin-top: 2px; margin-bottom: 14px;
+  max-width: 540px;
+}
+.hins-grid-2 {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+
+/* Graduation banner */
+.hins-graduation-banner {
+  padding: 16px 20px;
+  background: rgba(53,249,47,0.08);
+  border: 1px solid rgba(53,249,47,0.4);
+  border-radius: 14px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 0 20px rgba(53,249,47,0.1);
+}
+.hins-graduation-icon { font-size: 22px; }
+.hins-graduation-text {
+  flex: 1;
+  font-family: var(--font-body); font-size: 13px;
+  color: rgba(255,255,255,0.9); line-height: 1.5;
+}
+.hins-graduation-text strong {
+  color: rgb(53,249,47);
+  text-shadow: 0 0 8px rgba(53,249,47,0.3);
+}
+
+/* 13-week heatmap */
+.hins-heatmap-wrap {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 10px;
+}
+.hins-heatmap-canvas {
+  display: block; width: 100%; height: 180px;
+}
+.hins-heatmap-legend {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 9px;
+  color: rgba(255,255,255,0.5);
+}
+.hins-legend-cell {
+  width: 10px; height: 10px; border-radius: 2px;
+}
+.hins-legend-label { letter-spacing: 0.04em; }
+.hins-heatmap-stat { margin-left: auto; color: rgba(255,255,255,0.75); }
+
+/* Per-habit automaticity rows */
+.hins-auto-list {
+  display: flex; flex-direction: column; gap: 12px; margin-top: 10px;
+}
+.hins-auto-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+.hins-auto-name {
+  flex: 1; min-width: 0;
+}
+.hins-auto-name-text {
+  font-family: var(--font-body); font-size: 13px; color: var(--cream);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hins-auto-name-sub {
+  font-family: var(--font-mono); font-size: 9px;
+  color: rgba(255,255,255,0.4); letter-spacing: 0.04em; margin-top: 2px;
+}
+.hins-auto-ring {
+  width: 52px; height: 52px; flex-shrink: 0;
+}
+.hins-auto-stats {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  min-width: 100px;
+}
+.hins-auto-pct {
+  font-family: var(--font-display); font-size: 20px; font-weight: 300;
+  color: var(--cream); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.hins-auto-pct.green { color: rgb(53,249,47); text-shadow: 0 0 10px rgba(53,249,47,0.3); }
+.hins-auto-remaining {
+  font-family: var(--font-mono); font-size: 9px;
+  color: rgba(255,255,255,0.4); letter-spacing: 0.04em;
+}
+
+/* Context matrix (habit x day-of-week grid) */
+.hins-context-wrap {
+  overflow-x: auto;
+  margin-top: 8px;
+}
+.hins-context-grid {
+  display: grid;
+  gap: 3px;
+  min-width: 100%;
+  font-family: var(--font-mono);
+}
+.hins-ctx-corner {
+  background: transparent;
+}
+.hins-ctx-dowhead {
+  font-size: 9px; color: rgba(255,255,255,0.5);
+  text-align: center; padding: 4px 0;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.hins-ctx-habit {
+  font-size: 10px; color: rgba(255,255,255,0.75);
+  padding: 6px 10px 6px 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 180px;
+}
+.hins-ctx-cell {
+  aspect-ratio: 1;
+  min-height: 26px; max-height: 38px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px;
+  letter-spacing: 0.02em;
+  color: rgba(0,0,0,0.7);
+  transition: transform 0.15s;
+}
+.hins-ctx-cell.empty { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.2); }
+.hins-ctx-cell:hover { transform: scale(1.1); z-index: 2; }
+
+/* Friction list */
+.hins-friction-list {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.hins-friction-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+}
+.hins-friction-icon { font-size: 14px; }
+.hins-friction-name {
+  flex: 1;
+  font-family: var(--font-body); font-size: 12px; color: var(--cream);
+  text-transform: capitalize;
+}
+.hins-friction-count {
+  font-family: var(--font-mono); font-size: 11px;
+  color: rgba(53,249,47,0.85);
+  font-variant-numeric: tabular-nums;
+}
+.hins-friction-count-label {
+  font-family: var(--font-mono); font-size: 9px;
+  color: var(--muted); margin-left: 4px;
+}
+
+/* Mood × habit list */
+.hins-mood-list {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.hins-mood-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+}
+.hins-mood-name {
+  flex: 1;
+  font-family: var(--font-body); font-size: 12px; color: var(--cream);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hins-mood-bar-wrap {
+  flex: 1.2; display: flex; align-items: center; gap: 8px;
+}
+.hins-mood-bar {
+  flex: 1; height: 4px; border-radius: 2px; overflow: hidden;
+  background: rgba(255,255,255,0.05);
+}
+.hins-mood-bar-fill {
+  height: 100%; border-radius: 2px;
+  background: rgba(255,255,255,0.5);
+  transition: width 0.4s, background 0.3s;
+}
+.hins-mood-bar-fill.green { background: rgb(53,249,47); box-shadow: 0 0 6px rgba(53,249,47,0.4); }
+.hins-mood-bar-val {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.65); min-width: 38px; text-align: right;
+}
+
+.hins-empty-state {
+  padding: 20px; text-align: center;
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--muted); letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 10px;
+}
+
+/* ── Habits tab (design surface) ───────────────────────── */
+#hpane-habits { gap: 20px; }
+
+.habits-tab-header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+  padding: 4px 2px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.habits-tab-title {
+  font-family: var(--font-display); font-size: 24px; font-weight: 300;
+  color: var(--cream); line-height: 1.2;
+}
+.habits-tab-sub {
+  font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+  letter-spacing: 0.04em; margin-top: 4px;
+}
+.habits-tab-slots {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  padding: 8px 14px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--cream); white-space: nowrap; flex-shrink: 0;
+}
+.habits-tab-slots.full { border-color: rgba(53,249,47,0.35); color: rgb(53,249,47); box-shadow: 0 0 10px rgba(53,249,47,0.15); }
+
+.habits-section { display: flex; flex-direction: column; gap: 10px; }
+.habits-section-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
+}
+
+.habits-active-list { display: flex; flex-direction: column; gap: 10px; }
+
+.habits-card {
+  display: flex; align-items: stretch; gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  transition: background 0.15s, transform 0.2s, border-color 0.15s;
+  position: relative;
+}
+.habits-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); transform: translateX(2px); }
+
+.habits-card-body { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.habits-card-title {
+  font-family: var(--font-body); font-size: 14px; color: var(--cream);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.habits-card-identity {
+  font-family: var(--font-mono); font-size: 9px; color: rgba(53,249,47,0.65);
+  letter-spacing: 0.04em; text-transform: lowercase;
+}
+.habits-card-meta {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;
+}
+.habits-card-chip {
+  font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 100px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.55);
+}
+.habits-card-chip.value { border-color: rgba(255,255,255,0.12); }
+.habits-card-chip.anchor { color: rgba(255,255,255,0.7); }
+
+.habits-card-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 70px; }
+.habits-card-rate {
+  font-family: var(--font-display); font-size: 22px; font-weight: 300; line-height: 1;
+  color: var(--cream); font-variant-numeric: tabular-nums;
+}
+.habits-card-rate.green { color: rgb(53,249,47); text-shadow: 0 0 10px rgba(53,249,47,0.25); }
+.habits-card-rate-label {
+  font-family: var(--font-mono); font-size: 8px; color: var(--muted); letter-spacing: 0.08em;
+}
+
+.habits-card-actions { display: flex; flex-direction: column; gap: 4px; }
+.habits-card-btn {
+  background: none; border: 1px solid transparent; border-radius: 6px;
+  width: 26px; height: 26px;
+  font-size: 12px; color: var(--muted); cursor: pointer;
+  transition: var(--ease-fast);
+  display: flex; align-items: center; justify-content: center;
+}
+.habits-card-btn:hover { background: rgba(255,255,255,0.06); color: var(--cream); border-color: rgba(255,255,255,0.15); }
+.habits-card-btn.danger:hover { color: var(--rust); border-color: rgba(196,92,42,0.3); background: rgba(196,92,42,0.08); }
+
+.habits-create-btn {
+  padding: 12px 18px;
+  background: rgba(53,249,47,0.06);
+  border: 1px dashed rgba(53,249,47,0.35);
+  border-radius: 12px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgb(53,249,47);
+  cursor: pointer; transition: var(--ease-fast);
+  margin-top: 4px;
+}
+.habits-create-btn:hover { background: rgba(53,249,47,0.1); box-shadow: 0 0 12px rgba(53,249,47,0.15); }
+.habits-create-btn.disabled {
+  background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.3); cursor: not-allowed;
+}
+.habits-create-btn.disabled:hover { background: rgba(255,255,255,0.02); box-shadow: none; }
+
+.habits-empty-state {
+  padding: 24px; text-align: center;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--muted); letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 12px;
+}
+
+/* Graduated + stacks collapsibles */
+.habits-graduated-wrap, .habits-stacks-wrap {
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 12px;
+}
+.habits-graduated-summary, .habits-stacks-summary {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(255,255,255,0.5);
+  cursor: pointer; padding: 6px 0; list-style: none;
+  display: flex; align-items: center; gap: 10px;
+}
+.habits-graduated-summary::-webkit-details-marker,
+.habits-stacks-summary::-webkit-details-marker { display: none; }
+.habits-graduated-summary::before,
+.habits-stacks-summary::before { content: '› '; transition: transform 0.2s; display: inline-block; }
+details[open] .habits-graduated-summary::before,
+details[open] .habits-stacks-summary::before { transform: rotate(90deg); }
+.habits-count-pill {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 1px 8px;
+  font-size: 9px; color: rgba(255,255,255,0.6);
+}
+.habits-graduated-list, .habits-stacks-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.habits-graduated-list .habits-card { opacity: 0.75; }
+
+/* Wizard modal */
+.habits-wizard-backdrop {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(8px) brightness(0.4);
+  -webkit-backdrop-filter: blur(8px) brightness(0.4);
+  animation: fadeUp 0.2s ease;
+}
+.habits-wizard {
+  position: fixed; z-index: 901;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(640px, 92vw);
+  max-height: 88vh;
+  background: rgba(15,15,15,0.96);
+  backdrop-filter: blur(60px) saturate(150%);
+  -webkit-backdrop-filter: blur(60px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  animation: fadeUp 0.3s var(--ease-panel);
+}
+.habits-wizard-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 24px 12px;
+}
+.habits-wizard-step {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+}
+.habits-wizard-title {
+  flex: 1;
+  font-family: var(--font-display); font-size: 18px; font-weight: 300; color: var(--cream);
+}
+.habits-wizard-close {
+  background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+  width: 28px; height: 28px; color: var(--muted); font-size: 14px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: var(--ease-fast);
+}
+.habits-wizard-close:hover { color: var(--cream); border-color: rgba(255,255,255,0.25); }
+.habits-wizard-progress {
+  height: 2px; background: rgba(255,255,255,0.05);
+  margin: 0 24px;
+}
+.habits-wizard-progress-fill {
+  height: 100%; background: rgb(53,249,47);
+  box-shadow: 0 0 8px rgba(53,249,47,0.4);
+  width: 16.66%; transition: width 0.3s var(--ease-panel);
+}
+.habits-wizard-body {
+  flex: 1; overflow-y: auto; padding: 24px;
+}
+.habits-wstep { display: flex; flex-direction: column; gap: 10px; }
+.habits-wstep-q {
+  font-family: var(--font-display); font-size: 18px; font-weight: 300;
+  color: var(--cream); line-height: 1.3;
+}
+.habits-wstep-desc {
+  font-family: var(--font-body); font-size: 12px;
+  color: rgba(255,255,255,0.5); line-height: 1.6;
+  max-width: 540px;
+}
+.habits-wstep-hint {
+  font-family: var(--font-mono); font-size: 9px;
+  color: rgba(255,255,255,0.35); letter-spacing: 0.04em;
+  margin-top: 6px;
+}
+.habits-wstep-input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: var(--font-body); font-size: 14px;
+  color: var(--cream);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s, background 0.15s;
+}
+.habits-wstep-input:focus {
+  border-color: rgba(53,249,47,0.4);
+  background: rgba(255,255,255,0.06);
+}
+
+.habits-values-grid, .habits-friction-grid, .habits-restday-grid {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 4px;
+}
+.habits-value-chip, .habits-friction-chip, .habits-restday-chip {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 8px 14px;
+  font-family: var(--font-body); font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer; transition: var(--ease-fast);
+}
+.habits-value-chip:hover, .habits-friction-chip:hover, .habits-restday-chip:hover {
+  color: var(--cream); border-color: rgba(255,255,255,0.2);
+}
+.habits-value-chip.active, .habits-friction-chip.active, .habits-restday-chip.active {
+  background: rgba(53,249,47,0.12);
+  border-color: rgba(53,249,47,0.5);
+  color: rgb(53,249,47);
+  box-shadow: 0 0 10px rgba(53,249,47,0.15);
+}
+
+.habits-anchor-types { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.habits-anchor-type {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 6px 12px;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: rgba(255,255,255,0.6);
+  cursor: pointer; transition: var(--ease-fast);
+}
+.habits-anchor-type:hover { color: var(--cream); border-color: rgba(255,255,255,0.2); }
+.habits-anchor-type.active {
+  background: rgba(255,255,255,0.95); color: #0d0c0a;
+  border-color: rgba(255,255,255,0.9);
+}
+
+.habits-wlib {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.habits-wlib-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+  margin-bottom: 10px;
+}
+.habits-wlib-items {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  max-height: 100px; overflow-y: auto;
+}
+.habits-wlib-chip {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 6px 12px;
+  font-family: var(--font-body); font-size: 11px;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer; transition: var(--ease-fast);
+  white-space: nowrap;
+}
+.habits-wlib-chip:hover { color: var(--cream); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); }
+
+.habits-wizard-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 24px 18px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.habits-wizard-back, .habits-wizard-next {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--ease-fast);
+}
+.habits-wizard-back {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.55);
+}
+.habits-wizard-back:hover { color: var(--cream); border-color: rgba(255,255,255,0.25); }
+.habits-wizard-back[disabled] { opacity: 0.3; cursor: not-allowed; }
+.habits-wizard-next {
+  background: rgb(53,249,47);
+  color: #0d0c0a;
+  border: 1px solid rgb(53,249,47);
+  box-shadow: 0 0 14px rgba(53,249,47,0.3);
+}
+.habits-wizard-next:hover { filter: brightness(1.1); }
+.habits-wizard-next.save { background: rgb(53,249,47); }
+
+/* ── Today tab ─────────────────────────────────────────── */
+#hpane-today { gap: 18px; }
+
+.today-hero {
+  display: flex; align-items: center; gap: 20px;
+  padding: 18px 22px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  position: relative;
+}
+.today-hero::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 50%, transparent);
+}
+.today-hero-left { display: flex; flex-direction: column; gap: 2px; min-width: 110px; }
+.today-hero-time {
+  font-family: var(--font-display); font-size: 36px; font-weight: 300; line-height: 1;
+  color: var(--cream); font-variant-numeric: tabular-nums;
+}
+.today-hero-date {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
+}
+.today-hero-mid { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.06); }
+.today-hero-season {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.5);
+}
+.today-hero-quote {
+  font-family: var(--font-display); font-size: 13px; font-style: italic;
+  color: rgba(255,255,255,0.72); line-height: 1.5;
+  overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.today-rest-btn {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55);
+  cursor: pointer; transition: var(--ease-fast);
+  white-space: nowrap; flex-shrink: 0;
+}
+.today-rest-btn:hover { background: rgba(255,255,255,0.06); color: var(--cream); }
+.today-rest-btn.active {
+  background: rgba(53,249,47,0.08);
+  border-color: rgba(53,249,47,0.35);
+  color: rgb(53,249,47);
+  box-shadow: 0 0 10px rgba(53,249,47,0.15);
+}
+
+/* Mood + Energy check-in */
+.today-checkin {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.025);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+}
+.today-checkin-row { display: flex; align-items: center; gap: 14px; }
+.today-checkin-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45); min-width: 54px;
+}
+.today-checkin-chips { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+.today-chip {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 5px 12px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.05em;
+  color: rgba(255,255,255,0.55);
+  cursor: pointer; transition: var(--ease-fast);
+}
+.today-chip:hover { color: var(--cream); border-color: rgba(255,255,255,0.2); }
+.today-chip.active {
+  background: rgb(53,249,47);
+  color: #0d0c0a;
+  border-color: rgb(53,249,47);
+  box-shadow: 0 0 12px rgba(53,249,47,0.35);
+}
+
+/* Non-negotiable */
+.today-nonneg {
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+}
+.today-nonneg-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 8px;
+}
+.today-nonneg-input {
+  font-family: var(--font-display); font-size: 18px; font-weight: 300;
+  color: var(--cream); outline: none; min-height: 28px; line-height: 1.4;
+}
+.today-nonneg-input:empty::before {
+  content: attr(data-placeholder);
+  color: rgba(255,255,255,0.25);
+}
+
+/* Morning Mode collapsible */
+.today-morning-mode {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.today-morning-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.today-morning-header:hover { background: rgba(255,255,255,0.03); }
+.today-morning-chev {
+  font-size: 14px; color: var(--muted);
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.today-morning-mode.open .today-morning-chev { transform: rotate(90deg); }
+.today-morning-title {
+  flex: 1;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55);
+}
+.today-morning-progress {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.45); letter-spacing: 0.04em;
+}
+.today-morning-body {
+  padding: 4px 18px 16px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.today-morning-steps { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.today-morning-step {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+.today-morning-step:hover { background: rgba(255,255,255,0.05); }
+.today-morning-step.done { opacity: 0.5; }
+.today-morning-step.done .today-morning-step-text { text-decoration: line-through; }
+.today-morning-check {
+  width: 16px; height: 16px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: rgba(255,255,255,0.9);
+  transition: var(--ease-fast);
+  flex-shrink: 0;
+}
+.today-morning-check.done {
+  background: rgb(53,249,47);
+  border-color: rgb(53,249,47);
+  color: #0d0c0a;
+  box-shadow: 0 0 8px rgba(53,249,47,0.3);
+}
+.today-morning-step-time {
+  font-family: var(--font-mono); font-size: 9px; color: var(--muted);
+  letter-spacing: 0.04em;
+  min-width: 38px;
+}
+.today-morning-step-text {
+  flex: 1;
+  font-family: var(--font-body); font-size: 12px; color: var(--cream);
+}
+
+/* Anchor-grouped habit list */
+.today-habits { display: flex; flex-direction: column; gap: 14px; }
+.today-anchor-group {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.today-anchor-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.today-anchor-icon { font-size: 13px; }
+.today-anchor-title {
+  flex: 1;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55);
+}
+.today-anchor-count {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--muted); letter-spacing: 0.04em;
+}
+.today-anchor-body { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+.today-habit {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.15s, border-color 0.15s, transform 0.2s;
+}
+.today-habit:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.12);
+  transform: translateX(2px);
+}
+.today-habit.done { opacity: 0.55; }
+.today-habit-check {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: rgba(255,255,255,0.9);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+.today-habit-check:hover { border-color: rgba(53,249,47,0.5); }
+.today-habit-check.done {
+  background: rgb(53,249,47);
+  border-color: rgb(53,249,47);
+  color: #0d0c0a;
+  box-shadow: 0 0 14px rgba(53,249,47,0.4);
+}
+.today-habit-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.today-habit-name {
+  font-family: var(--font-body); font-size: 13px; color: var(--cream);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.today-habit.done .today-habit-name { text-decoration: line-through; }
+.today-habit-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-family: var(--font-mono); font-size: 8px; color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.today-habit-identity { color: rgba(53,249,47,0.5); text-transform: lowercase; }
+.today-habit-anchor { color: rgba(255,255,255,0.35); }
+.today-habit-streak {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 2px 8px;
+  font-family: var(--font-mono); font-size: 8px;
+  color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.today-habit-streak.hot { color: rgb(53,249,47); border-color: rgba(53,249,47,0.3); }
+
+/* Celebration burst */
+.today-habit-burst {
+  position: absolute; left: 22px; top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgb(53,249,47);
+  opacity: 0;
+}
+.today-habit-burst.fire {
+  animation: todayBurst 0.6s ease-out;
+}
+@keyframes todayBurst {
+  0%   { opacity: 0.8; transform: translate(-50%, -50%) scale(0.3); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); }
+}
+.today-habit-vote {
+  position: absolute; left: 48px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgb(53,249,47); letter-spacing: 0.04em;
+  pointer-events: none; opacity: 0;
+  text-shadow: 0 0 10px rgba(53,249,47,0.5);
+  white-space: nowrap;
+}
+.today-habit-vote.show {
+  animation: todayVote 1.8s ease-out;
+}
+@keyframes todayVote {
+  0%   { opacity: 0; transform: translateY(-50%) translateX(0); }
+  20%  { opacity: 1; transform: translateY(-50%) translateX(4px); }
+  70%  { opacity: 1; transform: translateY(-50%) translateX(6px); }
+  100% { opacity: 0; transform: translateY(-50%) translateX(10px); }
+}
+
+/* Rest day banner */
+.today-rest-banner {
+  padding: 14px 18px;
+  background: rgba(53,249,47,0.06);
+  border: 1px solid rgba(53,249,47,0.25);
+  border-radius: 14px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: rgba(53,249,47,0.9); letter-spacing: 0.04em;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.today-add {
+  display: flex; gap: 8px; align-items: center;
+  padding: 4px 2px;
+}
+
+.today-empty {
+  padding: 24px;
+  text-align: center;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--muted); letter-spacing: 0.04em;
+}
+
+/* Legacy wrap (collapsible) */
+.today-legacy-wrap {
+  margin-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 16px;
+}
+.today-legacy-summary {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.35);
+  cursor: pointer; padding: 8px 0;
+  list-style: none;
+}
+.today-legacy-summary::-webkit-details-marker { display: none; }
+.today-legacy-summary::before { content: '› '; display: inline-block; transition: transform 0.2s; }
+details[open] .today-legacy-summary::before { transform: rotate(90deg); }
+.today-legacy-wrap > .habits-v2-section { margin-top: 16px; }
+
 .habits-v2-section {
   display: flex;
   flex-direction: column;
@@ -6517,473 +7628,382 @@ select.sched-input { background: #181818; }
     <div id="panel-habits" style="display:none;flex:1;flex-direction:column;overflow:hidden">
       <!-- Tab bar -->
       <div style="height:38px;min-height:38px;display:flex;align-items:stretch;padding:0 16px;border-bottom:1px solid var(--border);background:rgba(14,14,14,0.5);gap:4px;overflow-x:auto;scrollbar-width:none">
-        <button class="habits-v2-tab active" data-htab="tracker">Tracker</button>
-        <button class="habits-v2-tab" data-htab="launcher">Launcher</button>
-        <button class="habits-v2-tab" data-htab="builder">Builder</button>
-        <button class="habits-v2-tab" data-htab="progress">Progress</button>
+        <button class="habits-v2-tab active" data-htab="today">Today</button>
+        <button class="habits-v2-tab" data-htab="habits">Habits</button>
+        <button class="habits-v2-tab" data-htab="hinsights">Insights</button>
+        <button class="habits-v2-tab" data-htab="reflect">Reflect</button>
       </div>
 
-      <!-- TRACKER pane (Firebase-backed daily tracker) -->
-      <div id="hpane-tracker" class="habits-v2-pane">
-        <div class="habits-v2-section">
-          <div class="habits-v2-section-label">Daily Tracker — Last 7 days</div>
-          <div id="habits-day-strip" class="habits-day-strip-v2"></div>
-          <div id="habits-list" class="habits-list-v2"></div>
-          <div class="habits-add-row-v2">
-            <input class="form-input" id="habit-new-inp" placeholder="Add habit… (Enter to save)" autocomplete="off" style="font-size:13px">
-            <button id="habits-add-btn" class="btn-primary" style="white-space:nowrap;font-size:10px;padding:7px 14px">+ Add</button>
+      <!-- TODAY pane — the daily ritual -->
+      <div id="hpane-today" class="habits-v2-pane">
+        <!-- Hero strip -->
+        <div class="today-hero">
+          <div class="today-hero-left">
+            <div class="today-hero-time" id="today-hero-time">--:--</div>
+            <div class="today-hero-date" id="today-hero-date">—</div>
+          </div>
+          <div class="today-hero-mid">
+            <div class="today-hero-season" id="today-hero-season">—</div>
+            <div class="today-hero-quote" id="today-hero-quote">—</div>
+          </div>
+          <button class="today-rest-btn" id="today-rest-btn" title="Mark today as a rest day">◐ Rest day</button>
+        </div>
+
+        <!-- Mood & Energy check-in -->
+        <div class="today-checkin" id="today-checkin">
+          <div class="today-checkin-row">
+            <span class="today-checkin-label">Mood</span>
+            <div class="today-checkin-chips" data-check="mood">
+              <button class="today-chip" data-v="1">Dire</button>
+              <button class="today-chip" data-v="2">Low</button>
+              <button class="today-chip" data-v="3">OK</button>
+              <button class="today-chip" data-v="4">Good</button>
+              <button class="today-chip" data-v="5">Great</button>
+            </div>
+          </div>
+          <div class="today-checkin-row">
+            <span class="today-checkin-label">Energy</span>
+            <div class="today-checkin-chips" data-check="energy">
+              <button class="today-chip" data-v="1">Drained</button>
+              <button class="today-chip" data-v="2">Low</button>
+              <button class="today-chip" data-v="3">OK</button>
+              <button class="today-chip" data-v="4">Focused</button>
+              <button class="today-chip" data-v="5">Peak</button>
+            </div>
           </div>
         </div>
-        <div class="habits-v2-section">
-          <div class="habits-v2-section-label">Morning Routine</div>
-          <div id="routines-morning-list" class="routine-list-v2"></div>
-          <div class="habits-add-row-v2">
-            <input class="form-input" id="routine-morning-time" placeholder="06:00" style="width:72px;font-size:12px;padding:7px 8px;flex-shrink:0" autocomplete="off">
-            <input class="form-input" id="routine-morning-inp" placeholder="Add morning step…" autocomplete="off" style="font-size:13px;flex:1">
-            <button class="btn-primary" onclick="routineAdd('morning')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+
+        <!-- Today's Non-Negotiable -->
+        <div class="today-nonneg">
+          <div class="today-nonneg-label">Today's Non-Negotiable</div>
+          <div class="today-nonneg-input" id="today-nonneg-input" contenteditable="true" data-placeholder="One focus that cannot slip…"></div>
+        </div>
+
+        <!-- Morning Mode collapsible -->
+        <div class="today-morning-mode" id="today-morning-mode">
+          <div class="today-morning-header" id="today-morning-header">
+            <span class="today-morning-chev">›</span>
+            <span class="today-morning-title">Morning Mode</span>
+            <span class="today-morning-progress" id="today-morning-progress">0/0</span>
+          </div>
+          <div class="today-morning-body" id="today-morning-body" style="display:none">
+            <div id="today-morning-steps" class="today-morning-steps"></div>
           </div>
         </div>
-        <div class="habits-v2-section">
-          <div class="habits-v2-section-label">Evening Routine</div>
-          <div id="routines-evening-list" class="routine-list-v2"></div>
-          <div class="habits-add-row-v2">
-            <input class="form-input" id="routine-evening-time" placeholder="21:00" style="width:72px;font-size:12px;padding:7px 8px;flex-shrink:0" autocomplete="off">
-            <input class="form-input" id="routine-evening-inp" placeholder="Add evening step…" autocomplete="off" style="font-size:13px;flex:1">
-            <button class="btn-primary" onclick="routineAdd('evening')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+
+        <!-- Anchor-grouped habit list -->
+        <div class="today-habits" id="today-habits"></div>
+
+        <!-- Quick add -->
+        <div class="today-add">
+          <input class="form-input" id="habit-new-inp" placeholder="Quick add a habit… (use Habits tab for full design)" autocomplete="off" style="font-size:13px">
+          <button id="habits-add-btn" class="btn-primary" style="white-space:nowrap;font-size:10px;padding:7px 14px">+ Add</button>
+        </div>
+
+        <!-- Legacy sections (retained until Phase 3/5 moves them to Habits/Reflect tabs) -->
+        <details class="today-legacy-wrap">
+          <summary class="today-legacy-summary">Routines · Identity · Keystones · Notes</summary>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Morning Routine</div>
+            <div id="routines-morning-list" class="routine-list-v2"></div>
+            <div class="habits-add-row-v2">
+              <input class="form-input" id="routine-morning-time" placeholder="06:00" style="width:72px;font-size:12px;padding:7px 8px;flex-shrink:0" autocomplete="off">
+              <input class="form-input" id="routine-morning-inp" placeholder="Add morning step…" autocomplete="off" style="font-size:13px;flex:1">
+              <button class="btn-primary" onclick="routineAdd('morning')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+            </div>
+          </div>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Evening Routine</div>
+            <div id="routines-evening-list" class="routine-list-v2"></div>
+            <div class="habits-add-row-v2">
+              <input class="form-input" id="routine-evening-time" placeholder="21:00" style="width:72px;font-size:12px;padding:7px 8px;flex-shrink:0" autocomplete="off">
+              <input class="form-input" id="routine-evening-inp" placeholder="Add evening step…" autocomplete="off" style="font-size:13px;flex:1">
+              <button class="btn-primary" onclick="routineAdd('evening')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+            </div>
+          </div>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Identity &amp; Values</div>
+            <textarea class="form-input" id="behav-identity" rows="3" placeholder="I am someone who shows up consistently…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
+          </div>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Keystone Behaviours</div>
+            <div id="behav-keystone-list" class="habits-list-v2"></div>
+            <div class="habits-add-row-v2" style="margin-top:10px">
+              <input class="form-input" id="behav-keystone-inp" placeholder="Add keystone behaviour…" autocomplete="off" style="font-size:13px">
+              <button id="behav-keystone-add-btn" class="btn-primary" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+            </div>
+          </div>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Reflection Notes</div>
+            <textarea class="form-input" id="behav-notes" rows="4" placeholder="This week I noticed…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
+            <div id="behav-save-indicator" style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-top:4px;height:14px;transition:opacity 0.3s"></div>
+          </div>
+        </details>
+      </div>
+
+      <!-- REFLECT pane — weekly & seasonal review (Phase 5) -->
+      <div id="hpane-reflect" class="habits-v2-pane" style="display:none;max-width:960px">
+        <div class="habits-tab-header">
+          <div>
+            <div class="habits-tab-title">Reflect &amp; reset</div>
+            <div class="habits-tab-sub">Weekly review, values balance, and fresh-start rituals. Close the loop so next week starts clean.</div>
+          </div>
+          <div class="reflect-week-label" id="reflect-week-label">—</div>
+        </div>
+
+        <!-- Fresh-start card (shown conditionally) -->
+        <div id="reflect-fresh-start" class="reflect-fresh-start" style="display:none"></div>
+
+        <!-- Season progress -->
+        <div class="hins-section">
+          <div class="habits-section-label">Season</div>
+          <div class="reflect-season-wrap">
+            <div class="reflect-season-name" id="reflect-season-name">—</div>
+            <div class="reflect-season-sub" id="reflect-season-sub">—</div>
+            <div class="reflect-season-identity" id="reflect-season-identity"></div>
           </div>
         </div>
-        <div class="habits-v2-section">
-          <div class="habits-v2-section-label">Identity &amp; Values</div>
-          <div class="habits-v2-section-desc">Who are you becoming? What do you stand for?</div>
-          <textarea class="form-input" id="behav-identity" rows="3" placeholder="I am someone who shows up consistently…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
-        </div>
-        <div class="habits-v2-section">
-          <div class="habits-v2-section-label">Keystone Behaviours</div>
-          <div class="habits-v2-section-desc">Core behaviours that anchor your identity</div>
-          <div id="behav-keystone-list" class="habits-list-v2"></div>
-          <div class="habits-add-row-v2" style="margin-top:10px">
-            <input class="form-input" id="behav-keystone-inp" placeholder="Add keystone behaviour…" autocomplete="off" style="font-size:13px">
-            <button id="behav-keystone-add-btn" class="btn-primary" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+
+        <!-- Weekly headline stats (tasks, focus time, best day) -->
+        <div class="hins-section">
+          <div class="habits-section-label">This Week</div>
+          <div class="reflect-week-stats" id="reflect-week-stats"></div>
+          <div class="reflect-week-grid-wrap">
+            <div class="reflect-week-grid-label">7-day completion</div>
+            <div class="reflect-week-grid" id="reflect-week-grid"></div>
           </div>
         </div>
-        <div class="habits-v2-section">
-          <div class="habits-v2-section-label">Reflection Notes</div>
-          <div class="habits-v2-section-desc">Weekly reflection, friction points, what's working</div>
-          <textarea class="form-input" id="behav-notes" rows="4" placeholder="This week I noticed…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
-          <div id="behav-save-indicator" style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;margin-top:4px;height:14px;transition:opacity 0.3s"></div>
+
+        <!-- Two-column: Wins + Needs love -->
+        <div class="hins-grid-2">
+          <div class="hins-section">
+            <div class="habits-section-label">Wins</div>
+            <div class="hins-desc">Habits at 100% this week.</div>
+            <div id="reflect-wins" class="reflect-list"></div>
+          </div>
+          <div class="hins-section">
+            <div class="habits-section-label">Needs love</div>
+            <div class="hins-desc">Habits under 50% — candidates for re-anchoring.</div>
+            <div id="reflect-needs" class="reflect-list"></div>
+          </div>
+        </div>
+
+        <!-- Values Action Balance -->
+        <div class="hins-section">
+          <div class="habits-section-label">Values Balance</div>
+          <div class="hins-desc">Which values did your habits serve this week? Gaps can be intentional — or worth examining.</div>
+          <div id="reflect-values" class="reflect-values-wrap"></div>
+        </div>
+
+        <!-- Rest days taken -->
+        <div class="hins-section">
+          <div class="habits-section-label">Rest Days</div>
+          <div class="hins-desc">Self-compassion is not giving up. Rest days taken this week.</div>
+          <div id="reflect-rest" class="reflect-rest"></div>
+        </div>
+
+        <!-- Guided weekly review (4 questions, free text) -->
+        <div class="hins-section">
+          <div class="habits-section-label">3-Minute Review</div>
+          <div class="hins-desc">Four prompts. Short answers. Saved automatically to this week's debrief.</div>
+          <div class="reflect-review-form" id="reflect-review-form">
+            <div class="reflect-review-q">
+              <label class="reflect-review-label">What worked?</label>
+              <textarea class="reflect-review-textarea" id="reflect-review-worked" rows="2" placeholder="A habit that felt effortless, a pattern you loved…"></textarea>
+            </div>
+            <div class="reflect-review-q">
+              <label class="reflect-review-label">What didn't?</label>
+              <textarea class="reflect-review-textarea" id="reflect-review-didnt" rows="2" placeholder="A habit that drifted, an anchor that broke…"></textarea>
+            </div>
+            <div class="reflect-review-q">
+              <label class="reflect-review-label">What will you try next week?</label>
+              <textarea class="reflect-review-textarea" id="reflect-review-next" rows="2" placeholder="One small experiment…"></textarea>
+            </div>
+            <div class="reflect-review-q">
+              <label class="reflect-review-label">Any habit that should be re-anchored?</label>
+              <textarea class="reflect-review-textarea" id="reflect-review-reanchor" rows="2" placeholder="Name the habit and its new anchor…"></textarea>
+            </div>
+            <div class="reflect-review-save" id="reflect-review-save">Saved automatically</div>
+          </div>
+        </div>
+
+        <!-- Graduation ledger -->
+        <div class="hins-section">
+          <div class="habits-section-label">Graduation Ledger</div>
+          <div class="hins-desc">Habits you've built into automaticity. Each one is an identity you earned.</div>
+          <div id="reflect-ledger" class="reflect-ledger"></div>
         </div>
       </div>
 
-      <!-- LAUNCHER pane -->
-      <div id="hpane-launcher" class="habits-v2-pane" style="display:none;max-width:1100px">
-        <div class="hb-launcher-wrap">
-
-          <!-- Hero -->
-          <div class="hb-hero">
-            <div class="hb-hero-bg"></div>
-            <div class="hb-hero-grid"></div>
-            <div class="hb-top">
-              <div class="hb-left">
-                <div class="hb-time" id="hb-clock">--:--</div>
-                <div class="hb-date" id="hb-clockdate">— · —</div>
-              </div>
-              <div class="hb-right">
-                <div class="hb-season" id="hb-season-label"></div>
-              </div>
-            </div>
-            <div class="hb-quote" style="position:relative;">
-              <span id="hb-quote-text"></span>
-              <span class="hb-quote-attr" id="hb-quote-attr"></span>
-            </div>
-            <div class="hb-stats">
-              <div class="hb-stat"><span class="hb-stat-n" id="hb-streak-n">—</span><span class="hb-stat-l">Day Streak</span></div>
-              <div class="hb-stat"><span class="hb-stat-n" id="hb-momentum-n">—</span><span class="hb-stat-l">Momentum</span></div>
-              <div class="hb-stat"><span class="hb-stat-n" id="hb-done-n">—</span><span class="hb-stat-l">Done Yesterday</span></div>
-              <div class="hb-stat"><span class="hb-stat-n" id="hb-avgauto-n">66d</span><span class="hb-stat-l">Avg to Auto</span></div>
-            </div>
+      <!-- HABITS pane — design & edit habits -->
+      <div id="hpane-habits" class="habits-v2-pane" style="display:none;max-width:980px">
+        <!-- Slot limit banner -->
+        <div class="habits-tab-header">
+          <div>
+            <div class="habits-tab-title">Design your habits</div>
+            <div class="habits-tab-sub">Narrow focus beats breadth. Graduate a habit to open a slot.</div>
           </div>
-
-          <div class="hb-routine-grid">
-
-            <!-- Morning Routine Timeline -->
-            <div class="hb-routine-timeline">
-              <div class="hb-rt-header">
-                <div class="hb-rt-title">Morning Routine</div>
-                <div class="hb-rt-progress" id="hb-rt-progress">0 of 0 done</div>
-              </div>
-              <div class="hb-rt-overall"><div class="hb-rt-fill" id="hb-rt-bar" style="width:0%"></div></div>
-              <div id="hb-timeline-steps">
-                <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">
-                  Add steps in the Tracker tab → Morning Routine
-                </div>
-              </div>
-            </div>
-
-            <!-- Intent Panel -->
-            <div class="hb-intent-panel">
-
-              <!-- Identity Affirmation -->
-              <div class="hb-intent-card">
-                <div class="hb-ic-label">Today's Identity</div>
-                <div class="hb-identity-card">
-                  <div class="hb-id-label">I am someone who…</div>
-                  <div class="hb-id-text" id="hb-id-display"></div>
-                </div>
-              </div>
-
-              <!-- Non-Negotiable -->
-              <div class="hb-intent-card">
-                <div class="hb-ic-label">Today's Non-Negotiable</div>
-                <div class="hb-nonneg">
-                  <div class="hb-nonneg-label">If I do only one thing →</div>
-                  <div class="hb-nonneg-text" id="hb-nonneg-text" contenteditable="true" style="outline:none;min-height:20px" placeholder="Write your one thing…"></div>
-                </div>
-              </div>
-
-              <!-- Energy Level -->
-              <div class="hb-intent-card">
-                <div class="hb-ic-label">Today's Energy Level</div>
-                <div class="hb-energy-select">
-                  <div class="hb-energy-row">
-                    <div class="hb-energy-chip deep on" onclick="hbPickEnergy(this)">
-                      <div class="hb-ec-icon">🔵</div>
-                      <div class="hb-ec-name">Deep Focus</div>
-                    </div>
-                    <div class="hb-energy-chip admin" onclick="hbPickEnergy(this)">
-                      <div class="hb-ec-icon">🟡</div>
-                      <div class="hb-ec-name">Meeting Mode</div>
-                    </div>
-                  </div>
-                  <div class="hb-energy-row">
-                    <div class="hb-energy-chip creative" onclick="hbPickEnergy(this)">
-                      <div class="hb-ec-icon">🟠</div>
-                      <div class="hb-ec-name">Creative</div>
-                    </div>
-                    <div class="hb-energy-chip low" onclick="hbPickEnergy(this)">
-                      <div class="hb-ec-icon">🟢</div>
-                      <div class="hb-ec-name">Low &amp; Steady</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Launch -->
-              <button class="hb-launch-btn" id="hb-launch-btn" onclick="hbLaunchDay()">
-                Begin the day
-                <span class="hb-lb-sub" id="hb-lb-sub">Loading routine…</span>
-              </button>
-
-            </div>
-          </div>
+          <div class="habits-tab-slots" id="habits-tab-slots">—</div>
         </div>
-      </div>
 
-      <!-- BUILDER pane -->
-      <div id="hpane-builder" class="habits-v2-pane" style="display:none;max-width:1200px">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Concept · Habit Builder</div>
-        <div style="font-family:var(--font-display);font-size:26px;font-weight:300;color:var(--cream);margin-bottom:6px;">Build a new habit</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;max-width:700px;">Research-backed habit design: identity anchor → implementation intention → habit stack → minimal viable dose → friction guard. Every field earns its place.</div>
+        <!-- Active habits list -->
+        <div class="habits-section">
+          <div class="habits-section-label">Active Habits</div>
+          <div id="habits-active-list" class="habits-active-list"></div>
+          <button id="habits-create-btn" class="habits-create-btn">+ Create habit</button>
+        </div>
 
-        <div class="hb-builder-layout">
+        <!-- Graduated habits (collapsed) -->
+        <details class="habits-graduated-wrap">
+          <summary class="habits-graduated-summary">Graduated Habits <span id="habits-graduated-count" class="habits-count-pill">0</span></summary>
+          <div id="habits-graduated-list" class="habits-graduated-list"></div>
+        </details>
 
-          <!-- Library Sidebar -->
-          <div class="hb-library">
-            <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Habit Library</div>
-            <div class="hb-lib-search">
-              <input class="hb-lib-input" placeholder="Search habits…" id="hb-search-inp" oninput="hbFilterHabits(this.value)">
+        <!-- Stacks (simple list view; full builder in Phase 5 if needed) -->
+        <details class="habits-stacks-wrap">
+          <summary class="habits-stacks-summary">Habit Stacks <span id="habits-stacks-count" class="habits-count-pill">0</span></summary>
+          <div id="habits-stacks-list" class="habits-stacks-list"></div>
+        </details>
+
+        <!-- Create/Edit wizard modal -->
+        <div class="habits-wizard-backdrop" id="habits-wizard-backdrop" style="display:none"></div>
+        <div class="habits-wizard" id="habits-wizard" style="display:none">
+          <div class="habits-wizard-header">
+            <span class="habits-wizard-step" id="habits-wizard-step-label">Step 1 of 6</span>
+            <span class="habits-wizard-title" id="habits-wizard-title">Why this habit?</span>
+            <button class="habits-wizard-close" id="habits-wizard-close">✕</button>
+          </div>
+          <div class="habits-wizard-progress"><div class="habits-wizard-progress-fill" id="habits-wizard-progress-fill"></div></div>
+          <div class="habits-wizard-body">
+            <!-- Step 1: Why / Values -->
+            <div class="habits-wstep" data-wstep="1">
+              <div class="habits-wstep-q">I want this habit because I value…</div>
+              <div class="habits-wstep-desc">Pick 1–2 values. Research: values-aligned habits survive mood and motivation dips (Self-Determination Theory).</div>
+              <div class="habits-values-grid" id="habits-wizard-values"></div>
             </div>
-            <div class="hb-lib-cats">
-              <span class="hb-cat-chip on" onclick="hbPickCat(this,'all')">All</span>
-              <span class="hb-cat-chip" onclick="hbPickCat(this,'mind')">Mind</span>
-              <span class="hb-cat-chip" onclick="hbPickCat(this,'body')">Body</span>
-              <span class="hb-cat-chip" onclick="hbPickCat(this,'work')">Work</span>
-              <span class="hb-cat-chip" onclick="hbPickCat(this,'soul')">Soul</span>
+            <!-- Step 2: Identity -->
+            <div class="habits-wstep" data-wstep="2" style="display:none">
+              <div class="habits-wstep-q">Doing this makes me…</div>
+              <div class="habits-wstep-desc">Identity framing beats outcome framing. "I am a runner" beats "I want to run a marathon." (James Clear, +32% adherence.)</div>
+              <input class="habits-wstep-input" id="habits-wizard-identity" placeholder="a curious reader · a calm person · the builder" maxlength="60">
             </div>
-            <div class="hb-lib-items" id="hb-habit-list">
-              <!-- populated by JS -->
+            <!-- Step 3: Tiny behavior -->
+            <div class="habits-wstep" data-wstep="3" style="display:none">
+              <div class="habits-wstep-q">What's the 30-second version?</div>
+              <div class="habits-wstep-desc">BJ Fogg: the habit must be doable in 30 seconds on your worst day. You can scale up later.</div>
+              <input class="habits-wstep-input" id="habits-wizard-tiny" placeholder="Read 1 page · Write 1 sentence · Do 1 pushup" maxlength="100">
+              <div class="habits-wstep-q" style="margin-top:14px">The "good day" version (optional):</div>
+              <input class="habits-wstep-input" id="habits-wizard-full" placeholder="Read 15 pages · Write 500 words · 20-min workout" maxlength="100">
+            </div>
+            <!-- Step 4: Anchor -->
+            <div class="habits-wstep" data-wstep="4" style="display:none">
+              <div class="habits-wstep-q">When will you do it?</div>
+              <div class="habits-wstep-desc">Event-based anchors beat time-based reminders for automaticity (Stawarz et al.).</div>
+              <div class="habits-anchor-types">
+                <button class="habits-anchor-type active" data-atype="event">After an event</button>
+                <button class="habits-anchor-type" data-atype="time">At a time</button>
+                <button class="habits-anchor-type" data-atype="location">At a location</button>
+                <button class="habits-anchor-type" data-atype="anytime">Anytime</button>
+              </div>
+              <input class="habits-wstep-input" id="habits-wizard-anchor" placeholder="my morning coffee · 07:00 · the kitchen" maxlength="80">
+              <div class="habits-wstep-hint" id="habits-wizard-anchor-hint">After-event anchors build automaticity faster than clocks.</div>
+            </div>
+            <!-- Step 5: Friction pre-mortem -->
+            <div class="habits-wstep" data-wstep="5" style="display:none">
+              <div class="habits-wstep-q">What could break this habit?</div>
+              <div class="habits-wstep-desc">Naming friction in advance lets the app auto-route to a fallback when friction hits.</div>
+              <div class="habits-friction-grid" id="habits-wizard-friction">
+                <button class="habits-friction-chip" data-friction="travel">✈ Travel</button>
+                <button class="habits-friction-chip" data-friction="low-energy">🔋 Low energy</button>
+                <button class="habits-friction-chip" data-friction="meetings">📞 Meetings</button>
+                <button class="habits-friction-chip" data-friction="weekend">🌙 Weekends</button>
+                <button class="habits-friction-chip" data-friction="late-night">🌃 Late nights</button>
+                <button class="habits-friction-chip" data-friction="illness">🤒 Illness</button>
+              </div>
+            </div>
+            <!-- Step 6: Rest days -->
+            <div class="habits-wstep" data-wstep="6" style="display:none">
+              <div class="habits-wstep-q">Plan your rest days</div>
+              <div class="habits-wstep-desc">Self-compassion research: planned rest preserves identity and prevents shame spirals. Pick days where this habit is OFF.</div>
+              <div class="habits-restday-grid" id="habits-wizard-restdays">
+                <button class="habits-restday-chip" data-dow="0">Sun</button>
+                <button class="habits-restday-chip" data-dow="1">Mon</button>
+                <button class="habits-restday-chip" data-dow="2">Tue</button>
+                <button class="habits-restday-chip" data-dow="3">Wed</button>
+                <button class="habits-restday-chip" data-dow="4">Thu</button>
+                <button class="habits-restday-chip" data-dow="5">Fri</button>
+                <button class="habits-restday-chip" data-dow="6">Sat</button>
+              </div>
+              <div class="habits-wstep-hint">Leave empty for daily habits. Remember: less is more.</div>
+            </div>
+            <!-- Library at bottom of Step 1 (always visible as reference) -->
+            <div class="habits-wlib" id="habits-wlib">
+              <div class="habits-wlib-label">Or start from a template</div>
+              <div class="habits-wlib-items" id="habits-wlib-items"></div>
             </div>
           </div>
-
-          <!-- Builder Detail -->
-          <div class="hb-detail">
-            <div class="hb-detail-card">
-              <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;">Selected Habit</div>
-              <div class="hb-habit-row">
-                <div class="hb-habit-icon" id="hb-sel-icon">📖</div>
-                <div class="hb-habit-name" id="hb-sel-name">Read 15 pages every morning</div>
-                <span class="hb-habit-badge hb-tag hb-tag-lav" id="hb-sel-cat">Mind</span>
-              </div>
-
-              <!-- 1. Identity Anchor -->
-              <div class="hb-ia-wrap">
-                <div class="hb-ia-label">① Identity Anchor <span style="color:var(--muted);font-size:9px;margin-left:6px;">→ +32% adherence (2024 research)</span></div>
-                <div class="hb-ia-text" id="hb-sel-identity">"I am a person who reads every morning — because curious people build better things."</div>
-                <div class="hb-ia-research">🧠 Framing habits as identity statements (not goals) increased adherence by 32% in 2024 Journal of Personality &amp; Social Psychology study. This is shown to you every morning.</div>
-              </div>
-
-              <hr class="hb-divider">
-
-              <!-- 2. Habit Stack -->
-              <div class="hb-stack-builder">
-                <div class="hb-sb-label">② Habit Stack — If–Then Plan <span style="color:var(--muted);font-size:9px;margin-left:6px;">→ 64% higher success vs standalone</span></div>
-                <div class="hb-sb-formula">
-                  <div class="hb-sb-anchor">After
-                    <select id="hb-stack-anchor">
-                      <option>my morning coffee</option>
-                      <option>my cold shower</option>
-                      <option>breakfast</option>
-                      <option>my walk</option>
-                      <option>waking up</option>
-                      <option>my journaling</option>
-                    </select>
-                  </div>
-                  <div class="hb-sb-arrow">→</div>
-                  <div class="hb-sb-new" id="hb-sb-new">I will read for 15 min</div>
-                </div>
-                <div class="hb-sb-research">📌 Implementation intentions (if–then plans) make people 2–3× more likely to follow through. Habit stacking anchors to existing neural pathways — reducing required willpower to near zero.</div>
-              </div>
-
-              <hr class="hb-divider">
-
-              <!-- 3. Cue + Context -->
-              <div class="hb-cue-grid">
-                <div class="hb-cue-item">
-                  <div class="hb-ci-label">Cue / Location</div>
-                  <input class="hb-ci-input" id="hb-cue-loc" value="☕ At my reading chair with coffee" placeholder="Where / what triggers this?">
-                </div>
-                <div class="hb-cue-item">
-                  <div class="hb-ci-label">Time Window</div>
-                  <input class="hb-ci-input" id="hb-cue-time" value="🕖 06:30 – 06:55 AM" placeholder="What time window?">
-                </div>
-                <div class="hb-cue-item">
-                  <div class="hb-ci-label">Routine Slot</div>
-                  <input class="hb-ci-input" id="hb-cue-slot" value="📅 Morning Routine · Step 6" placeholder="Which routine?">
-                </div>
-                <div class="hb-cue-item">
-                  <div class="hb-ci-label">Frequency</div>
-                  <input class="hb-ci-input" id="hb-cue-freq" value="📆 Daily (Mon–Sun)" placeholder="How often?">
-                </div>
-              </div>
-
-              <hr class="hb-divider">
-
-              <!-- 4. Why + Reward -->
-              <div class="hb-why-reward">
-                <div class="hb-wr-item">
-                  <div class="hb-wr-label">Why it matters</div>
-                  <textarea class="hb-wr-val" id="hb-why" rows="2" placeholder="Why does this habit matter to you?">Compounds knowledge — leaders who read 15 min/day consume 18+ books/year</textarea>
-                </div>
-                <div class="hb-wr-item">
-                  <div class="hb-wr-label">Immediate reward</div>
-                  <textarea class="hb-wr-val" id="hb-reward" rows="2" placeholder="What's the immediate reward?">A moment of peace before the workday. First coffee sip = only after first page.</textarea>
-                </div>
-              </div>
-
-              <hr class="hb-divider">
-
-              <!-- 5. Difficulty Ramp -->
-              <div class="hb-ramp-wrap">
-                <div class="hb-ramp-label">⑤ Difficulty Ramp — Tiny Habits Scale-Up <span style="color:var(--muted);font-size:9px;margin-left:6px;">→ 2.7× more likely to stick long-term</span></div>
-                <div class="hb-ramp-steps" id="hb-ramp-steps">
-                  <div class="hb-ramp-step active" onclick="hbPickRamp(this)">
-                    <div class="hb-rs-week">Wk 1–2</div>
-                    <div class="hb-rs-dose active" id="hb-ramp-dose-0">5 pages</div>
-                  </div>
-                  <div class="hb-ramp-step" onclick="hbPickRamp(this)">
-                    <div class="hb-rs-week">Wk 3–4</div>
-                    <div class="hb-rs-dose" id="hb-ramp-dose-1">10 pages</div>
-                  </div>
-                  <div class="hb-ramp-step" onclick="hbPickRamp(this)">
-                    <div class="hb-rs-week">Wk 5–8</div>
-                    <div class="hb-rs-dose" id="hb-ramp-dose-2">15 pages</div>
-                  </div>
-                  <div class="hb-ramp-step" onclick="hbPickRamp(this)">
-                    <div class="hb-rs-week">Wk 9+</div>
-                    <div class="hb-rs-dose" id="hb-ramp-dose-3">20+ pages</div>
-                  </div>
-                </div>
-                <div class="hb-sb-research" style="margin-top:10px;">🪜 Starting tiny and scaling up makes you 2.7× more likely to maintain long-term (BJ Fogg + 2025 meta-analysis). Cosmodex auto-upgrades your dose as streak builds.</div>
-              </div>
-
-              <hr class="hb-divider">
-
-              <!-- 6. Friction Guard -->
-              <div class="hb-friction-guard">
-                <div class="hb-fg-label">⑥ Friction Guard — Pre-Mortem</div>
-                <div class="hb-fg-q">What's most likely to break this habit?</div>
-                <div class="hb-fg-opts" id="hb-fg-opts">
-                  <span class="hb-fg-opt" onclick="this.classList.toggle('on')">Travelling</span>
-                  <span class="hb-fg-opt on" onclick="this.classList.toggle('on')">Late nights</span>
-                  <span class="hb-fg-opt" onclick="this.classList.toggle('on')">Meetings at 7am</span>
-                  <span class="hb-fg-opt" onclick="this.classList.toggle('on')">Low motivation</span>
-                  <span class="hb-fg-opt" onclick="this.classList.toggle('on')">Weekend drift</span>
-                </div>
-                <div style="margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6;" id="hb-friction-tip">
-                  💡 <em>Late nights selected:</em> Cosmodex will auto-reduce tomorrow's dose if you sleep past midnight — keeping the chain alive without perfection pressure.
-                </div>
-              </div>
-
-              <div style="margin-top:24px;display:flex;gap:12px;">
-                <button class="hb-btn-do" style="flex:1;font-size:15px;padding:16px;" onclick="hbAddToTracker()">Add to Tracker →</button>
-                <button class="hb-btn-skip" style="padding:16px 20px;" onclick="hbSaveDraft()">Save Draft</button>
-              </div>
-            </div>
+          <div class="habits-wizard-footer">
+            <button class="habits-wizard-back" id="habits-wizard-back">← Back</button>
+            <button class="habits-wizard-next" id="habits-wizard-next">Next →</button>
           </div>
         </div>
       </div>
 
       <!-- PROGRESS pane -->
-      <div id="hpane-progress" class="habits-v2-pane" style="display:none">
-        <div class="hb-progress-layout">
-          <div style="font-family:var(--font-display);font-size:26px;font-weight:300;color:var(--cream);margin-bottom:4px;">Your automaticity map</div>
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;margin-bottom:20px;">HABITS NEED ~66 DAYS TO BECOME AUTOMATIC</div>
-          <div class="hb-prog-top">
-
-            <!-- Completion Ring -->
-            <div class="hb-prog-card">
-              <div class="hb-pc-label">This Week's Completion</div>
-              <div class="hb-ring-wrap">
-                <svg width="80" height="80" viewBox="0 0 80 80" style="flex-shrink:0">
-                  <circle cx="40" cy="40" r="32" fill="none" stroke="var(--elevated)" stroke-width="8"/>
-                  <circle cx="40" cy="40" r="32" fill="none" stroke="var(--sage)" stroke-width="8"
-                    stroke-dasharray="201" stroke-dashoffset="50" stroke-linecap="round"
-                    transform="rotate(-90 40 40)" style="transition:stroke-dashoffset 1s var(--ease);"
-                    id="hb-ring-arc"/>
-                  <text x="40" y="45" text-anchor="middle" fill="var(--cream)" font-family="var(--font-display)" font-size="16" font-weight="300" id="hb-ring-pct">75%</text>
-                </svg>
-                <div>
-                  <div class="hb-ring-big" id="hb-ring-ratio">27/36</div>
-                  <div class="hb-ring-sub">habit completions<br>this week</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Momentum -->
-            <div class="hb-prog-card">
-              <div class="hb-pc-label">Momentum Score · 7-day rolling</div>
-              <div style="font-family:var(--font-display);font-size:52px;font-weight:200;color:var(--gold);line-height:1;margin-bottom:8px;" id="hb-momentum-score">74</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.6;">Falls gently, recovers quickly. Not a streak — no punishment for missing one day.</div>
-              <div style="display:flex;gap:4px;margin-top:12px;align-items:flex-end;height:36px;" id="hb-momentum-bars">
-                <div style="flex:1;background:var(--gold);border-radius:2px;height:65%;"></div>
-                <div style="flex:1;background:var(--gold);border-radius:2px;height:80%;"></div>
-                <div style="flex:1;background:var(--gold-dim);border-radius:2px;height:35%;"></div>
-                <div style="flex:1;background:var(--gold);border-radius:2px;height:90%;"></div>
-                <div style="flex:1;background:var(--gold);border-radius:2px;height:75%;"></div>
-                <div style="flex:1;background:var(--gold-dim);border-radius:2px;height:30%;"></div>
-                <div style="flex:1;background:var(--gold);border-radius:2px;height:74%;"></div>
-              </div>
-            </div>
-
-            <!-- Heatmap -->
-            <div class="hb-prog-card">
-              <div class="hb-pc-label">13-Week Heatmap</div>
-              <div class="hb-heatmap" id="hb-heatmap"></div>
-              <div style="display:flex;gap:6px;align-items:center;margin-top:10px;">
-                <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);">Less</span>
-                <div style="width:10px;height:10px;background:var(--elevated);border-radius:2px;"></div>
-                <div style="width:10px;height:10px;background:rgba(74,124,94,.3);border-radius:2px;"></div>
-                <div style="width:10px;height:10px;background:rgba(74,124,94,.6);border-radius:2px;"></div>
-                <div style="width:10px;height:10px;background:var(--sage);border-radius:2px;"></div>
-                <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);">More</span>
-              </div>
-            </div>
-
+      <!-- HABITS INSIGHTS pane — Phase 4: Diagnosis, not vanity -->
+      <div id="hpane-hinsights" class="habits-v2-pane" style="display:none;max-width:1000px">
+        <div class="habits-tab-header">
+          <div>
+            <div class="habits-tab-title">Your automaticity map</div>
+            <div class="habits-tab-sub">Research suggests 18–254 days to automatic (Lally 2010). Every metric here is actionable.</div>
           </div>
+        </div>
 
-          <!-- Individual Habit Cards -->
-          <div class="hb-habits-grid" id="hb-prog-habit-cards">
-            <div class="hb-habit-prog-card">
-              <div class="hb-hpc-top">
-                <div class="hb-hpc-icon">📖</div>
-                <div class="hb-hpc-info">
-                  <div class="hb-hpc-name">Read 15 pages</div>
-                  <div class="hb-hpc-identity">I am a curious, continuous learner</div>
-                </div>
-                <div class="hb-hpc-streak"><div class="hb-hpc-streak-n">14</div><div class="hb-hpc-streak-l">day streak</div></div>
-              </div>
-              <div class="hb-day-row">
-                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot miss"></div>
-                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot today"></div>
-              </div>
-              <div class="hb-auto-bar">
-                <div class="hb-ab-top"><div class="hb-ab-label">Automaticity</div><div class="hb-ab-pct">62%</div></div>
-                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:62%;background:var(--sage);"></div></div>
-              </div>
-              <div class="hb-auto-bar">
-                <div class="hb-ab-top"><div class="hb-ab-label">Identity Integration</div><div class="hb-ab-pct">71%</div></div>
-                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:71%;background:var(--gold);"></div></div>
-              </div>
-              <div class="hb-stack-note">Stacked onto: morning coffee → book before phone</div>
+        <!-- Graduation banner (shown only when a habit is eligible) -->
+        <div id="hins-graduation-banner" class="hins-graduation-banner" style="display:none"></div>
+
+        <!-- 13-week heatmap with real data -->
+        <div class="hins-section">
+          <div class="habits-section-label">13-Week Pulse · Real data</div>
+          <div class="hins-heatmap-wrap">
+            <canvas id="hins-heatmap-canvas" class="hins-heatmap-canvas"></canvas>
+            <div class="hins-heatmap-legend">
+              <span class="hins-legend-label">less</span>
+              <div class="hins-legend-cell" style="background:rgba(255,255,255,0.04)"></div>
+              <div class="hins-legend-cell" style="background:rgba(255,255,255,0.14)"></div>
+              <div class="hins-legend-cell" style="background:rgba(255,255,255,0.26)"></div>
+              <div class="hins-legend-cell" style="background:rgba(255,255,255,0.42)"></div>
+              <div class="hins-legend-cell" style="background:rgb(53,249,47);box-shadow:0 0 4px rgba(53,249,47,0.4)"></div>
+              <span class="hins-legend-label">more</span>
+              <span class="hins-heatmap-stat" id="hins-heatmap-stat"></span>
             </div>
-            <div class="hb-habit-prog-card">
-              <div class="hb-hpc-top">
-                <div class="hb-hpc-icon">🥛</div>
-                <div class="hb-hpc-info">
-                  <div class="hb-hpc-name">Morning hydration</div>
-                  <div class="hb-hpc-identity">I am someone who respects my body</div>
-                </div>
-                <div class="hb-hpc-streak"><div class="hb-hpc-streak-n">42</div><div class="hb-hpc-streak-l">day streak</div></div>
-              </div>
-              <div class="hb-day-row">
-                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div>
-                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot today"></div>
-              </div>
-              <div class="hb-auto-bar">
-                <div class="hb-ab-top"><div class="hb-ab-label">Automaticity</div><div class="hb-ab-pct">89%</div></div>
-                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:89%;background:var(--sage);"></div></div>
-              </div>
-              <div class="hb-auto-bar">
-                <div class="hb-ab-top"><div class="hb-ab-label">Identity Integration</div><div class="hb-ab-pct">94%</div></div>
-                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:94%;background:var(--gold);"></div></div>
-              </div>
-              <div class="hb-stack-note" style="color:var(--sage);">🎉 Near automatic — minimal willpower needed</div>
-            </div>
-            <div class="hb-habit-prog-card">
-              <div class="hb-hpc-top">
-                <div class="hb-hpc-icon">📓</div>
-                <div class="hb-hpc-info">
-                  <div class="hb-hpc-name">10-min journaling</div>
-                  <div class="hb-hpc-identity">I am a reflective, intentional thinker</div>
-                </div>
-                <div class="hb-hpc-streak"><div class="hb-hpc-streak-n">7</div><div class="hb-hpc-streak-l">day streak</div></div>
-              </div>
-              <div class="hb-day-row">
-                <div class="hb-day-dot miss"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div>
-                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot today"></div>
-              </div>
-              <div class="hb-auto-bar">
-                <div class="hb-ab-top"><div class="hb-ab-label">Automaticity</div><div class="hb-ab-pct">31%</div></div>
-                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:31%;background:var(--amber);"></div></div>
-              </div>
-              <div class="hb-auto-bar">
-                <div class="hb-ab-top"><div class="hb-ab-label">Identity Integration</div><div class="hb-ab-pct">44%</div></div>
-                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:44%;background:var(--gold);"></div></div>
-              </div>
-              <div class="hb-stack-note">~35 more days to reach automaticity threshold</div>
-            </div>
-            <div class="hb-habit-prog-card">
-              <div class="hb-hpc-top">
-                <div class="hb-hpc-icon">🚶</div>
-                <div class="hb-hpc-info">
-                  <div class="hb-hpc-name">Morning walk (10 min)</div>
-                  <div class="hb-hpc-identity">I am an active, present person</div>
-                </div>
-                <div class="hb-hpc-streak"><div class="hb-hpc-streak-n">21</div><div class="hb-hpc-streak-l">day streak</div></div>
-              </div>
-              <div class="hb-day-row">
-                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div>
-                <div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot done"></div><div class="hb-day-dot today"></div>
-              </div>
-              <div class="hb-auto-bar">
-                <div class="hb-ab-top"><div class="hb-ab-label">Automaticity</div><div class="hb-ab-pct">55%</div></div>
-                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:55%;background:var(--sage);"></div></div>
-              </div>
-              <div class="hb-auto-bar">
-                <div class="hb-ab-top"><div class="hb-ab-label">Identity Integration</div><div class="hb-ab-pct">60%</div></div>
-                <div class="hb-ab-track"><div class="hb-ab-fill" style="width:60%;background:var(--gold);"></div></div>
-              </div>
-              <div class="hb-stack-note">Stacked onto: hydration → shoes on immediately</div>
-            </div>
+          </div>
+        </div>
+
+        <!-- Per-habit automaticity estimates -->
+        <div class="hins-section">
+          <div class="habits-section-label">Automaticity Estimate · per habit</div>
+          <div class="hins-auto-list" id="hins-auto-list"></div>
+        </div>
+
+        <!-- Context Reliability Matrix (habit x day-of-week) -->
+        <div class="hins-section">
+          <div class="habits-section-label">Context Reliability · Day × Habit (30d)</div>
+          <div class="hins-desc">Shows where your habits are bulletproof and where they drift. Weekend collapse? Monday blues? Patterns reveal themselves here.</div>
+          <div class="hins-context-wrap" id="hins-context-wrap"></div>
+        </div>
+
+        <!-- Friction patterns + mood correlation (2-col) -->
+        <div class="hins-grid-2">
+          <div class="hins-section">
+            <div class="habits-section-label">Friction Patterns</div>
+            <div class="hins-desc">Top 3 friction tags with the most skip count.</div>
+            <div id="hins-friction-list" class="hins-friction-list"></div>
+          </div>
+          <div class="hins-section">
+            <div class="habits-section-label">Mood × Completion</div>
+            <div class="hins-desc">On low-mood days, which habits survive?</div>
+            <div id="hins-mood-list" class="hins-mood-list"></div>
           </div>
         </div>
       </div>
@@ -7951,15 +8971,50 @@ let _habits        = [];
 let _habitLogs     = {};
 let _routines      = { morning: [], evening: [] };
 let _behav         = { identity: '', keystone: [], notes: '' };
-let _hbSettings    = { season:'', seasonStartDate:'', quote:'', quoteAuthor:'', customHabits:'', nonNegotiable:'' };
-let _habitsTab     = 'tracker';
+let _hbSettings    = { season:'', seasonStartDate:'', quote:'', quoteAuthor:'', customHabits:'', nonNegotiable:'', onboarded:false, activeSlotLimit:3 };
+let _values        = []; // values inventory — [{ id, name, emoji }]
+let _stacks        = []; // habit stacks — [{ id, name, track, habitIds[] }]
+let _habitsTab     = 'today';
 let _habitsUnsub   = null;
 let _habitLogsUnsub = null;
 let _routinesUnsub = null;
 let _behavUnsub    = null;
 let _hbSettingsUnsub = null;
+let _valuesUnsub    = null;
+let _stacksUnsub    = null;
 let _routinesSaveTimer = null;
 let _behavSaveTimer    = null;
+
+// Phase 1: applies research-backed defaults to a habit (in-memory; non-destructive)
+function _habitWithDefaults(h) {
+  return {
+    identityTag:      '',
+    valueTags:        [],
+    tinyBehavior:     '',
+    fullBehavior:     '',
+    anchor:           { type: 'anytime', value: '', linkedHabitId: null },
+    schedule:         { days: 'daily', frequency: 1 },
+    stackId:          null,
+    frictionTags:     [],
+    frictionFallbacks:{},
+    restDaysPlanned:  [],
+    status:           'active',
+    graduatedAt:      null,
+    ...h,
+  };
+}
+
+// Default values inventory seeded on first open (only if user has never onboarded)
+const DEFAULT_VALUES = [
+  { id: 'v_health',       name: 'Health',       emoji: '💪' },
+  { id: 'v_craft',        name: 'Craft',        emoji: '🛠️' },
+  { id: 'v_relationships',name: 'Relationships',emoji: '🤝' },
+  { id: 'v_growth',       name: 'Growth',       emoji: '🌱' },
+  { id: 'v_contribution', name: 'Contribution', emoji: '🎁' },
+  { id: 'v_play',         name: 'Play',         emoji: '🎨' },
+  { id: 'v_rest',         name: 'Rest',         emoji: '🌙' },
+  { id: 'v_meaning',      name: 'Meaning',      emoji: '✨' },
+];
 
 // Orb petal state
 let _orbGeometry  = null; // set by drawCosmodex when expanded
@@ -8149,7 +9204,7 @@ function showMainPanel(name) {
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
-  if (name === 'habits') { switchHabitsTab(_habitsTab || 'habits'); }
+  if (name === 'habits') { switchHabitsTab(_habitsTab === 'tracker' ? 'today' : (_habitsTab || 'today')); }
   if (name === 'insights') { habitsSubscribe(); requestAnimationFrame(() => { renderInsights(); loadDoneWall(); }); }
   const orbEl = document.getElementById('cosmodex-orb');
   if (orbEl) orbEl.style.display = name === 'timedrift' ? 'none' : '';
@@ -8538,18 +9593,26 @@ function habitsSubscribe() {
   if (_habitLogsUnsub) { _habitLogsUnsub(); _habitLogsUnsub = null; }
 
   _habitsUnsub = onSnapshot(collection(db, 'users', uid, 'habits'), snap => {
-    _habits = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .filter(h => !h.archivedAt)
+    // Keep graduated habits in memory (Reflect + Habits tab need them)
+    _habits = snap.docs.map(d => _habitWithDefaults({ id: d.id, ...d.data() }))
+      .filter(h => !h.archivedAt && h.status !== 'archived')
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-    if (_habitsTab === 'habits') renderHabits();
+    if (_habitsTab === 'today') renderToday();
+    if (_habitsTab === 'habits') renderHabitsTab();
+    if (_habitsTab === 'hinsights') renderHabitsInsights();
+    if (_habitsTab === 'reflect') renderReflect();
   }, err => console.warn('habits onSnapshot:', err.message));
 
-  const d14 = new Date(); d14.setDate(d14.getDate() - 13);
+  // For 13-week heatmap we need 91 days of logs
+  const d91 = new Date(); d91.setDate(d91.getDate() - 91);
   _habitLogsUnsub = onSnapshot(
-    query(collection(db, 'users', uid, 'habitLogs'), where('date', '>=', localDateStr(d14))),
+    query(collection(db, 'users', uid, 'habitLogs'), where('date', '>=', localDateStr(d91))),
     snap => {
       snap.docs.forEach(d => { _habitLogs[d.id] = d.data(); });
-      if (_habitsTab === 'habits') renderHabits();
+      if (_habitsTab === 'today') renderToday();
+      if (_habitsTab === 'habits') renderHabitsTab();
+      if (_habitsTab === 'hinsights') renderHabitsInsights();
+      if (_habitsTab === 'reflect') renderReflect();
     }, err => console.warn('habitLogs onSnapshot:', err.message));
 }
 
@@ -8559,7 +9622,7 @@ function routinesSubscribe() {
   const { doc, onSnapshot } = window.CDX_FB;
   _routinesUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'routines', 'config'), snap => {
     if (snap.exists()) { const d = snap.data(); _routines = { morning: d.morning||[], evening: d.evening||[] }; }
-    if (_habitsTab === 'routines') renderRoutines();
+    if (_habitsTab === 'today') _todayRenderMorningMode();
   }, err => console.warn('routines onSnapshot:', err.message));
 }
 
@@ -8569,8 +9632,7 @@ function behavSubscribe() {
   const { doc, onSnapshot } = window.CDX_FB;
   _behavUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'behaviours', 'current'), snap => {
     if (snap.exists()) { const d = snap.data(); _behav = { identity: d.identity||'', keystone: d.keystone||[], notes: d.notes||'' }; }
-    if (_habitsTab === 'behaviours') renderBehaviours();
-    if (_habitsTab === 'launcher') hbUpdateLauncherDynamic();
+    if (_habitsTab === 'reflect') renderReflect();
   }, err => console.warn('behaviours onSnapshot:', err.message));
 }
 
@@ -8588,6 +9650,8 @@ function hbSettingsSubscribe() {
         quoteAuthor:     d.quoteAuthor     || '',
         customHabits:    d.customHabits    || '',
         nonNegotiable:   d.nonNegotiable   || '',
+        onboarded:       d.onboarded       === true,
+        activeSlotLimit: typeof d.activeSlotLimit === 'number' ? d.activeSlotLimit : 3,
       };
     } else {
       // One-time migration from localStorage
@@ -8602,23 +9666,412 @@ function hbSettingsSubscribe() {
         } catch(e) {}
       }
     }
-    if (_habitsTab === 'launcher') hbUpdateLauncherDynamic();
+    if (_habitsTab === 'today') renderToday();
+    if (_habitsTab === 'reflect') renderReflect();
   }, err => console.warn('hbSettings onSnapshot:', err.message));
+}
+
+/* ── Values inventory (Phase 1) ──────────────────── */
+function valuesSubscribe() {
+  const uid = getHabitsUid();
+  if (!uid || !window.CDX_DB || _valuesUnsub) return;
+  const { collection, onSnapshot } = window.CDX_FB;
+  _valuesUnsub = onSnapshot(collection(window.CDX_DB, 'users', uid, 'values'), snap => {
+    _values = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Seed defaults on first open if user has no values and hasn't onboarded
+    if (_values.length === 0 && !_hbSettings.onboarded) {
+      _seedDefaultValues(uid).catch(err => console.warn('seed values:', err.message));
+    }
+    if (_habitsTab === 'habits') renderHabitsTab();
+  }, err => console.warn('values onSnapshot:', err.message));
+}
+
+async function _seedDefaultValues(uid) {
+  const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+  await Promise.all(DEFAULT_VALUES.map(v =>
+    setDoc(doc(window.CDX_DB, 'users', uid, 'values', v.id), { ...v, createdAt: serverTimestamp() })
+  ));
+  // Mark onboarded so we don't re-seed if user deletes them
+  await setDoc(doc(window.CDX_DB, 'users', uid, 'hbSettings', 'config'), { onboarded: true, updatedAt: serverTimestamp() }, { merge: true });
+}
+
+async function addValue(name, emoji) {
+  const uid = getHabitsUid();
+  if (!uid || !name?.trim()) return;
+  const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+  const id = 'v_' + Date.now();
+  await setDoc(doc(window.CDX_DB, 'users', uid, 'values', id), { id, name: name.trim(), emoji: emoji || '', createdAt: serverTimestamp() });
+}
+
+async function deleteValue(id) {
+  const uid = getHabitsUid();
+  if (!uid || !id) return;
+  const { doc, deleteDoc } = window.CDX_FB;
+  await deleteDoc(doc(window.CDX_DB, 'users', uid, 'values', id));
+}
+
+/* ── Stacks (Phase 1) ──────────────────── */
+function stacksSubscribe() {
+  const uid = getHabitsUid();
+  if (!uid || !window.CDX_DB || _stacksUnsub) return;
+  const { collection, onSnapshot } = window.CDX_FB;
+  _stacksUnsub = onSnapshot(collection(window.CDX_DB, 'users', uid, 'stacks'), snap => {
+    _stacks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (_habitsTab === 'habits') renderHabitsTab();
+  }, err => console.warn('stacks onSnapshot:', err.message));
+}
+
+async function addStack(name, track) {
+  const uid = getHabitsUid();
+  if (!uid || !name?.trim()) return null;
+  const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+  const id = 's_' + Date.now();
+  await setDoc(doc(window.CDX_DB, 'users', uid, 'stacks', id), {
+    id, name: name.trim(), track: track || 'morning', habitIds: [], createdAt: serverTimestamp()
+  });
+  return id;
+}
+
+async function updateStack(id, data) {
+  const uid = getHabitsUid();
+  if (!uid || !id) return;
+  const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
+  await updateDoc(doc(window.CDX_DB, 'users', uid, 'stacks', id), { ...data, updatedAt: serverTimestamp() });
+}
+
+async function deleteStack(id) {
+  const uid = getHabitsUid();
+  if (!uid || !id) return;
+  const { doc, deleteDoc } = window.CDX_FB;
+  await deleteDoc(doc(window.CDX_DB, 'users', uid, 'stacks', id));
 }
 
 /* ══ HABITS — TAB SWITCH ══ */
 function switchHabitsTab(tab) {
+  // Backward-compat: any legacy launcher references resolve to today
+  if (tab === 'launcher' || tab === 'tracker' || tab === 'progress' || tab === 'builder') tab = 'today';
   _habitsTab = tab;
-  ['tracker','launcher','builder','progress'].forEach(t => {
+  ['today','reflect','habits','hinsights'].forEach(t => {
     const btn  = document.querySelector(`.habits-v2-tab[data-htab="${t}"]`);
     const pane = document.getElementById('hpane-'+t);
     if (btn) btn.classList.toggle('active', t === tab);
     if (pane) pane.style.display = t === tab ? 'flex' : 'none';
   });
-  if (tab === 'tracker')  { habitsSubscribe(); renderHabits(); routinesSubscribe(); renderRoutines(); behavSubscribe(); renderBehaviours(); }
-  if (tab === 'launcher') { habitsSubscribe(); behavSubscribe(); hbSettingsSubscribe(); hbInitLauncher(); }
-  if (tab === 'builder')  { hbRenderLibrary(); }
-  if (tab === 'progress') { hbBuildHeatmap(); }
+  if (tab === 'today')     { habitsSubscribe(); routinesSubscribe(); behavSubscribe(); hbSettingsSubscribe(); renderToday(); }
+  if (tab === 'reflect')   { habitsSubscribe(); hbSettingsSubscribe(); behavSubscribe(); valuesSubscribe(); renderReflect(); }
+  if (tab === 'habits')    { habitsSubscribe(); hbSettingsSubscribe(); valuesSubscribe(); stacksSubscribe(); _habitsTabInit(); renderHabitsTab(); }
+  if (tab === 'hinsights') { habitsSubscribe(); requestAnimationFrame(() => renderHabitsInsights()); }
+}
+
+/* ══ TODAY TAB — Daily Ritual ══ */
+let _todayClockInterval = null;
+
+function _todayAnchorGroup(habit) {
+  const a = habit.anchor || { type: 'anytime', value: '' };
+  if (a.type === 'anytime' || !a.value) return 'anytime';
+  const v = (a.value || '').toLowerCase();
+  // Infer time-of-day from keywords or explicit time
+  if (a.type === 'time') {
+    const h = parseInt((a.value || '').split(':')[0] || '0', 10);
+    if (h < 12) return 'morning';
+    if (h < 17) return 'midday';
+    return 'evening';
+  }
+  if (v.includes('wake') || v.includes('coffee') || v.includes('breakfast') || v.includes('morning')) return 'morning';
+  if (v.includes('lunch') || v.includes('midday') || v.includes('afternoon')) return 'midday';
+  if (v.includes('dinner') || v.includes('wind-down') || v.includes('bed') || v.includes('evening') || v.includes('night')) return 'evening';
+  return 'anytime';
+}
+
+function _todayStreakDays(habitId) {
+  let streak = 0;
+  for (let i = 0; i < 60; i++) {
+    const ds = localDateStr(new Date(Date.now() - i * 86400000));
+    if (_habitLogs[ds]?.completions?.[habitId]) streak++;
+    else if (i > 0) break;
+  }
+  return streak;
+}
+
+function renderToday() {
+  // Live clock + date
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const timeEl = document.getElementById('today-hero-time');
+  const dateEl = document.getElementById('today-hero-date');
+  if (timeEl) timeEl.textContent = `${hh}:${mm}`;
+  if (dateEl) dateEl.textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+
+  // Season
+  const seasonEl = document.getElementById('today-hero-season');
+  if (seasonEl) {
+    if (_hbSettings.season) {
+      let dayN = '';
+      if (_hbSettings.seasonStartDate) {
+        const s = new Date(_hbSettings.seasonStartDate + 'T00:00');
+        const diff = Math.max(1, Math.floor((Date.now() - s.getTime()) / 86400000) + 1);
+        dayN = ' · Day ' + diff;
+      }
+      seasonEl.textContent = _hbSettings.season + dayN;
+    } else {
+      seasonEl.textContent = 'Set your season in habits settings';
+    }
+  }
+
+  // Quote
+  const quoteEl = document.getElementById('today-hero-quote');
+  if (quoteEl) {
+    if (_hbSettings.quote) {
+      quoteEl.textContent = '"' + _hbSettings.quote + '"' + (_hbSettings.quoteAuthor ? ' — ' + _hbSettings.quoteAuthor : '');
+    } else {
+      quoteEl.textContent = '';
+    }
+  }
+
+  // Non-negotiable (load today's, fall back to default in settings)
+  const nonnegEl = document.getElementById('today-nonneg-input');
+  const today = localDateStr(now);
+  const todayLog = _habitLogs[today] || {};
+  if (nonnegEl && document.activeElement !== nonnegEl) {
+    nonnegEl.textContent = todayLog.nonNegotiable || _hbSettings.nonNegotiable || '';
+  }
+
+  // Mood/energy chips — reflect current values
+  const moodChips = document.querySelectorAll('.today-checkin-chips[data-check="mood"] .today-chip');
+  moodChips.forEach(c => c.classList.toggle('active', parseInt(c.dataset.v, 10) === (todayLog.mood || 0)));
+  const energyChips = document.querySelectorAll('.today-checkin-chips[data-check="energy"] .today-chip');
+  energyChips.forEach(c => c.classList.toggle('active', parseInt(c.dataset.v, 10) === (todayLog.energy || 0)));
+
+  // Rest day button state
+  const restBtn = document.getElementById('today-rest-btn');
+  if (restBtn) restBtn.classList.toggle('active', !!todayLog.restDay);
+
+  // Morning Mode — routine timeline
+  _todayRenderMorningMode();
+
+  // Anchor-grouped habits
+  _todayRenderHabits(today, !!todayLog.restDay);
+}
+
+function _todayRenderMorningMode() {
+  const stepsEl = document.getElementById('today-morning-steps');
+  const progEl = document.getElementById('today-morning-progress');
+  if (!stepsEl) return;
+  const steps = _routines.morning || [];
+  if (!steps.length) {
+    stepsEl.innerHTML = '<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:8px 2px">No morning routine yet — set one in the Launcher tab or the legacy section below.</div>';
+    if (progEl) progEl.textContent = '0/0';
+    return;
+  }
+  const todayDs = localDateStr(new Date());
+  const doneKey = 'hb-launcher-done-' + todayDs;
+  let done;
+  try { done = JSON.parse(localStorage.getItem(doneKey) || '{}'); } catch { done = {}; }
+  let doneCount = 0;
+  stepsEl.innerHTML = steps.map((s, i) => {
+    const isDone = !!done[i];
+    if (isDone) doneCount++;
+    return `<div class="today-morning-step ${isDone ? 'done' : ''}" data-morning-idx="${i}">
+      <div class="today-morning-check ${isDone ? 'done' : ''}">${isDone ? '✓' : ''}</div>
+      <span class="today-morning-step-time">${escHtml(s.time || '')}</span>
+      <span class="today-morning-step-text">${escHtml(s.text || '')}</span>
+    </div>`;
+  }).join('');
+  if (progEl) progEl.textContent = doneCount + '/' + steps.length;
+}
+
+function _todayRenderHabits(todayDs, isRestDay) {
+  const listEl = document.getElementById('today-habits');
+  if (!listEl) return;
+  const habits = (_habits || []).filter(h => h.status !== 'archived' && h.status !== 'graduated');
+  if (isRestDay) {
+    listEl.innerHTML = `<div class="today-rest-banner">🌙 Today is a rest day. Completions are paused, streaks are preserved.<br><span style="opacity:0.7">Self-compassion is not the same as giving up.</span></div>`;
+    return;
+  }
+  if (!habits.length) {
+    listEl.innerHTML = '<div class="today-empty">No habits yet — add one below or use the Builder tab to design one.</div>';
+    return;
+  }
+  // Group by anchor
+  const groups = { morning: [], midday: [], evening: [], anytime: [] };
+  habits.forEach(h => { groups[_todayAnchorGroup(h)].push(h); });
+  const groupMeta = [
+    { id: 'morning', icon: '🌅', label: 'Morning' },
+    { id: 'midday',  icon: '☀️', label: 'Midday' },
+    { id: 'evening', icon: '🌙', label: 'Evening' },
+    { id: 'anytime', icon: '🎯', label: 'Anytime' },
+  ];
+  listEl.innerHTML = groupMeta.filter(g => groups[g.id].length).map(g => {
+    const rows = groups[g.id].map(h => {
+      const done = !!_habitLogs[todayDs]?.completions?.[h.id];
+      const streak = _todayStreakDays(h.id);
+      const streakClass = streak >= 7 ? 'hot' : '';
+      const name = h.tinyBehavior || h.name;
+      const identity = h.identityTag ? `<span class="today-habit-identity">${escHtml(h.identityTag)}</span>` : '';
+      const anchor = h.anchor?.value ? `<span class="today-habit-anchor">after ${escHtml(h.anchor.value)}</span>` : '';
+      const meta = identity || anchor ? `<div class="today-habit-meta">${identity}${identity && anchor ? '<span>·</span>' : ''}${anchor}</div>` : '';
+      return `<div class="today-habit ${done ? 'done' : ''}" data-habit-id="${escAttr(h.id)}">
+        <div class="today-habit-check ${done ? 'done' : ''}" data-today-toggle="${escAttr(h.id)}">${done ? '✓' : ''}</div>
+        <div class="today-habit-body">
+          <div class="today-habit-name">${escHtml(name)}</div>
+          ${meta}
+        </div>
+        ${streak > 0 ? `<span class="today-habit-streak ${streakClass}">${streak}d</span>` : ''}
+        <div class="today-habit-burst"></div>
+        <div class="today-habit-vote"></div>
+      </div>`;
+    }).join('');
+    return `<div class="today-anchor-group">
+      <div class="today-anchor-header">
+        <span class="today-anchor-icon">${g.icon}</span>
+        <span class="today-anchor-title">${g.label}</span>
+        <span class="today-anchor-count">${groups[g.id].filter(h => _habitLogs[todayDs]?.completions?.[h.id]).length}/${groups[g.id].length}</span>
+      </div>
+      <div class="today-anchor-body">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+async function _todaySaveCheckin(field, value) {
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const ds = localDateStr(new Date());
+  if (!_habitLogs[ds]) _habitLogs[ds] = { date: ds, completions: {} };
+  _habitLogs[ds][field] = value;
+  // Add context snapshot if not present
+  if (!_habitLogs[ds].contextSnapshot) {
+    const d = new Date();
+    _habitLogs[ds].contextSnapshot = { dayOfWeek: d.getDay(), weekend: d.getDay() === 0 || d.getDay() === 6, month: d.getMonth() };
+  }
+  try {
+    const { doc, setDoc } = window.CDX_FB;
+    const payload = { date: ds, [field]: value, contextSnapshot: _habitLogs[ds].contextSnapshot };
+    await setDoc(doc(window.CDX_DB, 'users', uid, 'habitLogs', ds), payload, { merge: true });
+  } catch (e) { console.warn('today save checkin:', e); }
+}
+
+async function _todayToggleRestDay() {
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const ds = localDateStr(new Date());
+  if (!_habitLogs[ds]) _habitLogs[ds] = { date: ds, completions: {} };
+  const wasRest = !!_habitLogs[ds].restDay;
+  _habitLogs[ds].restDay = !wasRest;
+  renderToday();
+  try {
+    const { doc, setDoc } = window.CDX_FB;
+    await setDoc(doc(window.CDX_DB, 'users', uid, 'habitLogs', ds), { date: ds, restDay: !wasRest }, { merge: true });
+  } catch (e) { console.warn('today rest toggle:', e); _habitLogs[ds].restDay = wasRest; renderToday(); }
+}
+
+function _todayFireCelebration(habitRow, habit) {
+  const burst = habitRow.querySelector('.today-habit-burst');
+  const vote  = habitRow.querySelector('.today-habit-vote');
+  if (burst) {
+    burst.classList.remove('fire');
+    void burst.offsetWidth;
+    burst.classList.add('fire');
+  }
+  if (vote) {
+    const identity = habit.identityTag || 'the builder';
+    vote.textContent = '+1 for ' + identity;
+    vote.classList.remove('show');
+    void vote.offsetWidth;
+    vote.classList.add('show');
+  }
+  // Haptic if available
+  if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
+}
+
+async function _todayNonNegSave() {
+  const el = document.getElementById('today-nonneg-input');
+  if (!el) return;
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const ds = localDateStr(new Date());
+  const text = el.textContent.trim();
+  if (!_habitLogs[ds]) _habitLogs[ds] = { date: ds, completions: {} };
+  _habitLogs[ds].nonNegotiable = text;
+  try {
+    const { doc, setDoc } = window.CDX_FB;
+    await setDoc(doc(window.CDX_DB, 'users', uid, 'habitLogs', ds), { date: ds, nonNegotiable: text }, { merge: true });
+  } catch (e) { console.warn('today nonneg save:', e); }
+}
+
+function _todayInit() {
+  const pane = document.getElementById('hpane-today');
+  if (!pane || pane.dataset.inited === '1') return;
+  pane.dataset.inited = '1';
+
+  // Live clock
+  if (_todayClockInterval) clearInterval(_todayClockInterval);
+  _todayClockInterval = setInterval(() => {
+    if (_habitsTab === 'today') {
+      const now = new Date();
+      const timeEl = document.getElementById('today-hero-time');
+      if (timeEl) timeEl.textContent = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    }
+  }, 30000);
+
+  // Mood/energy chip clicks
+  pane.querySelectorAll('.today-checkin-chips').forEach(row => {
+    row.addEventListener('click', e => {
+      const chip = e.target.closest('.today-chip');
+      if (!chip) return;
+      const field = row.dataset.check; // 'mood' or 'energy'
+      const value = parseInt(chip.dataset.v, 10);
+      row.querySelectorAll('.today-chip').forEach(c => c.classList.toggle('active', c === chip));
+      _todaySaveCheckin(field, value);
+    });
+  });
+
+  // Rest day toggle
+  document.getElementById('today-rest-btn')?.addEventListener('click', _todayToggleRestDay);
+
+  // Non-negotiable save on blur
+  document.getElementById('today-nonneg-input')?.addEventListener('blur', _todayNonNegSave);
+
+  // Morning Mode collapsible toggle
+  document.getElementById('today-morning-header')?.addEventListener('click', () => {
+    const wrap = document.getElementById('today-morning-mode');
+    const body = document.getElementById('today-morning-body');
+    if (!wrap || !body) return;
+    const isOpen = wrap.classList.toggle('open');
+    body.style.display = isOpen ? '' : 'none';
+  });
+
+  // Morning step check clicks (delegated)
+  document.getElementById('today-morning-steps')?.addEventListener('click', e => {
+    const step = e.target.closest('.today-morning-step');
+    if (!step) return;
+    const idx = parseInt(step.dataset.morningIdx, 10);
+    const ds = localDateStr(new Date());
+    const key = 'hb-launcher-done-' + ds;
+    let done;
+    try { done = JSON.parse(localStorage.getItem(key) || '{}'); } catch { done = {}; }
+    done[idx] = !done[idx];
+    localStorage.setItem(key, JSON.stringify(done));
+    _todayRenderMorningMode();
+  });
+
+  // Habit check clicks (delegated)
+  document.getElementById('today-habits')?.addEventListener('click', async e => {
+    const check = e.target.closest('[data-today-toggle]');
+    if (!check) return;
+    const habitId = check.dataset.todayToggle;
+    const ds = localDateStr(new Date());
+    const habit = _habits.find(h => h.id === habitId);
+    const habitRow = check.closest('.today-habit');
+    const wasDone = !!_habitLogs[ds]?.completions?.[habitId];
+    if (!wasDone && habit && habitRow) {
+      _todayFireCelebration(habitRow, habit);
+    }
+    // Reuse existing toggle logic
+    await habitToggle(habitId, ds);
+    // Re-render Today after a brief delay so celebration finishes visibly
+    setTimeout(() => renderToday(), 400);
+  });
 }
 
 /* ══ HABITS — RENDER ══ */
@@ -8695,13 +10148,21 @@ async function habitsAddNew() {
   const uid = getHabitsUid();
   if (!uid) return;
   const id = 'h_' + Date.now();
-  const tempHabit = { id, name, order: _habits.length };
-  _habits.push(tempHabit);
+  const newHabit = _habitWithDefaults({ id, name, order: _habits.length });
+  _habits.push(newHabit);
   renderHabits();
   const { doc, setDoc, serverTimestamp } = window.CDX_FB;
   try {
     await setDoc(doc(window.CDX_DB, 'users', uid, 'habits', id), {
-      id, name, order: _habits.length - 1, createdAt: serverTimestamp(), archivedAt: null
+      id, name, order: _habits.length - 1,
+      identityTag: '', valueTags: [], tinyBehavior: '', fullBehavior: '',
+      anchor: { type: 'anytime', value: '', linkedHabitId: null },
+      schedule: { days: 'daily', frequency: 1 },
+      stackId: null,
+      frictionTags: [], frictionFallbacks: {},
+      restDaysPlanned: [],
+      status: 'active', graduatedAt: null,
+      createdAt: serverTimestamp(), archivedAt: null
     });
   } catch(e) {
     console.warn('habitsAddNew error:', e);
@@ -8741,6 +10202,8 @@ async function habitDelete(habitId) {
   const removed = _habits.find(h => h.id === habitId);
   _habits = _habits.filter(h => h.id !== habitId);
   renderHabits();
+  if (_habitsTab === 'habits') renderHabitsTab();
+  if (_habitsTab === 'today') renderToday();
   const { doc, deleteDoc } = window.CDX_FB;
   try {
     await deleteDoc(doc(window.CDX_DB, 'users', uid, 'habits', habitId));
@@ -8751,7 +10214,1135 @@ async function habitDelete(habitId) {
   }
 }
 
-/* ══ ROUTINES ══ */
+async function habitUpdate(habitId, data) {
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
+  try {
+    await updateDoc(doc(window.CDX_DB, 'users', uid, 'habits', habitId), { ...data, updatedAt: serverTimestamp() });
+  } catch (e) { console.warn('habitUpdate error:', e); }
+}
+
+async function habitGraduate(habitId) {
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const { doc, updateDoc, serverTimestamp } = window.CDX_FB;
+  try {
+    await updateDoc(doc(window.CDX_DB, 'users', uid, 'habits', habitId), {
+      status: 'graduated',
+      graduatedAt: serverTimestamp()
+    });
+    showToast('Habit graduated — slot freed', 'success');
+  } catch (e) { console.warn('habitGraduate error:', e); showToast('Failed to graduate habit', 'error'); }
+}
+
+async function habitReactivate(habitId) {
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const { doc, updateDoc } = window.CDX_FB;
+  try {
+    await updateDoc(doc(window.CDX_DB, 'users', uid, 'habits', habitId), {
+      status: 'active',
+      graduatedAt: null
+    });
+    showToast('Habit reactivated', 'info');
+  } catch (e) { console.warn('habitReactivate error:', e); }
+}
+
+/* ══ HABITS TAB — Design surface (Phase 3) ══ */
+let _hbWizard = { open: false, step: 1, editId: null, data: null };
+const HABITS_WIZARD_TOTAL_STEPS = 6;
+
+function _habitsSubscribeWithTabRender(origSub) {
+  // Helper no-op — we trigger render via _habitsUnsub already
+}
+
+function _habitsCompletionRate30d(habitId) {
+  let done = 0, total = 0;
+  for (let i = 0; i < 30; i++) {
+    const ds = localDateStr(new Date(Date.now() - i * 86400000));
+    total++;
+    if (_habitLogs[ds]?.completions?.[habitId]) done++;
+  }
+  return total > 0 ? Math.round(done / total * 100) : 0;
+}
+
+function _habitsCompletion60d(habitId) {
+  let done = 0, total = 0;
+  for (let i = 0; i < 60; i++) {
+    const ds = localDateStr(new Date(Date.now() - i * 86400000));
+    total++;
+    if (_habitLogs[ds]?.completions?.[habitId]) done++;
+  }
+  return total > 0 ? done / total : 0;
+}
+
+function renderHabitsTab() {
+  const active = _habits.filter(h => h.status !== 'graduated' && h.status !== 'archived');
+  const graduated = _habits.filter(h => h.status === 'graduated');
+
+  // Slot limit banner
+  const slotLimit = _hbSettings.activeSlotLimit || 3;
+  const slotsEl = document.getElementById('habits-tab-slots');
+  if (slotsEl) {
+    slotsEl.textContent = `Slots: ${active.length} of ${slotLimit}`;
+    slotsEl.classList.toggle('full', active.length >= slotLimit);
+  }
+
+  // Create button state
+  const createBtn = document.getElementById('habits-create-btn');
+  if (createBtn) {
+    const atLimit = active.length >= slotLimit;
+    createBtn.classList.toggle('disabled', atLimit);
+    createBtn.textContent = atLimit ? `✕ Slot limit reached · graduate a habit to open one` : '+ Create habit';
+  }
+
+  // Active list
+  const activeList = document.getElementById('habits-active-list');
+  if (activeList) {
+    if (!active.length) {
+      activeList.innerHTML = '<div class="habits-empty-state">No habits yet. Create your first tiny habit with the button below.</div>';
+    } else {
+      activeList.innerHTML = active.map(h => _habitsCardHtml(h, false)).join('');
+    }
+  }
+
+  // Graduated list
+  const gradList = document.getElementById('habits-graduated-list');
+  const gradCount = document.getElementById('habits-graduated-count');
+  if (gradCount) gradCount.textContent = String(graduated.length);
+  if (gradList) {
+    if (!graduated.length) {
+      gradList.innerHTML = '<div class="habits-empty-state">No graduated habits yet. A habit graduates when it reaches 90% over 60 days — research suggests it is then automatic.</div>';
+    } else {
+      gradList.innerHTML = graduated.map(h => _habitsCardHtml(h, true)).join('');
+    }
+  }
+
+  // Stacks list
+  const stacksList = document.getElementById('habits-stacks-list');
+  const stacksCount = document.getElementById('habits-stacks-count');
+  if (stacksCount) stacksCount.textContent = String(_stacks.length);
+  if (stacksList) {
+    if (!_stacks.length) {
+      stacksList.innerHTML = '<div class="habits-empty-state">Stacks let you chain habits together (e.g., After coffee → Meditate → Journal). Create habits first, then group them here.</div>';
+    } else {
+      stacksList.innerHTML = _stacks.map(s => `
+        <div class="habits-card">
+          <div class="habits-card-body">
+            <div class="habits-card-title">${escHtml(s.name)}</div>
+            <div class="habits-card-meta">
+              <span class="habits-card-chip">${escHtml(s.track || 'morning')}</span>
+              <span class="habits-card-chip">${(s.habitIds || []).length} habits</span>
+            </div>
+          </div>
+          <div class="habits-card-actions">
+            <button class="habits-card-btn danger" data-stack-del="${escAttr(s.id)}" title="Delete stack">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+function _habitsCardHtml(h, isGraduated) {
+  const rate = _habitsCompletionRate30d(h.id);
+  const rateGreen = rate >= 80;
+  const identity = h.identityTag ? `<span class="habits-card-chip value">${escHtml(h.identityTag)}</span>` : '';
+  const values = (h.valueTags || []).slice(0, 2).map(v => {
+    const val = _values.find(x => x.id === v);
+    return val ? `<span class="habits-card-chip value">${val.emoji || ''} ${escHtml(val.name)}</span>` : '';
+  }).join('');
+  const anchor = h.anchor?.value
+    ? `<span class="habits-card-chip anchor">${h.anchor.type === 'event' ? 'after' : h.anchor.type === 'time' ? 'at' : 'at'} ${escHtml(h.anchor.value)}</span>`
+    : `<span class="habits-card-chip anchor">anytime</span>`;
+  const rest = (h.restDaysPlanned || []).length
+    ? `<span class="habits-card-chip">rest: ${h.restDaysPlanned.map(d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]).join(' ')}</span>`
+    : '';
+  const rateDisplay = isGraduated
+    ? `<div class="habits-card-rate green">✓</div><div class="habits-card-rate-label">graduated</div>`
+    : `<div class="habits-card-rate ${rateGreen ? 'green' : ''}">${rate}%</div><div class="habits-card-rate-label">30-day</div>`;
+  const actions = isGraduated
+    ? `<button class="habits-card-btn" data-habit-reactivate="${escAttr(h.id)}" title="Reactivate">↻</button>
+       <button class="habits-card-btn danger" data-habit-delete="${escAttr(h.id)}" title="Delete">✕</button>`
+    : `<button class="habits-card-btn" data-habit-edit="${escAttr(h.id)}" title="Edit">✎</button>
+       <button class="habits-card-btn" data-habit-graduate="${escAttr(h.id)}" title="Graduate (mark automatic)">◎</button>
+       <button class="habits-card-btn danger" data-habit-delete="${escAttr(h.id)}" title="Delete">✕</button>`;
+  return `
+    <div class="habits-card">
+      <div class="habits-card-body">
+        <div class="habits-card-title">${escHtml(h.tinyBehavior || h.name)}</div>
+        ${h.identityTag ? `<div class="habits-card-identity">${escHtml(h.identityTag)}</div>` : ''}
+        <div class="habits-card-meta">${values}${anchor}${rest}</div>
+      </div>
+      <div class="habits-card-stats">${rateDisplay}</div>
+      <div class="habits-card-actions">${actions}</div>
+    </div>`;
+}
+
+function _habitsWizardOpen(editHabit) {
+  if (!editHabit) {
+    // Enforce slot limit on create
+    const active = _habits.filter(h => h.status !== 'graduated' && h.status !== 'archived');
+    const slotLimit = _hbSettings.activeSlotLimit || 3;
+    if (active.length >= slotLimit) {
+      showToast('Focus builds habits. Graduate one first or archive it.', 'error');
+      return;
+    }
+  }
+  _hbWizard.open = true;
+  _hbWizard.step = 1;
+  _hbWizard.editId = editHabit?.id || null;
+  _hbWizard.data = editHabit ? {
+    name: editHabit.name || '',
+    identityTag: editHabit.identityTag || '',
+    valueTags: [...(editHabit.valueTags || [])],
+    tinyBehavior: editHabit.tinyBehavior || '',
+    fullBehavior: editHabit.fullBehavior || '',
+    anchor: { ...(editHabit.anchor || { type: 'anytime', value: '', linkedHabitId: null }) },
+    frictionTags: [...(editHabit.frictionTags || [])],
+    restDaysPlanned: [...(editHabit.restDaysPlanned || [])],
+  } : {
+    name: '', identityTag: '', valueTags: [], tinyBehavior: '', fullBehavior: '',
+    anchor: { type: 'event', value: '', linkedHabitId: null },
+    frictionTags: [], restDaysPlanned: [],
+  };
+  document.getElementById('habits-wizard-backdrop').style.display = '';
+  document.getElementById('habits-wizard').style.display = 'flex';
+  _habitsWizardRender();
+}
+
+function _habitsWizardClose() {
+  _hbWizard.open = false;
+  document.getElementById('habits-wizard-backdrop').style.display = 'none';
+  document.getElementById('habits-wizard').style.display = 'none';
+}
+
+function _habitsWizardRender() {
+  const step = _hbWizard.step;
+  document.getElementById('habits-wizard-step-label').textContent = `Step ${step} of ${HABITS_WIZARD_TOTAL_STEPS}`;
+  document.getElementById('habits-wizard-progress-fill').style.width = `${(step / HABITS_WIZARD_TOTAL_STEPS) * 100}%`;
+  const titles = ['', 'Why this habit?', 'Who are you becoming?', 'The tiny version', 'When will you do it?', 'What could break it?', 'Plan your rest days'];
+  document.getElementById('habits-wizard-title').textContent = titles[step];
+
+  // Show/hide steps
+  document.querySelectorAll('.habits-wstep').forEach(el => {
+    el.style.display = parseInt(el.dataset.wstep, 10) === step ? '' : 'none';
+  });
+  // Library only on step 1 or 3
+  const wlib = document.getElementById('habits-wlib');
+  if (wlib) wlib.style.display = (step === 1 || step === 3) ? '' : 'none';
+
+  // Render values grid
+  if (step === 1) {
+    const grid = document.getElementById('habits-wizard-values');
+    if (grid) {
+      grid.innerHTML = _values.map(v => {
+        const active = _hbWizard.data.valueTags.includes(v.id);
+        return `<button class="habits-value-chip ${active ? 'active' : ''}" data-val-id="${escAttr(v.id)}">${v.emoji || ''} ${escHtml(v.name)}</button>`;
+      }).join('') || '<div class="habits-empty-state" style="padding:12px">No values yet. Default values are being seeded…</div>';
+    }
+    // Render library templates
+    const libItems = document.getElementById('habits-wlib-items');
+    if (libItems) {
+      libItems.innerHTML = (HB_HABITS || []).slice(0, 12).map(h =>
+        `<button class="habits-wlib-chip" data-template-name="${escAttr(h.name)}" data-template-identity="${escAttr(h.identity || '')}" data-template-tiny="${escAttr(h.sbNew || h.name)}">${h.icon || ''} ${escHtml(h.name)}</button>`
+      ).join('');
+    }
+  }
+
+  // Identity input
+  if (step === 2) {
+    const inp = document.getElementById('habits-wizard-identity');
+    if (inp) inp.value = _hbWizard.data.identityTag || '';
+  }
+
+  // Tiny behavior inputs
+  if (step === 3) {
+    const tinyInp = document.getElementById('habits-wizard-tiny');
+    const fullInp = document.getElementById('habits-wizard-full');
+    if (tinyInp) tinyInp.value = _hbWizard.data.tinyBehavior || '';
+    if (fullInp) fullInp.value = _hbWizard.data.fullBehavior || '';
+  }
+
+  // Anchor
+  if (step === 4) {
+    const inp = document.getElementById('habits-wizard-anchor');
+    if (inp) inp.value = _hbWizard.data.anchor.value || '';
+    document.querySelectorAll('.habits-anchor-type').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.atype === _hbWizard.data.anchor.type);
+    });
+    const hint = document.getElementById('habits-wizard-anchor-hint');
+    if (hint) {
+      const type = _hbWizard.data.anchor.type;
+      hint.textContent = type === 'event' ? 'Event-based anchors build automaticity faster than clocks. Tip: name an existing habit (e.g., "morning coffee").'
+        : type === 'time' ? 'Time-based cues work, but events work better. Try anchoring to an existing habit if possible.'
+        : type === 'location' ? 'Location anchors use environmental triggers (e.g., "at the kitchen table").'
+        : 'Anytime habits are flexible but harder to automate. Consider adding an anchor later.';
+    }
+  }
+
+  // Friction
+  if (step === 5) {
+    document.querySelectorAll('#habits-wizard-friction .habits-friction-chip').forEach(btn => {
+      btn.classList.toggle('active', _hbWizard.data.frictionTags.includes(btn.dataset.friction));
+    });
+  }
+
+  // Rest days
+  if (step === 6) {
+    document.querySelectorAll('#habits-wizard-restdays .habits-restday-chip').forEach(btn => {
+      btn.classList.toggle('active', _hbWizard.data.restDaysPlanned.includes(parseInt(btn.dataset.dow, 10)));
+    });
+  }
+
+  // Next button label
+  const nextBtn = document.getElementById('habits-wizard-next');
+  if (nextBtn) {
+    nextBtn.textContent = step === HABITS_WIZARD_TOTAL_STEPS ? (_hbWizard.editId ? 'Save changes' : 'Create habit') : 'Next →';
+    nextBtn.classList.toggle('save', step === HABITS_WIZARD_TOTAL_STEPS);
+  }
+  const backBtn = document.getElementById('habits-wizard-back');
+  if (backBtn) backBtn.disabled = step === 1;
+}
+
+function _habitsWizardCollectCurrentStep() {
+  const step = _hbWizard.step;
+  if (step === 2) {
+    _hbWizard.data.identityTag = document.getElementById('habits-wizard-identity')?.value.trim() || '';
+  }
+  if (step === 3) {
+    _hbWizard.data.tinyBehavior = document.getElementById('habits-wizard-tiny')?.value.trim() || '';
+    _hbWizard.data.fullBehavior = document.getElementById('habits-wizard-full')?.value.trim() || '';
+    // Use tiny as the default name if empty
+    if (!_hbWizard.data.name) _hbWizard.data.name = _hbWizard.data.tinyBehavior;
+  }
+  if (step === 4) {
+    _hbWizard.data.anchor.value = document.getElementById('habits-wizard-anchor')?.value.trim() || '';
+  }
+}
+
+async function _habitsWizardSave() {
+  _habitsWizardCollectCurrentStep();
+  const d = _hbWizard.data;
+  if (!d.tinyBehavior && !d.name) {
+    showToast('Please enter a tiny behavior', 'error');
+    return;
+  }
+  if (!d.name) d.name = d.tinyBehavior;
+
+  const uid = getHabitsUid();
+  if (!uid) return;
+  const { doc, setDoc, updateDoc, serverTimestamp } = window.CDX_FB;
+
+  try {
+    if (_hbWizard.editId) {
+      await updateDoc(doc(window.CDX_DB, 'users', uid, 'habits', _hbWizard.editId), {
+        name: d.name,
+        identityTag: d.identityTag,
+        valueTags: d.valueTags,
+        tinyBehavior: d.tinyBehavior,
+        fullBehavior: d.fullBehavior,
+        anchor: d.anchor,
+        frictionTags: d.frictionTags,
+        restDaysPlanned: d.restDaysPlanned,
+        updatedAt: serverTimestamp()
+      });
+      showToast('Habit updated', 'success');
+    } else {
+      const id = 'h_' + Date.now();
+      await setDoc(doc(window.CDX_DB, 'users', uid, 'habits', id), {
+        id,
+        name: d.name,
+        order: _habits.length,
+        identityTag: d.identityTag,
+        valueTags: d.valueTags,
+        tinyBehavior: d.tinyBehavior,
+        fullBehavior: d.fullBehavior,
+        anchor: d.anchor,
+        schedule: { days: 'daily', frequency: 1 },
+        stackId: null,
+        frictionTags: d.frictionTags,
+        frictionFallbacks: {},
+        restDaysPlanned: d.restDaysPlanned,
+        status: 'active',
+        graduatedAt: null,
+        createdAt: serverTimestamp(),
+        archivedAt: null
+      });
+      showToast('Habit created', 'success');
+    }
+    _habitsWizardClose();
+  } catch (e) {
+    console.warn('habits wizard save error:', e);
+    showToast('Failed to save habit', 'error');
+  }
+}
+
+function _habitsWizardNext() {
+  _habitsWizardCollectCurrentStep();
+  if (_hbWizard.step === HABITS_WIZARD_TOTAL_STEPS) {
+    _habitsWizardSave();
+    return;
+  }
+  _hbWizard.step++;
+  _habitsWizardRender();
+}
+
+function _habitsWizardBack() {
+  _habitsWizardCollectCurrentStep();
+  if (_hbWizard.step > 1) { _hbWizard.step--; _habitsWizardRender(); }
+}
+
+function _habitsTabInit() {
+  const pane = document.getElementById('hpane-habits');
+  if (!pane || pane.dataset.inited === '1') return;
+  pane.dataset.inited = '1';
+
+  // Create button
+  document.getElementById('habits-create-btn')?.addEventListener('click', () => {
+    const createBtn = document.getElementById('habits-create-btn');
+    if (createBtn?.classList.contains('disabled')) {
+      showToast('Graduate a habit to free a slot', 'error');
+      return;
+    }
+    _habitsWizardOpen(null);
+  });
+
+  // Delegated card actions (edit, delete, graduate, reactivate)
+  pane.addEventListener('click', async e => {
+    const editBtn = e.target.closest('[data-habit-edit]');
+    if (editBtn) {
+      const h = _habits.find(x => x.id === editBtn.dataset.habitEdit);
+      if (h) _habitsWizardOpen(h);
+      return;
+    }
+    const delBtn = e.target.closest('[data-habit-delete]');
+    if (delBtn) {
+      const h = _habits.find(x => x.id === delBtn.dataset.habitDelete);
+      if (h && await cdxConfirm(`Delete "${h.name}"?`)) await habitDelete(h.id);
+      return;
+    }
+    const gradBtn = e.target.closest('[data-habit-graduate]');
+    if (gradBtn) {
+      const h = _habits.find(x => x.id === gradBtn.dataset.habitGraduate);
+      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(53,249,47)', okBg: 'rgba(53,249,47,0.1)', okBorder: 'rgba(53,249,47,0.4)' })) {
+        await habitGraduate(h.id);
+      }
+      return;
+    }
+    const reactBtn = e.target.closest('[data-habit-reactivate]');
+    if (reactBtn) {
+      const h = _habits.find(x => x.id === reactBtn.dataset.habitReactivate);
+      if (!h) return;
+      const active = _habits.filter(x => x.status !== 'graduated' && x.status !== 'archived');
+      const slotLimit = _hbSettings.activeSlotLimit || 3;
+      if (active.length >= slotLimit) {
+        showToast('Slot limit full — graduate another habit first', 'error');
+        return;
+      }
+      await habitReactivate(h.id);
+      return;
+    }
+    const stackDelBtn = e.target.closest('[data-stack-del]');
+    if (stackDelBtn) {
+      if (await cdxConfirm('Delete this stack?')) await deleteStack(stackDelBtn.dataset.stackDel);
+      return;
+    }
+  });
+
+  // Wizard: close + backdrop
+  document.getElementById('habits-wizard-close')?.addEventListener('click', _habitsWizardClose);
+  document.getElementById('habits-wizard-backdrop')?.addEventListener('click', _habitsWizardClose);
+
+  // Wizard: back/next
+  document.getElementById('habits-wizard-back')?.addEventListener('click', _habitsWizardBack);
+  document.getElementById('habits-wizard-next')?.addEventListener('click', _habitsWizardNext);
+
+  // Wizard: value chip clicks (delegation on body)
+  document.querySelector('.habits-wizard-body')?.addEventListener('click', e => {
+    // Values
+    const val = e.target.closest('[data-val-id]');
+    if (val) {
+      const id = val.dataset.valId;
+      const idx = _hbWizard.data.valueTags.indexOf(id);
+      if (idx >= 0) _hbWizard.data.valueTags.splice(idx, 1);
+      else if (_hbWizard.data.valueTags.length < 2) _hbWizard.data.valueTags.push(id);
+      else { showToast('Pick at most 2 values', 'info'); return; }
+      val.classList.toggle('active');
+      return;
+    }
+    // Anchor type
+    const atype = e.target.closest('[data-atype]');
+    if (atype) {
+      _hbWizard.data.anchor.type = atype.dataset.atype;
+      _habitsWizardRender();
+      return;
+    }
+    // Friction chip
+    const fric = e.target.closest('[data-friction]');
+    if (fric) {
+      const f = fric.dataset.friction;
+      const idx = _hbWizard.data.frictionTags.indexOf(f);
+      if (idx >= 0) _hbWizard.data.frictionTags.splice(idx, 1);
+      else _hbWizard.data.frictionTags.push(f);
+      fric.classList.toggle('active');
+      return;
+    }
+    // Rest day chip
+    const rd = e.target.closest('[data-dow]');
+    if (rd) {
+      const dow = parseInt(rd.dataset.dow, 10);
+      const idx = _hbWizard.data.restDaysPlanned.indexOf(dow);
+      if (idx >= 0) _hbWizard.data.restDaysPlanned.splice(idx, 1);
+      else _hbWizard.data.restDaysPlanned.push(dow);
+      rd.classList.toggle('active');
+      return;
+    }
+    // Library template
+    const tpl = e.target.closest('[data-template-name]');
+    if (tpl) {
+      _hbWizard.data.name = tpl.dataset.templateName;
+      _hbWizard.data.tinyBehavior = tpl.dataset.templateTiny;
+      // Strip quotes from identity string
+      const ident = (tpl.dataset.templateIdentity || '').replace(/^"|"$/g, '').replace(/^I am (a |someone who |the )?/i, '').split(/[.—-]/)[0].trim().slice(0, 60);
+      _hbWizard.data.identityTag = ident;
+      showToast('Template applied — adjust and continue', 'success');
+      return;
+    }
+  });
+}
+
+/* ══ REFLECT TAB — Phase 5 ══ */
+let _reflectReviewTimer = null;
+let _reflectInited = false;
+let _reflectCurrentReview = null;
+
+function _reflectWeekKey() {
+  // ISO week key: YYYY-Www based on Monday of current week
+  const now = new Date();
+  const dow = now.getDay();
+  const daysBack = dow === 0 ? 6 : dow - 1;
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - daysBack);
+  mon.setHours(0,0,0,0);
+  // Approximate ISO week number
+  const firstJan = new Date(mon.getFullYear(), 0, 1);
+  const weekNum = Math.ceil(((mon - firstJan) / 86400000 + firstJan.getDay() + 1) / 7);
+  return `${mon.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+
+function _reflectWeekDates() {
+  const now = new Date();
+  const dow = now.getDay();
+  const daysBack = dow === 0 ? 6 : dow - 1;
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - daysBack + i);
+    d.setHours(0,0,0,0);
+    dates.push(d);
+  }
+  return dates;
+}
+
+async function _reflectLoadReview() {
+  const uid = getHabitsUid();
+  if (!uid || !window.CDX_DB) return null;
+  const weekKey = _reflectWeekKey();
+  try {
+    const { doc, getDoc } = window.CDX_FB;
+    const snap = await getDoc(doc(window.CDX_DB, 'users', uid, 'weeklyReviews', weekKey));
+    return snap.exists() ? snap.data() : null;
+  } catch (e) { console.warn('reflect load:', e); return null; }
+}
+
+async function _reflectSaveReview() {
+  const uid = getHabitsUid();
+  if (!uid || !window.CDX_DB) return;
+  const weekKey = _reflectWeekKey();
+  const data = {
+    weekKey,
+    worked:   document.getElementById('reflect-review-worked')?.value.trim() || '',
+    didnt:    document.getElementById('reflect-review-didnt')?.value.trim() || '',
+    next:     document.getElementById('reflect-review-next')?.value.trim() || '',
+    reanchor: document.getElementById('reflect-review-reanchor')?.value.trim() || '',
+  };
+  try {
+    const { doc, setDoc, serverTimestamp } = window.CDX_FB;
+    await setDoc(doc(window.CDX_DB, 'users', uid, 'weeklyReviews', weekKey), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+    const saveEl = document.getElementById('reflect-review-save');
+    if (saveEl) {
+      saveEl.textContent = 'Saved ✓'; saveEl.classList.add('saving');
+      setTimeout(() => { saveEl.textContent = 'Saved automatically'; saveEl.classList.remove('saving'); }, 1500);
+    }
+  } catch (e) { console.warn('reflect save:', e); }
+}
+
+function _reflectScheduleReviewSave() {
+  clearTimeout(_reflectReviewTimer);
+  _reflectReviewTimer = setTimeout(() => _reflectSaveReview(), 900);
+}
+
+function _reflectInit() {
+  if (_reflectInited) return;
+  _reflectInited = true;
+  // Wire textareas to debounced save
+  ['reflect-review-worked','reflect-review-didnt','reflect-review-next','reflect-review-reanchor'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', _reflectScheduleReviewSave);
+  });
+}
+
+async function renderReflect() {
+  _reflectInit();
+
+  const weekDates = _reflectWeekDates();
+  const weekDs = weekDates.map(d => localDateStr(d));
+  const now = new Date();
+  const todayDs = localDateStr(now);
+
+  // Week label
+  const labelEl = document.getElementById('reflect-week-label');
+  if (labelEl) {
+    const start = weekDates[0], end = weekDates[6];
+    const fmt = d => d.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' });
+    labelEl.textContent = `${fmt(start)} – ${fmt(end)}`;
+  }
+
+  // Fresh-start card (Mondays, month-start, or new season)
+  const freshEl = document.getElementById('reflect-fresh-start');
+  if (freshEl) {
+    const dow = now.getDay();
+    const dom = now.getDate();
+    let msg = '';
+    if (dow === 1) msg = '<strong>It\'s Monday.</strong> Fresh start effect is real — use the motivation boost to re-anchor a wobbly habit or start a tiny new one.';
+    else if (dom === 1) msg = '<strong>New month.</strong> Research (Milkman): fresh-start landmarks boost behavior change by up to 30%. Name one thing you want to carry forward.';
+    if (msg) {
+      freshEl.innerHTML = `<span class="reflect-fresh-icon">☀</span><div class="reflect-fresh-text">${msg}</div>`;
+      freshEl.style.display = 'flex';
+    } else {
+      freshEl.style.display = 'none';
+    }
+  }
+
+  // Season
+  const seasonNameEl = document.getElementById('reflect-season-name');
+  const seasonSubEl = document.getElementById('reflect-season-sub');
+  const seasonIdEl = document.getElementById('reflect-season-identity');
+  if (seasonNameEl) {
+    seasonNameEl.textContent = _hbSettings.season || 'No season set';
+  }
+  if (seasonSubEl) {
+    if (_hbSettings.seasonStartDate) {
+      const s = new Date(_hbSettings.seasonStartDate + 'T00:00');
+      const diff = Math.max(1, Math.floor((Date.now() - s.getTime()) / 86400000) + 1);
+      seasonSubEl.textContent = `Day ${diff} of the chapter`;
+    } else {
+      seasonSubEl.textContent = 'Set a start date in habits settings';
+    }
+  }
+  if (seasonIdEl) {
+    seasonIdEl.textContent = _behav.identity ? `"${_behav.identity}"` : '';
+  }
+
+  // Active habits list (used across sections)
+  const habits = _habits.filter(h => h.status !== 'graduated' && h.status !== 'archived');
+
+  // Week stats
+  const weekStatsEl = document.getElementById('reflect-week-stats');
+  if (weekStatsEl) {
+    let totalDone = 0, totalPossible = 0, bestDayIdx = 0, bestDayCnt = 0, restDayCount = 0;
+    weekDs.forEach((ds, i) => {
+      const log = _habitLogs[ds] || {};
+      if (log.restDay) { restDayCount++; return; }
+      const comps = log.completions || {};
+      const doneCnt = habits.reduce((s, h) => s + (comps[h.id] ? 1 : 0), 0);
+      totalDone += doneCnt;
+      totalPossible += habits.length;
+      if (doneCnt > bestDayCnt) { bestDayCnt = doneCnt; bestDayIdx = i; }
+    });
+    const pct = totalPossible > 0 ? Math.round(totalDone / totalPossible * 100) : 0;
+    const dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const greenPct = pct >= 70;
+    weekStatsEl.innerHTML = `
+      <div class="reflect-stat">
+        <div class="reflect-stat-num ${greenPct ? 'green' : ''}">${pct}%</div>
+        <div class="reflect-stat-label">Completion rate</div>
+      </div>
+      <div class="reflect-stat">
+        <div class="reflect-stat-num">${totalDone}</div>
+        <div class="reflect-stat-label">Habit completions</div>
+      </div>
+      <div class="reflect-stat">
+        <div class="reflect-stat-num">${bestDayCnt > 0 ? dowNames[bestDayIdx] : '—'}</div>
+        <div class="reflect-stat-label">Best day · ${bestDayCnt} done</div>
+      </div>
+      <div class="reflect-stat">
+        <div class="reflect-stat-num">${restDayCount}</div>
+        <div class="reflect-stat-label">Rest days</div>
+      </div>`;
+  }
+
+  // 7-day grid
+  const gridEl = document.getElementById('reflect-week-grid');
+  if (gridEl) {
+    const dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    gridEl.innerHTML = weekDates.map((d, i) => {
+      const ds = weekDs[i];
+      const log = _habitLogs[ds] || {};
+      const isRest = !!log.restDay;
+      const comps = log.completions || {};
+      const doneCnt = habits.reduce((s, h) => s + (comps[h.id] ? 1 : 0), 0);
+      const pct = habits.length > 0 ? doneCnt / habits.length : 0;
+      const isToday = ds === todayDs;
+      const classes = ['reflect-week-cell'];
+      if (isToday) classes.push('today');
+      if (isRest) classes.push('rest');
+      if (isRest) {
+        return `<div class="${classes.join(' ')}">
+          <span class="reflect-week-dow">${dowNames[i]}</span>
+          <span class="reflect-week-ratio rest-label">rest</span>
+        </div>`;
+      }
+      const greenBar = pct >= 0.8;
+      return `<div class="${classes.join(' ')}">
+        <span class="reflect-week-dow">${dowNames[i]}</span>
+        <span class="reflect-week-ratio ${greenBar ? 'green' : ''}">${habits.length > 0 ? `${doneCnt}/${habits.length}` : '—'}</span>
+        <div class="reflect-week-bar"><div class="reflect-week-bar-fill ${greenBar ? 'green' : ''}" style="width:${Math.round(pct * 100)}%"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Wins + Needs love
+  const winsEl = document.getElementById('reflect-wins');
+  const needsEl = document.getElementById('reflect-needs');
+  if (winsEl && needsEl) {
+    const nonRestDates = weekDs.filter(ds => !_habitLogs[ds]?.restDay);
+    if (!habits.length || !nonRestDates.length) {
+      winsEl.innerHTML = '<div class="hins-empty-state">No data yet this week.</div>';
+      needsEl.innerHTML = '<div class="hins-empty-state">No data yet this week.</div>';
+    } else {
+      const rows = habits.map(h => {
+        const done = nonRestDates.filter(ds => _habitLogs[ds]?.completions?.[h.id]).length;
+        const pct = Math.round(done / nonRestDates.length * 100);
+        return { h, done, total: nonRestDates.length, pct };
+      });
+      const wins = rows.filter(r => r.pct >= 100);
+      const needs = rows.filter(r => r.pct < 50);
+      winsEl.innerHTML = wins.length
+        ? wins.map(r => `<div class="reflect-list-row win"><span class="reflect-list-icon">◎</span><span class="reflect-list-name">${escHtml(r.h.tinyBehavior || r.h.name)}</span><span class="reflect-list-pct green">${r.done}/${r.total}</span></div>`).join('')
+        : '<div class="hins-empty-state">No 100% habits yet this week. One tiny win today changes that.</div>';
+      needsEl.innerHTML = needs.length
+        ? needs.map(r => `<div class="reflect-list-row"><span class="reflect-list-icon">◐</span><span class="reflect-list-name">${escHtml(r.h.tinyBehavior || r.h.name)}</span><span class="reflect-list-pct">${r.pct}%</span></div>`).join('')
+        : '<div class="hins-empty-state">Nothing under 50% — great discipline this week.</div>';
+    }
+  }
+
+  // Values Action Balance — count completions per value this week
+  const valuesEl = document.getElementById('reflect-values');
+  if (valuesEl) {
+    if (!_values.length) {
+      valuesEl.innerHTML = '<div class="hins-empty-state">No values defined yet. They\'re seeded automatically on first open.</div>';
+    } else {
+      const valCounts = {}; _values.forEach(v => valCounts[v.id] = 0);
+      weekDs.forEach(ds => {
+        const comps = _habitLogs[ds]?.completions || {};
+        habits.forEach(h => {
+          if (comps[h.id]) {
+            (h.valueTags || []).forEach(vid => {
+              if (valCounts[vid] != null) valCounts[vid]++;
+            });
+          }
+        });
+      });
+      const maxCount = Math.max(...Object.values(valCounts), 1);
+      const sorted = _values.map(v => ({ v, count: valCounts[v.id] })).sort((a, b) => b.count - a.count);
+      valuesEl.innerHTML = sorted.map(({ v, count }) => {
+        const pct = Math.round(count / maxCount * 100);
+        const greenBar = pct >= 70;
+        return `<div class="reflect-value-row">
+          <span class="reflect-value-emoji">${v.emoji || ''}</span>
+          <span class="reflect-value-name">${escHtml(v.name)}</span>
+          <div class="reflect-value-bar"><div class="reflect-value-bar-fill ${greenBar ? 'green' : ''}" style="width:${pct}%"></div></div>
+          <span class="reflect-value-count">${count} completions</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Rest days taken
+  const restEl = document.getElementById('reflect-rest');
+  if (restEl) {
+    const dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const rests = weekDs.map((ds, i) => _habitLogs[ds]?.restDay ? dowNames[i] : null).filter(Boolean);
+    restEl.innerHTML = rests.length
+      ? rests.map(d => `<span class="reflect-rest-chip">🌙 ${d}</span>`).join('')
+      : '<div class="reflect-rest-empty">No rest days taken this week.</div>';
+  }
+
+  // Load weekly review content
+  _reflectCurrentReview = await _reflectLoadReview();
+  if (_reflectCurrentReview) {
+    const r = _reflectCurrentReview;
+    const workedEl = document.getElementById('reflect-review-worked');
+    const didntEl = document.getElementById('reflect-review-didnt');
+    const nextEl = document.getElementById('reflect-review-next');
+    const reanchorEl = document.getElementById('reflect-review-reanchor');
+    if (workedEl && document.activeElement !== workedEl) workedEl.value = r.worked || '';
+    if (didntEl && document.activeElement !== didntEl) didntEl.value = r.didnt || '';
+    if (nextEl && document.activeElement !== nextEl) nextEl.value = r.next || '';
+    if (reanchorEl && document.activeElement !== reanchorEl) reanchorEl.value = r.reanchor || '';
+  } else {
+    // Clear textareas for a new week
+    ['reflect-review-worked','reflect-review-didnt','reflect-review-next','reflect-review-reanchor'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && document.activeElement !== el) el.value = '';
+    });
+  }
+
+  // Graduation ledger — habits with status=graduated, sorted by graduatedAt desc
+  const ledgerEl = document.getElementById('reflect-ledger');
+  if (ledgerEl) {
+    const graduated = _habits.filter(h => h.status === 'graduated').sort((a, b) => {
+      const aT = a.graduatedAt?.seconds || 0;
+      const bT = b.graduatedAt?.seconds || 0;
+      return bT - aT;
+    });
+    if (!graduated.length) {
+      ledgerEl.innerHTML = '<div class="hins-empty-state">No graduated habits yet. Reach 90% over 60 days on a habit to graduate it — research suggests it\'s then automatic.</div>';
+    } else {
+      ledgerEl.innerHTML = graduated.map(h => {
+        let dateStr = '';
+        if (h.graduatedAt?.seconds) {
+          dateStr = new Date(h.graduatedAt.seconds * 1000).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+        return `<div class="reflect-ledger-row">
+          <span class="reflect-ledger-icon">◎</span>
+          <div class="reflect-ledger-body">
+            <div class="reflect-ledger-name">${escHtml(h.tinyBehavior || h.name)}</div>
+            ${h.identityTag ? `<div class="reflect-ledger-identity">${escHtml(h.identityTag)}</div>` : ''}
+          </div>
+          <span class="reflect-ledger-date">${dateStr}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+}
+
+/* ══ HABITS INSIGHTS — Phase 4 ══ */
+function _hinsDrawHeatmap() {
+  const cvs = document.getElementById('hins-heatmap-canvas');
+  if (!cvs) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = cvs.clientWidth || 800, H = cvs.clientHeight || 180;
+  cvs.width = W * dpr; cvs.height = H * dpr;
+  cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
+  const ctx = cvs.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  const cols = 13, rows = 7;
+  const leftPad = 36, topPad = 18, rightPad = 12, botPad = 12;
+  const plotW = W - leftPad - rightPad;
+  const plotH = H - topPad - botPad;
+  const gap = 3;
+  const cellW = (plotW - gap * (cols - 1)) / cols;
+  const cellH = (plotH - gap * (rows - 1)) / rows;
+  const size = Math.min(cellW, cellH);
+
+  // Row labels (Mon/Wed/Fri)
+  const dayLabels = ['Mon','','Wed','','Fri','','Sun'];
+  ctx.font = "300 8px 'DM Mono',monospace";
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  for (let r = 0; r < rows; r++) {
+    if (!dayLabels[r]) continue;
+    ctx.fillText(dayLabels[r], leftPad - 6, topPad + r * (size + gap) + size / 2);
+  }
+
+  // Today's dow (0=Mon…6=Sun)
+  const todayDow = (new Date().getDay() + 6) % 7;
+  const habits = _habits.filter(h => h.status !== 'graduated' && h.status !== 'archived');
+
+  let totalDone = 0, totalDays = 0;
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      // compute daysBack from today: col 12 is current week, col 0 is 12 weeks ago
+      const daysBack = (cols - 1 - c) * 7 + (todayDow - r);
+      const x = leftPad + c * (size + gap);
+      const y = topPad + r * (size + gap);
+      if (daysBack < 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        _hinsRoundRect(ctx, x, y, size, size, 2);
+        ctx.fill();
+        continue;
+      }
+      const ds = localDateStr(new Date(Date.now() - daysBack * 86400000));
+      const comps = _habitLogs[ds]?.completions || {};
+      const doneCnt = habits.reduce((s, h) => s + (comps[h.id] ? 1 : 0), 0);
+      const max = habits.length || 1;
+      const ratio = doneCnt / max;
+      totalDone += doneCnt;
+      totalDays += max;
+
+      let bg;
+      if (doneCnt === 0) bg = 'rgba(255,255,255,0.04)';
+      else if (ratio < 0.25) bg = 'rgba(255,255,255,0.14)';
+      else if (ratio < 0.5)  bg = 'rgba(255,255,255,0.26)';
+      else if (ratio < 0.85) bg = 'rgba(255,255,255,0.42)';
+      else                   bg = 'rgb(53,249,47)';
+
+      ctx.fillStyle = bg;
+      _hinsRoundRect(ctx, x, y, size, size, 2);
+      ctx.fill();
+      if (ratio >= 0.85) {
+        ctx.shadowColor = 'rgba(53,249,47,0.5)';
+        ctx.shadowBlur = 5;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+  }
+
+  // Stat text
+  const statEl = document.getElementById('hins-heatmap-stat');
+  if (statEl) {
+    const pct = totalDays > 0 ? Math.round(totalDone / totalDays * 100) : 0;
+    statEl.textContent = `${totalDone} completions · ${pct}% 91-day rate`;
+  }
+}
+
+function _hinsRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function _hinsAutomaticityEstimate(habit) {
+  // Days tracked since createdAt (or since first log)
+  let daysTracked = 0;
+  if (habit.createdAt) {
+    const created = habit.createdAt?.toDate ? habit.createdAt.toDate() : (habit.createdAt?.seconds ? new Date(habit.createdAt.seconds * 1000) : new Date(habit.createdAt));
+    daysTracked = Math.max(0, Math.floor((Date.now() - created.getTime()) / 86400000));
+  }
+  // 30-day completion rate
+  const rate = _habitsCompletionRate30d(habit.id);
+  // Simple estimate: if rate >= 90%, remaining = max(0, 66 - daysTracked); if rate >= 70%, 90 - daysTracked; else 120 - daysTracked
+  const target = rate >= 90 ? 66 : rate >= 70 ? 90 : 120;
+  const remaining = Math.max(0, target - daysTracked);
+  return { daysTracked, rate, remaining, rangeMin: 18, rangeMax: 254 };
+}
+
+function _hinsDrawMiniRing(containerEl, pct) {
+  if (!containerEl) return;
+  const size = 52, stroke = 5, r = (size - stroke) / 2;
+  const cx = size / 2, cy = size / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  const green = pct >= 80;
+  const color = green ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)';
+  const glow = green ? 'drop-shadow(0 0 4px rgba(53,249,47,0.4))' : 'none';
+  containerEl.innerHTML = `
+    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="filter:${glow}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${stroke}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
+        stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>
+    </svg>`;
+}
+
+function renderHabitsInsights() {
+  const habits = _habits.filter(h => h.status !== 'graduated' && h.status !== 'archived');
+
+  // ── Graduation Signal ──
+  const banner = document.getElementById('hins-graduation-banner');
+  if (banner) {
+    // A habit is eligible if 60-day rate >= 90%
+    const eligible = habits.filter(h => _habitsCompletion60d(h.id) >= 0.9);
+    if (eligible.length) {
+      const names = eligible.slice(0, 2).map(h => `<strong>${escHtml(h.tinyBehavior || h.name)}</strong>`).join(' and ');
+      banner.innerHTML = `
+        <span class="hins-graduation-icon">◎</span>
+        <div class="hins-graduation-text">${names} ${eligible.length > 1 ? 'have' : 'has'} hit 90%+ over 60 days — likely automatic. Graduate to free a slot.</div>`;
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  // ── 13-week heatmap ──
+  // Draw after next frame so layout sizes are correct
+  requestAnimationFrame(() => _hinsDrawHeatmap());
+
+  // ── Automaticity Estimate per habit ──
+  const autoList = document.getElementById('hins-auto-list');
+  if (autoList) {
+    if (!habits.length) {
+      autoList.innerHTML = '<div class="hins-empty-state">No active habits yet. Create one in the Habits tab to start tracking automaticity.</div>';
+    } else {
+      autoList.innerHTML = '';
+      habits.forEach(h => {
+        const est = _hinsAutomaticityEstimate(h);
+        const row = document.createElement('div');
+        row.className = 'hins-auto-row';
+        row.innerHTML = `
+          <div class="hins-auto-ring" data-pct="${est.rate}"></div>
+          <div class="hins-auto-name">
+            <div class="hins-auto-name-text">${escHtml(h.tinyBehavior || h.name)}</div>
+            <div class="hins-auto-name-sub">${est.daysTracked}d tracked · ${h.identityTag ? escHtml(h.identityTag) : 'no identity set'}</div>
+          </div>
+          <div class="hins-auto-stats">
+            <div class="hins-auto-pct ${est.rate >= 80 ? 'green' : ''}">${est.rate}%</div>
+            <div class="hins-auto-remaining">${est.remaining > 0 ? '~' + est.remaining + 'd to target' : 'likely automatic'}</div>
+          </div>`;
+        autoList.appendChild(row);
+        _hinsDrawMiniRing(row.querySelector('.hins-auto-ring'), est.rate);
+      });
+    }
+  }
+
+  // ── Context Reliability Matrix ──
+  const ctxWrap = document.getElementById('hins-context-wrap');
+  if (ctxWrap) {
+    if (!habits.length) {
+      ctxWrap.innerHTML = '<div class="hins-empty-state">Add habits to see context patterns.</div>';
+    } else {
+      const dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      // Compute per-habit dow completion rate over last 30 days
+      const dowStats = {}; // habitId -> [possible, done] per dow
+      habits.forEach(h => {
+        dowStats[h.id] = Array.from({length:7}, () => ({ possible: 0, done: 0 }));
+      });
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(Date.now() - i * 86400000);
+        const ds = localDateStr(d);
+        const dow = (d.getDay() + 6) % 7; // Mon=0..Sun=6
+        const comps = _habitLogs[ds]?.completions || {};
+        habits.forEach(h => {
+          dowStats[h.id][dow].possible++;
+          if (comps[h.id]) dowStats[h.id][dow].done++;
+        });
+      }
+
+      const rows = habits.length;
+      const cols = 8; // 1 label + 7 days
+      const grid = document.createElement('div');
+      grid.className = 'hins-context-grid';
+      grid.style.gridTemplateColumns = '180px repeat(7, minmax(28px, 1fr))';
+      // Header row: corner + day abbreviations
+      const corner = document.createElement('div'); corner.className = 'hins-ctx-corner'; grid.appendChild(corner);
+      dowNames.forEach(n => {
+        const h = document.createElement('div'); h.className = 'hins-ctx-dowhead'; h.textContent = n; grid.appendChild(h);
+      });
+      // Habit rows
+      habits.forEach(h => {
+        const nameEl = document.createElement('div');
+        nameEl.className = 'hins-ctx-habit';
+        nameEl.textContent = h.tinyBehavior || h.name;
+        grid.appendChild(nameEl);
+        for (let dow = 0; dow < 7; dow++) {
+          const cell = document.createElement('div');
+          cell.className = 'hins-ctx-cell';
+          const stat = dowStats[h.id][dow];
+          if (stat.possible === 0) {
+            cell.classList.add('empty');
+            cell.textContent = '';
+          } else {
+            const pct = Math.round(stat.done / stat.possible * 100);
+            const green = pct >= 80;
+            const dim = pct < 30;
+            const alpha = Math.max(0.08, Math.min(0.85, pct / 100));
+            cell.style.background = green ? 'rgb(53,249,47)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
+            if (green) cell.style.boxShadow = '0 0 4px rgba(53,249,47,0.4)';
+            cell.textContent = pct + '%';
+            cell.style.color = green ? '#0d0c0a' : (alpha > 0.4 ? '#0d0c0a' : 'rgba(255,255,255,0.5)');
+            cell.title = `${h.tinyBehavior || h.name} · ${dowNames[dow]} · ${stat.done}/${stat.possible} (${pct}%)`;
+          }
+          grid.appendChild(cell);
+        }
+      });
+      ctxWrap.innerHTML = '';
+      ctxWrap.appendChild(grid);
+    }
+  }
+
+  // ── Friction Patterns ──
+  const fricList = document.getElementById('hins-friction-list');
+  if (fricList) {
+    // Count friction skips from habitLogs skipReasons across last 91 days
+    const counts = {};
+    Object.values(_habitLogs).forEach(log => {
+      const reasons = log?.skipReasons || {};
+      Object.values(reasons).forEach(r => {
+        if (!r) return;
+        counts[r] = (counts[r] || 0) + 1;
+      });
+    });
+    // Also include friction tags from habits (as "declared risks")
+    const declared = {};
+    habits.forEach(h => (h.frictionTags || []).forEach(t => { declared[t] = (declared[t] || 0) + 1; }));
+    const all = Object.keys({...counts, ...declared});
+    if (!all.length) {
+      fricList.innerHTML = '<div class="hins-empty-state">No friction data yet. Friction tags declared in the Habits tab will surface here once skip reasons are logged.</div>';
+    } else {
+      const fricIcons = { travel: '✈', 'low-energy': '🔋', meetings: '📞', weekend: '🌙', 'late-night': '🌃', illness: '🤒' };
+      const rows = all.map(tag => ({
+        tag,
+        skipped: counts[tag] || 0,
+        declared: declared[tag] || 0,
+      })).sort((a, b) => (b.skipped + b.declared) - (a.skipped + a.declared)).slice(0, 6);
+      fricList.innerHTML = rows.map(r => `
+        <div class="hins-friction-row">
+          <span class="hins-friction-icon">${fricIcons[r.tag] || '⚠'}</span>
+          <span class="hins-friction-name">${r.tag.replace(/-/g, ' ')}</span>
+          <span class="hins-friction-count">${r.skipped > 0 ? r.skipped + ' skip' + (r.skipped === 1 ? '' : 's') : 'declared in ' + r.declared}</span>
+        </div>`).join('');
+    }
+  }
+
+  // ── Mood × Habit Correlation ──
+  const moodList = document.getElementById('hins-mood-list');
+  if (moodList) {
+    // For each habit, compute completion rate on low-mood days (mood <= 2) vs high-mood (mood >= 4)
+    if (!habits.length) {
+      moodList.innerHTML = '<div class="hins-empty-state">Add habits to see mood correlations.</div>';
+    } else {
+      const lowMoodDays = [], highMoodDays = [];
+      Object.entries(_habitLogs).forEach(([ds, log]) => {
+        if (!log) return;
+        if (log.mood && log.mood <= 2) lowMoodDays.push(ds);
+        if (log.mood && log.mood >= 4) highMoodDays.push(ds);
+      });
+      if (lowMoodDays.length === 0 && highMoodDays.length === 0) {
+        moodList.innerHTML = '<div class="hins-empty-state">Log your mood on the Today tab to see which habits survive low-energy days.</div>';
+      } else {
+        const rows = habits.map(h => {
+          const lowDone = lowMoodDays.filter(ds => _habitLogs[ds]?.completions?.[h.id]).length;
+          const highDone = highMoodDays.filter(ds => _habitLogs[ds]?.completions?.[h.id]).length;
+          const lowPct = lowMoodDays.length ? Math.round(lowDone / lowMoodDays.length * 100) : null;
+          const highPct = highMoodDays.length ? Math.round(highDone / highMoodDays.length * 100) : null;
+          return { h, lowPct, highPct };
+        });
+        moodList.innerHTML = rows.map(r => {
+          const low = r.lowPct != null ? r.lowPct : 0;
+          const displayPct = r.lowPct != null ? r.lowPct : (r.highPct || 0);
+          const green = low >= 70;
+          return `
+            <div class="hins-mood-row">
+              <span class="hins-mood-name">${escHtml(r.h.tinyBehavior || r.h.name)}</span>
+              <div class="hins-mood-bar-wrap">
+                <div class="hins-mood-bar"><div class="hins-mood-bar-fill ${green ? 'green' : ''}" style="width:${displayPct}%"></div></div>
+                <span class="hins-mood-bar-val">${r.lowPct != null ? r.lowPct + '%' : '—'}</span>
+              </div>
+            </div>`;
+        }).join('');
+      }
+    }
+  }
+}
 function renderRoutines() {
   ['morning','evening'].forEach(slot => {
     const list  = document.getElementById('routines-'+slot+'-list');
@@ -8884,8 +11475,17 @@ function initHabitsPage() {
     if (e.key === 'Enter') behavKeystoneAdd();
   });
 
-  // Init tracker data
+  // Init habit data
   habitsSubscribe();
+  routinesSubscribe();
+  behavSubscribe();
+  // Phase 1: also subscribe to values and stacks (needed once hbSettings loads)
+  hbSettingsSubscribe();
+  valuesSubscribe();
+  stacksSubscribe();
+  // Phase 2: Today tab init (wires mood/energy chips, rest day, habit taps, etc.)
+  _todayInit();
+  renderToday();
   renderHabits();
 }
 
@@ -8990,10 +11590,10 @@ function hbAddToTracker() {
   if (!_hbSelectedHabit) return;
   const inp = document.getElementById('habit-new-inp');
   if (inp) { inp.value = _hbSelectedHabit.icon + ' ' + _hbSelectedHabit.name; habitsAddNew(); }
-  // Switch to tracker tab
-  switchHabitsTab('tracker');
-  document.querySelector('.habits-v2-tab[data-htab="tracker"]')?.click();
-  showToast('Habit added to Tracker →');
+  // Switch to today tab
+  switchHabitsTab('today');
+  document.querySelector('.habits-v2-tab[data-htab="today"]')?.click();
+  showToast('Habit added to Today →');
 }
 
 function hbSaveDraft() { showToast('Draft saved'); }
@@ -10170,42 +12770,90 @@ function _renderWeekDebrief() {
   const debriefEl = document.getElementById('ins-week-debrief');
   if (!debriefEl) return;
   const habits = _habits;
-  if (!habits.length) { debriefEl.innerHTML = ''; return; }
 
   // Compute this week (Mon–today)
   const now      = new Date();
   const dow      = now.getDay();
-  const daysBack = (dow === 0) ? 6 : dow - 1; // days since Monday
+  const daysBack = (dow === 0) ? 6 : dow - 1;
   const weekDates = [];
   for (let i = daysBack; i >= 0; i--) weekDates.push(localDateStr(new Date(Date.now() - i * 86400000)));
-
-  // Previous week
   const prevWeekDates = [];
   for (let i = daysBack + 7; i >= daysBack + 1; i--) prevWeekDates.push(localDateStr(new Date(Date.now() - i * 86400000)));
-
-  const weekPct  = _weekPct(weekDates, habits);
-  const prevPct  = _weekPct(prevWeekDates, habits);
-  const delta    = weekPct - prevPct;
-  const deltaStr = delta >= 0 ? '▲ up ' + delta + '%' : '▼ down ' + Math.abs(delta) + '%';
 
   const startLabel = weekDates[0] ? weekDates[0].slice(5).replace('-','/') : '';
   const endLabel   = weekDates[weekDates.length-1] ? weekDates[weekDates.length-1].slice(5).replace('-','/') : '';
 
-  const habitTags = habits.map(h => {
-    const doneCount = weekDates.filter(ds => !!_habitLogs[ds]?.completions?.[h.id]).length;
-    const total     = weekDates.length;
-    const cls       = doneCount >= total ? 'win' : doneCount >= Math.ceil(total/2) ? 'partial' : 'miss';
-    return `<span class="hb-wc-tag ${cls}">${escHtml(h.name)} · ${doneCount}/${total}</span>`;
-  }).join('');
+  // Task-based insights (always available)
+  const thisWeekTasks = TASKS.filter(t => t.done && weekDates.includes(t.doneDate));
+  const prevWeekTasks = TASKS.filter(t => t.done && prevWeekDates.includes(t.doneDate));
+  const taskDelta = thisWeekTasks.length - prevWeekTasks.length;
+  const taskDeltaStr = taskDelta > 0 ? `▲ ${taskDelta} more` : taskDelta < 0 ? `▼ ${Math.abs(taskDelta)} fewer` : 'same as';
+
+  // Focus time this week vs last
+  const focusThis = thisWeekTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+  const focusPrev = prevWeekTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+
+  // Top categories this week
+  const catSecs = {};
+  thisWeekTasks.forEach(t => {
+    const cat = t.category || 'uncategorised';
+    catSecs[cat] = (catSecs[cat] || 0) + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0);
+  });
+  const topCats = Object.entries(catSecs).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  // Best day this week (most tasks completed)
+  const dayCounts = weekDates.map(ds => ({ ds, count: TASKS.filter(t => t.done && t.doneDate === ds).length }));
+  const bestDay = dayCounts.reduce((a, b) => b.count > a.count ? b : a, { ds: '', count: 0 });
+  const bestDayName = bestDay.ds ? new Date(bestDay.ds + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long' }) : '—';
+
+  // Habit section (only if habits tracked)
+  let habitSection = '';
+  if (habits.length) {
+    const weekPct = _weekPct(weekDates, habits);
+    const prevPct = _weekPct(prevWeekDates, habits);
+    const delta = weekPct - prevPct;
+    const deltaStr = delta >= 0 ? '▲ up ' + delta + '%' : '▼ down ' + Math.abs(delta) + '%';
+    const habitTags = habits.map(h => {
+      const doneCount = weekDates.filter(ds => !!_habitLogs[ds]?.completions?.[h.id]).length;
+      const total = weekDates.length;
+      const cls = doneCount >= total ? 'win' : doneCount >= Math.ceil(total/2) ? 'partial' : 'miss';
+      return `<span class="hb-wc-tag ${cls}">${escHtml(h.name)} · ${doneCount}/${total}</span>`;
+    }).join('');
+    habitSection = `
+      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin:16px 0 10px;">Habit Performance · ${weekPct}% ${prevPct > 0 ? '(' + deltaStr + ')' : ''}</div>
+      <div class="hb-wc-habits">${habitTags}</div>`;
+  }
 
   debriefEl.innerHTML = `
-    <div class="hb-wc-title">Week Debrief · ${startLabel}–${endLabel}</div>
-    <div class="hb-wc-sub">UPDATED AUTOMATICALLY · CURRENT WEEK</div>
-    <div style="font-size:14px;color:var(--cream);line-height:1.7;margin-bottom:20px;max-width:680px;">
-      You completed <strong>${weekPct}%</strong> of your habits this week — ${prevPct > 0 ? deltaStr + ' from last week.' : 'keep the momentum going.'}
+    <div style="font-family:var(--font-display);font-size:20px;font-weight:300;color:var(--cream);margin-bottom:2px">${startLabel} – ${endLabel}</div>
+    <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Current Week</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span style="font-family:var(--font-display);font-size:28px;font-weight:300;color:${thisWeekTasks.length >= 25 ? 'rgb(53,249,47)' : 'var(--cream)'}">${thisWeekTasks.length}</span>
+        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted)">tasks done · ${taskDeltaStr} last week</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span style="font-family:var(--font-display);font-size:20px;font-weight:300;color:var(--cream)">${_insFmtHrs(focusThis)}</span>
+        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted)">focus time${focusPrev > 0 ? ` · was ${_insFmtHrs(focusPrev)}` : ''}</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span style="font-family:var(--font-display);font-size:16px;font-weight:300;color:var(--cream)">${bestDayName}</span>
+        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted)">best day · ${bestDay.count} tasks</span>
+      </div>
     </div>
-    <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;">Habit Performance</div>
-    <div class="hb-wc-habits">${habitTags}</div>
+    ${topCats.length ? `<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px">Top Categories</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      ${topCats.map(([cat, secs]) => {
+        const color = getCatColor(cat);
+        const label = CATEGORIES[cat]?.label || cat;
+        return `<div style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:10px">
+          <span style="width:7px;height:7px;border-radius:50%;background:${color};box-shadow:0 0 5px ${color}80"></span>
+          <span style="flex:1;color:var(--cream)">${escHtml(label)}</span>
+          <span style="color:var(--muted)">${_insFmtHrs(secs)}</span>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+    ${habitSection}
   `;
 }
 
@@ -16341,12 +18989,15 @@ function cleanupAllListeners() {
   if (_routinesUnsub)    { _routinesUnsub();    _routinesUnsub    = null; }
   if (_behavUnsub)       { _behavUnsub();       _behavUnsub       = null; }
   if (_hbSettingsUnsub)  { _hbSettingsUnsub();  _hbSettingsUnsub  = null; }
+  if (_valuesUnsub)      { _valuesUnsub();      _valuesUnsub      = null; }
+  if (_stacksUnsub)      { _stacksUnsub();      _stacksUnsub      = null; }
   // Intervals
   if (_calNowLineInterval) { clearInterval(_calNowLineInterval); _calNowLineInterval = null; }
   if (_cosmodexInterval)   { clearInterval(_cosmodexInterval);   _cosmodexInterval   = null; }
   // Reset global data state so a subsequent login starts clean
   TASKS = []; CAL_EVENTS = []; HOLIDAYS = {}; LISTS = [];
   MILESTONE_PROJECTS = []; MILESTONE_EVENTS = []; MILESTONE_LISTS = [];
+  _values = []; _stacks = [];
   _listView = null;
 }
 
