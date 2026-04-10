@@ -5350,39 +5350,152 @@ select.sched-input { background: #181818; }
   display: flex; flex-direction: column; gap: 16px;
 }
 .ins-hero {
-  display: flex; align-items: center; gap: 20px;
-  padding: 16px 24px;
-  background: rgba(255,255,255,0.05);
+  display: flex; align-items: stretch; gap: 0;
+  padding: 28px 32px;
+  background: rgba(255,255,255,0.04);
   backdrop-filter: blur(60px) saturate(150%);
   -webkit-backdrop-filter: blur(60px) saturate(150%);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
-  position: relative; min-height: 0;
+  border-radius: 20px;
+  position: relative; min-height: 200px; overflow: hidden;
 }
 .ins-hero::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(53,249,47,0.15) 20%, rgba(53,249,47,0.4) 50%, rgba(53,249,47,0.15) 80%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.20) 20%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0.20) 80%, transparent 100%);
+  z-index: 3;
 }
-.ins-hero-left { display: flex; flex-direction: column; align-items: center; min-width: 80px; flex-shrink: 0; }
+.ins-hero-bg {
+  position: absolute; inset: 0; z-index: 0;
+  pointer-events: none;
+}
+.ins-hero-zone {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column;
+}
+.ins-hero-left {
+  flex: 4; align-items: flex-start; justify-content: center;
+  padding-right: 20px;
+}
 .ins-hero-score {
-  font-family: var(--font-display); font-size: 42px; font-weight: 300; line-height: 1;
-  color: rgb(53,249,47); text-shadow: 0 0 40px rgba(53,249,47,0.3), 0 0 80px rgba(53,249,47,0.1);
+  font-family: var(--font-display); font-size: 92px; font-weight: 300; line-height: 0.9;
+  color: rgba(255,255,255,0.7);
+  transition: color 0.4s, text-shadow 0.4s;
+  animation: heroBreath 3.2s ease-in-out infinite;
+}
+.ins-hero-score.green {
+  color: rgb(53,249,47);
+  text-shadow: 0 0 50px rgba(53,249,47,0.35), 0 0 100px rgba(53,249,47,0.12);
+}
+@keyframes heroBreath {
+  0%, 100% { opacity: 0.92; }
+  50%      { opacity: 1; }
 }
 .ins-hero-label {
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em;
-  text-transform: uppercase; color: rgba(255,255,255,0.35); margin-top: 4px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4); margin-top: 8px;
 }
-.ins-hero-center { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.ins-hero-center canvas { display: block; max-width: 100%; }
+.ins-hero-center {
+  flex: 3.5; align-items: center; justify-content: center;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  padding: 0 20px;
+}
+.ins-hero-const {
+  display: block; width: 100%; height: 120px;
+}
+.ins-hero-right {
+  flex: 2.5; align-items: stretch; justify-content: center; gap: 10px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  padding-left: 24px;
+}
+.ins-hero-gauge {
+  display: flex; align-items: center; gap: 10px;
+}
+.ins-hero-gauge-label {
+  flex: 1;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.4);
+}
+.ins-hero-gauge-bar {
+  flex: 2; height: 5px; background: rgba(255,255,255,0.06);
+  border-radius: 3px; overflow: hidden;
+}
+.ins-hero-gauge-fill {
+  height: 100%; border-radius: 3px; transition: width 0.6s ease, background 0.4s;
+}
+.ins-hero-gauge-val {
+  font-family: var(--font-mono); font-size: 11px; color: rgba(255,255,255,0.85);
+  min-width: 28px; text-align: right;
+}
 .ins-hero-delta {
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--muted);
+  position: absolute; top: 14px; right: 20px; z-index: 3;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.4);
+  padding: 4px 10px; border-radius: 100px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
 }
-.ins-hero-right { min-width: 120px; max-width: 160px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
-.ins-hero-breakdown-item {
-  display: flex; justify-content: space-between; gap: 8px;
-  font-family: var(--font-mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em;
+.ins-hero-delta.up { color: rgb(53,249,47); border-color: rgba(53,249,47,0.3); }
+
+/* ── Tabbed Visualization Card ── */
+.ins-viz-card {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px 22px 20px;
+  position: relative;
 }
-.ins-hero-breakdown-item .val { color: var(--cream); }
+.ins-viz-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 50%, transparent);
+}
+.ins-viz-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.ins-viz-tabs {
+  display: flex; gap: 4px;
+}
+.ins-viz-tab {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 100px;
+  padding: 5px 12px;
+  font-family: var(--font-mono); font-size: 9px;
+  letter-spacing: 0.10em; text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer; transition: var(--ease-fast);
+}
+.ins-viz-tab:hover { color: rgba(255,255,255,0.85); border-color: rgba(255,255,255,0.2); }
+.ins-viz-tab.active {
+  background: rgba(255,255,255,0.95); color: #0d0c0a;
+  border-color: rgba(255,255,255,0.9);
+}
+.ins-viz-body {
+  position: relative;
+  min-height: 280px;
+}
+.ins-viz-canvas {
+  display: block; width: 100%; height: 280px;
+}
+.ins-viz-stats {
+  display: flex; flex-wrap: wrap; gap: 18px;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.ins-viz-stat {
+  font-family: var(--font-mono); font-size: 10px;
+  color: rgba(255,255,255,0.45); letter-spacing: 0.06em;
+}
+.ins-viz-stat .val { color: rgba(255,255,255,0.9); margin-left: 6px; }
+.ins-viz-stat .val.green { color: rgb(53,249,47); text-shadow: 0 0 8px rgba(53,249,47,0.3); }
+.ins-viz-empty {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px;
+  color: rgba(255,255,255,0.3); letter-spacing: 0.04em;
+  text-align: center; padding: 0 30px;
+}
 
 .ins-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .ins-stat-card {
@@ -6881,19 +6994,18 @@ select.sched-input { background: #181818; }
     <div id="panel-insights" style="display:none;flex:1;flex-direction:column;overflow:hidden">
       <div class="ins-page">
 
-        <!-- ROW 1: Hero — Momentum Score -->
+        <!-- ROW 1: Ambient Constellation Hero -->
         <div class="ins-hero">
-          <div class="ins-hero-left">
+          <canvas id="ins-hero-bg" class="ins-hero-bg"></canvas>
+          <div class="ins-hero-zone ins-hero-left">
             <div class="ins-hero-score" id="ins-hero-score">0</div>
             <div class="ins-hero-label">Momentum</div>
           </div>
-          <div class="ins-hero-center">
-            <canvas id="ins-spark-canvas" width="180" height="44"></canvas>
-            <div class="ins-hero-delta" id="ins-hero-delta"></div>
+          <div class="ins-hero-zone ins-hero-center">
+            <canvas id="ins-hero-const" class="ins-hero-const"></canvas>
           </div>
-          <div class="ins-hero-right">
-            <div class="ins-hero-breakdown" id="ins-hero-breakdown"></div>
-          </div>
+          <div class="ins-hero-zone ins-hero-right" id="ins-hero-gauges"></div>
+          <div class="ins-hero-delta" id="ins-hero-delta"></div>
         </div>
 
         <!-- ROW 2: Three Key Stat Cards -->
@@ -6929,13 +7041,27 @@ select.sched-input { background: #181818; }
           </div>
         </div>
 
-        <!-- ROW 4: Activity Rings | Completed Tasks -->
+        <!-- ROW 4: Tabbed Visualization Card -->
+        <div class="ins-viz-card">
+          <div class="ins-viz-header">
+            <div class="ins-viz-tabs">
+              <button class="ins-viz-tab active" data-viz="pulse">Pulse Heatmap</button>
+              <button class="ins-viz-tab" data-viz="matrix">Energy × Priority</button>
+              <button class="ins-viz-tab" data-viz="rhythm">Day Rhythm</button>
+            </div>
+          </div>
+          <div class="ins-viz-body">
+            <canvas id="ins-viz-canvas" class="ins-viz-canvas"></canvas>
+            <div class="ins-viz-empty" id="ins-viz-empty" style="display:none"></div>
+          </div>
+          <div class="ins-viz-stats" id="ins-viz-stats"></div>
+        </div>
+
+        <!-- ROW 5: Week Debrief | Completed Tasks -->
         <div class="ins-detail-row">
-          <div class="ins-detail-card" style="display:flex;flex-direction:column;align-items:center">
-            <div class="ins-chart-label" style="align-self:flex-start">Activity Rings</div>
-            <canvas id="ins-rings-canvas" width="260" height="260" style="margin:8px 0"></canvas>
-            <div id="ins-rings-legend" style="display:flex;gap:16px;margin-top:4px"></div>
-            <div id="ins-week-debrief" style="width:100%;margin-top:14px"></div>
+          <div class="ins-detail-card">
+            <div class="ins-chart-label">Week Debrief</div>
+            <div id="ins-week-debrief"></div>
           </div>
           <div class="ins-detail-card">
             <div class="ins-chart-label">Completed Tasks</div>
@@ -9223,6 +9349,363 @@ function _insDrawRings(canvasId, rings) {
   }
 }
 
+/* ── Insights creative visualizations ── */
+let _insHeroBgParticles = null;
+let _insHeroBgLoop = null;
+function _insSetupCanvas(cvs) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = cvs.clientWidth || cvs.width || 300;
+  const H = cvs.clientHeight || cvs.height || 200;
+  cvs.width = W * dpr; cvs.height = H * dpr;
+  cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
+  const ctx = cvs.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  return { ctx, W, H };
+}
+
+function _insDrawHeroBg(canvasId) {
+  const cvs = document.getElementById(canvasId); if (!cvs) return;
+  const { ctx, W, H } = _insSetupCanvas(cvs);
+  if (!_insHeroBgParticles || _insHeroBgParticles.length === 0 || _insHeroBgParticles._w !== W) {
+    _insHeroBgParticles = [];
+    _insHeroBgParticles._w = W;
+    for (let i = 0; i < 32; i++) {
+      _insHeroBgParticles.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r: 0.6 + Math.random() * 1.4,
+        a: 0.05 + Math.random() * 0.12,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: (Math.random() - 0.5) * 0.08,
+        tw: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+  const draw = () => {
+    if (!document.getElementById(canvasId) || cvs.offsetParent === null) {
+      _insHeroBgLoop = null; return;
+    }
+    ctx.clearRect(0, 0, W, H);
+    // Dashed radial ring near left third (where score sits)
+    const cx = W * 0.18, cy = H / 2;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 0.6;
+    ctx.setLineDash([2, 5]);
+    ctx.beginPath(); ctx.arc(cx, cy, 92, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, 128, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    // Particles with subtle twinkle
+    _insHeroBgParticles.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.tw += 0.015;
+      if (p.x < -5) p.x = W + 5; if (p.x > W + 5) p.x = -5;
+      if (p.y < -5) p.y = H + 5; if (p.y > H + 5) p.y = -5;
+      const tw = 0.7 + 0.3 * Math.sin(p.tw);
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${(p.a * tw).toFixed(3)})`;
+      ctx.fill();
+    });
+    _insHeroBgLoop = requestAnimationFrame(draw);
+  };
+  if (_insHeroBgLoop) cancelAnimationFrame(_insHeroBgLoop);
+  draw();
+}
+
+function _insDrawHeroConst(canvasId, dayData) {
+  // dayData: array of { date, tasks, secs } for last 14 days (oldest first)
+  const cvs = document.getElementById(canvasId); if (!cvs) return;
+  const { ctx, W, H } = _insSetupCanvas(cvs);
+  if (!dayData || !dayData.length) return;
+  const maxTasks = Math.max(...dayData.map(d => d.tasks), 1);
+  const maxSecs = Math.max(...dayData.map(d => d.secs), 1);
+  const padX = 20, padY = 30;
+  const plotW = W - padX * 2;
+  const stepX = plotW / (dayData.length - 1 || 1);
+  // Compute dot positions on a gentle arc (sin curve) plus value-driven Y
+  const pts = dayData.map((d, i) => {
+    const x = padX + i * stepX;
+    const arcY = H * 0.55 + Math.sin((i / (dayData.length - 1)) * Math.PI) * -8;
+    const valY = arcY - (d.tasks / maxTasks) * (H * 0.3);
+    return { x, y: valY, d };
+  });
+  // Faint connecting curve
+  ctx.beginPath();
+  pts.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else {
+      const prev = pts[i - 1];
+      const cx = (prev.x + p.x) / 2;
+      ctx.quadraticCurveTo(cx, prev.y, p.x, p.y);
+    }
+  });
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.lineWidth = 1; ctx.stroke();
+  // Draw dots
+  pts.forEach((p, i) => {
+    const d = p.d;
+    const size = 1.5 + (d.tasks / maxTasks) * 5;
+    const brightness = 0.3 + (d.secs / maxSecs) * 0.65;
+    const isToday = i === pts.length - 1;
+    const isHot = d.tasks >= 5;
+    const col = isHot ? `rgba(53,249,47,${brightness.toFixed(2)})` : `rgba(255,255,255,${brightness.toFixed(2)})`;
+    const glow = isHot ? 'rgba(53,249,47,0.5)' : 'rgba(255,255,255,0.25)';
+    ctx.beginPath(); ctx.arc(p.x, p.y, isToday ? size + 1.5 : size, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.shadowColor = glow; ctx.shadowBlur = isToday ? 14 : 8;
+    ctx.fill(); ctx.shadowBlur = 0;
+    if (isToday) {
+      // Outer pulse ring on today
+      ctx.beginPath(); ctx.arc(p.x, p.y, size + 5, 0, Math.PI * 2);
+      ctx.strokeStyle = isHot ? 'rgba(53,249,47,0.35)' : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 0.8; ctx.stroke();
+    }
+  });
+  // Axis labels: 14d ago -> today
+  ctx.font = "300 8px 'DM Mono',monospace";
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillText('14d ago', padX, H - 6);
+  ctx.textAlign = 'right';
+  ctx.fillText('today', W - padX, H - 6);
+}
+
+function _insDrawPulseHeatmap(canvasId, data) {
+  // data: array of 84 { date, count, secs } (oldest first)
+  const cvs = document.getElementById(canvasId); if (!cvs) return;
+  const { ctx, W, H } = _insSetupCanvas(cvs);
+  if (!data || data.length === 0) return;
+  const cols = 12, rows = 7;
+  const gap = 3;
+  const leftPad = 28, topPad = 20, rightPad = 10, botPad = 16;
+  const plotW = W - leftPad - rightPad;
+  const plotH = H - topPad - botPad;
+  const cellW = (plotW - gap * (cols - 1)) / cols;
+  const cellH = (plotH - gap * (rows - 1)) / rows;
+  const size = Math.min(cellW, cellH);
+  // Row labels (day of week)
+  const dayLabels = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'];
+  ctx.font = "300 8px 'DM Mono',monospace";
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  for (let r = 0; r < rows; r++) {
+    if (!dayLabels[r]) continue;
+    ctx.fillText(dayLabels[r], leftPad - 6, topPad + r * (size + gap) + size / 2);
+  }
+  // Cells — data[0] = 84 days ago, data[83] = today
+  // Build grid: col 0 = oldest week, col 11 = current week
+  // Each column is 7 days (Mon-Sun). Today's day-of-week determines where "today" sits.
+  const todayDow = (new Date().getDay() + 6) % 7; // 0=Mon..6=Sun
+  // Pad the data forward so today lands at col=11, row=todayDow
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      // Reverse-compute how many days back from today
+      const daysBack = (cols - 1 - c) * 7 + (todayDow - r);
+      const x = leftPad + c * (size + gap);
+      const y = topPad + r * (size + gap);
+      if (daysBack < 0 || daysBack >= data.length) {
+        // empty cell
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        ctx.fillRect(x, y, size, size);
+        continue;
+      }
+      const d = data[data.length - 1 - daysBack];
+      const count = d ? d.count : 0;
+      let bg;
+      if (count === 0) bg = 'rgba(255,255,255,0.04)';
+      else if (count < 2) bg = 'rgba(255,255,255,0.14)';
+      else if (count < 4) bg = 'rgba(255,255,255,0.26)';
+      else if (count < 5) bg = 'rgba(255,255,255,0.42)';
+      else bg = 'rgb(53,249,47)';
+      ctx.fillStyle = bg;
+      // Rounded rect
+      const rad = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + rad, y);
+      ctx.arcTo(x + size, y, x + size, y + size, rad);
+      ctx.arcTo(x + size, y + size, x, y + size, rad);
+      ctx.arcTo(x, y + size, x, y, rad);
+      ctx.arcTo(x, y, x + size, y, rad);
+      ctx.closePath();
+      ctx.fill();
+      if (count >= 5) {
+        ctx.shadowColor = 'rgba(53,249,47,0.5)'; ctx.shadowBlur = 6;
+        ctx.fill(); ctx.shadowBlur = 0;
+      }
+    }
+  }
+  // Legend at bottom
+  const legY = H - 6;
+  ctx.font = "300 8px 'DM Mono',monospace";
+  ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillText('less', leftPad, legY);
+  const legStart = leftPad + 28;
+  const legCells = ['rgba(255,255,255,0.04)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.26)', 'rgba(255,255,255,0.42)', 'rgb(53,249,47)'];
+  legCells.forEach((c, i) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(legStart + i * 10, legY - 8, 8, 8);
+  });
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.textAlign = 'left';
+  ctx.fillText('more', legStart + legCells.length * 10 + 4, legY);
+}
+
+function _insDrawEnergyMatrix(canvasId, catData) {
+  // catData: [{ cat, label, color, avgPrio, avgEnergy, totalSecs }]
+  const cvs = document.getElementById(canvasId); if (!cvs) return;
+  const { ctx, W, H } = _insSetupCanvas(cvs);
+  const padL = 50, padR = 30, padT = 20, padB = 40;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  // Grid background
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (i / 4) * plotH;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y); ctx.stroke();
+    const x = padL + (i / 4) * plotW;
+    ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH); ctx.stroke();
+  }
+  // Center crosshair (divides 4 quadrants)
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+  ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+  const midX = padL + plotW / 2, midY = padT + plotH / 2;
+  ctx.beginPath(); ctx.moveTo(padL, midY); ctx.lineTo(padL + plotW, midY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(midX, padT); ctx.lineTo(midX, padT + plotH); ctx.stroke();
+  ctx.setLineDash([]);
+  // Quadrant labels
+  ctx.font = "300 9px 'DM Mono',monospace";
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillText('DEEP WORK', padL + plotW - 4, padT + 4);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillText('HARD SLOG', padL + 4, padT + 4);
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('BUSYWORK', padL + 4, padT + plotH - 4);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.fillText('QUICK WINS', padL + plotW - 4, padT + plotH - 4);
+  // Axis labels
+  ctx.font = "300 9px 'DM Mono',monospace";
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('← LOW  PRIORITY  HIGH →', padL + plotW / 2, padT + plotH + 8);
+  ctx.save();
+  ctx.translate(padL - 16, padT + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('← QUICK  ENERGY  DEEP →', 0, 0);
+  ctx.restore();
+  // Bubbles
+  if (!catData || !catData.length) return;
+  const maxSecs = Math.max(...catData.map(c => c.totalSecs), 1);
+  catData.forEach(c => {
+    // x: priority 1..3 -> 0..1, y: energy 1..3 -> 1..0 (deep at top)
+    const x = padL + ((c.avgPrio - 1) / 2) * plotW;
+    const y = padT + (1 - (c.avgEnergy - 1) / 2) * plotH;
+    const r = 8 + Math.sqrt(c.totalSecs / maxSecs) * 32;
+    const color = c.color || 'rgba(255,255,255,0.5)';
+    // Fill
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color + '24'; // append low alpha (hex)
+    // Fallback: use globalAlpha instead
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = color; ctx.fill();
+    ctx.restore();
+    // Stroke
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    ctx.shadowColor = color; ctx.shadowBlur = 10;
+    ctx.stroke(); ctx.shadowBlur = 0;
+    // Label inside bubble
+    ctx.font = "400 10px 'Instrument Sans',sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(c.label, x, y);
+  });
+}
+
+function _insDrawDayRhythm(canvasId, hoursThis, hoursPrev) {
+  // hoursThis, hoursPrev: arrays of 24 values (tasks per hour)
+  const cvs = document.getElementById(canvasId); if (!cvs) return;
+  const { ctx, W, H } = _insSetupCanvas(cvs);
+  const cx = W / 2, cy = H / 2;
+  const outerR = Math.min(W, H) / 2 - 30;
+  const innerR = 40;
+  const maxV = Math.max(...hoursThis, ...hoursPrev, 1);
+  // Background rings
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+  for (let i = 1; i <= 3; i++) {
+    const r = innerR + (outerR - innerR) * (i / 3);
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  }
+  // Radial spokes every 3 hours
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.setLineDash([2, 4]);
+  for (let h = 0; h < 24; h += 3) {
+    const ang = (h / 24) * Math.PI * 2 - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(ang) * innerR, cy + Math.sin(ang) * innerR);
+    ctx.lineTo(cx + Math.cos(ang) * outerR, cy + Math.sin(ang) * outerR);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  // Draw bars
+  const drawBars = (data, color, alpha) => {
+    for (let h = 0; h < 24; h++) {
+      if (data[h] <= 0) continue;
+      const ang = ((h + 0.5) / 24) * Math.PI * 2 - Math.PI / 2;
+      const barLen = (data[h] / maxV) * (outerR - innerR);
+      const r1 = innerR;
+      const r2 = innerR + barLen;
+      const barW = 10;
+      const sin = Math.sin(ang), cos = Math.cos(ang);
+      const perpX = -sin * barW / 2, perpY = cos * barW / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx + cos * r1 - perpX, cy + sin * r1 - perpY);
+      ctx.lineTo(cx + cos * r2 - perpX, cy + sin * r2 - perpY);
+      ctx.lineTo(cx + cos * r2 + perpX, cy + sin * r2 + perpY);
+      ctx.lineTo(cx + cos * r1 + perpX, cy + sin * r1 + perpY);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.globalAlpha = alpha;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  };
+  // Last week in white (behind)
+  drawBars(hoursPrev, 'rgba(255,255,255,0.35)', 1);
+  // This week in green (front)
+  const weekAvg = hoursThis.reduce((a, b) => a + b, 0) / 7;
+  const useGreen = weekAvg >= 5;
+  drawBars(hoursThis, useGreen ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.75)', 1);
+  // Hour labels at cardinals
+  ctx.font = "300 9px 'DM Mono',monospace";
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  const cardinals = [[0, '00'], [6, '06'], [12, '12'], [18, '18']];
+  cardinals.forEach(([h, lbl]) => {
+    const ang = (h / 24) * Math.PI * 2 - Math.PI / 2;
+    const x = cx + Math.cos(ang) * (outerR + 14);
+    const y = cy + Math.sin(ang) * (outerR + 14);
+    ctx.fillText(lbl, x, y);
+  });
+  // Peak hour text in center
+  let peakH = 0, peakV = 0;
+  hoursThis.forEach((v, h) => { if (v > peakV) { peakV = v; peakH = h; } });
+  ctx.font = "300 9px 'DM Mono',monospace";
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('PEAK', cx, cy - 10);
+  ctx.font = "300 16px 'Fraunces',serif";
+  ctx.fillStyle = useGreen && peakV > 0 ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.85)';
+  ctx.fillText(peakV > 0 ? String(peakH).padStart(2, '0') + ':00' : '—', cx, cy + 6);
+  ctx.font = "300 9px 'DM Mono',monospace";
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillText(peakV > 0 ? `${peakV} tasks` : '', cx, cy + 22);
+}
+
 function _insDrawTrend(canvasId, data, labels, color) {
   color = color || 'rgba(255,255,255,0.5)';
   const cvs = document.getElementById(canvasId); if (!cvs) return;
@@ -9280,43 +9763,59 @@ function renderInsights() {
   // Defer canvas drawing if panel not visible (clientWidth=0)
   const panelVisible = document.getElementById('panel-insights')?.offsetParent !== null;
 
-  // ── Hero: Momentum Score ──────────────────────────────
+  // ── Hero: Ambient Constellation ───────────────────────
   const momentum = typeof computeMomentumScore === 'function' ? computeMomentumScore() : { score: 0, habitPts: 0, taskPts: 0, overduePenalty: 0 };
   setEl('ins-hero-score', momentum.score);
   const scoreEl = document.getElementById('ins-hero-score');
   if (scoreEl) {
-    const isGreen = momentum.score >= 50;
-    scoreEl.style.color = isGreen ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.7)';
-    scoreEl.style.textShadow = isGreen ? '0 0 40px rgba(53,249,47,0.3), 0 0 80px rgba(53,249,47,0.1)' : '0 0 30px rgba(255,255,255,0.08)';
+    scoreEl.classList.toggle('green', momentum.score >= 50);
   }
-  // Delta: compare to a week ago (approximate via task patterns)
-  const heroBreakdown = document.getElementById('ins-hero-breakdown');
-  if (heroBreakdown) {
-    heroBreakdown.innerHTML = `
-      <div class="ins-hero-breakdown-item"><span>Habits</span><span class="val">+${momentum.habitPts}</span></div>
-      <div class="ins-hero-breakdown-item"><span>Tasks today</span><span class="val">+${momentum.taskPts}</span></div>
-      <div class="ins-hero-breakdown-item"><span>Overdue penalty</span><span class="val" style="color:${momentum.overduePenalty > 0 ? 'var(--rust)' : 'var(--muted)'}">-${momentum.overduePenalty}</span></div>`;
-  }
-  // 7-day sparkline: task completions per day
-  const sparkData = [];
-  for (let i = 6; i >= 0; i--) {
+  // 14-day dot data for constellation
+  const constData = [];
+  for (let i = 13; i >= 0; i--) {
     const ds = localDateStr(new Date(Date.now() - i * 86400000));
-    sparkData.push(TASKS.filter(t => t.done && t.doneDate === ds).length);
+    const dayTasks = TASKS.filter(t => t.done && t.doneDate === ds);
+    const secs = dayTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+    constData.push({ date: ds, tasks: dayTasks.length, secs });
   }
-  const sparkColor = sparkData.reduce((a, b) => a + b, 0) >= 5 ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)';
-  if (panelVisible) _insDrawSparkline('ins-spark-canvas', sparkData, sparkColor);
+  if (panelVisible) {
+    _insDrawHeroBg('ins-hero-bg');
+    _insDrawHeroConst('ins-hero-const', constData);
+  }
+  // Mini-gauges in hero right zone
+  const gaugesEl = document.getElementById('ins-hero-gauges');
+  if (gaugesEl) {
+    const tasksDoneToday = TASKS.filter(t => t.done && t.doneDate === today).length;
+    const habitPct = momentum.habitPts;  // 0-50
+    const taskTodayPct = Math.min(100, tasksDoneToday * 20); // 5 tasks = 100%
+    const overdueRaw = momentum.overduePenalty; // 0-20
+    const habitGreen = habitPct >= 35;
+    const taskGreen = tasksDoneToday >= 5;
+    gaugesEl.innerHTML = `
+      <div class="ins-hero-gauge">
+        <span class="ins-hero-gauge-label">Habits</span>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.round(habitPct * 2)}%;background:${habitGreen ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)'};box-shadow:${habitGreen ? '0 0 6px rgba(53,249,47,0.4)' : 'none'}"></div></div>
+        <span class="ins-hero-gauge-val">${momentum.habitPts}</span>
+      </div>
+      <div class="ins-hero-gauge">
+        <span class="ins-hero-gauge-label">Tasks</span>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${taskTodayPct}%;background:${taskGreen ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)'};box-shadow:${taskGreen ? '0 0 6px rgba(53,249,47,0.4)' : 'none'}"></div></div>
+        <span class="ins-hero-gauge-val">${tasksDoneToday}</span>
+      </div>
+      <div class="ins-hero-gauge">
+        <span class="ins-hero-gauge-label">Overdue</span>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.min(100, overdueRaw * 5)}%;background:rgba(255,255,255,0.35)"></div></div>
+        <span class="ins-hero-gauge-val">-${momentum.overduePenalty}</span>
+      </div>`;
+  }
+  // Delta badge (week-over-week tasks)
   const deltaEl = document.getElementById('ins-hero-delta');
   if (deltaEl) {
-    const thisWeek = sparkData.reduce((a, b) => a + b, 0);
-    const prevData = [];
-    for (let i = 13; i >= 7; i--) {
-      const ds = localDateStr(new Date(Date.now() - i * 86400000));
-      prevData.push(TASKS.filter(t => t.done && t.doneDate === ds).length);
-    }
-    const prevWeek = prevData.reduce((a, b) => a + b, 0);
+    const thisWeek = constData.slice(-7).reduce((s, d) => s + d.tasks, 0);
+    const prevWeek = constData.slice(0, 7).reduce((s, d) => s + d.tasks, 0);
     const diff = thisWeek - prevWeek;
-    deltaEl.textContent = diff > 0 ? `▲ ${diff} more than last week` : diff < 0 ? `▼ ${Math.abs(diff)} fewer than last week` : 'Same as last week';
-    deltaEl.style.color = diff > 0 ? 'rgba(53,249,47,0.7)' : 'var(--muted)';
+    deltaEl.textContent = diff > 0 ? `▲ ${diff} more vs last week` : diff < 0 ? `▼ ${Math.abs(diff)} fewer vs last week` : 'Same as last week';
+    deltaEl.classList.toggle('up', diff > 0);
   }
 
   // ── Focus Time ────────────────────────────────────────
@@ -9381,20 +9880,121 @@ function renderInsights() {
     } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(53,249,47,0.6)'; }
   }
 
-  // ── Activity Rings ─────────────────────────────────────
-  const focusGoalSecs = 8 * 3600; // 8h weekly goal
-  const focusPct = Math.min(100, Math.round(weekSecs / focusGoalSecs * 100));
-  const focusColor = weekSecs >= focusThreshold ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.55)';
-  const tasksDoneToday = TASKS.filter(t => t.done && t.doneDate === today).length;
-  const taskGoal = 5; // daily goal & threshold
-  const taskPct = Math.min(100, Math.round(tasksDoneToday / taskGoal * 100));
-  const taskColor = tasksDoneToday >= taskGoal ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.55)';
-  const habitColor = h7Pct >= 80 ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.55)';
-  if (panelVisible) _insDrawRings('ins-rings-canvas', [
-    { label: 'Focus', pct: focusPct, color: focusColor, max: 100 },
-    { label: 'Tasks', pct: taskPct, color: taskColor, max: 100 },
-    { label: 'Habits', pct: h7Pct, color: habitColor, max: 100 },
-  ]);
+  // ── Tabbed Visualization: compute all 3 datasets ───────
+  // 1. Pulse Heatmap data — last 84 days
+  const pulseData = [];
+  for (let i = 83; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const ds = localDateStr(d);
+    const dayTasks = TASKS.filter(t => t.done && t.doneDate === ds);
+    const secs = dayTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+    pulseData.push({ date: ds, count: dayTasks.length, secs });
+  }
+  // Compute streaks + best day
+  let curStreak = 0, longestStreak = 0, tempStreak = 0;
+  for (let i = pulseData.length - 1; i >= 0; i--) {
+    if (pulseData[i].count > 0) { tempStreak++; if (curStreak === 0 || i === pulseData.length - 1 - (pulseData.length - 1 - i)) curStreak = tempStreak; }
+    else break;
+  }
+  // Proper longest streak pass
+  tempStreak = 0;
+  for (const d of pulseData) {
+    if (d.count > 0) { tempStreak++; if (tempStreak > longestStreak) longestStreak = tempStreak; }
+    else tempStreak = 0;
+  }
+  // Best day of week (avg over period)
+  const dowCounts = [0,0,0,0,0,0,0], dowTotals = [0,0,0,0,0,0,0];
+  pulseData.forEach(d => {
+    const dow = new Date(d.date + 'T00:00').getDay();
+    dowCounts[dow] += d.count;
+    dowTotals[dow] += 1;
+  });
+  const dowAvgs = dowCounts.map((c, i) => dowTotals[i] > 0 ? c / dowTotals[i] : 0);
+  const bestDowIdx = dowAvgs.indexOf(Math.max(...dowAvgs));
+  const dowNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const pulseStats = { curStreak, longestStreak, bestDow: dowNames[bestDowIdx], bestDowAvg: dowAvgs[bestDowIdx].toFixed(1) };
+
+  // 2. Energy × Priority Matrix data — categories
+  const catDataMap = {};
+  const prioMap = { high: 3, med: 2, low: 1 };
+  const energyMap = { deep: 3, shallow: 2, quick: 1, admin: 1.5 };
+  TASKS.forEach(t => {
+    if (!t.category) return;
+    const pomo = t.sessionTimeSecs || 0, commit = t.timeSpentSeconds || 0;
+    const secs = pomo + commit;
+    if (secs <= 0) return;
+    const cat = t.category;
+    if (!catDataMap[cat]) catDataMap[cat] = { cat, label: CATEGORIES[cat]?.label || cat, color: getCatColor(cat), prioSum: 0, energySum: 0, count: 0, totalSecs: 0 };
+    catDataMap[cat].prioSum += prioMap[t.priority] || 2;
+    catDataMap[cat].energySum += energyMap[t.energyType] || 2;
+    catDataMap[cat].count += 1;
+    catDataMap[cat].totalSecs += secs;
+  });
+  const matrixData = Object.values(catDataMap).map(c => ({
+    cat: c.cat, label: c.label, color: c.color,
+    avgPrio: c.prioSum / c.count,
+    avgEnergy: c.energySum / c.count,
+    totalSecs: c.totalSecs,
+  }));
+
+  // 3. Day Rhythm data — this week vs last week by hour
+  const thisWeekStart = new Date(Date.now() - 6 * 86400000);
+  const prevWeekStart = new Date(Date.now() - 13 * 86400000);
+  const prevWeekEnd = new Date(Date.now() - 7 * 86400000);
+  const hoursThis = new Array(24).fill(0);
+  const hoursPrev = new Array(24).fill(0);
+  TASKS.filter(t => t.done && t.doneDate).forEach(t => {
+    const d = new Date(t.doneDate + 'T00:00');
+    let hour = 12; // default bucket if no event
+    if (t.calEventId) {
+      const ev = CAL_EVENTS.find(e => e.id === t.calEventId);
+      if (ev?.startTime) hour = parseInt(ev.startTime.split(':')[0], 10);
+    }
+    if (d >= thisWeekStart) hoursThis[hour] += 1;
+    else if (d >= prevWeekStart && d <= prevWeekEnd) hoursPrev[hour] += 1;
+  });
+
+  // Dispatch: draw the active viz
+  const vizTab = window._insVizTab || 'pulse';
+  const emptyEl = document.getElementById('ins-viz-empty');
+  const statsEl = document.getElementById('ins-viz-stats');
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (panelVisible) {
+    if (vizTab === 'pulse') {
+      _insDrawPulseHeatmap('ins-viz-canvas', pulseData);
+      if (statsEl) statsEl.innerHTML = `
+        <div class="ins-viz-stat">🔥 Current streak <span class="val ${curStreak > 0 ? 'green' : ''}">${curStreak}d</span></div>
+        <div class="ins-viz-stat">⚡ Longest streak <span class="val">${longestStreak}d</span></div>
+        <div class="ins-viz-stat">⭐ Best day <span class="val">${pulseStats.bestDow} · ${pulseStats.bestDowAvg} avg</span></div>
+        <div class="ins-viz-stat">📈 84-day total <span class="val">${pulseData.reduce((s, d) => s + d.count, 0)} tasks</span></div>`;
+    } else if (vizTab === 'matrix') {
+      _insDrawEnergyMatrix('ins-viz-canvas', matrixData);
+      if (statsEl) {
+        if (matrixData.length) {
+          statsEl.innerHTML = matrixData.sort((a, b) => b.totalSecs - a.totalSecs).slice(0, 6).map(c =>
+            `<div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c.color};margin-right:6px"></span>${c.label} <span class="val">${_insFmtHrs(c.totalSecs)}</span></div>`
+          ).join('');
+        } else {
+          statsEl.innerHTML = '<div class="ins-viz-stat">Set priority and energy type on tasks to see your distribution</div>';
+        }
+      }
+      if (!matrixData.length && emptyEl) {
+        emptyEl.style.display = 'flex';
+        emptyEl.textContent = 'Track priority and energy types on tasks to see your distribution';
+      }
+    } else if (vizTab === 'rhythm') {
+      _insDrawDayRhythm('ins-viz-canvas', hoursThis, hoursPrev);
+      const thisTotal = hoursThis.reduce((a, b) => a + b, 0);
+      const prevTotal = hoursPrev.reduce((a, b) => a + b, 0);
+      let peakH = 0, peakV = 0;
+      hoursThis.forEach((v, h) => { if (v > peakV) { peakV = v; peakH = h; } });
+      if (statsEl) statsEl.innerHTML = `
+        <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(53,249,47);margin-right:6px;box-shadow:0 0 6px rgba(53,249,47,0.4)"></span>This week <span class="val">${thisTotal} tasks</span></div>
+        <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);margin-right:6px"></span>Last week <span class="val">${prevTotal} tasks</span></div>
+        <div class="ins-viz-stat">Peak hour <span class="val">${peakV > 0 ? String(peakH).padStart(2,'0') + ':00' : '—'}</span></div>
+        <div class="ins-viz-stat">Peak count <span class="val ${peakV >= 5 ? 'green' : ''}">${peakV}</span></div>`;
+    }
+  }
 
   // ── Completion Trend (28-day) ─────────────────────────
   const trendData = [], trendLabels = [];
@@ -15710,6 +16310,16 @@ function initDoneWall() {
   };
   foldBtn?.addEventListener('click', e => { e.stopPropagation(); toggle(); });
   header?.addEventListener('click', toggle);
+
+  // Insights viz tab switching
+  window._insVizTab = window._insVizTab || 'pulse';
+  document.querySelector('.ins-viz-tabs')?.addEventListener('click', e => {
+    const btn = e.target.closest('.ins-viz-tab');
+    if (!btn) return;
+    window._insVizTab = btn.dataset.viz;
+    document.querySelectorAll('.ins-viz-tab').forEach(b => b.classList.toggle('active', b.dataset.viz === window._insVizTab));
+    if (typeof renderInsights === 'function') renderInsights();
+  });
 }
 
 /* ── Teardown — call on signout to prevent listener leaks ── */
