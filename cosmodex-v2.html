@@ -11885,6 +11885,33 @@ function _tdInit(){
     f.appendChild(b); f.appendChild(m); defs.appendChild(f);
   })();
 
+  // Radial gradient for ring band fills (high transparency, center-out glow)
+  (()=>{
+    const rg=_tdMk('radialGradient');
+    rg.setAttribute('id','td-band-grad');
+    rg.setAttribute('cx',String(_TD_CX));
+    rg.setAttribute('cy',String(_TD_CY));
+    rg.setAttribute('r','234');
+    rg.setAttribute('fx',String(_TD_CX));
+    rg.setAttribute('fy',String(_TD_CY));
+    rg.setAttribute('gradientUnits','userSpaceOnUse');
+    const stops=[
+      [0.00,'rgba(255,255,255,0)'],
+      [0.20,'rgba(255,255,255,0.03)'],
+      [0.45,'rgba(255,255,255,0.06)'],
+      [0.70,'rgba(255,255,255,0.05)'],
+      [0.90,'rgba(255,255,255,0.03)'],
+      [1.00,'rgba(255,255,255,0.01)'],
+    ];
+    stops.forEach(([off,col])=>{
+      const s=_tdMk('stop');
+      s.setAttribute('offset',String(off));
+      s.setAttribute('stop-color',col);
+      rg.appendChild(s);
+    });
+    defs.appendChild(rg);
+  })();
+
 
   const gBg=_tdMk('g'); _tdSvg.appendChild(gBg);
   const gRings=_tdMk('g'); _tdSvg.appendChild(gRings);
@@ -11906,7 +11933,7 @@ function _tdInit(){
     const ro=ring.r, ri=ring.r-ring.bw;
     const p=_tdMk('path');
     p.setAttribute('d',`M${_TD_CX},${_TD_CY-ro} A${ro},${ro} 0 1,1 ${_TD_CX-0.01},${_TD_CY-ro}Z M${_TD_CX},${_TD_CY-ri} A${ri},${ri} 0 1,0 ${_TD_CX-0.01},${_TD_CY-ri}Z`);
-    p.setAttribute('fill',ring.bandFill); p.setAttribute('fill-rule','evenodd'); gBg.appendChild(p);
+    p.setAttribute('fill','url(#td-band-grad)'); p.setAttribute('fill-rule','evenodd'); gBg.appendChild(p);
     const c=_tdMk('circle');
     c.setAttribute('cx',_TD_CX); c.setAttribute('cy',_TD_CY); c.setAttribute('r',String(ro));
     c.setAttribute('fill','none'); c.setAttribute('stroke',ring.bandStroke); c.setAttribute('stroke-width','0.4'); c.setAttribute('stroke-dasharray','3,4'); gBg.appendChild(c);
