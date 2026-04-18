@@ -6879,20 +6879,9 @@ select.sched-input { background: #181818; }
 .td-dlv2 #td-bottom {
   position: relative;
 }
-.td-dlv2 #td-bottom::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255,255,255,0.18) 20%,
-    rgba(255,255,255,0.55) 50%,
-    rgba(255,255,255,0.18) 80%,
-    transparent 100%);
-  pointer-events: none;
-  z-index: 5;
-}
-/* Subtle glass tint at very top of horizon arc panel — frosted instrument bezel */
+/* Subtle glass tint at very top of horizon arc panel — frosted instrument bezel
+   (the specular 1px hairline was removed per user feedback — it read as a
+   harsh horizon line; the soft gradient fade alone gives the panel lift) */
 .td-dlv2 #td-bottom::after {
   content: '';
   position: absolute;
@@ -15164,14 +15153,21 @@ function _tdDrawTimeline(now){
       ctx.strokeStyle=`rgba(53,249,47,${glowAlpha.toFixed(2)})`;
       ctx.lineWidth=1.2; ctx.shadowColor='rgba(53,249,47,0.9)'; ctx.shadowBlur=8; ctx.stroke();
       ctx.restore();
-      // Event title text at end of line
+      // Event title text at end of connector — etched on the bezel, not glued to the line
       const titleTxt = ev.title.length > 18 ? ev.title.slice(0,17)+'…' : ev.title;
       ctx.save();
-      ctx.font="400 9px 'DM Mono',monospace";
+      // Translate to the connector tip so we can rotate around it
+      ctx.translate(lx1, ly1);
+      // Rotate to follow the arc tangent (perpendicular to the radial connector),
+      // so the label reads as if etched along the instrument bezel
+      ctx.rotate(midAngle);
+      ctx.font="500 10px 'DM Mono',monospace";
+      if ('letterSpacing' in ctx) ctx.letterSpacing = '0.04em';
       ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.fillStyle=`rgba(255,255,255,${isPast?0.3:0.8})`;
-      ctx.shadowColor='rgba(53,249,47,0.5)'; ctx.shadowBlur=isPast?0:6;
-      ctx.fillText(titleTxt, lx1, ly1-4);
+      // Subtle white glow (no green) — keeps text crisp against the waveforms
+      ctx.shadowColor='rgba(255,255,255,0.22)'; ctx.shadowBlur=isPast?0:3;
+      ctx.fillStyle=`rgba(255,255,255,${isPast?0.35:0.95})`;
+      ctx.fillText(titleTxt, 0, -8);
       ctx.shadowBlur=0;
       ctx.restore();
     }
