@@ -11641,7 +11641,7 @@ function hbRenderLibrary() {
     const el = document.createElement('div');
     el.className = 'hb-lib-template';
     if (_hbSelectedHabit && _hbSelectedHabit.name === h.name) el.classList.add('adding');
-    el.innerHTML = `<div class="hb-lt-icon">${h.icon}</div><div class="hb-lt-info"><div class="hb-lt-name">${h.name}</div><div class="hb-lt-meta">${h.dur} · ${h.tag}</div></div><div class="hb-lt-add">+</div>`;
+    el.innerHTML = `<div class="hb-lt-icon">${h.icon}</div><div class="hb-lt-info"><div class="hb-lt-name">${escHtml(h.name)}</div><div class="hb-lt-meta">${escHtml(h.dur)} · ${escHtml(h.tag)}</div></div><div class="hb-lt-add">+</div>`;
     el.addEventListener('click', () => hbSelectHabit(h, el));
     list.appendChild(el);
   });
@@ -15566,6 +15566,15 @@ function showToast(msg, type = 'info', duration = 3000) {
   }, duration);
 }
 
+// Surface otherwise-silent async failures (e.g. Firestore writes that lack a try/catch)
+// instead of letting a change quietly fail with no feedback to the user.
+window.addEventListener('unhandledrejection', ev => {
+  console.error('Unhandled async error:', ev.reason);
+  try { showToast('Something went wrong — your change may not have saved.', 'error', 5000); } catch (_) {}
+});
+// Refresh the orb immediately when the tab becomes visible again (paired with the hidden-guard above).
+document.addEventListener('visibilitychange', () => { if (!document.hidden) drawCosmodex(); });
+
 function fmtDate(s) {
   if (!s) return '';
   const [,m,d] = s.split('-');
@@ -17912,6 +17921,7 @@ function _cosmodexDrawCore(ctx, W, H, expanded, dpr) {
 }
 
 function drawCosmodex() {
+  if (document.hidden) return;            // perf: don't redraw the 1Hz orb while the tab is hidden
   const canvas = document.getElementById('cosmodex-canvas');
   if (!canvas) return;
 
