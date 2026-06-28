@@ -10680,7 +10680,13 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
         if (!_pomoEvent) return;
         if (!await cdxConfirm(`Delete event "${_pomoEvent.title}"?`)) return;
         const { deleteDoc } = window.CDX_FB;
-        try { await deleteDoc(_ud('calEvents', _pomoEvent.id)); } catch(e) {}
+        const ev = _pomoEvent;
+        try {
+          await deleteDoc(_ud('calEvents', ev.id));
+          // Keep parity with the event-modal delete: unschedule the linked task (don't orphan its calEventId)
+          const linkedTask = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : TASKS.find(t => t.calEventId === ev.id);
+          if (linkedTask) await updateTask(linkedTask.id, { calEventId: null });
+        } catch(e) {}
         _pomoEvent = null; delBtn.style.display = 'none';
         showToast('Event deleted', 'success');
       };
