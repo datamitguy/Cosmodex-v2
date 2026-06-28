@@ -204,10 +204,11 @@ body::after {
 /* Stark white text + diffuse glow for selected tabs and actively running timers.
    Matches the "Liquid Glass / Spatial UI" spec — gives active states the feel
    of a backlit LED rather than a flat color change. */
+/* NOTE: .view-tab.active and .ins-viz-tab.active are intentionally EXCLUDED here —
+   they have a filled (gold / near-white) background, so forcing white text made the
+   label unreadable. The glow is for underline-style tabs only. */
 .habits-v2-tab.active,
-.view-tab.active,
 .plan-center-tab.active,
-.ins-viz-tab.active,
 .done-filter-btn.active,
 .focus-timer-display.running,
 .commit-timer {
@@ -218,9 +219,8 @@ body::after {
 .nav-item.active {
   text-shadow: 0 1px 2px rgba(0,0,0,0.25), 0 0 10px rgba(255,255,255,0.4);
 }
-/* Active tab underlines turn white to match */
+/* Active tab underlines turn white to match (underline-style tabs only) */
 .habits-v2-tab.active,
-.view-tab.active,
 .plan-center-tab.active {
   border-bottom-color: #ffffff !important;
 }
@@ -13032,9 +13032,20 @@ async function deleteMilestoneEvent(id) {
   const { deleteDoc } = window.CDX_FB;
   const ev = MILESTONE_EVENTS.find(e => e.id === id);
   const taskIds = (ev?.activities || []).filter(a => a.taskId).map(a => a.taskId);
+  // Collect calEvents linked to those tasks (and their subtasks) so they aren't orphaned
+  const calEventIds = [];
+  taskIds.forEach(tid => {
+    const t = TASKS.find(t => t.id === tid);
+    if (t?.calEventId) calEventIds.push(t.calEventId);
+    (t?.subtasks || []).forEach(s => { if (s.calEventId) calEventIds.push(s.calEventId); });
+  });
+  CAL_EVENTS.filter(e => taskIds.includes(e.taskId)).forEach(e => {
+    if (!calEventIds.includes(e.id)) calEventIds.push(e.id);
+  });
   await Promise.all([
     deleteDoc(_ud('milestoneEvents', id)),
     ...taskIds.map(tid => deleteDoc(_ud('tasks', tid))),
+    ...calEventIds.map(cid => deleteDoc(_ud('calEvents', cid))),
   ]);
 }
 
@@ -15574,6 +15585,20 @@ window.addEventListener('unhandledrejection', ev => {
 });
 // Refresh the orb immediately when the tab becomes visible again (paired with the hidden-guard above).
 document.addEventListener('visibilitychange', () => { if (!document.hidden) drawCosmodex(); });
+
+// Double-submit guard: absorb rapid repeat clicks on any create/confirm/save/add button,
+// so double-clicking "Confirm" can't create two records. Capture phase + stopImmediatePropagation
+// blocks the second click before the button's own handler runs. 800ms cooldown per button.
+const _cdxClickGuard = new WeakMap();
+document.addEventListener('click', e => {
+  const btn = e.target.closest('button, [data-confirm]');
+  if (!btn) return;
+  const cls = typeof btn.className === 'string' ? btn.className : '';
+  if (!/(?:^|[-_ ])(confirm|save|create|add)(?:[-_ ]|$)/i.test((btn.id || '') + ' ' + cls)) return;
+  const now = Date.now();
+  if (now - (_cdxClickGuard.get(btn) || 0) < 800) { e.stopImmediatePropagation(); e.preventDefault(); return; }
+  _cdxClickGuard.set(btn, now);
+}, true);
 
 function fmtDate(s) {
   if (!s) return '';
