@@ -56,7 +56,9 @@ You asked: *deleting a calendar event should delete the linked task too.* Today 
 ## Overall verdict
 The **dangerous** links (the containment ones that would orphan whole documents — calEvents, milestone tasks, list/bucket items) are handled correctly, especially after today's two fixes. The remaining issues are **reference** dangling (cosmetic, UI-tolerant) plus the **habitLogs** orphan (worth a cleanup). The app is in good lineage health; nothing is silently losing or corrupting your core records.
 
-### Recommended next actions (need your go-ahead)
-1. `habitDelete` → also purge that habit's `habitLogs` entries. _(prevents skewed stats)_
-2. Event modal → add "Delete event **and** task" button (design note A).
-3. Optional tidy: on delete of person/category/value, clear the dangling refs on dependent records.
+### Resolved (2026-06-29)
+1. ✅ **`habitDelete` now purges `habitLogs`** — removes `completions.<habitId>` from every log doc (best-effort, won't roll back the habit delete if it fails).
+2. ✅ **Event modal "Delete event & task" button** — appears only when the event is linked to a task; uses `deleteTask` (full cascade). Plain "Delete" still just unschedules.
+3. ✅ **Dangling-ref cleanup on delete** — deleting a **value** clears `habit.valueId`; deleting a **category** clears `task.category`/`project.category`; deleting a **person** removes their id from every `task.people[]`.
+
+With these, findings #4–#8 are closed. Remaining 🟡 (low priority): a deleted habit's id can still linger in `stack.habitIds[]` (cosmetic; UI ignores unknown ids).

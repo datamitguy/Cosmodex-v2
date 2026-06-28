@@ -847,6 +847,8 @@ async function deleteValue(id) {
   if (!uid || !id) return;
   const { doc, deleteDoc } = window.CDX_FB;
   await deleteDoc(doc(window.CDX_DB, 'users', uid, 'values', id));
+  // Clear dangling valueId on any habits that referenced this value
+  await Promise.all(_habits.filter(h => h.valueId === id).map(h => habitUpdate(h.id, { valueId: null })));
 }
 
 /* ── Stacks (Phase 1) ──────────────────── */
@@ -1343,14 +1345,22 @@ async function habitDelete(habitId) {
   renderHabits();
   if (_habitsTab === 'habits') renderHabitsTab();
   if (_habitsTab === 'today') renderToday();
-  const { doc, deleteDoc } = window.CDX_FB;
+  const { doc, deleteDoc, getDocs, collection, updateDoc, deleteField } = window.CDX_FB;
   try {
     await deleteDoc(doc(window.CDX_DB, 'users', uid, 'habits', habitId));
   } catch(e) {
     console.warn('habitDelete error:', e);
     if (removed) { _habits.push(removed); _habits.sort((a,b)=>(a.order??0)-(b.order??0)); }
     renderHabits();
+    return;
   }
+  // Best-effort: purge this habit's entries from every habitLogs doc so stats don't count a ghost
+  try {
+    const snap = await getDocs(collection(window.CDX_DB, 'users', uid, 'habitLogs'));
+    await Promise.all(snap.docs
+      .filter(d => d.data()?.completions && Object.prototype.hasOwnProperty.call(d.data().completions, habitId))
+      .map(d => updateDoc(d.ref, { ['completions.' + habitId]: deleteField() })));
+  } catch(e) { console.warn('habitLogs purge after habitDelete failed:', e.message); }
 }
 
 async function habitUpdate(habitId, data) {
@@ -7992,6 +8002,10 @@ function showEventModal(ev, clientX, clientY) {
   _eamEvent = ev;
   const modal = document.getElementById('event-action-modal');
   if (!modal) return;
+  // Show "Delete event & task" only when this event is actually linked to a task
+  const hasTask = !!(ev.taskId ? TASKS.find(t => t.id === ev.taskId) : TASKS.find(t => t.calEventId === ev.id));
+  const delTaskBtn = document.getElementById('eam-delete-task');
+  if (delTaskBtn) delTaskBtn.style.display = hasTask ? '' : 'none';
   document.getElementById('eam-title').textContent = ev.title;
   document.getElementById('eam-start').value = ev.startTime || '';
   document.getElementById('eam-dur').value   = ev.duration  || 60;
@@ -8045,6 +8059,20 @@ function initEventModal() {
       hideEventModal();
       showToast('Event deleted', 'success');
     } catch(e) { showToast('Could not delete event', 'error'); }
+  });
+
+  // Delete the event AND its linked task (deleteTask cascades the calEvent + subtask events)
+  document.getElementById('eam-delete-task')?.addEventListener('click', async () => {
+    if (!_eamEvent) return;
+    const linkedTask = _eamEvent.taskId
+      ? TASKS.find(t => t.id === _eamEvent.taskId)
+      : TASKS.find(t => t.calEventId === _eamEvent.id);
+    if (!linkedTask) { document.getElementById('eam-delete')?.click(); return; }
+    if (!await cdxConfirm(`Delete the event AND the task "${linkedTask.title}"? This removes the task entirely.`)) return;
+    try {
+      await deleteTask(linkedTask.id);   // cascades: task + its calEvent + subtask events + milestone refs
+      hideEventModal();
+    } catch(e) { showToast('Could not delete event & task', 'error'); }
   });
 
   document.getElementById('eam-play')?.addEventListener('click', () => {
@@ -8508,9 +8536,14 @@ function addCategory(label, color) {
   rebuildCategorySelects();
 }
 
-function deleteCategory(key) {
+async function deleteCategory(key) {
   delete CATEGORIES[key];
   saveCategories();
+  // Clear dangling category refs on tasks and milestone projects
+  await Promise.all([
+    ...TASKS.filter(t => t.category === key).map(t => updateTask(t.id, { category: '' })),
+    ...MILESTONE_PROJECTS.filter(p => p.category === key).map(p => updateMilestoneProject(p.id, { category: '' })),
+  ]);
   renderSettingsCatList();
   renderSettingsCats();
   renderTasks();
@@ -8644,10 +8677,14 @@ function renderSettingsPeople() {
       <button class="task-action-btn danger" data-del-person="${escAttr(p.id)}" title="Remove">✕</button>
     </div>`).join('');
   list.querySelectorAll('[data-del-person]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      PEOPLE = PEOPLE.filter(p => p.id !== btn.dataset.delPerson);
+    btn.addEventListener('click', async () => {
+      const pid = btn.dataset.delPerson;
+      PEOPLE = PEOPLE.filter(p => p.id !== pid);
       savePeople();
       renderSettingsPeople();
+      // Clear dangling person id from any tasks that referenced them
+      await Promise.all(TASKS.filter(t => Array.isArray(t.people) && t.people.includes(pid))
+        .map(t => updateTask(t.id, { people: t.people.filter(id => id !== pid) })));
     });
   });
 }
