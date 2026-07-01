@@ -11370,9 +11370,15 @@ let _drillTimerLeft  = 0;      // seconds remaining
 let _drillTimerTotal = 0;
 let _drillRecognition = null;  // active SpeechRecognition instance, if recording
 
+// Shape: { apiEnabled, provider: 'anthropic'|'deepseek', apiKeys: { anthropic, deepseek } }
+// Provider grading logic lives in src/12-drill-providers.js (DRILL_PROVIDERS, drillAutoGrade).
 function _drillSettings() {
-  try { return JSON.parse(localStorage.getItem('cdx_drill_settings') || 'null') || { apiEnabled: false, apiKey: '' }; }
-  catch (e) { return { apiEnabled: false, apiKey: '' }; }
+  let s;
+  try { s = JSON.parse(localStorage.getItem('cdx_drill_settings') || 'null'); } catch (e) { s = null; }
+  if (!s) return { apiEnabled: false, provider: 'anthropic', apiKeys: { anthropic: '', deepseek: '' } };
+  if (!s.apiKeys) s.apiKeys = { anthropic: s.apiKey || '', deepseek: '' }; // migrate old single-key shape
+  if (!s.provider) s.provider = 'anthropic';
+  return s;
 }
 function _saveDrillSettings(s) { localStorage.setItem('cdx_drill_settings', JSON.stringify(s)); }
 
@@ -11542,70 +11548,8 @@ async function parseAndSaveDrillFeedback() {
   }
 }
 
-/* ── Optional: direct API automation (off by default) ──────── */
-// Model claude-opus-4-8, direct browser fetch. Requires the
-// anthropic-dangerous-direct-browser-access header — without it the browser's
-// CORS preflight is rejected. The key lives in localStorage only and never
-// leaves the browser except in this request; it is visible in devtools while
-// this feature is on, which is why it defaults off.
-const DRILL_GRADE_SCHEMA = {
-  type: 'object',
-  properties: {
-    scores: {
-      type: 'object',
-      properties: Object.fromEntries(DRILL_RUBRIC_ORDER.map(k => [k, { type: 'integer' }])),
-      required: DRILL_RUBRIC_ORDER,
-      additionalProperties: false,
-    },
-    reasons: {
-      type: 'object',
-      properties: Object.fromEntries(DRILL_RUBRIC_ORDER.map(k => [k, { type: 'string' }])),
-      required: DRILL_RUBRIC_ORDER,
-      additionalProperties: false,
-    },
-    model_answer: { type: 'string' },
-    notes: { type: 'string' },
-  },
-  required: ['scores', 'reasons', 'model_answer', 'notes'],
-  additionalProperties: false,
-};
-
-async function drillAutoGrade() {
-  const settings = _drillSettings();
-  const scenario = DRILL_PROMPT_BANK.find(p => p.id === window._drillActiveScenarioId);
-  const textarea = document.getElementById('drill-response-input');
-  if (!settings.apiEnabled || !settings.apiKey) { showToast('Enable and save an API key in Drill settings first.', 'error'); return; }
-  if (!scenario || !textarea || !textarea.value.trim()) { showToast('Write a response first.', 'error'); return; }
-  const btn = document.getElementById('drill-autograde-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Grading…'; }
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': settings.apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-8',
-        max_tokens: 1024,
-        output_config: { format: { type: 'json_schema', schema: DRILL_GRADE_SCHEMA } },
-        messages: [{ role: 'user', content: _drillBuildGradingBlock(scenario, textarea.value.trim()) }],
-      }),
-    });
-    if (!res.ok) throw new Error(`API returned ${res.status}`);
-    const data = await res.json();
-    const parsed = JSON.parse(data.content[0].text);
-    if (!_drillPendingId) throw new Error('No response to attach this feedback to.');
-    await _drillSaveGrading(_drillPendingId, parsed);
-    showToast('Auto-graded and saved.', 'success');
-  } catch (e) {
-    showToast('Auto-grade failed: ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Auto-Grade'; }
-  }
-}
+// Optional direct-API auto-grading (off by default) lives in
+// src/12-drill-providers.js — DRILL_PROVIDERS registry + drillAutoGrade().
 
 /* ── Timer ──────────────────────────────────────────────────── */
 function startDrillTimer(minutes) {
@@ -11795,15 +11739,22 @@ function _renderDrillTrendCard(trend) {
 }
 
 function _renderDrillSettingsCard(settings) {
+  // DRILL_PROVIDERS is defined in src/12-drill-providers.js
+  const provider = settings.provider || 'anthropic';
+  const providerMeta = (typeof DRILL_PROVIDERS !== 'undefined' && DRILL_PROVIDERS[provider]) || { keyPlaceholder: 'api key', costNote: '' };
+  const options = (typeof DRILL_PROVIDERS !== 'undefined' ? Object.entries(DRILL_PROVIDERS) : [])
+    .map(([id, p]) => `<option value="${id}" ${id === provider ? 'selected' : ''}>${escHtml(p.label)}</option>`).join('');
   return `
     <div class="drill-card drill-settings-card">
       <div class="drill-card-title">Automate Grading (Optional)</div>
-      <div class="drill-settings-note">Paste your own Anthropic API key to skip the copy/paste round-trip. This incurs small per-use API costs (roughly 1–2¢ per grading call), separate from Claude Pro. The key is stored only in this browser and is visible in devtools while enabled.</div>
+      <div class="drill-settings-note">Paste your own API key to skip the copy/paste round-trip. The key is stored only in this browser and is visible in devtools while enabled.</div>
       <label class="drill-settings-toggle">
         <input type="checkbox" id="drill-api-enabled" ${settings.apiEnabled ? 'checked' : ''} onchange="_drillToggleApiEnabled(this.checked)">
         Enable direct API auto-grading
       </label>
-      <input type="password" id="drill-api-key-input" class="drill-api-key-input" placeholder="sk-ant-..." value="${escAttr(settings.apiKey || '')}" onblur="_drillSaveApiKey(this.value)">
+      <select id="drill-provider-select" class="drill-api-key-input" onchange="_drillSetProvider(this.value)">${options}</select>
+      <div class="drill-settings-note">${providerMeta.costNote}</div>
+      <input type="password" id="drill-api-key-input" class="drill-api-key-input" placeholder="${escAttr(providerMeta.keyPlaceholder)}" value="${escAttr((settings.apiKeys || {})[provider] || '')}" onblur="_drillSaveApiKey(this.value)">
     </div>`;
 }
 
@@ -11831,8 +11782,135 @@ function _drillToggleApiEnabled(enabled) {
   _saveDrillSettings(s);
   renderDrill();
 }
+function _drillSetProvider(provider) {
+  const s = _drillSettings();
+  s.provider = provider;
+  _saveDrillSettings(s);
+  renderDrill();
+}
 function _drillSaveApiKey(key) {
   const s = _drillSettings();
-  s.apiKey = key.trim();
+  if (!s.apiKeys) s.apiKeys = { anthropic: '', deepseek: '' };
+  s.apiKeys[s.provider || 'anthropic'] = key.trim();
   _saveDrillSettings(s);
+}
+/* ══ COMM DRILL — GRADING PROVIDERS (optional auto-grade automation) ══ */
+// → future file: cosmodex-drill-providers.js
+// Off-by-default direct-API grading for the Communication Drill (src/11-comm-drill.js).
+// Keys live in localStorage only and are visible in devtools while enabled —
+// that tradeoff is why this whole feature defaults off; the safe path is
+// still Copy-to-Claude / Paste-Feedback.
+//
+// DeepSeek CORS note: DeepSeek's docs (api-docs.deepseek.com) only show
+// server-side examples (curl/Python/Node) and never mention CORS or a
+// browser-access opt-in header, unlike Anthropic's explicit
+// `anthropic-dangerous-direct-browser-access` flag. That's a signal, not a
+// confirmation — the only way to know for sure is to try it in your browser.
+// If it fails, the fetch will throw (usually a generic "Failed to fetch" from
+// a blocked CORS preflight) and you'd need a small server-side relay (e.g. a
+// Firebase Cloud Function) to forward the request — the API key would live
+// there instead of in the browser, which is also just better practice.
+
+const DRILL_GRADE_SCHEMA = {
+  type: 'object',
+  properties: {
+    scores: {
+      type: 'object',
+      properties: Object.fromEntries(DRILL_RUBRIC_ORDER.map(k => [k, { type: 'integer' }])),
+      required: DRILL_RUBRIC_ORDER,
+      additionalProperties: false,
+    },
+    reasons: {
+      type: 'object',
+      properties: Object.fromEntries(DRILL_RUBRIC_ORDER.map(k => [k, { type: 'string' }])),
+      required: DRILL_RUBRIC_ORDER,
+      additionalProperties: false,
+    },
+    model_answer: { type: 'string' },
+    notes: { type: 'string' },
+  },
+  required: ['scores', 'reasons', 'model_answer', 'notes'],
+  additionalProperties: false,
+};
+
+const DRILL_PROVIDERS = {
+  anthropic: {
+    label: 'Claude (Opus 4.8)',
+    keyPlaceholder: 'sk-ant-...',
+    costNote: 'Roughly 1–2¢ per grading call, separate from Claude Pro.',
+    async grade(promptText, apiKey) {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true', // required or the CORS preflight is rejected
+        },
+        body: JSON.stringify({
+          model: 'claude-opus-4-8',
+          max_tokens: 1024,
+          output_config: { format: { type: 'json_schema', schema: DRILL_GRADE_SCHEMA } },
+          messages: [{ role: 'user', content: promptText }],
+        }),
+      });
+      if (!res.ok) throw new Error(`Claude API returned ${res.status}`);
+      const data = await res.json();
+      return JSON.parse(data.content[0].text);
+    },
+  },
+  deepseek: {
+    label: 'DeepSeek (deepseek-chat)',
+    keyPlaceholder: 'sk-...',
+    costNote: 'Roughly 0.02–0.05¢ per grading call — far cheaper than Claude, but direct browser access is unconfirmed; this may fail with a CORS error (see console).',
+    async grade(promptText, apiKey) {
+      const res = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [{ role: 'user', content: promptText }],
+          response_format: { type: 'json_object' },
+        }),
+      });
+      if (!res.ok) throw new Error(`DeepSeek API returned ${res.status}`);
+      const data = await res.json();
+      return JSON.parse(data.choices[0].message.content);
+    },
+  },
+};
+
+function _drillValidateParsedGrade(parsed) {
+  if (!parsed || !parsed.scores) throw new Error('Response missing "scores" object');
+  for (const k of DRILL_RUBRIC_ORDER) {
+    const v = parsed.scores[k];
+    if (typeof v !== 'number' || v < 1 || v > 5) throw new Error(`Invalid score for "${k}"`);
+  }
+}
+
+async function drillAutoGrade() {
+  const settings = _drillSettings();
+  const provider = DRILL_PROVIDERS[settings.provider || 'anthropic'];
+  const apiKey = (settings.apiKeys || {})[settings.provider || 'anthropic'];
+  const scenario = DRILL_PROMPT_BANK.find(p => p.id === window._drillActiveScenarioId);
+  const textarea = document.getElementById('drill-response-input');
+  if (!settings.apiEnabled || !apiKey) { showToast('Enable and save an API key in Drill settings first.', 'error'); return; }
+  if (!scenario || !textarea || !textarea.value.trim()) { showToast('Write a response first.', 'error'); return; }
+  if (!_drillPendingId) { showToast('Submit your response first, then auto-grade.', 'error'); return; }
+
+  const btn = document.getElementById('drill-autograde-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Grading…'; }
+  try {
+    const parsed = await provider.grade(_drillBuildGradingBlock(scenario, textarea.value.trim()), apiKey);
+    _drillValidateParsedGrade(parsed);
+    await _drillSaveGrading(_drillPendingId, parsed);
+    showToast('Auto-graded and saved.', 'success');
+  } catch (e) {
+    showToast(`Auto-grade failed (${provider.label}): ${e.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Auto-Grade'; }
+  }
 }
