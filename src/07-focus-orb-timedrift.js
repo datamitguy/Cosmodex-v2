@@ -556,7 +556,7 @@ function _tdDrawTimeline(now){
   // ── Calendar event arcs ──────────────────────────────────
   const phase=performance.now()*0.001;
   evtSpans.forEach(({aS,aE2,cS,cE,isPast,ev})=>{
-    const evG='rgba(111,174,135,';
+    const evG='rgba(57,255,20,';
     // Thin fill around single arc
     ctx.beginPath();
     ctx.arc(cx,cy_arc,midR+4,aS,aE2);
@@ -592,12 +592,12 @@ function _tdDrawTimeline(now){
       // Soft outer glow pass
       ctx.save();
       ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
-      ctx.strokeStyle=`rgba(111,174,135,${(glowAlpha*0.30).toFixed(2)})`;
-      ctx.lineWidth=6; ctx.shadowColor='rgba(111,174,135,0.6)'; ctx.shadowBlur=14; ctx.stroke();
+      ctx.strokeStyle=`rgba(57,255,20,${(glowAlpha*0.30).toFixed(2)})`;
+      ctx.lineWidth=6; ctx.shadowColor='rgba(57,255,20,0.6)'; ctx.shadowBlur=14; ctx.stroke();
       // Core bright line
       ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
-      ctx.strokeStyle=`rgba(111,174,135,${glowAlpha.toFixed(2)})`;
-      ctx.lineWidth=1.2; ctx.shadowColor='rgba(111,174,135,0.9)'; ctx.shadowBlur=8; ctx.stroke();
+      ctx.strokeStyle=`rgba(57,255,20,${glowAlpha.toFixed(2)})`;
+      ctx.lineWidth=1.2; ctx.shadowColor='rgba(57,255,20,0.9)'; ctx.shadowBlur=8; ctx.stroke();
       ctx.restore();
       // Event title text at end of connector — etched on the bezel, not glued to the line
       const titleTxt = ev.title.length > 18 ? ev.title.slice(0,17)+'…' : ev.title;
@@ -661,11 +661,11 @@ function _tdDrawTimeline(now){
   if(ongoing && ey<maxY){
     const label=ongoing.title?(ongoing.title.length>20?ongoing.title.slice(0,19)+'…':ongoing.title):'event';
     ctx.font="300 10px 'DM Mono',monospace";
-    ctx.fillStyle='rgba(111,174,135,0.60)';
+    ctx.fillStyle='rgba(57,255,20,0.60)';
     ctx.fillText('ongoing · '+label,cx,ey); ey+=15;
     if(ey<maxY){
       ctx.font="300 9px 'DM Mono',monospace";
-      ctx.fillStyle='rgba(111,174,135,0.38)';
+      ctx.fillStyle='rgba(57,255,20,0.38)';
       ctx.fillText('continues '+(ongoing.eMins-nowMins)+'m more',cx,ey); ey+=20;
     }
   }
@@ -679,7 +679,7 @@ function _tdDrawTimeline(now){
       ctx.fillText(label,cx,ey); ey+=15;
       if(ey<maxY){
         ctx.font="300 9px 'DM Mono',monospace";
-        ctx.fillStyle='rgba(111,174,135,0.65)';
+        ctx.fillStyle='rgba(57,255,20,0.65)';
         ctx.fillText('in '+delta+'m',cx,ey); ey+=20;
       }
     });
@@ -884,8 +884,8 @@ function _tdUpdateRing(info,now,animEase){
      ties Timedrift into the cross-app threshold reward system.
      Revert by setting _TD_DLV2_ENABLED = false. */
   const dlv2Green = _TD_DLV2_ENABLED && ring.id === 'hr' && _tdDlv2IsFocusGoalMet();
-  const activeStroke = dlv2Green ? 'rgba(111,174,135,1)' : 'rgba(255,255,255,1)';
-  const activeFill   = dlv2Green ? 'rgba(111,174,135,1)' : 'rgba(255,255,255,1)';
+  const activeStroke = dlv2Green ? 'rgba(57,255,20,1)' : 'rgba(255,255,255,1)';
+  const activeFill   = dlv2Green ? 'rgba(57,255,20,1)' : 'rgba(255,255,255,1)';
   g.querySelectorAll('.td-ri').forEach(item=>{
     const i=+item.dataset.i, maj=item.dataset.maj==='1';
     let dist=i-exact;

@@ -1908,7 +1908,7 @@ function _habitsTabInit() {
     const gradBtn = e.target.closest('[data-habit-graduate]');
     if (gradBtn) {
       const h = _habits.find(x => x.id === gradBtn.dataset.habitGraduate);
-      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(111,174,135)', okBg: 'rgba(111,174,135,0.1)', okBorder: 'rgba(111,174,135,0.4)' })) {
+      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(57,255,20)', okBg: 'rgba(57,255,20,0.1)', okBorder: 'rgba(57,255,20,0.4)' })) {
         await habitGraduate(h.id);
       }
       return;
@@ -2372,13 +2372,13 @@ function _hinsDrawHeatmap() {
       else if (ratio < 0.25) bg = 'rgba(255,255,255,0.14)';
       else if (ratio < 0.5)  bg = 'rgba(255,255,255,0.26)';
       else if (ratio < 0.85) bg = 'rgba(255,255,255,0.42)';
-      else                   bg = 'rgb(111,174,135)';
+      else                   bg = 'rgb(57,255,20)';
 
       ctx.fillStyle = bg;
       _hinsRoundRect(ctx, x, y, size, size, 2);
       ctx.fill();
       if (ratio >= 0.85) {
-        ctx.shadowColor = 'rgba(111,174,135,0.5)';
+        ctx.shadowColor = 'rgba(57,255,20,0.5)';
         ctx.shadowBlur = 5;
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -2426,8 +2426,8 @@ function _hinsDrawMiniRing(containerEl, pct) {
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
   const green = pct >= 80;
-  const color = green ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
-  const glow = green ? 'drop-shadow(0 0 4px rgba(111,174,135,0.4))' : 'none';
+  const color = green ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)';
+  const glow = green ? 'drop-shadow(0 0 4px rgba(57,255,20,0.4))' : 'none';
   containerEl.innerHTML = `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="filter:${glow}">
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${stroke}"/>
@@ -2537,8 +2537,8 @@ function renderHabitsInsights() {
             const green = pct >= 80;
             const dim = pct < 30;
             const alpha = Math.max(0.08, Math.min(0.85, pct / 100));
-            cell.style.background = green ? 'rgb(111,174,135)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
-            if (green) cell.style.boxShadow = '0 0 4px rgba(111,174,135,0.4)';
+            cell.style.background = green ? 'rgb(57,255,20)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
+            if (green) cell.style.boxShadow = '0 0 4px rgba(57,255,20,0.4)';
             cell.textContent = pct + '%';
             cell.style.color = green ? '#0d0c0a' : (alpha > 0.4 ? '#0d0c0a' : 'rgba(255,255,255,0.5)');
             cell.title = `${h.tinyBehavior || h.name} · ${dowNames[dow]} · ${stat.done}/${stat.possible} (${pct}%)`;
@@ -3073,7 +3073,7 @@ function hbPickEnergy(el) {
 function hbLaunchDay() {
   const btn = document.getElementById('hb-launch-btn');
   if (!btn) return;
-  btn.style.background = 'linear-gradient(135deg,var(--sage) 0%,#2d5a3d 100%)';
+  btn.style.background = 'linear-gradient(135deg,var(--neon) 0%,#2d5a3d 100%)';
   btn.innerHTML = 'Day started ✓<span class="hb-lb-sub">Routine launched — good luck today</span>';
   setTimeout(() => {
     btn.style.background = 'linear-gradient(135deg,var(--gold) 0%,#a88018 100%)';
@@ -3329,8 +3329,8 @@ function _insDrawHeroConst(canvasId, dayData) {
     const brightness = 0.3 + (d.secs / maxSecs) * 0.65;
     const isToday = i === pts.length - 1;
     const isHot = d.tasks >= 5;
-    const col = isHot ? `rgba(111,174,135,${brightness.toFixed(2)})` : `rgba(255,255,255,${brightness.toFixed(2)})`;
-    const glow = isHot ? 'rgba(111,174,135,0.5)' : 'rgba(255,255,255,0.25)';
+    const col = isHot ? `rgba(57,255,20,${brightness.toFixed(2)})` : `rgba(255,255,255,${brightness.toFixed(2)})`;
+    const glow = isHot ? 'rgba(57,255,20,0.5)' : 'rgba(255,255,255,0.25)';
     ctx.beginPath(); ctx.arc(p.x, p.y, isToday ? size + 1.5 : size, 0, Math.PI * 2);
     ctx.fillStyle = col;
     ctx.shadowColor = glow; ctx.shadowBlur = isToday ? 14 : 8;
@@ -3338,7 +3338,7 @@ function _insDrawHeroConst(canvasId, dayData) {
     if (isToday) {
       // Outer pulse ring on today
       ctx.beginPath(); ctx.arc(p.x, p.y, size + 5, 0, Math.PI * 2);
-      ctx.strokeStyle = isHot ? 'rgba(111,174,135,0.35)' : 'rgba(255,255,255,0.2)';
+      ctx.strokeStyle = isHot ? 'rgba(57,255,20,0.35)' : 'rgba(255,255,255,0.2)';
       ctx.lineWidth = 0.8; ctx.stroke();
     }
   });
@@ -3397,7 +3397,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
       else if (count < 2) bg = 'rgba(255,255,255,0.14)';
       else if (count < 4) bg = 'rgba(255,255,255,0.26)';
       else if (count < 5) bg = 'rgba(255,255,255,0.42)';
-      else bg = 'rgb(111,174,135)';
+      else bg = 'rgb(57,255,20)';
       ctx.fillStyle = bg;
       // Rounded rect
       const rad = 2;
@@ -3410,7 +3410,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
       ctx.closePath();
       ctx.fill();
       if (count >= 5) {
-        ctx.shadowColor = 'rgba(111,174,135,0.5)'; ctx.shadowBlur = 6;
+        ctx.shadowColor = 'rgba(57,255,20,0.5)'; ctx.shadowBlur = 6;
         ctx.fill(); ctx.shadowBlur = 0;
       }
     }
@@ -3422,7 +3422,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.fillText('less', leftPad, legY);
   const legStart = leftPad + 28;
-  const legCells = ['rgba(255,255,255,0.04)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.26)', 'rgba(255,255,255,0.42)', 'rgb(111,174,135)'];
+  const legCells = ['rgba(255,255,255,0.04)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.26)', 'rgba(255,255,255,0.42)', 'rgb(57,255,20)'];
   legCells.forEach((c, i) => {
     ctx.fillStyle = c;
     ctx.fillRect(legStart + i * 10, legY - 8, 8, 8);
@@ -3561,7 +3561,7 @@ function _insDrawDayRhythm(canvasId, hoursThis, hoursPrev) {
   // This week in green (front)
   const weekAvg = hoursThis.reduce((a, b) => a + b, 0) / 7;
   const useGreen = weekAvg >= 5;
-  drawBars(hoursThis, useGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.75)', 1);
+  drawBars(hoursThis, useGreen ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.75)', 1);
   // Hour labels at cardinals
   ctx.font = "300 9px 'DM Mono',monospace";
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -3581,7 +3581,7 @@ function _insDrawDayRhythm(canvasId, hoursThis, hoursPrev) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('PEAK', cx, cy - 10);
   ctx.font = "300 16px 'Fraunces',serif";
-  ctx.fillStyle = useGreen && peakV > 0 ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.85)';
+  ctx.fillStyle = useGreen && peakV > 0 ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.85)';
   ctx.fillText(peakV > 0 ? String(peakH).padStart(2, '0') + ':00' : '—', cx, cy + 6);
   ctx.font = "300 9px 'DM Mono',monospace";
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
@@ -3653,13 +3653,13 @@ function _insDrawTrend(canvasId, data, labels, color, dates, isRedraw) {
   pts.forEach(p => ctx.lineTo(p[0], p[1]));
   ctx.lineTo(pts[pts.length - 1][0], padT + plotH); ctx.closePath();
   const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
-  const fillColor = color.includes('111,174,135') ? 'rgba(111,174,135,' : 'rgba(255,255,255,';
+  const fillColor = color.includes('57,255,20') ? 'rgba(57,255,20,' : 'rgba(255,255,255,';
   grad.addColorStop(0, fillColor + '0.10)'); grad.addColorStop(1, fillColor + '0.01)');
   ctx.fillStyle = grad; ctx.fill();
   // Stroke
   ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
   ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
-  const glowColor = color.includes('111,174,135') ? 'rgba(111,174,135,0.4)' : 'rgba(255,255,255,0.15)';
+  const glowColor = color.includes('57,255,20') ? 'rgba(57,255,20,0.4)' : 'rgba(255,255,255,0.15)';
   ctx.shadowColor = glowColor; ctx.shadowBlur = 4; ctx.stroke(); ctx.shadowBlur = 0;
   // Dot on today
   const last = pts[pts.length - 1];
@@ -3768,12 +3768,12 @@ function renderInsights() {
     gaugesEl.innerHTML = `
       <div class="ins-hero-gauge">
         <span class="ins-hero-gauge-label">Habits</span>
-        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.round(habitPct * 2)}%;background:${habitGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)'};box-shadow:${habitGreen ? '0 0 6px rgba(111,174,135,0.4)' : 'none'}"></div></div>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.round(habitPct * 2)}%;background:${habitGreen ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)'};box-shadow:${habitGreen ? '0 0 6px rgba(57,255,20,0.4)' : 'none'}"></div></div>
         <span class="ins-hero-gauge-val">${momentum.habitPts}</span>
       </div>
       <div class="ins-hero-gauge">
         <span class="ins-hero-gauge-label">Tasks</span>
-        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${taskTodayPct}%;background:${taskGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)'};box-shadow:${taskGreen ? '0 0 6px rgba(111,174,135,0.4)' : 'none'}"></div></div>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${taskTodayPct}%;background:${taskGreen ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)'};box-shadow:${taskGreen ? '0 0 6px rgba(57,255,20,0.4)' : 'none'}"></div></div>
         <span class="ins-hero-gauge-val">${tasksDoneToday}</span>
       </div>
       ${_insMomentumNudge(momentum, tasksDoneToday)}`;
@@ -3817,8 +3817,8 @@ function renderInsights() {
   const focusBar = document.getElementById('ins-focus-bar');
   if (focusBar) {
     focusBar.style.width = Math.min(100, Math.round(weekSecs / (8 * 3600) * 100)) + '%';
-    focusBar.style.background = weekSecs >= focusThreshold ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
-    focusBar.style.boxShadow = weekSecs >= focusThreshold ? '0 0 8px rgba(111,174,135,0.3)' : 'none';
+    focusBar.style.background = weekSecs >= focusThreshold ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)';
+    focusBar.style.boxShadow = weekSecs >= focusThreshold ? '0 0 8px rgba(57,255,20,0.3)' : 'none';
   }
   const focusSub = document.getElementById('ins-focus-sub');
   if (focusSub) focusSub.textContent = `Pomo ${_insFmtHrs(pomoSecs)} · Commit ${_insFmtHrs(commitSecs)}`;
@@ -3848,7 +3848,7 @@ function renderInsights() {
     if (overdueTasks.length) {
       const avgAge = Math.round(overdueTasks.reduce((s, t) => s + (Date.now() - new Date(t.dueDate + 'T00:00').getTime()) / 86400000, 0) / overdueTasks.length);
       overdueSub.textContent = `avg ${avgAge}d overdue`;
-    } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(111,174,135,0.6)'; }
+    } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(57,255,20,0.6)'; }
   }
 
   // ── Tabbed Visualization: compute all 3 datasets ───────
@@ -3960,7 +3960,7 @@ function renderInsights() {
       let peakH = 0, peakV = 0;
       hoursThis.forEach((v, h) => { if (v > peakV) { peakV = v; peakH = h; } });
       if (statsEl) statsEl.innerHTML = `
-        <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(111,174,135);margin-right:6px;box-shadow:0 0 6px rgba(111,174,135,0.4)"></span>This week <span class="val">${thisTotal} tasks</span></div>
+        <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(57,255,20);margin-right:6px;box-shadow:0 0 6px rgba(57,255,20,0.4)"></span>This week <span class="val">${thisTotal} tasks</span></div>
         <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);margin-right:6px"></span>Last week <span class="val">${prevTotal} tasks</span></div>
         <div class="ins-viz-stat">Peak hour <span class="val">${peakV > 0 ? String(peakH).padStart(2,'0') + ':00' : '—'}</span></div>
         <div class="ins-viz-stat">Peak count <span class="val ${peakV >= 5 ? 'green' : ''}">${peakV}</span></div>`;
@@ -3978,7 +3978,7 @@ function renderInsights() {
   }
   // Use green if weekly average >= 5 tasks/day, else white
   const weekAvg = trendData.slice(-7).reduce((a, b) => a + b, 0) / 7;
-  const trendColor = weekAvg >= 5 ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
+  const trendColor = weekAvg >= 5 ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)';
   if (panelVisible) _insDrawTrend('ins-trend-canvas', trendData, trendLabels, trendColor, trendDates);
 
   // ── Time by Category ──────────────────────────────────
@@ -4043,12 +4043,12 @@ function renderInsights() {
           <div class="hb-fi-action ok">${h.streak >= 21 ? '✓ Locked in' : '✓ Growing'}</div>
         </div>`;
       } else {
-        return `<div class="hb-fi-habit" style="border-left-color:var(--amber)">
+        return `<div class="hb-fi-habit" style="border-left-color:var(--gold)">
           <div class="hb-fi-info">
             <div class="hb-fi-name">${escHtml(h.name)} — ${h.pct}% this month</div>
             <div class="hb-fi-reason">Inconsistent — ${skipped} skips in ${h.possible} days</div>
           </div>
-          <div class="hb-fi-action" style="color:var(--amber)">~ Watch</div>
+          <div class="hb-fi-action" style="color:var(--gold)">~ Watch</div>
         </div>`;
       }
     }).join('');
@@ -4104,7 +4104,7 @@ function renderInsights() {
   }).filter(d => d.pct !== null).sort((a, b) => b.pct - a.pct);
 
   const makeBar = (label, pct, note) => {
-    const col = pct >= 70 ? 'var(--sage)' : pct >= 40 ? 'var(--amber)' : 'var(--rust)';
+    const col = pct >= 70 ? 'var(--neon)' : pct >= 40 ? 'var(--gold)' : 'var(--gold)';
     return `<div class="hb-pw-item">
       <div class="hb-pw-top"><div class="hb-pw-name">${escHtml(label)}</div><div class="hb-pw-score" style="color:${col};">${pct}%</div></div>
       <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:${pct}%;background:${col};"></div></div>
@@ -4201,7 +4201,7 @@ function _renderWeekDebrief() {
     <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Current Week</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
       <div style="display:flex;align-items:baseline;gap:8px">
-        <span style="font-family:var(--font-display);font-size:28px;font-weight:300;color:${thisWeekTasks.length >= 25 ? 'rgb(111,174,135)' : 'var(--cream)'}">${thisWeekTasks.length}</span>
+        <span style="font-family:var(--font-display);font-size:28px;font-weight:300;color:${thisWeekTasks.length >= 25 ? 'rgb(57,255,20)' : 'var(--cream)'}">${thisWeekTasks.length}</span>
         <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;color:var(--muted)">tasks done · ${taskDeltaStr} last week</span>
       </div>
       <div style="display:flex;align-items:baseline;gap:8px">
@@ -4467,7 +4467,7 @@ function renderMilestoneDashboard() {
       <div class="ms-card-milestones">
         ${visibleEvents.map(ev => {
           const evDone = (ev.activities||[]).length > 0 && (ev.activities||[]).every(a => a.done);
-          const dotColor = evDone ? 'rgb(111,174,135)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
+          const dotColor = evDone ? 'rgb(57,255,20)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
           const linkedTasks = (ev.activities||[]).filter(a => a.taskId).slice(0,3)
             .map(a => { const t = TASKS.find(t => t.id === a.taskId); return t ? { title: t.title, done: t.done } : { title: a.text, done: a.done }; });
           return `<div>
@@ -4494,7 +4494,7 @@ function renderMilestoneDashboard() {
         ${msListHtml}
         <div class="ms-dash-card-footer">
           <div>
-            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
+            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
             <div class="ms-dash-acts-label">${doneActs}/${totalActs} done</div>
           </div>
           <div style="text-align:right;display:flex;align-items:center;gap:8px">
@@ -4544,7 +4544,7 @@ function showArchivedProjectsOverlay() {
               return `<div class="ms-arch-item" data-arch-proj="${proj.id}" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:background 150ms">
                 <div style="display:flex;align-items:center;gap:8px">
                   <div style="flex:1;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.7)">${escHtml(proj.title)}</div>
-                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--sage)">✓ done</span>
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--neon)">✓ done</span>
                   <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
                 </div>
                 <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
@@ -4603,7 +4603,7 @@ function renderArchivedPage() {
       <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${start} → ${end}</span>
       <div style="display:flex;align-items:center;gap:8px">
         <div style="flex:1;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;max-width:80px">
-          <div style="height:2px;background:var(--sage);border-radius:2px;width:${pct}%"></div>
+          <div style="height:2px;background:var(--neon);border-radius:2px;width:${pct}%"></div>
         </div>
         <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${doneActs}/${allActs.length}</span>
       </div>
@@ -4750,7 +4750,7 @@ function renderMilestoneTimeline(projId) {
     const doneCount = acts.filter(a => a.done).length;
     const isPast = new Date(ev.date) < new Date();
     const dotColor = doneCount === acts.length && acts.length > 0
-      ? 'rgb(111,174,135)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
+      ? 'rgb(57,255,20)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
 
     const actItems = acts.map(a => {
       const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
@@ -4783,15 +4783,15 @@ function renderMilestoneTimeline(projId) {
         </div>
         <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
           <button class="ms-edit-proj-btn" data-ms-edit-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--muted)">✎ Edit</button>
-          <button class="ms-edit-proj-btn" data-ms-del-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--rust)">✕ Delete</button>
+          <button class="ms-edit-proj-btn" data-ms-del-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--gold)">✕ Delete</button>
         </div>
       </div>`;
 
     const dotCol = `
       <div class="ms-alt-dot-col">
-        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(111,174,135,0.9),0 0 20px rgba(111,174,135,0.5)':''}"></div>
+        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(57,255,20,0.9),0 0 20px rgba(57,255,20,0.5)':''}"></div>
         <div class="ms-alt-date-badge">${escHtml(fmtDate(ev.date))}</div>
-        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:10px;color:${doneCount===acts.length?'rgb(111,174,135)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
+        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:10px;color:${doneCount===acts.length?'rgb(57,255,20)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
       </div>`;
 
     // Alternate: even idx → card on left, odd → card on right
@@ -4816,7 +4816,7 @@ function renderMilestoneTimeline(projId) {
       </div>
       <div>
         <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
-        <textarea id="ms-inline-antigoals" rows="2" placeholder="What we will NOT do…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-mono);font-size:10px;color:var(--rust);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
+        <textarea id="ms-inline-antigoals" rows="2" placeholder="What we will NOT do…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-mono);font-size:10px;color:var(--gold);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
       </div>
     </div>`;
 
@@ -4828,8 +4828,8 @@ function renderMilestoneTimeline(projId) {
       </div>
       <div class="ms-alt-progress-wrap">
         <div class="ms-alt-progress-bar" data-proj-bar="${escAttr(proj.id)}">
-          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(111,174,135);opacity:0.25"></div>
-          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(111,174,135);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(111,174,135,0.7),0 0 20px rgba(111,174,135,0.3)"></div>
+          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(57,255,20);opacity:0.25"></div>
+          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(57,255,20);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(57,255,20,0.7),0 0 20px rgba(57,255,20,0.3)"></div>
         </div>
         <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">
           <span>${pct}% complete · ${doneActs}/${totalActs} tasks</span>
@@ -4840,7 +4840,7 @@ function renderMilestoneTimeline(projId) {
       ${events.length ? `
         <div class="ms-alt-entries">
           <div class="ms-alt-center-line"></div>
-          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(111,174,135)"></div>
+          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(57,255,20)"></div>
           <div class="ms-alt-cap">
             <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
             <div class="ms-alt-cap-label">Start · ${escHtml(fmtDate(proj.startDate))}</div>
@@ -4911,7 +4911,7 @@ function renderMsActivityList() {
     const cat  = task?.category ? CATEGORIES[task.category] : null;
     const modCatClr = getCatColor(task?.category);
     const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
+    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
         <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(a.text||a.title||'')}</span>
@@ -5026,7 +5026,7 @@ function showMsTaskSearchResults(query, evId, containerEl) {
   containerEl.innerHTML = results.map(t => {
     const cat = t.category ? CATEGORIES[t.category] : null;
     const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-    const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div>`;
+    const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'};flex-shrink:0"></div>`;
     return `<div class="ms-task-search-result" data-task-id="${escAttr(t.id)}" data-ev-id="${escAttr(evId)}">${dot}<span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
   }).join('');
 }
@@ -5265,7 +5265,7 @@ function initMilestonesPanel() {
         modalSearchRes.innerHTML = results.map(t => {
           const cat = t.category ? CATEGORIES[t.category] : null;
           const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-          return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
+          return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
         }).join('');
       }
     });
@@ -6405,7 +6405,7 @@ function _tdDrawTimeline(now){
   // ── Calendar event arcs ──────────────────────────────────
   const phase=performance.now()*0.001;
   evtSpans.forEach(({aS,aE2,cS,cE,isPast,ev})=>{
-    const evG='rgba(111,174,135,';
+    const evG='rgba(57,255,20,';
     // Thin fill around single arc
     ctx.beginPath();
     ctx.arc(cx,cy_arc,midR+4,aS,aE2);
@@ -6441,12 +6441,12 @@ function _tdDrawTimeline(now){
       // Soft outer glow pass
       ctx.save();
       ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
-      ctx.strokeStyle=`rgba(111,174,135,${(glowAlpha*0.30).toFixed(2)})`;
-      ctx.lineWidth=6; ctx.shadowColor='rgba(111,174,135,0.6)'; ctx.shadowBlur=14; ctx.stroke();
+      ctx.strokeStyle=`rgba(57,255,20,${(glowAlpha*0.30).toFixed(2)})`;
+      ctx.lineWidth=6; ctx.shadowColor='rgba(57,255,20,0.6)'; ctx.shadowBlur=14; ctx.stroke();
       // Core bright line
       ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
-      ctx.strokeStyle=`rgba(111,174,135,${glowAlpha.toFixed(2)})`;
-      ctx.lineWidth=1.2; ctx.shadowColor='rgba(111,174,135,0.9)'; ctx.shadowBlur=8; ctx.stroke();
+      ctx.strokeStyle=`rgba(57,255,20,${glowAlpha.toFixed(2)})`;
+      ctx.lineWidth=1.2; ctx.shadowColor='rgba(57,255,20,0.9)'; ctx.shadowBlur=8; ctx.stroke();
       ctx.restore();
       // Event title text at end of connector — etched on the bezel, not glued to the line
       const titleTxt = ev.title.length > 18 ? ev.title.slice(0,17)+'…' : ev.title;
@@ -6510,11 +6510,11 @@ function _tdDrawTimeline(now){
   if(ongoing && ey<maxY){
     const label=ongoing.title?(ongoing.title.length>20?ongoing.title.slice(0,19)+'…':ongoing.title):'event';
     ctx.font="300 10px 'DM Mono',monospace";
-    ctx.fillStyle='rgba(111,174,135,0.60)';
+    ctx.fillStyle='rgba(57,255,20,0.60)';
     ctx.fillText('ongoing · '+label,cx,ey); ey+=15;
     if(ey<maxY){
       ctx.font="300 9px 'DM Mono',monospace";
-      ctx.fillStyle='rgba(111,174,135,0.38)';
+      ctx.fillStyle='rgba(57,255,20,0.38)';
       ctx.fillText('continues '+(ongoing.eMins-nowMins)+'m more',cx,ey); ey+=20;
     }
   }
@@ -6528,7 +6528,7 @@ function _tdDrawTimeline(now){
       ctx.fillText(label,cx,ey); ey+=15;
       if(ey<maxY){
         ctx.font="300 9px 'DM Mono',monospace";
-        ctx.fillStyle='rgba(111,174,135,0.65)';
+        ctx.fillStyle='rgba(57,255,20,0.65)';
         ctx.fillText('in '+delta+'m',cx,ey); ey+=20;
       }
     });
@@ -6733,8 +6733,8 @@ function _tdUpdateRing(info,now,animEase){
      ties Timedrift into the cross-app threshold reward system.
      Revert by setting _TD_DLV2_ENABLED = false. */
   const dlv2Green = _TD_DLV2_ENABLED && ring.id === 'hr' && _tdDlv2IsFocusGoalMet();
-  const activeStroke = dlv2Green ? 'rgba(111,174,135,1)' : 'rgba(255,255,255,1)';
-  const activeFill   = dlv2Green ? 'rgba(111,174,135,1)' : 'rgba(255,255,255,1)';
+  const activeStroke = dlv2Green ? 'rgba(57,255,20,1)' : 'rgba(255,255,255,1)';
+  const activeFill   = dlv2Green ? 'rgba(57,255,20,1)' : 'rgba(255,255,255,1)';
   g.querySelectorAll('.td-ri').forEach(item=>{
     const i=+item.dataset.i, maj=item.dataset.maj==='1';
     let dist=i-exact;
@@ -6892,7 +6892,7 @@ function localDateStr(d) {
 }
 
 /* ── Custom confirm dialog ───────────────────────────── */
-function cdxConfirm(msg, { okLabel = 'Delete', okColor = '#e05555', okBg = 'rgba(224,85,85,0.18)', okBorder = 'rgba(224,85,85,0.4)' } = {}) {
+function cdxConfirm(msg, { okLabel = 'Delete', okColor = '#d4a24e', okBg = 'rgba(212,162,78,0.18)', okBorder = 'rgba(212,162,78,0.4)' } = {}) {
   return new Promise(resolve => {
     const overlay = document.getElementById('cdx-confirm-overlay');
     const msgEl   = document.getElementById('cdx-confirm-msg');
@@ -7359,7 +7359,7 @@ function buildTaskRow(task, idx) {
 
   const PRIORITY_LABELS = { high: 'High', med: 'Med', low: 'Low' };
   const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority] || '' : '';
-  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--rust)':task.priority==='med'?'var(--amber)':'var(--muted)'}">${priorityLabel}</span>` : '';
+  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--gold)':task.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'}">${priorityLabel}</span>` : '';
 
   let recurBadge = '';
   if (task.recurrence) {
@@ -7388,7 +7388,7 @@ function buildTaskRow(task, idx) {
 
   // Time-spent badge
   const timeBadge = (task.done && task.timeSpentMinutes)
-    ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
+    ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
     : '';
 
   // Friction indicator
@@ -8219,7 +8219,7 @@ function renderWeekView(date) {
     const isToday = ds === today;
     const isWeekend = (i === 5 || i === 6); // Sat=5, Sun=6
     const hol = HOLIDAYS[ds];
-    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(111,174,135,0.9);text-shadow:0 0 8px rgba(111,174,135,0.4);border-bottom:2px solid rgba(111,174,135,0.45)' : ''}">
+    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(57,255,20,0.9);text-shadow:0 0 8px rgba(57,255,20,0.4);border-bottom:2px solid rgba(57,255,20,0.45)' : ''}">
       ${DAYS[i]} ${d.getDate()}${hol ? `<br><span style="font-size:7px;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:2px;padding:0 2px;display:block">${escHtml(hol.name)}</span>` : ''}
     </div>`;
   }
@@ -8399,7 +8399,7 @@ function buildMonthCell(dateStr, isCurrentMonth) {
 
   const holBadge = hol ? `<span class="month-holiday-name">${escHtml(hol.name)}</span>` : '';
   const adBadges = allDayEvs.slice(0,1).map(ev =>
-    `<span style="font-family:var(--font-mono);font-size:7px;color:#fff;background:var(--sage);border-radius:2px;padding:0 3px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${escHtml(ev.title)}</span>`
+    `<span style="font-family:var(--font-mono);font-size:7px;color:#fff;background:var(--neon);border-radius:2px;padding:0 3px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${escHtml(ev.title)}</span>`
   ).join('');
   const pills = timedEvs.slice(0,2).map(ev => {
     const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
@@ -10064,7 +10064,7 @@ function showInitiativeTasks(proj) {
       const cat = t.category ? CATEGORIES[t.category] : null;
       const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px 9px 28px;border-bottom:1px solid var(--border)">
-        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
+        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--neon)':'var(--border)'};background:${t.done?'var(--neon)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
         <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
         ${catBadge}
         ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
@@ -10115,7 +10115,7 @@ function showPersonTasks(person) {
         <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
         ${arr.map(t => `
           <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">
-            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
+            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--neon)':'var(--border)'};background:${t.done?'var(--neon)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
             <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
             ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
           </div>`).join('')}` : '';
@@ -10955,10 +10955,10 @@ function renderDoneWall() {
       : '';
     const dateLabel = task.doneDate ? fmtDate(task.doneDate) : '';
     const timeBadge = task.timeSpentMinutes
-      ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
+      ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
       : '';
     return `<div class="done-card">
-      <span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);flex-shrink:0">✓</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);flex-shrink:0">✓</span>
       <span class="done-card-title">${escHtml(task.title)}</span>
       <div class="done-card-meta">${catBadge}${timeBadge}</div>
       ${dateLabel ? `<span class="done-card-date">${dateLabel}</span>` : ''}
@@ -12692,7 +12692,7 @@ function openOrbitRecap() {
     if (sweepP >= 1 && visible.length > 1) {
       const linkP = Math.min(1, (t - SWEEP_MS) / LINK_MS);
       const segs = (visible.length - 1) * linkP;
-      ctx.strokeStyle = 'rgba(212,162,78,0.30)'; ctx.lineWidth = 0.7;
+      ctx.strokeStyle = 'rgba(57,255,20,0.30)'; ctx.lineWidth = 0.7;
       for (let i = 0; i < Math.floor(segs); i++) {
         const a = visible[i], b = visible[i + 1];
         ctx.beginPath();
@@ -12703,8 +12703,8 @@ function openOrbitRecap() {
     }
     visible.forEach(s => {
       const x = cx + s.r * Math.cos(s.ang), y = cy + s.r * Math.sin(s.ang);
-      ctx.fillStyle = 'rgba(212,162,78,0.95)';
-      ctx.shadowColor = 'rgba(212,162,78,0.8)'; ctx.shadowBlur = 8;
+      ctx.fillStyle = 'rgba(57,255,20,0.95)';
+      ctx.shadowColor = 'rgba(57,255,20,0.8)'; ctx.shadowBlur = 8;
       ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill();
       ctx.shadowBlur = 0;
     });

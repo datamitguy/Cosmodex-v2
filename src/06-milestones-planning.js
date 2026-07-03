@@ -227,7 +227,7 @@ function renderMilestoneDashboard() {
       <div class="ms-card-milestones">
         ${visibleEvents.map(ev => {
           const evDone = (ev.activities||[]).length > 0 && (ev.activities||[]).every(a => a.done);
-          const dotColor = evDone ? 'rgb(111,174,135)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
+          const dotColor = evDone ? 'rgb(57,255,20)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
           const linkedTasks = (ev.activities||[]).filter(a => a.taskId).slice(0,3)
             .map(a => { const t = TASKS.find(t => t.id === a.taskId); return t ? { title: t.title, done: t.done } : { title: a.text, done: a.done }; });
           return `<div>
@@ -254,7 +254,7 @@ function renderMilestoneDashboard() {
         ${msListHtml}
         <div class="ms-dash-card-footer">
           <div>
-            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
+            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
             <div class="ms-dash-acts-label">${doneActs}/${totalActs} done</div>
           </div>
           <div style="text-align:right;display:flex;align-items:center;gap:8px">
@@ -304,7 +304,7 @@ function showArchivedProjectsOverlay() {
               return `<div class="ms-arch-item" data-arch-proj="${proj.id}" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:background 150ms">
                 <div style="display:flex;align-items:center;gap:8px">
                   <div style="flex:1;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.7)">${escHtml(proj.title)}</div>
-                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--sage)">✓ done</span>
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--neon)">✓ done</span>
                   <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
                 </div>
                 <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
@@ -363,7 +363,7 @@ function renderArchivedPage() {
       <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${start} → ${end}</span>
       <div style="display:flex;align-items:center;gap:8px">
         <div style="flex:1;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;max-width:80px">
-          <div style="height:2px;background:var(--sage);border-radius:2px;width:${pct}%"></div>
+          <div style="height:2px;background:var(--neon);border-radius:2px;width:${pct}%"></div>
         </div>
         <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${doneActs}/${allActs.length}</span>
       </div>
@@ -510,7 +510,7 @@ function renderMilestoneTimeline(projId) {
     const doneCount = acts.filter(a => a.done).length;
     const isPast = new Date(ev.date) < new Date();
     const dotColor = doneCount === acts.length && acts.length > 0
-      ? 'rgb(111,174,135)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
+      ? 'rgb(57,255,20)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
 
     const actItems = acts.map(a => {
       const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
@@ -543,15 +543,15 @@ function renderMilestoneTimeline(projId) {
         </div>
         <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
           <button class="ms-edit-proj-btn" data-ms-edit-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--muted)">✎ Edit</button>
-          <button class="ms-edit-proj-btn" data-ms-del-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--rust)">✕ Delete</button>
+          <button class="ms-edit-proj-btn" data-ms-del-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--gold)">✕ Delete</button>
         </div>
       </div>`;
 
     const dotCol = `
       <div class="ms-alt-dot-col">
-        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(111,174,135,0.9),0 0 20px rgba(111,174,135,0.5)':''}"></div>
+        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(57,255,20,0.9),0 0 20px rgba(57,255,20,0.5)':''}"></div>
         <div class="ms-alt-date-badge">${escHtml(fmtDate(ev.date))}</div>
-        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:10px;color:${doneCount===acts.length?'rgb(111,174,135)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
+        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:10px;color:${doneCount===acts.length?'rgb(57,255,20)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
       </div>`;
 
     // Alternate: even idx → card on left, odd → card on right
@@ -576,7 +576,7 @@ function renderMilestoneTimeline(projId) {
       </div>
       <div>
         <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
-        <textarea id="ms-inline-antigoals" rows="2" placeholder="What we will NOT do…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-mono);font-size:10px;color:var(--rust);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
+        <textarea id="ms-inline-antigoals" rows="2" placeholder="What we will NOT do…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-mono);font-size:10px;color:var(--gold);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
       </div>
     </div>`;
 
@@ -588,8 +588,8 @@ function renderMilestoneTimeline(projId) {
       </div>
       <div class="ms-alt-progress-wrap">
         <div class="ms-alt-progress-bar" data-proj-bar="${escAttr(proj.id)}">
-          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(111,174,135);opacity:0.25"></div>
-          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(111,174,135);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(111,174,135,0.7),0 0 20px rgba(111,174,135,0.3)"></div>
+          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(57,255,20);opacity:0.25"></div>
+          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(57,255,20);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(57,255,20,0.7),0 0 20px rgba(57,255,20,0.3)"></div>
         </div>
         <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">
           <span>${pct}% complete · ${doneActs}/${totalActs} tasks</span>
@@ -600,7 +600,7 @@ function renderMilestoneTimeline(projId) {
       ${events.length ? `
         <div class="ms-alt-entries">
           <div class="ms-alt-center-line"></div>
-          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(111,174,135)"></div>
+          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(57,255,20)"></div>
           <div class="ms-alt-cap">
             <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
             <div class="ms-alt-cap-label">Start · ${escHtml(fmtDate(proj.startDate))}</div>
@@ -671,7 +671,7 @@ function renderMsActivityList() {
     const cat  = task?.category ? CATEGORIES[task.category] : null;
     const modCatClr = getCatColor(task?.category);
     const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
+    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
         <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(a.text||a.title||'')}</span>
@@ -786,7 +786,7 @@ function showMsTaskSearchResults(query, evId, containerEl) {
   containerEl.innerHTML = results.map(t => {
     const cat = t.category ? CATEGORIES[t.category] : null;
     const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-    const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div>`;
+    const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'};flex-shrink:0"></div>`;
     return `<div class="ms-task-search-result" data-task-id="${escAttr(t.id)}" data-ev-id="${escAttr(evId)}">${dot}<span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
   }).join('');
 }
@@ -1025,7 +1025,7 @@ function initMilestonesPanel() {
         modalSearchRes.innerHTML = results.map(t => {
           const cat = t.category ? CATEGORIES[t.category] : null;
           const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-          return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
+          return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
         }).join('');
       }
     });

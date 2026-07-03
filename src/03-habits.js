@@ -1105,7 +1105,7 @@ function _habitsTabInit() {
     const gradBtn = e.target.closest('[data-habit-graduate]');
     if (gradBtn) {
       const h = _habits.find(x => x.id === gradBtn.dataset.habitGraduate);
-      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(111,174,135)', okBg: 'rgba(111,174,135,0.1)', okBorder: 'rgba(111,174,135,0.4)' })) {
+      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(57,255,20)', okBg: 'rgba(57,255,20,0.1)', okBorder: 'rgba(57,255,20,0.4)' })) {
         await habitGraduate(h.id);
       }
       return;
@@ -1569,13 +1569,13 @@ function _hinsDrawHeatmap() {
       else if (ratio < 0.25) bg = 'rgba(255,255,255,0.14)';
       else if (ratio < 0.5)  bg = 'rgba(255,255,255,0.26)';
       else if (ratio < 0.85) bg = 'rgba(255,255,255,0.42)';
-      else                   bg = 'rgb(111,174,135)';
+      else                   bg = 'rgb(57,255,20)';
 
       ctx.fillStyle = bg;
       _hinsRoundRect(ctx, x, y, size, size, 2);
       ctx.fill();
       if (ratio >= 0.85) {
-        ctx.shadowColor = 'rgba(111,174,135,0.5)';
+        ctx.shadowColor = 'rgba(57,255,20,0.5)';
         ctx.shadowBlur = 5;
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -1623,8 +1623,8 @@ function _hinsDrawMiniRing(containerEl, pct) {
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
   const green = pct >= 80;
-  const color = green ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
-  const glow = green ? 'drop-shadow(0 0 4px rgba(111,174,135,0.4))' : 'none';
+  const color = green ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)';
+  const glow = green ? 'drop-shadow(0 0 4px rgba(57,255,20,0.4))' : 'none';
   containerEl.innerHTML = `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="filter:${glow}">
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${stroke}"/>
@@ -1734,8 +1734,8 @@ function renderHabitsInsights() {
             const green = pct >= 80;
             const dim = pct < 30;
             const alpha = Math.max(0.08, Math.min(0.85, pct / 100));
-            cell.style.background = green ? 'rgb(111,174,135)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
-            if (green) cell.style.boxShadow = '0 0 4px rgba(111,174,135,0.4)';
+            cell.style.background = green ? 'rgb(57,255,20)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
+            if (green) cell.style.boxShadow = '0 0 4px rgba(57,255,20,0.4)';
             cell.textContent = pct + '%';
             cell.style.color = green ? '#0d0c0a' : (alpha > 0.4 ? '#0d0c0a' : 'rgba(255,255,255,0.5)');
             cell.title = `${h.tinyBehavior || h.name} · ${dowNames[dow]} · ${stat.done}/${stat.possible} (${pct}%)`;

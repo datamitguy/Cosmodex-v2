@@ -15,7 +15,7 @@ function localDateStr(d) {
 }
 
 /* ── Custom confirm dialog ───────────────────────────── */
-function cdxConfirm(msg, { okLabel = 'Delete', okColor = '#e05555', okBg = 'rgba(224,85,85,0.18)', okBorder = 'rgba(224,85,85,0.4)' } = {}) {
+function cdxConfirm(msg, { okLabel = 'Delete', okColor = '#d4a24e', okBg = 'rgba(212,162,78,0.18)', okBorder = 'rgba(212,162,78,0.4)' } = {}) {
   return new Promise(resolve => {
     const overlay = document.getElementById('cdx-confirm-overlay');
     const msgEl   = document.getElementById('cdx-confirm-msg');

@@ -300,7 +300,7 @@ function hbPickEnergy(el) {
 function hbLaunchDay() {
   const btn = document.getElementById('hb-launch-btn');
   if (!btn) return;
-  btn.style.background = 'linear-gradient(135deg,var(--sage) 0%,#2d5a3d 100%)';
+  btn.style.background = 'linear-gradient(135deg,var(--neon) 0%,#2d5a3d 100%)';
   btn.innerHTML = 'Day started ✓<span class="hb-lb-sub">Routine launched — good luck today</span>';
   setTimeout(() => {
     btn.style.background = 'linear-gradient(135deg,var(--gold) 0%,#a88018 100%)';

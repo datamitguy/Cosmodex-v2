@@ -614,8 +614,8 @@
               <span id="lists-detail-count" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em"></span>
               <!-- Delete: shows confirmation inline -->
               <div id="lists-delete-confirm" style="display:none;align-items:center;gap:6px">
-                <span style="font-family:var(--font-mono);font-size:10px;color:var(--rust)">Delete list?</span>
-                <button id="lists-delete-yes" class="btn-ghost" style="color:var(--rust);font-size:10px;padding:4px 10px">Yes</button>
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--gold)">Delete list?</span>
+                <button id="lists-delete-yes" class="btn-ghost" style="color:var(--gold);font-size:10px;padding:4px 10px">Yes</button>
                 <button id="lists-delete-no" class="btn-ghost" style="font-size:10px;padding:4px 10px">No</button>
               </div>
               <button id="lists-delete-btn" class="task-action-btn danger" title="Delete list" style="opacity:0.5">🗑</button>
@@ -1261,7 +1261,7 @@
     </svg>
     Continue with Google
   </button>
-  <div id="signin-error" style="display:none;margin-top:18px;font-family:var(--font-body);font-size:12px;color:var(--rust);text-align:center;max-width:280px;line-height:1.5"></div>
+  <div id="signin-error" style="display:none;margin-top:18px;font-family:var(--font-body);font-size:12px;color:var(--gold);text-align:center;max-width:280px;line-height:1.5"></div>
 </div>
 
 <!-- Notes overlay -->
@@ -1391,7 +1391,7 @@
         <textarea id="ms-proj-antigoals" class="form-input" rows="2" placeholder="Scope boundaries and explicit non-goals…"></textarea>
       </div>
       <div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">
-        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--rust);display:none">Delete Initiative</button>
+        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--gold);display:none">Delete Initiative</button>
         <div style="display:flex;gap:8px;margin-left:auto">
           <button data-close="ms-project-modal" class="btn-ghost">Cancel</button>
           <button id="ms-proj-confirm" class="btn-primary">Save Initiative</button>
@@ -1456,7 +1456,7 @@
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
         <button id="ms-detail-edit-btn" class="btn-ghost">Edit</button>
-        <button id="ms-detail-delete-btn" class="btn-ghost" style="color:var(--rust)">Delete</button>
+        <button id="ms-detail-delete-btn" class="btn-ghost" style="color:var(--gold)">Delete</button>
       </div>
     </div>
   </div>
@@ -1620,7 +1620,7 @@
               <div class="settings-section-title">Firebase Status</div>
               <div class="settings-desc">Real-time sync connection state.</div>
               <div id="settings-firebase-status" style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
-                <span id="settings-fb-dot" style="width:8px;height:8px;border-radius:50%;background:var(--sage);display:inline-block;"></span>
+                <span id="settings-fb-dot" style="width:8px;height:8px;border-radius:50%;background:var(--neon);display:inline-block;"></span>
                 <span id="settings-fb-label">Connected</span>
               </div>
             </div>
@@ -1737,14 +1737,14 @@
               <div class="settings-section-title">Sync Status</div>
               <div class="settings-desc">Live connection to Firebase Firestore.</div>
               <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
-                <span id="settings-fb-dot2" style="width:8px;height:8px;border-radius:50%;background:var(--sage);display:inline-block;"></span>
+                <span id="settings-fb-dot2" style="width:8px;height:8px;border-radius:50%;background:var(--neon);display:inline-block;"></span>
                 <span id="settings-fb-label2">Connected — real-time sync active</span>
               </div>
             </div>
             <div class="settings-section">
               <div class="settings-section-title">Local Cache</div>
               <div class="settings-desc">Clear locally cached settings and preferences (does not affect Firebase data).</div>
-              <button class="btn-secondary" style="font-size:11px;padding:8px 16px;color:var(--rust);" onclick="cdxConfirm('Clear local cache? Firebase data is untouched.',{okLabel:'Clear',okColor:'#e05555',okBg:'rgba(224,85,85,0.18)',okBorder:'rgba(224,85,85,0.4)'}).then(ok=>{if(ok){localStorage.clear();showToast('Local cache cleared');}})">Clear Local Cache</button>
+              <button class="btn-secondary" style="font-size:11px;padding:8px 16px;color:var(--gold);" onclick="cdxConfirm('Clear local cache? Firebase data is untouched.',{okLabel:'Clear',okColor:'#e05555',okBg:'rgba(224,85,85,0.18)',okBorder:'rgba(224,85,85,0.4)'}).then(ok=>{if(ok){localStorage.clear();showToast('Local cache cleared');}})">Clear Local Cache</button>
             </div>
           </div>
 
@@ -1768,7 +1768,7 @@
 </div>
 
 <!-- Time-to-complete popover (shown when ticking a task done) -->
-<div id="task-time-popover" style="display:none;position:fixed;z-index:950;background:#151515;border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,0.7);min-width:230px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)">
+<div id="task-time-popover" style="display:none;position:fixed;z-index:950;background:#151515;border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,0.7);min-width:230px;backdrop-filter:var(--glass-blur-panel);-webkit-backdrop-filter:var(--glass-blur-panel)">
   <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Time to complete</div>
   <div id="task-time-options" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
     <button class="time-opt-btn" data-mins="5">5m</button>
@@ -1958,7 +1958,7 @@
 </div>
 
 <!-- ── Confirm Dialog ──────────────────────────────────── -->
-<div id="cdx-confirm-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center">
+<div id="cdx-confirm-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:var(--glass-blur-overlay);-webkit-backdrop-filter:var(--glass-blur-overlay);display:none;align-items:center;justify-content:center">
   <div style="background:rgba(18,18,18,0.92);border:1px solid rgba(255,255,255,0.14);border-top:1px solid rgba(255,255,255,0.26);border-radius:20px;padding:28px 28px 22px;max-width:360px;width:calc(100% - 48px);box-shadow:0 8px 40px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.08);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6)">
     <div id="cdx-confirm-msg" style="font-family:var(--font-body);font-size:13px;color:var(--cream);line-height:1.55;margin-bottom:22px"></div>
     <div style="display:flex;justify-content:flex-end;gap:10px">

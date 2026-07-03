@@ -181,8 +181,8 @@ function _insDrawHeroConst(canvasId, dayData) {
     const brightness = 0.3 + (d.secs / maxSecs) * 0.65;
     const isToday = i === pts.length - 1;
     const isHot = d.tasks >= 5;
-    const col = isHot ? `rgba(111,174,135,${brightness.toFixed(2)})` : `rgba(255,255,255,${brightness.toFixed(2)})`;
-    const glow = isHot ? 'rgba(111,174,135,0.5)' : 'rgba(255,255,255,0.25)';
+    const col = isHot ? `rgba(57,255,20,${brightness.toFixed(2)})` : `rgba(255,255,255,${brightness.toFixed(2)})`;
+    const glow = isHot ? 'rgba(57,255,20,0.5)' : 'rgba(255,255,255,0.25)';
     ctx.beginPath(); ctx.arc(p.x, p.y, isToday ? size + 1.5 : size, 0, Math.PI * 2);
     ctx.fillStyle = col;
     ctx.shadowColor = glow; ctx.shadowBlur = isToday ? 14 : 8;
@@ -190,7 +190,7 @@ function _insDrawHeroConst(canvasId, dayData) {
     if (isToday) {
       // Outer pulse ring on today
       ctx.beginPath(); ctx.arc(p.x, p.y, size + 5, 0, Math.PI * 2);
-      ctx.strokeStyle = isHot ? 'rgba(111,174,135,0.35)' : 'rgba(255,255,255,0.2)';
+      ctx.strokeStyle = isHot ? 'rgba(57,255,20,0.35)' : 'rgba(255,255,255,0.2)';
       ctx.lineWidth = 0.8; ctx.stroke();
     }
   });
@@ -249,7 +249,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
       else if (count < 2) bg = 'rgba(255,255,255,0.14)';
       else if (count < 4) bg = 'rgba(255,255,255,0.26)';
       else if (count < 5) bg = 'rgba(255,255,255,0.42)';
-      else bg = 'rgb(111,174,135)';
+      else bg = 'rgb(57,255,20)';
       ctx.fillStyle = bg;
       // Rounded rect
       const rad = 2;
@@ -262,7 +262,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
       ctx.closePath();
       ctx.fill();
       if (count >= 5) {
-        ctx.shadowColor = 'rgba(111,174,135,0.5)'; ctx.shadowBlur = 6;
+        ctx.shadowColor = 'rgba(57,255,20,0.5)'; ctx.shadowBlur = 6;
         ctx.fill(); ctx.shadowBlur = 0;
       }
     }
@@ -274,7 +274,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.fillText('less', leftPad, legY);
   const legStart = leftPad + 28;
-  const legCells = ['rgba(255,255,255,0.04)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.26)', 'rgba(255,255,255,0.42)', 'rgb(111,174,135)'];
+  const legCells = ['rgba(255,255,255,0.04)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.26)', 'rgba(255,255,255,0.42)', 'rgb(57,255,20)'];
   legCells.forEach((c, i) => {
     ctx.fillStyle = c;
     ctx.fillRect(legStart + i * 10, legY - 8, 8, 8);
@@ -413,7 +413,7 @@ function _insDrawDayRhythm(canvasId, hoursThis, hoursPrev) {
   // This week in green (front)
   const weekAvg = hoursThis.reduce((a, b) => a + b, 0) / 7;
   const useGreen = weekAvg >= 5;
-  drawBars(hoursThis, useGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.75)', 1);
+  drawBars(hoursThis, useGreen ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.75)', 1);
   // Hour labels at cardinals
   ctx.font = "300 9px 'DM Mono',monospace";
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -433,7 +433,7 @@ function _insDrawDayRhythm(canvasId, hoursThis, hoursPrev) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('PEAK', cx, cy - 10);
   ctx.font = "300 16px 'Fraunces',serif";
-  ctx.fillStyle = useGreen && peakV > 0 ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.85)';
+  ctx.fillStyle = useGreen && peakV > 0 ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.85)';
   ctx.fillText(peakV > 0 ? String(peakH).padStart(2, '0') + ':00' : '—', cx, cy + 6);
   ctx.font = "300 9px 'DM Mono',monospace";
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
@@ -505,13 +505,13 @@ function _insDrawTrend(canvasId, data, labels, color, dates, isRedraw) {
   pts.forEach(p => ctx.lineTo(p[0], p[1]));
   ctx.lineTo(pts[pts.length - 1][0], padT + plotH); ctx.closePath();
   const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
-  const fillColor = color.includes('111,174,135') ? 'rgba(111,174,135,' : 'rgba(255,255,255,';
+  const fillColor = color.includes('57,255,20') ? 'rgba(57,255,20,' : 'rgba(255,255,255,';
   grad.addColorStop(0, fillColor + '0.10)'); grad.addColorStop(1, fillColor + '0.01)');
   ctx.fillStyle = grad; ctx.fill();
   // Stroke
   ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
   ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
-  const glowColor = color.includes('111,174,135') ? 'rgba(111,174,135,0.4)' : 'rgba(255,255,255,0.15)';
+  const glowColor = color.includes('57,255,20') ? 'rgba(57,255,20,0.4)' : 'rgba(255,255,255,0.15)';
   ctx.shadowColor = glowColor; ctx.shadowBlur = 4; ctx.stroke(); ctx.shadowBlur = 0;
   // Dot on today
   const last = pts[pts.length - 1];
@@ -620,12 +620,12 @@ function renderInsights() {
     gaugesEl.innerHTML = `
       <div class="ins-hero-gauge">
         <span class="ins-hero-gauge-label">Habits</span>
-        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.round(habitPct * 2)}%;background:${habitGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)'};box-shadow:${habitGreen ? '0 0 6px rgba(111,174,135,0.4)' : 'none'}"></div></div>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.round(habitPct * 2)}%;background:${habitGreen ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)'};box-shadow:${habitGreen ? '0 0 6px rgba(57,255,20,0.4)' : 'none'}"></div></div>
         <span class="ins-hero-gauge-val">${momentum.habitPts}</span>
       </div>
       <div class="ins-hero-gauge">
         <span class="ins-hero-gauge-label">Tasks</span>
-        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${taskTodayPct}%;background:${taskGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)'};box-shadow:${taskGreen ? '0 0 6px rgba(111,174,135,0.4)' : 'none'}"></div></div>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${taskTodayPct}%;background:${taskGreen ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)'};box-shadow:${taskGreen ? '0 0 6px rgba(57,255,20,0.4)' : 'none'}"></div></div>
         <span class="ins-hero-gauge-val">${tasksDoneToday}</span>
       </div>
       ${_insMomentumNudge(momentum, tasksDoneToday)}`;
@@ -669,8 +669,8 @@ function renderInsights() {
   const focusBar = document.getElementById('ins-focus-bar');
   if (focusBar) {
     focusBar.style.width = Math.min(100, Math.round(weekSecs / (8 * 3600) * 100)) + '%';
-    focusBar.style.background = weekSecs >= focusThreshold ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
-    focusBar.style.boxShadow = weekSecs >= focusThreshold ? '0 0 8px rgba(111,174,135,0.3)' : 'none';
+    focusBar.style.background = weekSecs >= focusThreshold ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)';
+    focusBar.style.boxShadow = weekSecs >= focusThreshold ? '0 0 8px rgba(57,255,20,0.3)' : 'none';
   }
   const focusSub = document.getElementById('ins-focus-sub');
   if (focusSub) focusSub.textContent = `Pomo ${_insFmtHrs(pomoSecs)} · Commit ${_insFmtHrs(commitSecs)}`;
@@ -700,7 +700,7 @@ function renderInsights() {
     if (overdueTasks.length) {
       const avgAge = Math.round(overdueTasks.reduce((s, t) => s + (Date.now() - new Date(t.dueDate + 'T00:00').getTime()) / 86400000, 0) / overdueTasks.length);
       overdueSub.textContent = `avg ${avgAge}d overdue`;
-    } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(111,174,135,0.6)'; }
+    } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(57,255,20,0.6)'; }
   }
 
   // ── Tabbed Visualization: compute all 3 datasets ───────
@@ -812,7 +812,7 @@ function renderInsights() {
       let peakH = 0, peakV = 0;
       hoursThis.forEach((v, h) => { if (v > peakV) { peakV = v; peakH = h; } });
       if (statsEl) statsEl.innerHTML = `
-        <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(111,174,135);margin-right:6px;box-shadow:0 0 6px rgba(111,174,135,0.4)"></span>This week <span class="val">${thisTotal} tasks</span></div>
+        <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(57,255,20);margin-right:6px;box-shadow:0 0 6px rgba(57,255,20,0.4)"></span>This week <span class="val">${thisTotal} tasks</span></div>
         <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);margin-right:6px"></span>Last week <span class="val">${prevTotal} tasks</span></div>
         <div class="ins-viz-stat">Peak hour <span class="val">${peakV > 0 ? String(peakH).padStart(2,'0') + ':00' : '—'}</span></div>
         <div class="ins-viz-stat">Peak count <span class="val ${peakV >= 5 ? 'green' : ''}">${peakV}</span></div>`;
@@ -830,7 +830,7 @@ function renderInsights() {
   }
   // Use green if weekly average >= 5 tasks/day, else white
   const weekAvg = trendData.slice(-7).reduce((a, b) => a + b, 0) / 7;
-  const trendColor = weekAvg >= 5 ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
+  const trendColor = weekAvg >= 5 ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.5)';
   if (panelVisible) _insDrawTrend('ins-trend-canvas', trendData, trendLabels, trendColor, trendDates);
 
   // ── Time by Category ──────────────────────────────────
@@ -895,12 +895,12 @@ function renderInsights() {
           <div class="hb-fi-action ok">${h.streak >= 21 ? '✓ Locked in' : '✓ Growing'}</div>
         </div>`;
       } else {
-        return `<div class="hb-fi-habit" style="border-left-color:var(--amber)">
+        return `<div class="hb-fi-habit" style="border-left-color:var(--gold)">
           <div class="hb-fi-info">
             <div class="hb-fi-name">${escHtml(h.name)} — ${h.pct}% this month</div>
             <div class="hb-fi-reason">Inconsistent — ${skipped} skips in ${h.possible} days</div>
           </div>
-          <div class="hb-fi-action" style="color:var(--amber)">~ Watch</div>
+          <div class="hb-fi-action" style="color:var(--gold)">~ Watch</div>
         </div>`;
       }
     }).join('');
@@ -956,7 +956,7 @@ function renderInsights() {
   }).filter(d => d.pct !== null).sort((a, b) => b.pct - a.pct);
 
   const makeBar = (label, pct, note) => {
-    const col = pct >= 70 ? 'var(--sage)' : pct >= 40 ? 'var(--amber)' : 'var(--rust)';
+    const col = pct >= 70 ? 'var(--neon)' : pct >= 40 ? 'var(--gold)' : 'var(--gold)';
     return `<div class="hb-pw-item">
       <div class="hb-pw-top"><div class="hb-pw-name">${escHtml(label)}</div><div class="hb-pw-score" style="color:${col};">${pct}%</div></div>
       <div class="hb-pw-bar"><div class="hb-pw-fill" style="width:${pct}%;background:${col};"></div></div>
@@ -1053,7 +1053,7 @@ function _renderWeekDebrief() {
     <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Current Week</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
       <div style="display:flex;align-items:baseline;gap:8px">
-        <span style="font-family:var(--font-display);font-size:28px;font-weight:300;color:${thisWeekTasks.length >= 25 ? 'rgb(111,174,135)' : 'var(--cream)'}">${thisWeekTasks.length}</span>
+        <span style="font-family:var(--font-display);font-size:28px;font-weight:300;color:${thisWeekTasks.length >= 25 ? 'rgb(57,255,20)' : 'var(--cream)'}">${thisWeekTasks.length}</span>
         <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;color:var(--muted)">tasks done · ${taskDeltaStr} last week</span>
       </div>
       <div style="display:flex;align-items:baseline;gap:8px">

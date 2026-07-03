@@ -93,7 +93,7 @@ function openOrbitRecap() {
     if (sweepP >= 1 && visible.length > 1) {
       const linkP = Math.min(1, (t - SWEEP_MS) / LINK_MS);
       const segs = (visible.length - 1) * linkP;
-      ctx.strokeStyle = 'rgba(212,162,78,0.30)'; ctx.lineWidth = 0.7;
+      ctx.strokeStyle = 'rgba(57,255,20,0.30)'; ctx.lineWidth = 0.7;
       for (let i = 0; i < Math.floor(segs); i++) {
         const a = visible[i], b = visible[i + 1];
         ctx.beginPath();
@@ -104,8 +104,8 @@ function openOrbitRecap() {
     }
     visible.forEach(s => {
       const x = cx + s.r * Math.cos(s.ang), y = cy + s.r * Math.sin(s.ang);
-      ctx.fillStyle = 'rgba(212,162,78,0.95)';
-      ctx.shadowColor = 'rgba(212,162,78,0.8)'; ctx.shadowBlur = 8;
+      ctx.fillStyle = 'rgba(57,255,20,0.95)';
+      ctx.shadowColor = 'rgba(57,255,20,0.8)'; ctx.shadowBlur = 8;
       ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill();
       ctx.shadowBlur = 0;
     });

@@ -196,7 +196,7 @@ function buildTaskRow(task, idx) {
 
   const PRIORITY_LABELS = { high: 'High', med: 'Med', low: 'Low' };
   const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority] || '' : '';
-  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--rust)':task.priority==='med'?'var(--amber)':'var(--muted)'}">${priorityLabel}</span>` : '';
+  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--gold)':task.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'}">${priorityLabel}</span>` : '';
 
   let recurBadge = '';
   if (task.recurrence) {
@@ -225,7 +225,7 @@ function buildTaskRow(task, idx) {
 
   // Time-spent badge
   const timeBadge = (task.done && task.timeSpentMinutes)
-    ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
+    ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
     : '';
 
   // Friction indicator
@@ -1056,7 +1056,7 @@ function renderWeekView(date) {
     const isToday = ds === today;
     const isWeekend = (i === 5 || i === 6); // Sat=5, Sun=6
     const hol = HOLIDAYS[ds];
-    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(111,174,135,0.9);text-shadow:0 0 8px rgba(111,174,135,0.4);border-bottom:2px solid rgba(111,174,135,0.45)' : ''}">
+    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(57,255,20,0.9);text-shadow:0 0 8px rgba(57,255,20,0.4);border-bottom:2px solid rgba(57,255,20,0.45)' : ''}">
       ${DAYS[i]} ${d.getDate()}${hol ? `<br><span style="font-size:7px;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:2px;padding:0 2px;display:block">${escHtml(hol.name)}</span>` : ''}
     </div>`;
   }
@@ -1236,7 +1236,7 @@ function buildMonthCell(dateStr, isCurrentMonth) {
 
   const holBadge = hol ? `<span class="month-holiday-name">${escHtml(hol.name)}</span>` : '';
   const adBadges = allDayEvs.slice(0,1).map(ev =>
-    `<span style="font-family:var(--font-mono);font-size:7px;color:#fff;background:var(--sage);border-radius:2px;padding:0 3px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${escHtml(ev.title)}</span>`
+    `<span style="font-family:var(--font-mono);font-size:7px;color:#fff;background:var(--neon);border-radius:2px;padding:0 3px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${escHtml(ev.title)}</span>`
   ).join('');
   const pills = timedEvs.slice(0,2).map(ev => {
     const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
@@ -2901,7 +2901,7 @@ function showInitiativeTasks(proj) {
       const cat = t.category ? CATEGORIES[t.category] : null;
       const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px 9px 28px;border-bottom:1px solid var(--border)">
-        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
+        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--neon)':'var(--border)'};background:${t.done?'var(--neon)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
         <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
         ${catBadge}
         ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
@@ -2952,7 +2952,7 @@ function showPersonTasks(person) {
         <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
         ${arr.map(t => `
           <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">
-            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
+            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--neon)':'var(--border)'};background:${t.done?'var(--neon)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
             <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
             ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
           </div>`).join('')}` : '';
@@ -3792,10 +3792,10 @@ function renderDoneWall() {
       : '';
     const dateLabel = task.doneDate ? fmtDate(task.doneDate) : '';
     const timeBadge = task.timeSpentMinutes
-      ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
+      ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
       : '';
     return `<div class="done-card">
-      <span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);flex-shrink:0">✓</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);flex-shrink:0">✓</span>
       <span class="done-card-title">${escHtml(task.title)}</span>
       <div class="done-card-meta">${catBadge}${timeBadge}</div>
       ${dateLabel ? `<span class="done-card-date">${dateLabel}</span>` : ''}
