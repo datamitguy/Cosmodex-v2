@@ -484,71 +484,8 @@
     <div id="panel-timedrift" style="display:none;flex:1;flex-direction:row;overflow:hidden;position:relative;background:#000000">
       <!-- Right: Timedrift visualization (floating pomo panel lives here) -->
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative">
-        <!-- Floating Pomodoro Panel -->
-        <div id="td-pomo-float">
-          <div class="pf-specular"></div>
-          <div class="pf-header">
-            <span class="pf-label">Focus Timer</span>
-            <button class="pf-dot" id="td-pomo-toggle" title="Collapse / expand"></button>
-          </div>
-          <div class="pf-body">
-            <div class="pomo-body-inner" style="padding:16px 16px 14px">
-              <div class="pomo-ev-label">Focus Session</div>
-              <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
-              <div class="pomo-ring-wrap">
-                <div class="pf-breath-bg-outer"></div>
-                <div class="pf-breath-bg-inner"></div>
-                <canvas id="pomo-ring" width="130" height="130"></canvas>
-                <div class="pomo-center">
-                  <div class="pomo-time" id="pomo-time">25:00</div>
-                  <div class="pomo-phase-label" id="pomo-phase">Ready</div>
-                </div>
-              </div>
-              <div class="pomo-swipe-section">
-                <div class="pomo-swipe-ctrl">
-                  <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
-                  <div class="pomo-swipe-track" id="pomo-sw-track">
-                    <div class="pomo-swipe-inner">
-                      <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
-                        <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
-                        <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:10px;color:var(--muted)">min</div>
-                      </div>
-                      <div class="pomo-ticks" id="pomo-ticks"></div>
-                    </div>
-                  </div>
-                  <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
-                </div>
-              </div>
-              <div class="pomo-btns">
-                <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
-                <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
-              </div>
-              <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
-                <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--gold);margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
-                <div style="display:flex;gap:8px;justify-content:center">
-                  <button id="pomo-done-yes" style="background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
-                  <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
-                </div>
-              </div>
-              <div class="pomo-sess" id="pomo-sess">
-                <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-                <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-              </div>
-              <div class="pomo-checklist">
-                <div class="pomo-checklist-lbl">Session checklist</div>
-                <div class="pomo-check-items" id="pomo-check-items"></div>
-                <div class="pomo-check-add">
-                  <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
-                  <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
-                </div>
-              </div>
-            </div>
-            <div id="pomo-lock-msg">
-              <div class="pomo-lock-text">Session in progress.<br>Stop the timer to close.</div>
-              <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
-            </div>
-          </div>
-        </div>
+        <!-- Focus Timer lives in the #pomo-overlay overlay (opened from the Focus
+             nav item), not in this panel. -->
         <!-- Top 50%: timedrift visualization -->
         <div id="td-top" style="position:relative;height:50%;overflow:hidden;flex-shrink:0;">
           <div id="td-stage" style="position:absolute;left:50%;transform:translateX(-50%);top:0;">
@@ -1281,25 +1218,73 @@
 </div>
 
 <!-- Focus / Pomodoro overlay -->
+<!-- Focus Timer overlay — centered card opened from the Focus nav item -->
 <div class="overlay" id="pomo-overlay" style="z-index:800">
-  <div class="overlay-panel" style="width:99vw;max-width:none;height:98dvh;max-height:98dvh;border-radius:0">
-    <div class="overlay-header">
-      <span class="overlay-title">Focus</span>
-      <button id="pomo-del-event-btn" style="display:none;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:11px;font-family:var(--font-mono);cursor:pointer;margin-right:8px" title="Delete calendar event">✕ Delete Event</button>
-      <button class="overlay-close" id="pomo-close">✕</button>
+  <div id="td-pomo-float">
+    <div class="pf-specular"></div>
+    <div class="pf-header">
+      <span class="pf-label">Focus Timer</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button id="pomo-del-event-btn" style="display:none;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--font-mono);cursor:pointer" title="Delete calendar event">✕ Delete Event</button>
+        <button class="pf-dot" id="td-pomo-toggle" title="Collapse / expand"></button>
+        <button class="pf-close" id="pomo-close" title="Close">✕</button>
+      </div>
     </div>
-    <div class="pomo-layout">
-      <!-- Cosmodex orb column (pomo timer moved to Timedrift panel) -->
-      <div class="pomo-cosmo-col">
-        <div class="pomo-cosmo-header">
-          <span class="pomo-cosmo-clock" id="pomo-cosmo-clock">--:--:--</span>
-          <span class="pomo-cosmo-date" id="pomo-cosmo-date">—</span>
+    <div class="pf-body">
+      <div class="pomo-body-inner" style="padding:16px 16px 14px">
+        <div class="pomo-ev-label">Focus Session</div>
+        <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
+        <div class="pomo-ring-wrap">
+          <div class="pf-breath-bg-outer"></div>
+          <div class="pf-breath-bg-inner"></div>
+          <canvas id="pomo-ring" width="130" height="130"></canvas>
+          <div class="pomo-center">
+            <div class="pomo-time" id="pomo-time">25:00</div>
+            <div class="pomo-phase-label" id="pomo-phase">Ready</div>
+          </div>
         </div>
-        <canvas id="pomo-cosmo-canvas"></canvas>
-        <div class="pomo-cosmo-footer">
-          <span class="pomo-cosmo-next-label" id="pomo-cosmo-next-label">Next</span>
-          <span class="pomo-cosmo-next-event" id="pomo-cosmo-next">—</span>
+        <div class="pomo-swipe-section">
+          <div class="pomo-swipe-ctrl">
+            <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
+            <div class="pomo-swipe-track" id="pomo-sw-track">
+              <div class="pomo-swipe-inner">
+                <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
+                  <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
+                  <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:10px;color:var(--muted)">min</div>
+                </div>
+                <div class="pomo-ticks" id="pomo-ticks"></div>
+              </div>
+            </div>
+            <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
+          </div>
         </div>
+        <div class="pomo-btns">
+          <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
+          <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
+        </div>
+        <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--gold);margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
+          <div style="display:flex;gap:8px;justify-content:center">
+            <button id="pomo-done-yes" style="background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
+            <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
+          </div>
+        </div>
+        <div class="pomo-sess" id="pomo-sess">
+          <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+          <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+        </div>
+        <div class="pomo-checklist">
+          <div class="pomo-checklist-lbl">Session checklist</div>
+          <div class="pomo-check-items" id="pomo-check-items"></div>
+          <div class="pomo-check-add">
+            <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
+            <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
+          </div>
+        </div>
+      </div>
+      <div id="pomo-lock-msg">
+        <div class="pomo-lock-text">Session in progress.<br>Stop the timer to close.</div>
+        <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
       </div>
     </div>
   </div>

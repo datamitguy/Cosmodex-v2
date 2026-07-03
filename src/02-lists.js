@@ -27,7 +27,7 @@ function showMainPanel(name) {
   if (name === 'drill') { renderDrill(); }
   const orbEl = document.getElementById('cosmodex-orb');
   if (orbEl) orbEl.style.display = name === 'timedrift' ? 'none' : '';
-  if (name === 'timedrift') { startTimedrift(); window.initPomoOverlay?.(); }
+  if (name === 'timedrift') { startTimedrift(); }
   else { stopTimedrift(); }
   if (name === 'mindmap') { window.initMindMap?.(); }
 }

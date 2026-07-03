@@ -373,7 +373,7 @@ function showMainPanel(name) {
   if (name === 'drill') { renderDrill(); }
   const orbEl = document.getElementById('cosmodex-orb');
   if (orbEl) orbEl.style.display = name === 'timedrift' ? 'none' : '';
-  if (name === 'timedrift') { startTimedrift(); window.initPomoOverlay?.(); }
+  if (name === 'timedrift') { startTimedrift(); }
   else { stopTimedrift(); }
   if (name === 'mindmap') { window.initMindMap?.(); }
 }
@@ -8541,8 +8541,7 @@ function initEventModal() {
     if (!_eamEvent) return;
     const ev = _eamEvent;
     hideEventModal();
-    showMainPanel('timedrift');
-    document.getElementById('left-nav')?.classList.add('collapsed');
+    openOverlay('pomo-overlay');
     const titleEl = document.getElementById('pomo-ev-title');
     if (titleEl) titleEl.textContent = ev.title;
     window.setPomoEvent?.(ev);
@@ -9954,7 +9953,7 @@ function openOverlay(id) {
     _attachFocusTrap(el);
   }
   if (id === 'notes-overlay') initNotesCanvas();
-  if (id === 'pomo-overlay') { showMainPanel('timedrift'); return; }
+  if (id === 'pomo-overlay') window.initPomoOverlay?.();
 }
 
 function closeOverlay(id) {
@@ -10012,7 +10011,7 @@ function closeOverlay(id) {
 // click events with unexpected targets in some browsers).
 let _overlayMousedownInsidePanel = false;
 document.addEventListener('mousedown', e => {
-  _overlayMousedownInsidePanel = !!e.target.closest?.('.overlay-panel');
+  _overlayMousedownInsidePanel = !!e.target.closest?.('.overlay-panel, #td-pomo-float');
 }, true);
 
 document.addEventListener('click', e => {
@@ -10031,7 +10030,7 @@ document.addEventListener('click', e => {
   }
   // Only close if the click target is an open overlay itself AND not inside its panel
   const overlay = e.target.closest?.('.overlay.open');
-  if (overlay && !e.target.closest('.overlay-panel')) {
+  if (overlay && !e.target.closest('.overlay-panel, #td-pomo-float')) {
     if (overlay.id === 'pomo-overlay') {
       document.getElementById('pomo-close')?.click();
     } else {
@@ -10042,7 +10041,7 @@ document.addEventListener('click', e => {
 
 // Header action buttons
 document.getElementById('btn-notes')?.addEventListener('click', () => openOverlay('notes-overlay'));
-document.getElementById('btn-focus')?.addEventListener('click', () => { showMainPanel('timedrift'); });
+document.getElementById('btn-focus')?.addEventListener('click', () => { openOverlay('pomo-overlay'); });
 document.getElementById('btn-cosmodex-bubble')?.addEventListener('click', () => openOrb());
 document.getElementById('btn-cosmos')?.addEventListener('click', () => openOverlay('claude-panel'));
 
