@@ -7572,3 +7572,31 @@ select.sched-input { background: #181818; }
 }
 .list-detail-item-wrap.drop-before::before { top: -1px; }
 .list-detail-item-wrap.drop-after::after { bottom: -1px; }
+
+/* ══ TIMEDRIFT GLASS DEPTH ══
+   backdrop-filter can't run inside SVG, so the depth is built in layers:
+   nebula (content to blur) → HTML glass annulus → SVG rings with specular rims. */
+#td-nebula {
+  position: absolute; inset: 0; z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(600px 420px at 30% 15%, var(--neon-glow), transparent 70%),
+    radial-gradient(520px 520px at 74% 55%, var(--gold-glow), transparent 70%),
+    radial-gradient(1.5px 1.5px at 18% 40%, rgba(255,255,255,0.35), transparent 100%),
+    radial-gradient(1px 1px at 52% 22%, rgba(255,255,255,0.28), transparent 100%),
+    radial-gradient(1.5px 1.5px at 68% 72%, rgba(255,255,255,0.30), transparent 100%),
+    radial-gradient(1px 1px at 87% 30%, rgba(255,255,255,0.25), transparent 100%),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.22), transparent 100%);
+}
+#td-glass-disc {
+  position: absolute; z-index: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur-deep);
+  -webkit-backdrop-filter: var(--glass-blur-deep);
+  /* annulus: hub (r=42 of 234 ≈ 18%) keeps its own lighter glass */
+  -webkit-mask: radial-gradient(circle, transparent 0 17.5%, #000 18.5% 100%);
+  mask: radial-gradient(circle, transparent 0 17.5%, #000 18.5% 100%);
+}
+#td-svg { position: relative; z-index: 1; }

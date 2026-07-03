@@ -6592,7 +6592,7 @@ function _tdInit(){
     rg.setAttribute('fy',String(_TD_CY));
     rg.setAttribute('gradientUnits','userSpaceOnUse');
     const stops=[
-      [0.00,'rgba(255,255,255,0.025)'],
+      [0.00,'rgba(255,255,255,0.04)'],
       [1.00,'rgba(255,255,255,0)'],
     ];
     stops.forEach(([off,col])=>{
@@ -6632,6 +6632,20 @@ function _tdInit(){
     const ci=_tdMk('circle');
     ci.setAttribute('cx',_TD_CX); ci.setAttribute('cy',_TD_CY); ci.setAttribute('r',String(ri));
     ci.setAttribute('fill','none'); ci.setAttribute('stroke',ring.bandStroke); ci.setAttribute('stroke-width','0.3'); ci.setAttribute('stroke-dasharray','2,5'); gBg.appendChild(ci);
+
+    // Specular rim — light catching the band edge nearest the viewer
+    // (the visible portion of each ring is its bottom arc, +90° ± 30°)
+    const a0=(60)*Math.PI/180, a1=(120)*Math.PI/180;
+    const sx=_TD_CX+ro*Math.cos(a0), sy=_TD_CY+ro*Math.sin(a0);
+    const ex=_TD_CX+ro*Math.cos(a1), ey=_TD_CY+ro*Math.sin(a1);
+    const rim=_tdMk('path');
+    rim.setAttribute('d',`M${sx.toFixed(1)},${sy.toFixed(1)} A${ro},${ro} 0 0,1 ${ex.toFixed(1)},${ey.toFixed(1)}`);
+    rim.setAttribute('fill','none');
+    rim.setAttribute('stroke','rgba(255,255,255,0.20)'); // --glass-highlight
+    rim.setAttribute('stroke-width','0.8');
+    rim.setAttribute('stroke-linecap','round');
+    rim.setAttribute('filter','url(#td-sglow)');
+    gBg.appendChild(rim);
   });
 
 
@@ -6696,6 +6710,27 @@ function _tdInit(){
   });
 }
 
+/* Glass depth: backdrop-filter can't apply inside SVG, and blur over pure
+   black is invisible — so a faint nebula (something to blur) sits behind an
+   HTML glass annulus, and the SVG rings get specular rims on top. */
+function _tdEnsureGlassLayers(){
+  const top=document.getElementById('td-top');
+  const stage=document.getElementById('td-stage');
+  if(!top||!stage) return null;
+  if(!document.getElementById('td-nebula')){
+    const neb=document.createElement('div');
+    neb.id='td-nebula';
+    top.insertBefore(neb,stage);
+  }
+  let disc=document.getElementById('td-glass-disc');
+  if(!disc){
+    disc=document.createElement('div');
+    disc.id='td-glass-disc';
+    stage.insertBefore(disc,_tdSvg||stage.firstChild);
+  }
+  return disc;
+}
+
 function _tdLayout(){
   const container=document.getElementById('td-top');
   if(!container||!_tdSvg) return;
@@ -6707,6 +6742,15 @@ function _tdLayout(){
   _tdSvg.style.width=pw+'px'; _tdSvg.style.height=ph+'px';
   const stage=document.getElementById('td-stage');
   if(stage){ stage.style.width=pw+'px'; stage.style.height=ph+'px'; }
+  // Glass disc tracks the outer ring (r=234 in viewBox units, centre 500,500)
+  const disc=_tdEnsureGlassLayers();
+  if(disc){
+    const r=234*pw/1000;
+    const cy=((500-CROP)/VBH)*ph; // centre sits above the visible crop
+    disc.style.width=disc.style.height=(r*2)+'px';
+    disc.style.left=(pw/2-r)+'px';
+    disc.style.top=(cy-r)+'px';
+  }
 }
 
 function _tdUpdateRing(info,now,animEase){
