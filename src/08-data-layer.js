@@ -61,11 +61,47 @@ function showToast(msg, type = 'info', duration = 3000) {
   }, duration);
 }
 
+/* ── Undo toast — reversible actions get a 6s escape hatch ── */
+function showUndoToast(msg, onUndo, duration = 6000) {
+  const container = document.getElementById('cdx-toast-container');
+  if (!container) { return; }
+  const toast = document.createElement('div');
+  toast.className = 'cdx-toast info';
+  const msgEl = document.createElement('span');
+  msgEl.className = 'cdx-toast-msg';
+  msgEl.textContent = msg;
+  const btn = document.createElement('button');
+  btn.className = 'cdx-toast-undo';
+  btn.type = 'button';
+  btn.textContent = 'undo';
+  let dismissed = false;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  };
+  btn.addEventListener('click', async () => {
+    dismiss();
+    try { await onUndo(); } catch (e) {
+      console.error('undo failed:', e);
+      showToast('undo failed — the cosmos resisted.', 'error');
+    }
+  });
+  toast.appendChild(msgEl);
+  toast.appendChild(btn);
+  container.appendChild(toast);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('show'));
+  });
+  setTimeout(dismiss, duration);
+}
+
 // Surface otherwise-silent async failures (e.g. Firestore writes that lack a try/catch)
 // instead of letting a change quietly fail with no feedback to the user.
 window.addEventListener('unhandledrejection', ev => {
   console.error('Unhandled async error:', ev.reason);
-  try { showToast('Something went wrong — your change may not have saved.', 'error', 5000); } catch (_) {}
+  try { showToast('that didn\'t save — the cosmos is flaky. try again.', 'error', 5000); } catch (_) {}
 });
 // Refresh the orb immediately when the tab becomes visible again (paired with the hidden-guard above).
 document.addEventListener('visibilitychange', () => { if (!document.hidden) drawCosmodex(); });

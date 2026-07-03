@@ -318,7 +318,7 @@ function _todayRenderHabits(todayDs, isRestDay) {
     return;
   }
   if (!habits.length) {
-    listEl.innerHTML = '<div class="today-empty">No habits yet — add one below or use the Builder tab to design one.</div>';
+    listEl.innerHTML = '<div class="today-empty">no rituals yet. even stars have routines — add one below, or design one in the Builder tab.</div>';
     return;
   }
   // Group by anchor
@@ -483,22 +483,65 @@ function _todayInit() {
     _todayRenderMorningMode();
   });
 
-  // Habit check clicks (delegated)
-  document.getElementById('today-habits')?.addEventListener('click', async e => {
-    const check = e.target.closest('[data-today-toggle]');
-    if (!check) return;
+  // Habit checks — hold-to-complete (the commitment gesture).
+  // Completing takes a 550ms press while a gold ring fills; a quick tap hints.
+  // Un-completing stays a plain click. Keyboard activation (detail 0) completes directly.
+  const todayHabitsEl = document.getElementById('today-habits');
+  let _holdTimer = null, _holdCheck = null;
+
+  const _completeHabit = async (check) => {
     const habitId = check.dataset.todayToggle;
     const ds = localDateStr(new Date());
     const habit = _habits.find(h => h.id === habitId);
     const habitRow = check.closest('.today-habit');
-    const wasDone = !!_habitLogs[ds]?.completions?.[habitId];
-    if (!wasDone && habit && habitRow) {
-      _todayFireCelebration(habitRow, habit);
-    }
-    // Reuse existing toggle logic
+    if (habit && habitRow) _todayFireCelebration(habitRow, habit);
     await habitToggle(habitId, ds);
-    // Re-render Today after a brief delay so celebration finishes visibly
     setTimeout(() => renderToday(), 400);
+  };
+  const _cancelHold = (hint) => {
+    if (_holdTimer) { clearTimeout(_holdTimer); _holdTimer = null; }
+    if (_holdCheck) {
+      _holdCheck.classList.remove('holding');
+      if (hint) {
+        const c = _holdCheck;
+        c.classList.remove('hold-hint'); void c.offsetWidth; c.classList.add('hold-hint');
+        setTimeout(() => c.classList.remove('hold-hint'), 900);
+      }
+      _holdCheck = null;
+    }
+  };
+
+  todayHabitsEl?.addEventListener('pointerdown', e => {
+    const check = e.target.closest('[data-today-toggle]');
+    if (!check) return;
+    const ds = localDateStr(new Date());
+    if (_habitLogs[ds]?.completions?.[check.dataset.todayToggle]) return; // uncomplete = click
+    _holdCheck = check;
+    check.classList.add('holding');
+    _holdTimer = setTimeout(() => {
+      const c = _holdCheck;
+      _holdTimer = null; _holdCheck = null;
+      if (c) { c.classList.remove('holding'); c.dataset.heldDone = '1'; _completeHabit(c); }
+    }, 550);
+  });
+  todayHabitsEl?.addEventListener('pointerup', () => _cancelHold(true));
+  todayHabitsEl?.addEventListener('pointerleave', () => _cancelHold(false));
+  todayHabitsEl?.addEventListener('pointercancel', () => _cancelHold(false));
+
+  todayHabitsEl?.addEventListener('click', async e => {
+    const check = e.target.closest('[data-today-toggle]');
+    if (!check) return;
+    if (check.dataset.heldDone === '1') { delete check.dataset.heldDone; return; }
+    const habitId = check.dataset.todayToggle;
+    const ds = localDateStr(new Date());
+    const wasDone = !!_habitLogs[ds]?.completions?.[habitId];
+    if (wasDone) {
+      await habitToggle(habitId, ds);
+      setTimeout(() => renderToday(), 400);
+    } else if (e.detail === 0) {
+      await _completeHabit(check); // keyboard Enter/Space — no hold required
+    }
+    // mouse tap on an undone habit: hold-hint already shown by pointerup
   });
 }
 
@@ -518,14 +561,14 @@ function renderHabits() {
         const isT = ds === todayStr;
         return `<div class="habit-day-header-cell ${isT?'today-col':''}">${DN[d.getDay()]}<br>${d.getDate()}</div>`;
       }).join('') +
-      '<div class="habit-day-header-cell" style="font-size:8px">STREAK</div>';
+      '<div class="habit-day-header-cell" style="font-size:10px">STREAK</div>';
   }
 
   const list = document.getElementById('habits-list');
   if (!list) return;
 
   if (!_habits.length) {
-    list.innerHTML = '<div style="padding:20px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">No habits yet — add one below</div>';
+    list.innerHTML = '<div style="padding:20px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">no rituals yet. even stars have routines — add one below</div>';
     return;
   }
 
@@ -737,7 +780,7 @@ function renderHabitsTab() {
   const activeList = document.getElementById('habits-active-list');
   if (activeList) {
     if (!active.length) {
-      activeList.innerHTML = '<div class="habits-empty-state">No habits yet. Create your first tiny habit with the button below.</div>';
+      activeList.innerHTML = '<div class="habits-empty-state">no rituals yet. even stars have routines — create your first tiny habit below.</div>';
     } else {
       activeList.innerHTML = active.map(h => _habitsCardHtml(h, false)).join('');
     }
@@ -1062,7 +1105,7 @@ function _habitsTabInit() {
     const gradBtn = e.target.closest('[data-habit-graduate]');
     if (gradBtn) {
       const h = _habits.find(x => x.id === gradBtn.dataset.habitGraduate);
-      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(53,249,47)', okBg: 'rgba(53,249,47,0.1)', okBorder: 'rgba(53,249,47,0.4)' })) {
+      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(111,174,135)', okBg: 'rgba(111,174,135,0.1)', okBorder: 'rgba(111,174,135,0.4)' })) {
         await habitGraduate(h.id);
       }
       return;
@@ -1526,13 +1569,13 @@ function _hinsDrawHeatmap() {
       else if (ratio < 0.25) bg = 'rgba(255,255,255,0.14)';
       else if (ratio < 0.5)  bg = 'rgba(255,255,255,0.26)';
       else if (ratio < 0.85) bg = 'rgba(255,255,255,0.42)';
-      else                   bg = 'rgb(53,249,47)';
+      else                   bg = 'rgb(111,174,135)';
 
       ctx.fillStyle = bg;
       _hinsRoundRect(ctx, x, y, size, size, 2);
       ctx.fill();
       if (ratio >= 0.85) {
-        ctx.shadowColor = 'rgba(53,249,47,0.5)';
+        ctx.shadowColor = 'rgba(111,174,135,0.5)';
         ctx.shadowBlur = 5;
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -1580,8 +1623,8 @@ function _hinsDrawMiniRing(containerEl, pct) {
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
   const green = pct >= 80;
-  const color = green ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)';
-  const glow = green ? 'drop-shadow(0 0 4px rgba(53,249,47,0.4))' : 'none';
+  const color = green ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
+  const glow = green ? 'drop-shadow(0 0 4px rgba(111,174,135,0.4))' : 'none';
   containerEl.innerHTML = `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="filter:${glow}">
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${stroke}"/>
@@ -1691,8 +1734,8 @@ function renderHabitsInsights() {
             const green = pct >= 80;
             const dim = pct < 30;
             const alpha = Math.max(0.08, Math.min(0.85, pct / 100));
-            cell.style.background = green ? 'rgb(53,249,47)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
-            if (green) cell.style.boxShadow = '0 0 4px rgba(53,249,47,0.4)';
+            cell.style.background = green ? 'rgb(111,174,135)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
+            if (green) cell.style.boxShadow = '0 0 4px rgba(111,174,135,0.4)';
             cell.textContent = pct + '%';
             cell.style.color = green ? '#0d0c0a' : (alpha > 0.4 ? '#0d0c0a' : 'rgba(255,255,255,0.5)');
             cell.title = `${h.tinyBehavior || h.name} · ${dowNames[dow]} · ${stat.done}/${stat.possible} (${pct}%)`;

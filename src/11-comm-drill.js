@@ -597,3 +597,32 @@ function _drillSaveApiKey(key) {
   s.apiKeys[s.provider || 'anthropic'] = key.trim();
   _saveDrillSettings(s);
 }
+
+/* ══ KINETIC: scrub the drill timer — drag the digits to trade seconds ══ */
+let _drillScrub = null;
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest?.('#drill-timer-display');
+  if (!el) return;
+  _drillScrub = { x: e.clientX, left: Math.max(0, _drillTimerLeft) };
+  el.classList.add('scrubbing');
+});
+document.addEventListener('pointermove', e => {
+  if (!_drillScrub) return;
+  const dx = e.clientX - _drillScrub.x;
+  _drillTimerLeft = Math.max(0, Math.min(30 * 60, _drillScrub.left + Math.round(dx / 4) * 5));
+  _renderDrillTimerDisplay();
+});
+document.addEventListener('pointerup', () => {
+  if (!_drillScrub) return;
+  document.getElementById('drill-timer-display')?.classList.remove('scrubbing');
+  // Scrubbed to a positive time with no countdown running → start one
+  if (_drillTimerLeft > 0 && !_drillTimerId) {
+    _drillTimerTotal = Math.max(_drillTimerTotal || 0, _drillTimerLeft);
+    _drillTimerId = setInterval(() => {
+      _drillTimerLeft--;
+      _renderDrillTimerDisplay();
+      if (_drillTimerLeft <= 0) stopDrillTimer();
+    }, 1000);
+  }
+  _drillScrub = null;
+});

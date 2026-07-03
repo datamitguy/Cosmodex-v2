@@ -60,7 +60,7 @@ function renderFocusBuckets() {
             <span style="flex:1;min-width:0">${linkifyText(it.text)}</span>
             <span class="focus-item-del" data-fbdel-item="${escAttr(it.id)}" data-fbdel-bucket="${escAttr(b.id)}">✕</span>
           </div>
-        `).join('') : '<div class="focus-bucket-items-empty">No items</div>'}
+        `).join('') : '<div class="focus-bucket-items-empty">empty bucket. gravity intact.</div>'}
       </div>
       <div class="focus-add-item">
         <input type="text" placeholder="Add item..." maxlength="300" data-add-item-bucket="${escAttr(b.id)}" />
@@ -556,7 +556,7 @@ function _tdDrawTimeline(now){
   // ── Calendar event arcs ──────────────────────────────────
   const phase=performance.now()*0.001;
   evtSpans.forEach(({aS,aE2,cS,cE,isPast,ev})=>{
-    const evG='rgba(53,249,47,';
+    const evG='rgba(111,174,135,';
     // Thin fill around single arc
     ctx.beginPath();
     ctx.arc(cx,cy_arc,midR+4,aS,aE2);
@@ -592,12 +592,12 @@ function _tdDrawTimeline(now){
       // Soft outer glow pass
       ctx.save();
       ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
-      ctx.strokeStyle=`rgba(53,249,47,${(glowAlpha*0.30).toFixed(2)})`;
-      ctx.lineWidth=6; ctx.shadowColor='rgba(53,249,47,0.6)'; ctx.shadowBlur=14; ctx.stroke();
+      ctx.strokeStyle=`rgba(111,174,135,${(glowAlpha*0.30).toFixed(2)})`;
+      ctx.lineWidth=6; ctx.shadowColor='rgba(111,174,135,0.6)'; ctx.shadowBlur=14; ctx.stroke();
       // Core bright line
       ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
-      ctx.strokeStyle=`rgba(53,249,47,${glowAlpha.toFixed(2)})`;
-      ctx.lineWidth=1.2; ctx.shadowColor='rgba(53,249,47,0.9)'; ctx.shadowBlur=8; ctx.stroke();
+      ctx.strokeStyle=`rgba(111,174,135,${glowAlpha.toFixed(2)})`;
+      ctx.lineWidth=1.2; ctx.shadowColor='rgba(111,174,135,0.9)'; ctx.shadowBlur=8; ctx.stroke();
       ctx.restore();
       // Event title text at end of connector — etched on the bezel, not glued to the line
       const titleTxt = ev.title.length > 18 ? ev.title.slice(0,17)+'…' : ev.title;
@@ -661,11 +661,11 @@ function _tdDrawTimeline(now){
   if(ongoing && ey<maxY){
     const label=ongoing.title?(ongoing.title.length>20?ongoing.title.slice(0,19)+'…':ongoing.title):'event';
     ctx.font="300 10px 'DM Mono',monospace";
-    ctx.fillStyle='rgba(53,249,47,0.60)';
+    ctx.fillStyle='rgba(111,174,135,0.60)';
     ctx.fillText('ongoing · '+label,cx,ey); ey+=15;
     if(ey<maxY){
       ctx.font="300 9px 'DM Mono',monospace";
-      ctx.fillStyle='rgba(53,249,47,0.38)';
+      ctx.fillStyle='rgba(111,174,135,0.38)';
       ctx.fillText('continues '+(ongoing.eMins-nowMins)+'m more',cx,ey); ey+=20;
     }
   }
@@ -679,7 +679,7 @@ function _tdDrawTimeline(now){
       ctx.fillText(label,cx,ey); ey+=15;
       if(ey<maxY){
         ctx.font="300 9px 'DM Mono',monospace";
-        ctx.fillStyle='rgba(53,249,47,0.65)';
+        ctx.fillStyle='rgba(111,174,135,0.65)';
         ctx.fillText('in '+delta+'m',cx,ey); ey+=20;
       }
     });
@@ -689,6 +689,14 @@ function _tdDrawTimeline(now){
     ctx.fillText('nothing in next 30m',cx,ey);
   }
 
+  // Drift indicator — shown while the rings are scrubbed away from now
+  if (Math.abs(_tdScrubOffset) > 500) {
+    ctx.font="300 10px 'DM Mono',monospace";
+    ctx.fillStyle='rgba(212,162,78,0.85)';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    const dir=_tdScrubOffset>0?'ahead':'behind';
+    ctx.fillText(`⟲ adrift · ${_tdFmtOffset(Math.abs(_tdScrubOffset))} ${dir} · release returns to now`,cx,6);
+  }
 }
 
 function _tdInit(){
@@ -876,8 +884,8 @@ function _tdUpdateRing(info,now,animEase){
      ties Timedrift into the cross-app threshold reward system.
      Revert by setting _TD_DLV2_ENABLED = false. */
   const dlv2Green = _TD_DLV2_ENABLED && ring.id === 'hr' && _tdDlv2IsFocusGoalMet();
-  const activeStroke = dlv2Green ? 'rgba(53,249,47,1)' : 'rgba(255,255,255,1)';
-  const activeFill   = dlv2Green ? 'rgba(53,249,47,1)' : 'rgba(255,255,255,1)';
+  const activeStroke = dlv2Green ? 'rgba(111,174,135,1)' : 'rgba(255,255,255,1)';
+  const activeFill   = dlv2Green ? 'rgba(111,174,135,1)' : 'rgba(255,255,255,1)';
   g.querySelectorAll('.td-ri').forEach(item=>{
     const i=+item.dataset.i, maj=item.dataset.maj==='1';
     let dist=i-exact;
@@ -901,8 +909,76 @@ function _tdUpdateCenter(now){
   if(_tdElYear) _tdElYear.textContent=String(now.getFullYear());
 }
 
+/* ── Time scrub — drag any ring to drift through time ─────
+   The whole panel renders from `now`, so offsetting `now` time-travels
+   everything: rings, horizon arc, that day's events. Release springs back. */
+let _tdScrubOffset=0, _tdScrubDrag=null, _tdScrubReleaseT0=0, _tdScrubReleaseFrom=0;
+
+function _tdFmtOffset(ms){
+  const m=Math.round(ms/60000);
+  if(m<60) return m+'m';
+  const h=Math.round(m/60); if(h<48) return h+'h';
+  return Math.round(h/24)+'d';
+}
+
+function _tdScrubNow(){
+  if(!_tdScrubDrag && _tdScrubReleaseT0){
+    const age=performance.now()-_tdScrubReleaseT0, D=800;
+    if(age>=D){ _tdScrubReleaseT0=0; _tdScrubOffset=0; }
+    else { _tdScrubOffset=_tdScrubReleaseFrom*(1-(1-Math.pow(1-age/D,3))); }
+  }
+  return new Date(Date.now()+_tdScrubOffset);
+}
+
+function _tdInitScrub(){
+  if(!_tdSvg||_tdSvg.dataset.scrub==='1') return;
+  _tdSvg.dataset.scrub='1';
+  // ms per ring item; min ring counts down so its drag direction flips
+  const UNIT={dom:86400e3,mon:2629800e3,dow:86400e3,hr:3600e3,min:60e3,sec:1000};
+  const SIGN={dom:1,mon:1,dow:1,hr:1,min:-1,sec:1};
+  const BANDS=[['dom',42,74],['mon',74,106],['dow',106,138],['hr',138,170],['min',170,202],['sec',202,234]];
+  const center=()=>{
+    const r=_tdSvg.getBoundingClientRect();
+    // viewBox "0 530 1000 315" — ring centre (500,500) sits above the visible crop
+    return { x:r.left+r.width*0.5, y:r.top+((500-530)/315)*r.height, scale:r.width/1000 };
+  };
+  _tdSvg.addEventListener('pointerdown',e=>{
+    const c=center();
+    const d=Math.hypot(e.clientX-c.x,e.clientY-c.y)/c.scale;
+    const band=BANDS.find(([,ri,ro])=>d>=ri&&d<=ro+8);
+    if(!band) return;
+    e.preventDefault();
+    _tdScrubReleaseT0=0;
+    _tdScrubDrag={ id:band[0], lastA:Math.atan2(e.clientY-c.y,e.clientX-c.x), c };
+    try{_tdSvg.setPointerCapture(e.pointerId);}catch{}
+    _tdSvg.classList.add('td-scrubbing');
+  });
+  _tdSvg.addEventListener('pointermove',e=>{
+    if(!_tdScrubDrag) return;
+    const {c,id}=_tdScrubDrag;
+    const a=Math.atan2(e.clientY-c.y,e.clientX-c.x);
+    let dA=a-_tdScrubDrag.lastA;
+    if(dA>Math.PI)dA-=2*Math.PI; if(dA<-Math.PI)dA+=2*Math.PI;
+    _tdScrubDrag.lastA=a;
+    const ring=TD_RINGS.find(r=>r.id===id);
+    const dExact=-(dA*180/Math.PI)*ring.items.length/360;
+    _tdScrubOffset+=SIGN[id]*dExact*UNIT[id];
+    // Clamp the drift to ±1 year — it's a scrub, not a wormhole
+    _tdScrubOffset=_tdClamp(_tdScrubOffset,-31557600e3,31557600e3);
+  });
+  const endScrub=()=>{
+    if(!_tdScrubDrag) return;
+    _tdScrubDrag=null;
+    _tdSvg.classList.remove('td-scrubbing');
+    _tdScrubReleaseFrom=_tdScrubOffset;
+    _tdScrubReleaseT0=performance.now();
+  };
+  _tdSvg.addEventListener('pointerup',endScrub);
+  _tdSvg.addEventListener('pointercancel',endScrub);
+}
+
 function _tdFrame(){
-  const now=new Date();
+  const now=_tdScrubNow();
   if(!_tdAnimT0) _tdAnimT0=performance.now();
   const t0=performance.now();
   const progress=Math.min(1,(t0-_tdAnimT0)/900);
@@ -930,6 +1006,7 @@ function startTimedrift(){
   const panel = document.getElementById('panel-timedrift');
   if (panel) panel.classList.toggle('td-dlv2', _TD_DLV2_ENABLED);
   _tdInit();
+  _tdInitScrub();
   _tdLayout();
   if(!_tdResizeObs){
     _tdResizeObs=new ResizeObserver(()=>{

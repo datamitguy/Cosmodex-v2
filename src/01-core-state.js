@@ -238,6 +238,19 @@ document.getElementById('tools-toggle')?.addEventListener('click', () => {
 /* ── Nav items ─────────────────────────────────────────── */
 const NAV_OVERLAY_MAP = {};
 
+/* A11y bootstrap: div-based nav items become keyboard-operable buttons,
+   icon-only buttons get accessible names from their titles. */
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.setAttribute('role', 'button');
+  item.setAttribute('tabindex', '0');
+  item.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); }
+  });
+});
+document.querySelectorAll('button[title]:not([aria-label])').forEach(el => {
+  el.setAttribute('aria-label', el.title);
+});
+
 document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
   item.addEventListener('click', () => {
     const panel = item.dataset.panel;

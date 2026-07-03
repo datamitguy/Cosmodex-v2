@@ -223,14 +223,14 @@ function renderListDetail(listId) {
   const body = document.getElementById('lists-detail-items');
   if (!body) return;
   if (!items.length) {
-    body.innerHTML = '<div style="padding:24px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No items yet — add one below</div>';
+    body.innerHTML = '<div style="padding:24px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">an empty list. even the void keeps notes — add one below</div>';
     return;
   }
   const accentColor = list.color || 'var(--gold)';
   body.innerHTML = items.map((item, idx) => {
     const subs = item.subitems || [];
     return `
-    <div class="list-detail-item-wrap" style="animation-delay:${idx*20}ms">
+    <div class="list-detail-item-wrap" draggable="true" data-idx="${idx}" style="animation-delay:${idx*20}ms">
       <div class="list-detail-item" data-item-id="${escAttr(item.id)}">
         <div class="list-item-marker" style="background:${accentColor}18;color:${accentColor};border:1px solid ${accentColor}33">◆</div>
         <span class="list-detail-item-text" data-item-id="${escAttr(item.id)}">${linkifyText(item.text)}</span>
@@ -273,7 +273,71 @@ function closeListDetail() {
   renderLists();
 }
 
+/* ══ KINETIC: drag list items to reorder — gold drop line, persisted order ══ */
+async function reorderListItems(listId, fromIdx, toIdx) {
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  try {
+    await runTransaction(window.CDX_DB, async tx => {
+      const ref = _ud('lists', listId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) return;
+      const items = [...(snap.data().items || [])];
+      if (fromIdx < 0 || fromIdx >= items.length) return;
+      const [moved] = items.splice(fromIdx, 1);
+      items.splice(Math.min(toIdx, items.length), 0, moved);
+      tx.update(ref, { items, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('reorderListItems error:', err);
+    showToast('couldn\'t reorder — the cosmos resisted. try again.', 'error');
+  }
+}
+
+function _initListReorder() {
+  const body = document.getElementById('lists-detail-items');
+  if (!body || body.dataset.dnd === '1') return;
+  body.dataset.dnd = '1';
+  let fromIdx = null;
+  const clearMarks = () => body.querySelectorAll('.drop-before,.drop-after')
+    .forEach(el => el.classList.remove('drop-before', 'drop-after'));
+
+  body.addEventListener('dragstart', e => {
+    const wrap = e.target.closest('.list-detail-item-wrap');
+    if (!wrap) return;
+    fromIdx = +wrap.dataset.idx;
+    wrap.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  body.addEventListener('dragover', e => {
+    if (fromIdx === null) return;
+    const wrap = e.target.closest('.list-detail-item-wrap');
+    if (!wrap) return;
+    e.preventDefault();
+    clearMarks();
+    const r = wrap.getBoundingClientRect();
+    wrap.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
+  });
+  body.addEventListener('drop', e => {
+    if (fromIdx === null) return;
+    const wrap = e.target.closest('.list-detail-item-wrap');
+    if (!wrap || !_listView) return;
+    e.preventDefault();
+    const r = wrap.getBoundingClientRect();
+    let toIdx = +wrap.dataset.idx + (e.clientY < r.top + r.height / 2 ? 0 : 1);
+    if (toIdx > fromIdx) toIdx--;
+    if (toIdx !== fromIdx) reorderListItems(_listView, fromIdx, toIdx);
+    clearMarks();
+    fromIdx = null;
+  });
+  body.addEventListener('dragend', () => {
+    body.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+    clearMarks();
+    fromIdx = null;
+  });
+}
+
 function initListsPage() {
+  _initListReorder();
   // Sidebar card clicks
   const sidebarItems = document.getElementById('lists-sidebar-items');
   if (sidebarItems) {

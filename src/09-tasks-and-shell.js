@@ -51,7 +51,7 @@ function _renderTaskGroup(container, tasks, taskProjMap, rowIdxRef) {
     const isCollapsed = localStorage.getItem(storageKey) !== 'false';
     const indLabel = document.createElement('div');
     indLabel.className = 'tasks-initiative-label';
-    indLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:8px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:var(--muted)"></span>Independent<span class="tasks-initiative-count">${standalone.length}</span>`;
+    indLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:10px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:var(--muted)"></span>Independent<span class="tasks-initiative-count">${standalone.length}</span>`;
     const indContainer = document.createElement('div');
     indContainer.style.display = isCollapsed ? 'none' : '';
     indLabel.addEventListener('click', () => {
@@ -75,7 +75,7 @@ function _renderTaskGroup(container, tasks, taskProjMap, rowIdxRef) {
 
     const initLabel = document.createElement('div');
     initLabel.className = 'tasks-initiative-label';
-    initLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:8px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:${escAttr(projGroup.projectColor)}"></span>${escHtml(projGroup.projectTitle)}<span class="tasks-initiative-count">${projGroup.tasks.length}</span>`;
+    initLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:10px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:${escAttr(projGroup.projectColor)}"></span>${escHtml(projGroup.projectTitle)}<span class="tasks-initiative-count">${projGroup.tasks.length}</span>`;
 
     const initContainer = document.createElement('div');
     initContainer.style.display = isCollapsed ? 'none' : '';
@@ -154,6 +154,11 @@ function renderTasks() {
 
   // Someday Graveyard
   renderSomedaySection(body, filtered.filter(t => t.someday), rowIdxRef.idx);
+
+  // All clear — say so, in voice
+  if (!body.children.length) {
+    body.innerHTML = '<div class="tasks-void-empty">inbox zero. the void approves. ✦<br><span>press n to disturb the peace</span></div>';
+  }
 }
 
 /* ── Task Decay helper ───────────────────────────────── */
@@ -191,7 +196,7 @@ function buildTaskRow(task, idx) {
 
   const PRIORITY_LABELS = { high: 'High', med: 'Med', low: 'Low' };
   const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority] || '' : '';
-  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:9px;color:${task.priority==='high'?'var(--rust)':task.priority==='med'?'var(--amber)':'var(--muted)'}">${priorityLabel}</span>` : '';
+  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--rust)':task.priority==='med'?'var(--amber)':'var(--muted)'}">${priorityLabel}</span>` : '';
 
   let recurBadge = '';
   if (task.recurrence) {
@@ -220,7 +225,7 @@ function buildTaskRow(task, idx) {
 
   // Time-spent badge
   const timeBadge = (task.done && task.timeSpentMinutes)
-    ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
+    ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
     : '';
 
   // Friction indicator
@@ -327,7 +332,7 @@ function buildSubtaskRow(parentId, sub) {
   let schedBadge = '';
   if (sub.calEventId) {
     const ev = CAL_EVENTS.find(e => e.id === sub.calEventId);
-    if (ev?.startTime) schedBadge = `<span class="task-cal-badge" style="font-size:9px">⊙ ${fmtTimeSched(ev.startTime)}</span>`;
+    if (ev?.startTime) schedBadge = `<span class="task-cal-badge" style="font-size:10px">⊙ ${fmtTimeSched(ev.startTime)}</span>`;
   }
 
   row.innerHTML = `
@@ -604,9 +609,16 @@ async function toggleTask(taskId, timeSpentMinutes = null) {
   const updates = { done: !task.done };
   if (!task.done) {
     updates.doneDate = localDateStr(new Date());
+    updates.doneAt = new Date().toISOString(); // exact time — used by the orbit recap constellation
     if (timeSpentMinutes != null) updates.timeSpentMinutes = timeSpentMinutes;
   }
+  // Celebration fires before the snapshot re-render wipes the row
+  if (!task.done) _taskFireCelebration(taskId, task);
   await updateTask(taskId, updates);
+  if (!task.done) {
+    const short = task.title.length > 30 ? task.title.slice(0, 30) + '…' : task.title;
+    showUndoToast(`done: ${short}`, () => updateTask(taskId, { done: false, doneDate: null }));
+  }
   // Sync done status to linked milestone activities
   const newDone = !task.done;
   for (const msEv of MILESTONE_EVENTS) {
@@ -616,6 +628,47 @@ async function toggleTask(taskId, timeSpentMinutes = null) {
       updateMilestoneEvent(msEv.id, { activities });
     }
   }
+}
+
+/* ── Task completion celebration ──────────────────────────
+   Same reward grammar as habits: burst + identity vote + haptic.
+   Elements are appended to <body> so the snapshot re-render can't wipe them. */
+function _taskFireCelebration(taskId, task) {
+  const esc = (window.CSS && CSS.escape) ? CSS.escape(taskId) : taskId;
+  const check = document.querySelector(`[data-check="${esc}"]`);
+  if (!check) return;
+  const r = check.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+
+  const ring = document.createElement('div');
+  ring.className = 'task-burst-ring';
+  ring.style.left = cx + 'px'; ring.style.top = cy + 'px';
+  document.body.appendChild(ring);
+  setTimeout(() => ring.remove(), 700);
+
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement('div');
+    p.className = 'task-burst-star';
+    p.textContent = '✦';
+    const ang = (i / 6) * Math.PI * 2 + Math.random() * 0.6;
+    const dist = 18 + Math.random() * 22;
+    p.style.left = cx + 'px'; p.style.top = cy + 'px';
+    p.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 900);
+  }
+
+  const proj = (typeof MILESTONE_PROJECTS !== 'undefined' ? MILESTONE_PROJECTS : [])
+    .find(p => p.id === task.projectId);
+  const vote = document.createElement('div');
+  vote.className = 'task-vote-float';
+  vote.textContent = '+1 for ' + (proj ? proj.title : 'future you');
+  vote.style.left = (r.right + 10) + 'px'; vote.style.top = cy + 'px';
+  document.body.appendChild(vote);
+  setTimeout(() => vote.remove(), 1900);
+
+  if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
 }
 
 /* ── Time-to-complete popover ─────────────────────────── */
@@ -700,6 +753,7 @@ async function _safeDeleteCalEvent(eventId) {
 async function deleteTask(taskId) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
+  const snapshot = { ...task };   // for undo — restore with the same doc id
   const { deleteDoc } = window.CDX_FB;
   try {
     // Delete the task's own linked calendar event
@@ -720,7 +774,13 @@ async function deleteTask(taskId) {
       }
     }
     await deleteDoc(_ud('tasks', taskId));
-    showToast('Task deleted', 'info');
+    showUndoToast('task banished.', async () => {
+      const { setDoc, serverTimestamp } = window.CDX_FB;
+      const { id, ...data } = snapshot;
+      // calEventId / milestone links were cleaned up above and are not restored
+      delete data.calEventId;
+      await setDoc(_ud('tasks', id), { ...data, updatedAt: serverTimestamp() });
+    });
   } catch (err) {
     console.error('deleteTask error:', err);
     showToast('Failed to delete task', 'error');
@@ -920,7 +980,7 @@ function renderDayView(date) {
   if (alldayRow) alldayRow.style.display = '';
   if (alldayRow) alldayRow.innerHTML = allDayEvs.length
     ? allDayEvs.map(ev => `<span class="cal-allday-chip" data-event-id="${escAttr(ev.id)}">${escHtml(ev.title)}</span>`).join('')
-    : `<span style="font-size:9px;color:var(--muted);font-family:var(--font-mono)">All-day</span>`;
+    : `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">All-day</span>`;
 
   // Clear old event chips
   container.querySelectorAll('.cal-event').forEach(e => e.remove());
@@ -996,14 +1056,14 @@ function renderWeekView(date) {
     const isToday = ds === today;
     const isWeekend = (i === 5 || i === 6); // Sat=5, Sun=6
     const hol = HOLIDAYS[ds];
-    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(53,249,47,0.9);text-shadow:0 0 8px rgba(53,249,47,0.4);border-bottom:2px solid rgba(53,249,47,0.45)' : ''}">
+    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(111,174,135,0.9);text-shadow:0 0 8px rgba(111,174,135,0.4);border-bottom:2px solid rgba(111,174,135,0.45)' : ''}">
       ${DAYS[i]} ${d.getDate()}${hol ? `<br><span style="font-size:7px;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:2px;padding:0 2px;display:block">${escHtml(hol.name)}</span>` : ''}
     </div>`;
   }
   html += `</div>`;
   // All-day row
   const weekCols = `grid-template-columns:48px repeat(7,1fr)`;
-  html += `<div class="week-allday-row" style="${weekCols}"><div class="week-time-label" style="font-size:8px;color:var(--muted)">all-day</div>`;
+  html += `<div class="week-allday-row" style="${weekCols}"><div class="week-time-label" style="font-size:10px;color:var(--muted)">all-day</div>`;
   for (let i = 0; i < 7; i++) {
     const d  = new Date(ws); d.setDate(d.getDate() + i);
     const ds = localDateStr(d);
@@ -1182,7 +1242,7 @@ function buildMonthCell(dateStr, isCurrentMonth) {
     const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
     return `<span class="month-event-pill" data-event-id="${escAttr(ev.id)}" style="background:${color}22;color:${color};cursor:pointer">${escHtml(ev.title)}</span>`;
   }).join('');
-  const more = timedEvs.length > 2 ? `<span style="font-size:8px;color:var(--muted);font-family:var(--font-mono)">+${timedEvs.length-2} more</span>` : '';
+  const more = timedEvs.length > 2 ? `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">+${timedEvs.length-2} more</span>` : '';
 
   return `<div class="${classes}" data-date="${dateStr}">
     <span class="month-day-num">${day}</span>
@@ -1308,7 +1368,87 @@ function initCalNav() {
   });
 }
 
-/* ── Drag-to-calendar (modal) ─────────────────────────── */
+/* ── Drag-to-timebox ──────────────────────────────────────
+   Implementation intentions: dropping a task on a time slot converts
+   "I'll do X" into "I'll do X at 2:15pm". 15-min snap, ghost preview,
+   direct schedule (no modal) for plain tasks, undo toast. */
+
+let _dragGhostEl = null;
+
+function _dragSnapQuarter(slot, clientY) {
+  const rect = slot.getBoundingClientRect();
+  const frac = Math.min(0.999, Math.max(0, (clientY - rect.top) / rect.height));
+  const mins = Math.floor(frac * 4) * 15;
+  return { mins, rect };
+}
+
+function _showDragGhost(slot, hour, mins, rect) {
+  if (!_dragGhostEl) {
+    _dragGhostEl = document.createElement('div');
+    _dragGhostEl.className = 'cal-drop-ghost';
+    document.body.appendChild(_dragGhostEl);
+  }
+  const task = TASKS.find(t => t.id === _dragTaskId);
+  const start = `${String(hour).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+  const title = _dragSubId
+    ? (task?.subtasks?.find(s => s.id === _dragSubId)?.title || task?.title || '')
+    : (task?.title || '');
+  _dragGhostEl.textContent = `${fmtTimeSched(start)} — ${title}`;
+  _dragGhostEl.style.left   = rect.left + 'px';
+  _dragGhostEl.style.width  = rect.width + 'px';
+  _dragGhostEl.style.top    = (rect.top + (mins / 60) * rect.height) + 'px';
+  _dragGhostEl.style.height = Math.max(14, rect.height / 2) + 'px';
+}
+
+function _clearDragGhost() {
+  _dragGhostEl?.remove();
+  _dragGhostEl = null;
+}
+
+/* Direct schedule (drag-drop path) — mirrors confirmSchedule for a single task/subtask */
+async function scheduleTaskDirect(date, startTime, taskId, subId, duration = 30) {
+  const { addDoc, serverTimestamp, setDoc, doc } = window.CDX_FB;
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  const endTime = addMinutes(startTime, duration);
+  const color = getCatColor(task.category);
+  const sub = subId ? task.subtasks?.find(s => s.id === subId) : null;
+  if (subId && !sub) return;
+  const title = sub ? sub.title : task.title;
+
+  // Snapshot the event being replaced so undo can restore it
+  const prevEvId = sub ? sub.calEventId : task.calEventId;
+  const prevEv = prevEvId ? CAL_EVENTS.find(ev => ev.id === prevEvId) : null;
+  const prevEvData = prevEv ? { ...prevEv } : null;
+
+  await _safeDeleteCalEvent(prevEvId);
+  const payload = sub
+    ? { title, taskId, subId, date, startTime, endTime, duration, color, createdAt: serverTimestamp() }
+    : { title, taskId, date, startTime, endTime, duration, color, createdAt: serverTimestamp() };
+  const ref = await addDoc(_uc('calEvents'), payload);
+  if (sub) {
+    await updateTask(taskId, { subtasks: task.subtasks.map(s => s.id === subId ? { ...s, calEventId: ref.id } : s) });
+  } else {
+    await updateTask(taskId, { calEventId: ref.id });
+  }
+
+  showUndoToast(`${fmtTimeSched(startTime)} claimed. future you says thanks.`, async () => {
+    await _safeDeleteCalEvent(ref.id);
+    let restoredId = null;
+    if (prevEvData) {
+      const { id, ...data } = prevEvData;
+      await setDoc(_ud('calEvents', id), data);
+      restoredId = id;
+    }
+    const fresh = TASKS.find(t => t.id === taskId);
+    if (sub) {
+      await updateTask(taskId, { subtasks: (fresh?.subtasks || []).map(s => s.id === subId ? { ...s, calEventId: restoredId } : s) });
+    } else {
+      await updateTask(taskId, { calEventId: restoredId });
+    }
+  });
+}
+
 function initCalDropZones() {
   // Day view
   const dayContainer = document.getElementById('cal-hours-container');
@@ -1317,20 +1457,30 @@ function initCalDropZones() {
       const slot = e.target.closest('.cal-hour-slot');
       if (!slot || !_dragTaskId) return;
       e.preventDefault();
-      document.querySelectorAll('.cal-hour-slot.drop-over').forEach(s => s.classList.remove('drop-over'));
-      slot.classList.add('drop-over');
+      const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
+      const { mins, rect } = _dragSnapQuarter(slot, e.clientY);
+      _showDragGhost(slot, h, mins, rect);
     });
     dayContainer.addEventListener('dragleave', e => {
-      e.target.closest('.cal-hour-slot')?.classList.remove('drop-over');
+      if (!dayContainer.contains(e.relatedTarget)) _clearDragGhost();
     });
     dayContainer.addEventListener('drop', e => {
       const slot = e.target.closest('.cal-hour-slot');
       if (!slot || !_dragTaskId) return;
       e.preventDefault();
-      slot.classList.remove('drop-over');
+      _clearDragGhost();
       const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
-      openScheduleModal(localDateStr(_calDate), `${String(h).padStart(2,'0')}:00`, _dragTaskId, _dragSubId);
+      const { mins } = _dragSnapQuarter(slot, e.clientY);
+      const start = `${String(h).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+      const task = TASKS.find(t => t.id === _dragTaskId);
+      // Tasks with subtasks keep the modal (it offers scheduling them together)
+      if (!_dragSubId && task?.subtasks?.length) {
+        openScheduleModal(localDateStr(_calDate), start, _dragTaskId, _dragSubId);
+      } else {
+        scheduleTaskDirect(localDateStr(_calDate), start, _dragTaskId, _dragSubId);
+      }
     });
+    document.addEventListener('dragend', _clearDragGhost);
     // Click empty slot to create new event (or open pomodoro for spanning multi-hour events)
     // Half-hour precision: top half of slot = :00, bottom half = :30
     dayContainer.addEventListener('click', e => {
@@ -1775,7 +1925,7 @@ function renderSettingsCatList() {
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
       <div style="width:14px;height:14px;border-radius:50%;background:${cat.color};flex-shrink:0"></div>
       <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(cat.label)}</span>
-      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);background:var(--elevated);border:1px solid var(--border);border-radius:4px;padding:1px 5px">${escHtml(key)}</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--elevated);border:1px solid var(--border);border-radius:4px;padding:1px 5px">${escHtml(key)}</span>
       <button class="task-action-btn danger" data-del-cat="${escAttr(key)}" title="Delete">✕</button>
     </div>`).join('');
   list.querySelectorAll('[data-del-cat]').forEach(btn => {
@@ -1867,7 +2017,7 @@ function renderSettingsPeople() {
   }
   list.innerHTML = PEOPLE.map(p => `
     <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
-      <div style="width:26px;height:26px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(p.initials)}</div>
+      <div style="width:26px;height:26px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(p.initials)}</div>
       <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(p.name)}</span>
       <button class="task-action-btn danger" data-del-person="${escAttr(p.id)}" title="Remove">✕</button>
     </div>`).join('');
@@ -2053,8 +2203,8 @@ function _cosmodexDrawCore(ctx, W, H, expanded, dpr) {
   const baseR  = maxR * (expanded ? 0.52 : 0.65);
   const eventR = maxR * (expanded ? 0.70 : 0.72);
 
-  const today  = localDateStr(new Date());
-  const now    = new Date();
+  const now    = new Date(Date.now() + (window._orbTimeOffset || 0)); // Bubble drag preview
+  const today  = localDateStr(now);
   const curH   = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
   const TWO_PI = Math.PI * 2;
   const GAP    = (TWO_PI / 24) * 0.06;
@@ -2238,7 +2388,7 @@ function drawCosmodex() {
     _orbGeometry = null;
   }
 
-  const now = new Date();
+  const now = new Date(Date.now() + (window._orbTimeOffset || 0));
   const today = localDateStr(now);
 
   // Update date line in orb header
@@ -2267,7 +2417,7 @@ function drawCosmodex() {
     if (nextEl) {
       if (upcoming.length === 0) {
         if (nextLabelEl) nextLabelEl.textContent = 'Schedule';
-        nextEl.textContent = 'Nothing planned today';
+        nextEl.textContent = 'nothing planned. a perfectly empty orbit — suspicious.';
       } else {
         if (nextLabelEl) nextLabelEl.textContent = 'Next';
         const next = upcoming[0];
@@ -2310,7 +2460,7 @@ function drawCosmodex() {
       if (nextEl2) {
         if (upcoming2.length === 0) {
           if (nextLabelEl2) nextLabelEl2.textContent = 'Schedule';
-          nextEl2.textContent = 'Nothing planned today';
+          nextEl2.textContent = 'nothing planned. a perfectly empty orbit — suspicious.';
         } else {
           if (nextLabelEl2) nextLabelEl2.textContent = 'Next';
           const next2 = upcoming2[0];
@@ -2326,6 +2476,40 @@ function drawCosmodex() {
 // Tick every second (drives both mini and expanded states)
 _cosmodexInterval = setInterval(drawCosmodex, 1000);
 drawCosmodex(); // immediate first draw
+
+/* ── Entropy — the rail-side dice (choice-overload breaker) ── */
+function rollEntropy() {
+  const btn = document.getElementById('task-entropy-btn');
+  if (!btn || btn.dataset.rolling === '1') return;
+  let pool = TASKS.filter(t => !t.done && (t.energyType === 'shallow' || t.energyType === 'admin'));
+  if (pool.length === 0) pool = TASKS.filter(t => !t.done);
+  if (pool.length === 0) { showToast('nothing left to roll. the void approves.', 'info'); return; }
+
+  btn.dataset.rolling = '1';
+  btn.classList.add('rolling');
+  let frame = 0;
+  const ticker = setInterval(() => {
+    btn.textContent = DICE_FACES[frame % 6];
+    frame++;
+    if (frame >= 14) {
+      clearInterval(ticker);
+      btn.classList.remove('rolling');
+      btn.dataset.rolling = '0';
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+      btn.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
+      const row = document.querySelector(`#tasks-body .task-row[data-task-id="${(window.CSS && CSS.escape) ? CSS.escape(picked.id) : picked.id}"]`);
+      if (row) {
+        _kbSelect(row);
+        row.classList.remove('entropy-hit');
+        void row.offsetWidth;
+        row.classList.add('entropy-hit');
+      }
+      const short = picked.title.length > 34 ? picked.title.slice(0, 34) + '…' : picked.title;
+      showToast(`the universe has spoken: ${short}`, 'info', 4000);
+    }
+  }, 55);
+}
+document.getElementById('task-entropy-btn')?.addEventListener('click', rollEntropy);
 
 /* ── Dice Gadget ───────────────────────────────────────── */
 const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
@@ -2715,12 +2899,12 @@ function showInitiativeTasks(proj) {
   if (listEl) {
     const renderTask = t => {
       const cat = t.category ? CATEGORIES[t.category] : null;
-      const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:9px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
+      const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px 9px 28px;border-bottom:1px solid var(--border)">
-        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--ink)">${t.done?'✓':''}</div>
+        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
         <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
         ${catBadge}
-        ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
+        ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
       </div>`;
     };
 
@@ -2735,7 +2919,7 @@ function showInitiativeTasks(proj) {
       html += `<div style="display:flex;align-items:center;gap:8px;padding:10px 16px 7px;border-bottom:1px solid var(--border);background:var(--elevated);position:sticky;top:0;z-index:1">
         <span style="width:7px;height:7px;border-radius:50%;background:${proj.color};flex-shrink:0"></span>
         <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--cream);font-weight:500;flex:1">${escHtml(ev.title || 'Milestone')}</span>
-        ${dateLabel ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${dateLabel}</span>` : ''}
+        ${dateLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${dateLabel}</span>` : ''}
       </div>`;
       evTasks.forEach(t => { html += renderTask(t); });
     });
@@ -2754,7 +2938,7 @@ function showPersonTasks(person) {
   const listEl  = document.getElementById('person-tasks-list');
   if (titleEl) {
     titleEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px">
-      <span style="width:20px;height:20px;border-radius:50%;background:${person.color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:#0d0c0a">${escHtml(person.initials)}</span>
+      <span style="width:20px;height:20px;border-radius:50%;background:${person.color};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#0d0c0a">${escHtml(person.initials)}</span>
       Tasks linked to @${escHtml(person.name)}
     </span>`;
   }
@@ -2765,12 +2949,12 @@ function showPersonTasks(person) {
       const open = tasks.filter(t => !t.done);
       const done = tasks.filter(t => t.done);
       const renderGroup = (arr, label) => arr.length ? `
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
         ${arr.map(t => `
           <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">
-            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--ink)">${t.done?'✓':''}</div>
+            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
             <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
-            ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
+            ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
           </div>`).join('')}` : '';
       listEl.innerHTML = renderGroup(open, 'Open') + renderGroup(done, 'Done');
     }
@@ -2797,7 +2981,7 @@ function renderCmdResults(query) {
     c.label.toLowerCase().includes(query.toLowerCase())
   );
   if (!filtered.length) {
-    container.innerHTML = `<div class="cmd-empty">No results</div>`;
+    container.innerHTML = `<div class="cmd-empty">the cosmos found nothing. try fewer letters.</div>`;
     return;
   }
   container.innerHTML = filtered.map((c, i) => `
@@ -2805,7 +2989,7 @@ function renderCmdResults(query) {
       ${c._personColor
         ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:${c._personColor};font-size:7px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(c._personInitials)}</span>`
         : c._projColor
-          ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:${c._projColor};font-size:9px;color:#0d0c0a;flex-shrink:0">◉</span>`
+          ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:${c._projColor};font-size:10px;color:#0d0c0a;flex-shrink:0">◉</span>`
           : `<span class="cmd-result-icon">${c.icon}</span>`}
       ${escHtml(c.label)}
       ${c.keys ? `<span class="cmd-result-keys">${c.keys}</span>` : ''}
@@ -2851,21 +3035,87 @@ document.getElementById('cmd-palette')?.addEventListener('click', e => {
 });
 
 /* ── Keyboard shortcuts ────────────────────────────────── */
+
+/* Task-rail selection (j/k/x/s) */
+let _kbSelTaskId = null;
+
+function _kbVisibleRows() {
+  return [...document.querySelectorAll('#tasks-body .task-row')]
+    .filter(r => r.offsetParent !== null);
+}
+function _kbSelect(row) {
+  document.querySelectorAll('.task-row.kb-selected').forEach(r => r.classList.remove('kb-selected'));
+  if (!row) { _kbSelTaskId = null; return; }
+  row.classList.add('kb-selected');
+  _kbSelTaskId = row.dataset.taskId;
+  row.scrollIntoView({ block: 'nearest' });
+}
+function _kbMove(dir) {
+  const rows = _kbVisibleRows();
+  if (!rows.length) return;
+  const idx = rows.findIndex(r => r.dataset.taskId === _kbSelTaskId);
+  const next = idx === -1 ? (dir > 0 ? rows[0] : rows[rows.length - 1])
+                          : rows[Math.min(rows.length - 1, Math.max(0, idx + dir))];
+  _kbSelect(next);
+}
+
+/* "?" shortcut chart */
+function toggleShortcutChart() {
+  let el = document.getElementById('kb-chart');
+  if (el) { el.remove(); return; }
+  el = document.createElement('div');
+  el.id = 'kb-chart';
+  const rows = [
+    ['n', 'new task'], ['j / k', 'drift down / up the rail'], ['x', 'complete selection'],
+    ['s', 'edit / schedule selection'], ['e', 'entropy — roll a random task'],
+    ['t', 'today'], ['[  /  ]', 'previous / next day'],
+    ['⌘K · ⌘Space', 'command palette'], ['esc', 'close the nearest thing'], ['?', 'this chart'],
+  ];
+  el.innerHTML = `<div class="kb-chart-card" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kb-chart-title">star chart</div>
+    ${rows.map(([k, d]) => `<div class="kb-chart-row"><span class="kb-chart-key">${k}</span><span class="kb-chart-desc">${d}</span></div>`).join('')}
+  </div>`;
+  el.addEventListener('click', () => el.remove());
+  document.body.appendChild(el);
+}
+
 document.addEventListener('keydown', e => {
-  // N — focus the task input
-  if (e.key === 'n' && !e.target.matches('input,textarea,select')) {
-    document.getElementById('task-add-input')?.focus();
-    return;
-  }
-  // Cmd/Ctrl+Space — command palette (skip if a modal overlay is already open)
-  if ((e.metaKey || e.ctrlKey) && e.key === ' ') {
+  const inField = e.target.matches('input,textarea,select,[contenteditable="true"]');
+
+  // Cmd/Ctrl+K or Cmd/Ctrl+Space — command palette (skip if a modal overlay is already open)
+  if ((e.metaKey || e.ctrlKey) && (e.key === ' ' || e.key.toLowerCase() === 'k')) {
     e.preventDefault();
     const pal = document.getElementById('cmd-palette');
     if (pal.classList.contains('open')) { closeCmdPalette(); }
     else if (!document.querySelector('.overlay.open')) { openCmdPalette(); }
+    return;
+  }
+
+  if (!inField && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    // N — focus the task input
+    if (e.key === 'n') { e.preventDefault(); document.getElementById('task-add-input')?.focus(); return; }
+    // j / k — walk the task rail
+    if (e.key === 'j') { _kbMove(1);  return; }
+    if (e.key === 'k') { _kbMove(-1); return; }
+    // x — complete the selected task
+    if (e.key === 'x' && _kbSelTaskId) { toggleTask(_kbSelTaskId); return; }
+    // s — schedule/edit the selected task
+    if (e.key === 's' && _kbSelTaskId) { openTaskEditModal(_kbSelTaskId); return; }
+    // e — entropy: let the universe pick
+    if (e.key === 'e') { if (typeof rollEntropy === 'function') rollEntropy(); return; }
+    // t — jump to today
+    if (e.key === 't') { document.getElementById('cal-today')?.click(); return; }
+    // [ / ] — previous / next day
+    if (e.key === '[') { document.getElementById('cal-prev')?.click(); return; }
+    if (e.key === ']') { document.getElementById('cal-next')?.click(); return; }
+    // ? — shortcut chart
+    if (e.key === '?') { toggleShortcutChart(); return; }
   }
   // ESC — close topmost open thing
   if (e.key === 'Escape') {
+    const chart = document.getElementById('kb-chart');
+    if (chart) { chart.remove(); return; }
+    if (document.querySelector('.task-row.kb-selected')) { _kbSelect(null); return; }
     if (document.getElementById('cmd-palette').classList.contains('open')) {
       closeCmdPalette(); return;
     }
@@ -3156,6 +3406,19 @@ async function restoreFromSomeday(taskId) {
 /* ═══════════════════════════════════════════════════════════
    DAILY RITUAL
 ═══════════════════════════════════════════════════════════ */
+/* One-click re-entry: every overdue task moves to tomorrow. Reversible. */
+async function rescheduleAllOverdue() {
+  const today = localDateStr(new Date());
+  const overdue = TASKS.filter(t => !t.done && t.dueDate && t.dueDate < today);
+  if (!overdue.length) { showToast('no slipped orbits. all clear.', 'info'); return; }
+  const tomorrow = localDateStr(new Date(Date.now() + 86400000));
+  const previous = overdue.map(t => ({ id: t.id, dueDate: t.dueDate }));
+  for (const t of overdue) await updateTask(t.id, { dueDate: tomorrow });
+  showUndoToast(`${overdue.length} task${overdue.length > 1 ? 's' : ''} re-entered — tomorrow morning.`, async () => {
+    for (const p of previous) await updateTask(p.id, { dueDate: p.dueDate });
+  });
+}
+
 function computeMomentumScore() {
   // Habit streak contribution (up to 50pts)
   const today = localDateStr(new Date());
@@ -3525,14 +3788,14 @@ function renderDoneWall() {
   grid.innerHTML = tasks.map(task => {
     const cat = task.category ? CATEGORIES[task.category] : null;
     const catBadge = cat
-      ? `<span style="font-family:var(--font-mono);font-size:9px;padding:1px 6px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;white-space:nowrap">${cat.label}</span>`
+      ? `<span style="font-family:var(--font-mono);font-size:10px;padding:1px 6px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;white-space:nowrap">${cat.label}</span>`
       : '';
     const dateLabel = task.doneDate ? fmtDate(task.doneDate) : '';
     const timeBadge = task.timeSpentMinutes
-      ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
+      ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
       : '';
     return `<div class="done-card">
-      <span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);flex-shrink:0">✓</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);flex-shrink:0">✓</span>
       <span class="done-card-title">${escHtml(task.title)}</span>
       <div class="done-card-meta">${catBadge}${timeBadge}</div>
       ${dateLabel ? `<span class="done-card-date">${dateLabel}</span>` : ''}
@@ -4022,3 +4285,55 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   document.getElementById('td-pomo-toggle')?.addEventListener('click', togglePomoCol);
 })();
 
+
+/* ══ KINETIC: Bubble time-drag — spin the day dial to preview any hour ══ */
+(function initOrbTimeDrag() {
+  const cvs = document.getElementById('cosmodex-canvas');
+  if (!cvs) return;
+  window._orbTimeOffset = 0;
+  let drag = null, springRaf = null;
+
+  const center = () => {
+    const r = cvs.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  };
+
+  cvs.addEventListener('pointerdown', e => {
+    if (!orb.classList.contains('expanded')) return;
+    if (springRaf) { cancelAnimationFrame(springRaf); springRaf = null; }
+    const c = center();
+    drag = { lastA: Math.atan2(e.clientY - c.y, e.clientX - c.x), c };
+    try { cvs.setPointerCapture(e.pointerId); } catch {}
+    cvs.classList.add('orb-dragging');
+  });
+  cvs.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const a = Math.atan2(e.clientY - drag.c.y, e.clientX - drag.c.x);
+    let dA = a - drag.lastA;
+    if (dA > Math.PI) dA -= Math.PI * 2;
+    if (dA < -Math.PI) dA += Math.PI * 2;
+    drag.lastA = a;
+    drag.moved = (drag.moved || 0) + Math.abs(dA);
+    // full turn of the dial = 24 h; clamp preview to ±48 h
+    window._orbTimeOffset = Math.max(-172800e3, Math.min(172800e3,
+      window._orbTimeOffset + (dA / (Math.PI * 2)) * 86400e3));
+    drawCosmodex();
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    const wasSpin = (drag.moved || 0) > 0.02;
+    drag = null;
+    cvs.classList.remove('orb-dragging');
+    if (!wasSpin) { window._orbTimeOffset = 0; drawCosmodex(); return; } // plain click: petal taps still work
+    const from = window._orbTimeOffset, t0 = performance.now(), D = 700;
+    const spring = () => {
+      const p = Math.min(1, (performance.now() - t0) / D);
+      window._orbTimeOffset = from * (1 - (1 - Math.pow(1 - p, 3)));
+      drawCosmodex();
+      springRaf = p < 1 ? requestAnimationFrame(spring) : null;
+    };
+    spring();
+  };
+  cvs.addEventListener('pointerup', endDrag);
+  cvs.addEventListener('pointercancel', endDrag);
+})();

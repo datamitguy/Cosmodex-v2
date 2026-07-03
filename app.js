@@ -238,6 +238,19 @@ document.getElementById('tools-toggle')?.addEventListener('click', () => {
 /* ── Nav items ─────────────────────────────────────────── */
 const NAV_OVERLAY_MAP = {};
 
+/* A11y bootstrap: div-based nav items become keyboard-operable buttons,
+   icon-only buttons get accessible names from their titles. */
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.setAttribute('role', 'button');
+  item.setAttribute('tabindex', '0');
+  item.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); item.click(); }
+  });
+});
+document.querySelectorAll('button[title]:not([aria-label])').forEach(el => {
+  el.setAttribute('aria-label', el.title);
+});
+
 document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
   item.addEventListener('click', () => {
     const panel = item.dataset.panel;
@@ -556,14 +569,14 @@ function renderListDetail(listId) {
   const body = document.getElementById('lists-detail-items');
   if (!body) return;
   if (!items.length) {
-    body.innerHTML = '<div style="padding:24px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No items yet — add one below</div>';
+    body.innerHTML = '<div style="padding:24px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">an empty list. even the void keeps notes — add one below</div>';
     return;
   }
   const accentColor = list.color || 'var(--gold)';
   body.innerHTML = items.map((item, idx) => {
     const subs = item.subitems || [];
     return `
-    <div class="list-detail-item-wrap" style="animation-delay:${idx*20}ms">
+    <div class="list-detail-item-wrap" draggable="true" data-idx="${idx}" style="animation-delay:${idx*20}ms">
       <div class="list-detail-item" data-item-id="${escAttr(item.id)}">
         <div class="list-item-marker" style="background:${accentColor}18;color:${accentColor};border:1px solid ${accentColor}33">◆</div>
         <span class="list-detail-item-text" data-item-id="${escAttr(item.id)}">${linkifyText(item.text)}</span>
@@ -606,7 +619,71 @@ function closeListDetail() {
   renderLists();
 }
 
+/* ══ KINETIC: drag list items to reorder — gold drop line, persisted order ══ */
+async function reorderListItems(listId, fromIdx, toIdx) {
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  try {
+    await runTransaction(window.CDX_DB, async tx => {
+      const ref = _ud('lists', listId);
+      const snap = await tx.get(ref);
+      if (!snap.exists()) return;
+      const items = [...(snap.data().items || [])];
+      if (fromIdx < 0 || fromIdx >= items.length) return;
+      const [moved] = items.splice(fromIdx, 1);
+      items.splice(Math.min(toIdx, items.length), 0, moved);
+      tx.update(ref, { items, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('reorderListItems error:', err);
+    showToast('couldn\'t reorder — the cosmos resisted. try again.', 'error');
+  }
+}
+
+function _initListReorder() {
+  const body = document.getElementById('lists-detail-items');
+  if (!body || body.dataset.dnd === '1') return;
+  body.dataset.dnd = '1';
+  let fromIdx = null;
+  const clearMarks = () => body.querySelectorAll('.drop-before,.drop-after')
+    .forEach(el => el.classList.remove('drop-before', 'drop-after'));
+
+  body.addEventListener('dragstart', e => {
+    const wrap = e.target.closest('.list-detail-item-wrap');
+    if (!wrap) return;
+    fromIdx = +wrap.dataset.idx;
+    wrap.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  body.addEventListener('dragover', e => {
+    if (fromIdx === null) return;
+    const wrap = e.target.closest('.list-detail-item-wrap');
+    if (!wrap) return;
+    e.preventDefault();
+    clearMarks();
+    const r = wrap.getBoundingClientRect();
+    wrap.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
+  });
+  body.addEventListener('drop', e => {
+    if (fromIdx === null) return;
+    const wrap = e.target.closest('.list-detail-item-wrap');
+    if (!wrap || !_listView) return;
+    e.preventDefault();
+    const r = wrap.getBoundingClientRect();
+    let toIdx = +wrap.dataset.idx + (e.clientY < r.top + r.height / 2 ? 0 : 1);
+    if (toIdx > fromIdx) toIdx--;
+    if (toIdx !== fromIdx) reorderListItems(_listView, fromIdx, toIdx);
+    clearMarks();
+    fromIdx = null;
+  });
+  body.addEventListener('dragend', () => {
+    body.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+    clearMarks();
+    fromIdx = null;
+  });
+}
+
 function initListsPage() {
+  _initListReorder();
   // Sidebar card clicks
   const sidebarItems = document.getElementById('lists-sidebar-items');
   if (sidebarItems) {
@@ -1044,7 +1121,7 @@ function _todayRenderHabits(todayDs, isRestDay) {
     return;
   }
   if (!habits.length) {
-    listEl.innerHTML = '<div class="today-empty">No habits yet — add one below or use the Builder tab to design one.</div>';
+    listEl.innerHTML = '<div class="today-empty">no rituals yet. even stars have routines — add one below, or design one in the Builder tab.</div>';
     return;
   }
   // Group by anchor
@@ -1209,22 +1286,65 @@ function _todayInit() {
     _todayRenderMorningMode();
   });
 
-  // Habit check clicks (delegated)
-  document.getElementById('today-habits')?.addEventListener('click', async e => {
-    const check = e.target.closest('[data-today-toggle]');
-    if (!check) return;
+  // Habit checks — hold-to-complete (the commitment gesture).
+  // Completing takes a 550ms press while a gold ring fills; a quick tap hints.
+  // Un-completing stays a plain click. Keyboard activation (detail 0) completes directly.
+  const todayHabitsEl = document.getElementById('today-habits');
+  let _holdTimer = null, _holdCheck = null;
+
+  const _completeHabit = async (check) => {
     const habitId = check.dataset.todayToggle;
     const ds = localDateStr(new Date());
     const habit = _habits.find(h => h.id === habitId);
     const habitRow = check.closest('.today-habit');
-    const wasDone = !!_habitLogs[ds]?.completions?.[habitId];
-    if (!wasDone && habit && habitRow) {
-      _todayFireCelebration(habitRow, habit);
-    }
-    // Reuse existing toggle logic
+    if (habit && habitRow) _todayFireCelebration(habitRow, habit);
     await habitToggle(habitId, ds);
-    // Re-render Today after a brief delay so celebration finishes visibly
     setTimeout(() => renderToday(), 400);
+  };
+  const _cancelHold = (hint) => {
+    if (_holdTimer) { clearTimeout(_holdTimer); _holdTimer = null; }
+    if (_holdCheck) {
+      _holdCheck.classList.remove('holding');
+      if (hint) {
+        const c = _holdCheck;
+        c.classList.remove('hold-hint'); void c.offsetWidth; c.classList.add('hold-hint');
+        setTimeout(() => c.classList.remove('hold-hint'), 900);
+      }
+      _holdCheck = null;
+    }
+  };
+
+  todayHabitsEl?.addEventListener('pointerdown', e => {
+    const check = e.target.closest('[data-today-toggle]');
+    if (!check) return;
+    const ds = localDateStr(new Date());
+    if (_habitLogs[ds]?.completions?.[check.dataset.todayToggle]) return; // uncomplete = click
+    _holdCheck = check;
+    check.classList.add('holding');
+    _holdTimer = setTimeout(() => {
+      const c = _holdCheck;
+      _holdTimer = null; _holdCheck = null;
+      if (c) { c.classList.remove('holding'); c.dataset.heldDone = '1'; _completeHabit(c); }
+    }, 550);
+  });
+  todayHabitsEl?.addEventListener('pointerup', () => _cancelHold(true));
+  todayHabitsEl?.addEventListener('pointerleave', () => _cancelHold(false));
+  todayHabitsEl?.addEventListener('pointercancel', () => _cancelHold(false));
+
+  todayHabitsEl?.addEventListener('click', async e => {
+    const check = e.target.closest('[data-today-toggle]');
+    if (!check) return;
+    if (check.dataset.heldDone === '1') { delete check.dataset.heldDone; return; }
+    const habitId = check.dataset.todayToggle;
+    const ds = localDateStr(new Date());
+    const wasDone = !!_habitLogs[ds]?.completions?.[habitId];
+    if (wasDone) {
+      await habitToggle(habitId, ds);
+      setTimeout(() => renderToday(), 400);
+    } else if (e.detail === 0) {
+      await _completeHabit(check); // keyboard Enter/Space — no hold required
+    }
+    // mouse tap on an undone habit: hold-hint already shown by pointerup
   });
 }
 
@@ -1244,14 +1364,14 @@ function renderHabits() {
         const isT = ds === todayStr;
         return `<div class="habit-day-header-cell ${isT?'today-col':''}">${DN[d.getDay()]}<br>${d.getDate()}</div>`;
       }).join('') +
-      '<div class="habit-day-header-cell" style="font-size:8px">STREAK</div>';
+      '<div class="habit-day-header-cell" style="font-size:10px">STREAK</div>';
   }
 
   const list = document.getElementById('habits-list');
   if (!list) return;
 
   if (!_habits.length) {
-    list.innerHTML = '<div style="padding:20px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">No habits yet — add one below</div>';
+    list.innerHTML = '<div style="padding:20px 0;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em">no rituals yet. even stars have routines — add one below</div>';
     return;
   }
 
@@ -1463,7 +1583,7 @@ function renderHabitsTab() {
   const activeList = document.getElementById('habits-active-list');
   if (activeList) {
     if (!active.length) {
-      activeList.innerHTML = '<div class="habits-empty-state">No habits yet. Create your first tiny habit with the button below.</div>';
+      activeList.innerHTML = '<div class="habits-empty-state">no rituals yet. even stars have routines — create your first tiny habit below.</div>';
     } else {
       activeList.innerHTML = active.map(h => _habitsCardHtml(h, false)).join('');
     }
@@ -1788,7 +1908,7 @@ function _habitsTabInit() {
     const gradBtn = e.target.closest('[data-habit-graduate]');
     if (gradBtn) {
       const h = _habits.find(x => x.id === gradBtn.dataset.habitGraduate);
-      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(53,249,47)', okBg: 'rgba(53,249,47,0.1)', okBorder: 'rgba(53,249,47,0.4)' })) {
+      if (h && await cdxConfirm(`Mark "${h.name}" as graduated?\nIt will move to the graduated list and free a slot.`, { okLabel: 'Graduate', okColor: 'rgb(111,174,135)', okBg: 'rgba(111,174,135,0.1)', okBorder: 'rgba(111,174,135,0.4)' })) {
         await habitGraduate(h.id);
       }
       return;
@@ -2252,13 +2372,13 @@ function _hinsDrawHeatmap() {
       else if (ratio < 0.25) bg = 'rgba(255,255,255,0.14)';
       else if (ratio < 0.5)  bg = 'rgba(255,255,255,0.26)';
       else if (ratio < 0.85) bg = 'rgba(255,255,255,0.42)';
-      else                   bg = 'rgb(53,249,47)';
+      else                   bg = 'rgb(111,174,135)';
 
       ctx.fillStyle = bg;
       _hinsRoundRect(ctx, x, y, size, size, 2);
       ctx.fill();
       if (ratio >= 0.85) {
-        ctx.shadowColor = 'rgba(53,249,47,0.5)';
+        ctx.shadowColor = 'rgba(111,174,135,0.5)';
         ctx.shadowBlur = 5;
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -2306,8 +2426,8 @@ function _hinsDrawMiniRing(containerEl, pct) {
   const circ = 2 * Math.PI * r;
   const dash = (pct / 100) * circ;
   const green = pct >= 80;
-  const color = green ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)';
-  const glow = green ? 'drop-shadow(0 0 4px rgba(53,249,47,0.4))' : 'none';
+  const color = green ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
+  const glow = green ? 'drop-shadow(0 0 4px rgba(111,174,135,0.4))' : 'none';
   containerEl.innerHTML = `
     <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="filter:${glow}">
       <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${stroke}"/>
@@ -2417,8 +2537,8 @@ function renderHabitsInsights() {
             const green = pct >= 80;
             const dim = pct < 30;
             const alpha = Math.max(0.08, Math.min(0.85, pct / 100));
-            cell.style.background = green ? 'rgb(53,249,47)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
-            if (green) cell.style.boxShadow = '0 0 4px rgba(53,249,47,0.4)';
+            cell.style.background = green ? 'rgb(111,174,135)' : `rgba(255,255,255,${alpha.toFixed(2)})`;
+            if (green) cell.style.boxShadow = '0 0 4px rgba(111,174,135,0.4)';
             cell.textContent = pct + '%';
             cell.style.color = green ? '#0d0c0a' : (alpha > 0.4 ? '#0d0c0a' : 'rgba(255,255,255,0.5)');
             cell.title = `${h.tinyBehavior || h.name} · ${dowNames[dow]} · ${stat.done}/${stat.possible} (${pct}%)`;
@@ -3105,7 +3225,7 @@ function _insDrawRings(canvasId, rings) {
   const legendEl = document.getElementById('ins-rings-legend');
   if (legendEl) {
     legendEl.innerHTML = rings.map(r =>
-      `<div style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.04em">` +
+      `<div style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.04em">` +
       `<span style="width:8px;height:8px;border-radius:50%;background:${r.color};box-shadow:0 0 6px ${r.color}60"></span>${r.label}</div>`
     ).join('');
   }
@@ -3209,8 +3329,8 @@ function _insDrawHeroConst(canvasId, dayData) {
     const brightness = 0.3 + (d.secs / maxSecs) * 0.65;
     const isToday = i === pts.length - 1;
     const isHot = d.tasks >= 5;
-    const col = isHot ? `rgba(53,249,47,${brightness.toFixed(2)})` : `rgba(255,255,255,${brightness.toFixed(2)})`;
-    const glow = isHot ? 'rgba(53,249,47,0.5)' : 'rgba(255,255,255,0.25)';
+    const col = isHot ? `rgba(111,174,135,${brightness.toFixed(2)})` : `rgba(255,255,255,${brightness.toFixed(2)})`;
+    const glow = isHot ? 'rgba(111,174,135,0.5)' : 'rgba(255,255,255,0.25)';
     ctx.beginPath(); ctx.arc(p.x, p.y, isToday ? size + 1.5 : size, 0, Math.PI * 2);
     ctx.fillStyle = col;
     ctx.shadowColor = glow; ctx.shadowBlur = isToday ? 14 : 8;
@@ -3218,7 +3338,7 @@ function _insDrawHeroConst(canvasId, dayData) {
     if (isToday) {
       // Outer pulse ring on today
       ctx.beginPath(); ctx.arc(p.x, p.y, size + 5, 0, Math.PI * 2);
-      ctx.strokeStyle = isHot ? 'rgba(53,249,47,0.35)' : 'rgba(255,255,255,0.2)';
+      ctx.strokeStyle = isHot ? 'rgba(111,174,135,0.35)' : 'rgba(255,255,255,0.2)';
       ctx.lineWidth = 0.8; ctx.stroke();
     }
   });
@@ -3277,7 +3397,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
       else if (count < 2) bg = 'rgba(255,255,255,0.14)';
       else if (count < 4) bg = 'rgba(255,255,255,0.26)';
       else if (count < 5) bg = 'rgba(255,255,255,0.42)';
-      else bg = 'rgb(53,249,47)';
+      else bg = 'rgb(111,174,135)';
       ctx.fillStyle = bg;
       // Rounded rect
       const rad = 2;
@@ -3290,7 +3410,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
       ctx.closePath();
       ctx.fill();
       if (count >= 5) {
-        ctx.shadowColor = 'rgba(53,249,47,0.5)'; ctx.shadowBlur = 6;
+        ctx.shadowColor = 'rgba(111,174,135,0.5)'; ctx.shadowBlur = 6;
         ctx.fill(); ctx.shadowBlur = 0;
       }
     }
@@ -3302,7 +3422,7 @@ function _insDrawPulseHeatmap(canvasId, data) {
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.fillText('less', leftPad, legY);
   const legStart = leftPad + 28;
-  const legCells = ['rgba(255,255,255,0.04)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.26)', 'rgba(255,255,255,0.42)', 'rgb(53,249,47)'];
+  const legCells = ['rgba(255,255,255,0.04)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.26)', 'rgba(255,255,255,0.42)', 'rgb(111,174,135)'];
   legCells.forEach((c, i) => {
     ctx.fillStyle = c;
     ctx.fillRect(legStart + i * 10, legY - 8, 8, 8);
@@ -3441,7 +3561,7 @@ function _insDrawDayRhythm(canvasId, hoursThis, hoursPrev) {
   // This week in green (front)
   const weekAvg = hoursThis.reduce((a, b) => a + b, 0) / 7;
   const useGreen = weekAvg >= 5;
-  drawBars(hoursThis, useGreen ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.75)', 1);
+  drawBars(hoursThis, useGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.75)', 1);
   // Hour labels at cardinals
   ctx.font = "300 9px 'DM Mono',monospace";
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -3461,14 +3581,54 @@ function _insDrawDayRhythm(canvasId, hoursThis, hoursPrev) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('PEAK', cx, cy - 10);
   ctx.font = "300 16px 'Fraunces',serif";
-  ctx.fillStyle = useGreen && peakV > 0 ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.85)';
+  ctx.fillStyle = useGreen && peakV > 0 ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.85)';
   ctx.fillText(peakV > 0 ? String(peakH).padStart(2, '0') + ':00' : '—', cx, cy + 6);
   ctx.font = "300 9px 'DM Mono',monospace";
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.fillText(peakV > 0 ? `${peakV} tasks` : '', cx, cy + 22);
 }
 
-function _insDrawTrend(canvasId, data, labels, color) {
+/* Trend scrub — glide across the chart to read any day (kinetic Insights) */
+let _insTrendCache = null;
+
+function _insInitTrendScrub(cvs) {
+  if (cvs.dataset.scrub === '1') return;
+  cvs.dataset.scrub = '1';
+  let tip = null;
+  const getTip = () => {
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.className = 'ins-trend-tip';
+      document.body.appendChild(tip);
+    }
+    return tip;
+  };
+  cvs.addEventListener('pointermove', e => {
+    if (!_insTrendCache) return;
+    const { data, dates, padL, stepX } = _insTrendCache;
+    const rect = cvs.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const i = Math.max(0, Math.min(data.length - 1, Math.round((x - padL) / stepX)));
+    const t = getTip();
+    t.textContent = `${fmtDate(dates[i])} — ${data[i]} task${data[i] === 1 ? '' : 's'}`;
+    t.style.left = (rect.left + padL + i * stepX) + 'px';
+    t.style.top = (rect.top - 6) + 'px';
+    t.classList.add('show');
+    _insTrendCache.hoverIdx = i;
+    _insRedrawTrend();
+  });
+  cvs.addEventListener('pointerleave', () => {
+    tip?.classList.remove('show');
+    if (_insTrendCache) { _insTrendCache.hoverIdx = -1; _insRedrawTrend(); }
+  });
+}
+
+function _insRedrawTrend() {
+  const c = _insTrendCache;
+  if (c) _insDrawTrend(c.canvasId, c.data, c.labels, c.color, c.dates, true);
+}
+
+function _insDrawTrend(canvasId, data, labels, color, dates, isRedraw) {
   color = color || 'rgba(255,255,255,0.5)';
   const cvs = document.getElementById(canvasId); if (!cvs) return;
   const ctx = cvs.getContext('2d');
@@ -3493,13 +3653,13 @@ function _insDrawTrend(canvasId, data, labels, color) {
   pts.forEach(p => ctx.lineTo(p[0], p[1]));
   ctx.lineTo(pts[pts.length - 1][0], padT + plotH); ctx.closePath();
   const grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
-  const fillColor = color.includes('53,249,47') ? 'rgba(53,249,47,' : 'rgba(255,255,255,';
+  const fillColor = color.includes('111,174,135') ? 'rgba(111,174,135,' : 'rgba(255,255,255,';
   grad.addColorStop(0, fillColor + '0.10)'); grad.addColorStop(1, fillColor + '0.01)');
   ctx.fillStyle = grad; ctx.fill();
   // Stroke
   ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
   ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
-  const glowColor = color.includes('53,249,47') ? 'rgba(53,249,47,0.4)' : 'rgba(255,255,255,0.15)';
+  const glowColor = color.includes('111,174,135') ? 'rgba(111,174,135,0.4)' : 'rgba(255,255,255,0.15)';
   ctx.shadowColor = glowColor; ctx.shadowBlur = 4; ctx.stroke(); ctx.shadowBlur = 0;
   // Dot on today
   const last = pts[pts.length - 1];
@@ -3516,6 +3676,58 @@ function _insDrawTrend(canvasId, data, labels, color) {
       ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 3; ctx.stroke();
     }
   });
+
+  // Scrub state: cache geometry + data, draw the hover marker, arm the listener
+  if (dates) {
+    const hoverIdx = (isRedraw && _insTrendCache) ? _insTrendCache.hoverIdx : -1;
+    _insTrendCache = { canvasId, data, labels, color, dates, padL, stepX, hoverIdx };
+    if (hoverIdx >= 0 && pts[hoverIdx]) {
+      const [hx, hy] = pts[hoverIdx];
+      ctx.strokeStyle = 'rgba(212,162,78,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(hx, padT); ctx.lineTo(hx, padT + plotH); ctx.stroke();
+      ctx.beginPath(); ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(212,162,78,1)';
+      ctx.shadowColor = 'rgba(212,162,78,0.7)'; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0;
+    }
+    _insInitTrendScrub(cvs);
+  }
+}
+
+/* Momentum is framed by what builds it, never by penalties (loss aversion).
+   Goal-gradient nudge: name the nearest almost-reached milestone. */
+function _insMomentumNudge(momentum, tasksDoneToday) {
+  const today = localDateStr(new Date());
+  const overdueCount = TASKS.filter(t => !t.done && t.dueDate && t.dueDate < today).length;
+
+  // Nearest streak-proximity nudge across habits
+  let nudge = '';
+  let best = null; // { name, daysLeft }
+  (_habits || []).forEach(h => {
+    let streak = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      if (_habitLogs[localDateStr(d)]?.completions?.[h.id]) streak++;
+      else break;
+    }
+    const left = 7 - streak;
+    if (streak >= 4 && left > 0 && (!best || left < best.daysLeft)) best = { name: h.name, daysLeft: left };
+  });
+  if (best) {
+    nudge = `${best.daysLeft} day${best.daysLeft > 1 ? 's' : ''} from a 7-day streak — ${escHtml(best.name)}`;
+  } else if (tasksDoneToday >= 3 && tasksDoneToday < 6) {
+    nudge = `${6 - tasksDoneToday} more task${6 - tasksDoneToday > 1 ? 's' : ''} to a full-velocity day`;
+  } else {
+    nudge = 'every completion adds velocity.';
+  }
+
+  const reentry = overdueCount > 0
+    ? `<div class="ins-reentry">
+         <span class="ins-reentry-msg">${overdueCount} task${overdueCount > 1 ? 's' : ''} slipped orbit · re-entry is one click</span>
+         <button class="ins-reentry-btn" id="ins-reentry-btn">reschedule all → tomorrow</button>
+       </div>`
+    : '';
+
+  return `<div class="ins-nudge">✦ ${nudge}</div>${reentry}`;
 }
 
 function renderInsights() {
@@ -3556,19 +3768,16 @@ function renderInsights() {
     gaugesEl.innerHTML = `
       <div class="ins-hero-gauge">
         <span class="ins-hero-gauge-label">Habits</span>
-        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.round(habitPct * 2)}%;background:${habitGreen ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)'};box-shadow:${habitGreen ? '0 0 6px rgba(53,249,47,0.4)' : 'none'}"></div></div>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.round(habitPct * 2)}%;background:${habitGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)'};box-shadow:${habitGreen ? '0 0 6px rgba(111,174,135,0.4)' : 'none'}"></div></div>
         <span class="ins-hero-gauge-val">${momentum.habitPts}</span>
       </div>
       <div class="ins-hero-gauge">
         <span class="ins-hero-gauge-label">Tasks</span>
-        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${taskTodayPct}%;background:${taskGreen ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)'};box-shadow:${taskGreen ? '0 0 6px rgba(53,249,47,0.4)' : 'none'}"></div></div>
+        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${taskTodayPct}%;background:${taskGreen ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)'};box-shadow:${taskGreen ? '0 0 6px rgba(111,174,135,0.4)' : 'none'}"></div></div>
         <span class="ins-hero-gauge-val">${tasksDoneToday}</span>
       </div>
-      <div class="ins-hero-gauge">
-        <span class="ins-hero-gauge-label">Overdue</span>
-        <div class="ins-hero-gauge-bar"><div class="ins-hero-gauge-fill" style="width:${Math.min(100, overdueRaw * 5)}%;background:rgba(255,255,255,0.35)"></div></div>
-        <span class="ins-hero-gauge-val">-${momentum.overduePenalty}</span>
-      </div>`;
+      ${_insMomentumNudge(momentum, tasksDoneToday)}`;
+    document.getElementById('ins-reentry-btn')?.addEventListener('click', () => rescheduleAllOverdue());
   }
   // Delta badge (week-over-week tasks)
   const deltaEl = document.getElementById('ins-hero-delta');
@@ -3608,8 +3817,8 @@ function renderInsights() {
   const focusBar = document.getElementById('ins-focus-bar');
   if (focusBar) {
     focusBar.style.width = Math.min(100, Math.round(weekSecs / (8 * 3600) * 100)) + '%';
-    focusBar.style.background = weekSecs >= focusThreshold ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)';
-    focusBar.style.boxShadow = weekSecs >= focusThreshold ? '0 0 8px rgba(53,249,47,0.3)' : 'none';
+    focusBar.style.background = weekSecs >= focusThreshold ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
+    focusBar.style.boxShadow = weekSecs >= focusThreshold ? '0 0 8px rgba(111,174,135,0.3)' : 'none';
   }
   const focusSub = document.getElementById('ins-focus-sub');
   if (focusSub) focusSub.textContent = `Pomo ${_insFmtHrs(pomoSecs)} · Commit ${_insFmtHrs(commitSecs)}`;
@@ -3639,7 +3848,7 @@ function renderInsights() {
     if (overdueTasks.length) {
       const avgAge = Math.round(overdueTasks.reduce((s, t) => s + (Date.now() - new Date(t.dueDate + 'T00:00').getTime()) / 86400000, 0) / overdueTasks.length);
       overdueSub.textContent = `avg ${avgAge}d overdue`;
-    } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(53,249,47,0.6)'; }
+    } else { overdueSub.textContent = 'All clear'; overdueSub.style.color = 'rgba(111,174,135,0.6)'; }
   }
 
   // ── Tabbed Visualization: compute all 3 datasets ───────
@@ -3751,7 +3960,7 @@ function renderInsights() {
       let peakH = 0, peakV = 0;
       hoursThis.forEach((v, h) => { if (v > peakV) { peakV = v; peakH = h; } });
       if (statsEl) statsEl.innerHTML = `
-        <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(53,249,47);margin-right:6px;box-shadow:0 0 6px rgba(53,249,47,0.4)"></span>This week <span class="val">${thisTotal} tasks</span></div>
+        <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgb(111,174,135);margin-right:6px;box-shadow:0 0 6px rgba(111,174,135,0.4)"></span>This week <span class="val">${thisTotal} tasks</span></div>
         <div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.4);margin-right:6px"></span>Last week <span class="val">${prevTotal} tasks</span></div>
         <div class="ins-viz-stat">Peak hour <span class="val">${peakV > 0 ? String(peakH).padStart(2,'0') + ':00' : '—'}</span></div>
         <div class="ins-viz-stat">Peak count <span class="val ${peakV >= 5 ? 'green' : ''}">${peakV}</span></div>`;
@@ -3759,17 +3968,18 @@ function renderInsights() {
   }
 
   // ── Completion Trend (28-day) ─────────────────────────
-  const trendData = [], trendLabels = [];
+  const trendData = [], trendLabels = [], trendDates = [];
   for (let i = 27; i >= 0; i--) {
     const d = new Date(Date.now() - i * 86400000);
     const ds = localDateStr(d);
     trendData.push(TASKS.filter(t => t.done && t.doneDate === ds).length);
+    trendDates.push(ds);
     trendLabels.push(i % 7 === 0 ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '');
   }
   // Use green if weekly average >= 5 tasks/day, else white
   const weekAvg = trendData.slice(-7).reduce((a, b) => a + b, 0) / 7;
-  const trendColor = weekAvg >= 5 ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.5)';
-  if (panelVisible) _insDrawTrend('ins-trend-canvas', trendData, trendLabels, trendColor);
+  const trendColor = weekAvg >= 5 ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.5)';
+  if (panelVisible) _insDrawTrend('ins-trend-canvas', trendData, trendLabels, trendColor, trendDates);
 
   // ── Time by Category ──────────────────────────────────
   const breakdownEl = document.getElementById('ins-time-breakdown');
@@ -3982,28 +4192,28 @@ function _renderWeekDebrief() {
       return `<span class="hb-wc-tag ${cls}">${escHtml(h.name)} · ${doneCount}/${total}</span>`;
     }).join('');
     habitSection = `
-      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin:16px 0 10px;">Habit Performance · ${weekPct}% ${prevPct > 0 ? '(' + deltaStr + ')' : ''}</div>
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin:16px 0 10px;">Habit Performance · ${weekPct}% ${prevPct > 0 ? '(' + deltaStr + ')' : ''}</div>
       <div class="hb-wc-habits">${habitTags}</div>`;
   }
 
   debriefEl.innerHTML = `
     <div style="font-family:var(--font-display);font-size:20px;font-weight:300;color:var(--cream);margin-bottom:2px">${startLabel} – ${endLabel}</div>
-    <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Current Week</div>
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Current Week</div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:12px">
       <div style="display:flex;align-items:baseline;gap:8px">
-        <span style="font-family:var(--font-display);font-size:28px;font-weight:300;color:${thisWeekTasks.length >= 25 ? 'rgb(53,249,47)' : 'var(--cream)'}">${thisWeekTasks.length}</span>
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted)">tasks done · ${taskDeltaStr} last week</span>
+        <span style="font-family:var(--font-display);font-size:28px;font-weight:300;color:${thisWeekTasks.length >= 25 ? 'rgb(111,174,135)' : 'var(--cream)'}">${thisWeekTasks.length}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;color:var(--muted)">tasks done · ${taskDeltaStr} last week</span>
       </div>
       <div style="display:flex;align-items:baseline;gap:8px">
         <span style="font-family:var(--font-display);font-size:20px;font-weight:300;color:var(--cream)">${_insFmtHrs(focusThis)}</span>
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted)">focus time${focusPrev > 0 ? ` · was ${_insFmtHrs(focusPrev)}` : ''}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;color:var(--muted)">focus time${focusPrev > 0 ? ` · was ${_insFmtHrs(focusPrev)}` : ''}</span>
       </div>
       <div style="display:flex;align-items:baseline;gap:8px">
         <span style="font-family:var(--font-display);font-size:16px;font-weight:300;color:var(--cream)">${bestDayName}</span>
-        <span style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--muted)">best day · ${bestDay.count} tasks</span>
+        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;color:var(--muted)">best day · ${bestDay.count} tasks</span>
       </div>
     </div>
-    ${topCats.length ? `<div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px">Top Categories</div>
+    ${topCats.length ? `<div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px">Top Categories</div>
     <div style="display:flex;flex-direction:column;gap:5px">
       ${topCats.map(([cat, secs]) => {
         const color = getCatColor(cat);
@@ -4257,7 +4467,7 @@ function renderMilestoneDashboard() {
       <div class="ms-card-milestones">
         ${visibleEvents.map(ev => {
           const evDone = (ev.activities||[]).length > 0 && (ev.activities||[]).every(a => a.done);
-          const dotColor = evDone ? 'rgb(53,249,47)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
+          const dotColor = evDone ? 'rgb(111,174,135)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
           const linkedTasks = (ev.activities||[]).filter(a => a.taskId).slice(0,3)
             .map(a => { const t = TASKS.find(t => t.id === a.taskId); return t ? { title: t.title, done: t.done } : { title: a.text, done: a.done }; });
           return `<div>
@@ -4271,25 +4481,25 @@ function renderMilestoneDashboard() {
             </div>` : ''}
           </div>`;
         }).join('')}
-        ${events.length > 4 ? `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;padding-left:11px">+${events.length-4} more</div>` : ''}
-      </div>` : `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.06em;opacity:0.6">No milestones yet</div>`;
+        ${events.length > 4 ? `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding-left:11px">+${events.length-4} more</div>` : ''}
+      </div>` : `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em;opacity:0.6">no milestones charted yet</div>`;
 
     outer.innerHTML = `
       <div class="ms-dash-card-inner">
         <div class="ms-dash-card-title">${escHtml(proj.title)}</div>
         <div class="ms-dash-card-meta">
-          ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.05em">${cat.label}</span>` : ''}
+          ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.05em">${cat.label}</span>` : ''}
           <span>${escHtml(fmtDate(proj.startDate))} – ${escHtml(fmtDate(proj.endDate))}</span>
         </div>
         ${msListHtml}
         <div class="ms-dash-card-footer">
           <div>
-            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
+            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
             <div class="ms-dash-acts-label">${doneActs}/${totalActs} done</div>
           </div>
           <div style="text-align:right;display:flex;align-items:center;gap:8px">
             <div class="ms-dash-milestones-count">${events.length} ms</div>
-            <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
+            <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
           </div>
         </div>
       </div>`;
@@ -4334,10 +4544,10 @@ function showArchivedProjectsOverlay() {
               return `<div class="ms-arch-item" data-arch-proj="${proj.id}" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:background 150ms">
                 <div style="display:flex;align-items:center;gap:8px">
                   <div style="flex:1;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.7)">${escHtml(proj.title)}</div>
-                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--sage)">✓ done</span>
-                  <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--sage)">✓ done</span>
+                  <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
                 </div>
-                <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
+                <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
               </div>`;
             }).join('')}
       </div>
@@ -4395,10 +4605,10 @@ function renderArchivedPage() {
         <div style="flex:1;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;max-width:80px">
           <div style="height:2px;background:var(--sage);border-radius:2px;width:${pct}%"></div>
         </div>
-        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${doneActs}/${allActs.length}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${doneActs}/${allActs.length}</span>
       </div>
       <div style="display:flex;justify-content:flex-end">
-        <button class="btn-ghost arch-page-unarchive-btn" data-arch-unarchive="${proj.id}" style="font-size:9px;padding:4px 10px;color:var(--muted)">Unarchive</button>
+        <button class="btn-ghost arch-page-unarchive-btn" data-arch-unarchive="${proj.id}" style="font-size:10px;padding:4px 10px;color:var(--muted)">Unarchive</button>
       </div>
     </div>`;
   }).join('');
@@ -4479,7 +4689,7 @@ function renderMilestoneListsPanel(projId) {
   body.innerHTML = `
     <div style="padding:6px 0 8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${doneCount}/${items.length} done</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${doneCount}/${items.length} done</span>
       </div>
       <div id="ms-items-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
         ${items.map(item => `
@@ -4492,7 +4702,7 @@ function renderMilestoneListsPanel(projId) {
       </div>
       <div style="display:flex;gap:4px">
         <input id="ms-new-item-inp" class="form-input" placeholder="Add item…" style="flex:1;font-size:11px;padding:4px 7px;height:26px">
-        <button id="ms-new-item-btn" class="btn-primary" style="font-size:9px;padding:4px 8px;height:26px;flex-shrink:0">+</button>
+        <button id="ms-new-item-btn" class="btn-primary" style="font-size:10px;padding:4px 8px;height:26px;flex-shrink:0">+</button>
       </div>
     </div>`;
 
@@ -4540,14 +4750,14 @@ function renderMilestoneTimeline(projId) {
     const doneCount = acts.filter(a => a.done).length;
     const isPast = new Date(ev.date) < new Date();
     const dotColor = doneCount === acts.length && acts.length > 0
-      ? 'rgb(53,249,47)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
+      ? 'rgb(111,174,135)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
 
     const actItems = acts.map(a => {
       const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
       const cat = task?.category ? CATEGORIES[task.category] : null;
       const actCatClr = getCatColor(task?.category);
       const catBadge = cat
-        ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${actCatClr}22;color:${actCatClr};border:1px solid ${actCatClr}44;font-family:var(--font-mono)">${cat.label}</span>`
+        ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${actCatClr}22;color:${actCatClr};border:1px solid ${actCatClr}44;font-family:var(--font-mono)">${cat.label}</span>`
         : '';
       return `<div class="ms-action-item">
         <div class="ms-action-check ${a.done?'done':''}" data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">${a.done?'✓':''}</div>
@@ -4562,7 +4772,7 @@ function renderMilestoneTimeline(projId) {
         <div class="ms-alt-card-title">${escHtml(ev.title)}</div>
         ${ev.description ? `<div class="ms-alt-card-desc">${escHtml(ev.description)}</div>` : ''}
         <div class="ms-action-items-list" data-ev-id="${escAttr(ev.id)}" style="margin-bottom:10px">
-          ${actItems || '<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);padding:4px 0">No tasks yet.</div>'}
+          ${actItems || '<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:4px 0">No tasks yet.</div>'}
         </div>
         <div class="ms-add-task-row" data-ev-id="${escAttr(ev.id)}" style="border-top:1px solid var(--border);padding-top:8px">
           <div style="display:flex;gap:6px;margin-bottom:4px">
@@ -4579,9 +4789,9 @@ function renderMilestoneTimeline(projId) {
 
     const dotCol = `
       <div class="ms-alt-dot-col">
-        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(53,249,47,0.9),0 0 20px rgba(53,249,47,0.5)':''}"></div>
+        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(111,174,135,0.9),0 0 20px rgba(111,174,135,0.5)':''}"></div>
         <div class="ms-alt-date-badge">${escHtml(fmtDate(ev.date))}</div>
-        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:8px;color:${doneCount===acts.length?'rgb(53,249,47)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
+        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:10px;color:${doneCount===acts.length?'rgb(111,174,135)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
       </div>`;
 
     // Alternate: even idx → card on left, odd → card on right
@@ -4597,15 +4807,15 @@ function renderMilestoneTimeline(projId) {
   const metaHtml = `
     <div style="padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
       <div style="margin-bottom:14px">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Notes & Context</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Notes & Context</div>
         <textarea id="ms-inline-notes" rows="2" placeholder="Add notes or context…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-body);font-size:12px;color:var(--cream);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
       </div>
       <div style="margin-bottom:14px">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Mission Brief</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Mission Brief</div>
         <textarea id="ms-inline-mission" rows="2" placeholder="Why this matters…" style="width:100%;background:transparent;border:none;border-left:2px solid rgba(255,255,255,0.12);outline:none;font-family:var(--font-body);font-size:12px;color:var(--cream);line-height:1.6;resize:none;padding-left:10px;transition:border-color 0.2s"></textarea>
       </div>
       <div>
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
         <textarea id="ms-inline-antigoals" rows="2" placeholder="What we will NOT do…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-mono);font-size:10px;color:var(--rust);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
       </div>
     </div>`;
@@ -4618,10 +4828,10 @@ function renderMilestoneTimeline(projId) {
       </div>
       <div class="ms-alt-progress-wrap">
         <div class="ms-alt-progress-bar" data-proj-bar="${escAttr(proj.id)}">
-          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(53,249,47);opacity:0.25"></div>
-          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(53,249,47);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(53,249,47,0.7),0 0 20px rgba(53,249,47,0.3)"></div>
+          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(111,174,135);opacity:0.25"></div>
+          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(111,174,135);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(111,174,135,0.7),0 0 20px rgba(111,174,135,0.3)"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px">
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">
           <span>${pct}% complete · ${doneActs}/${totalActs} tasks</span>
           <span>${Math.round(elapsedPct)}% elapsed</span>
         </div>
@@ -4630,7 +4840,7 @@ function renderMilestoneTimeline(projId) {
       ${events.length ? `
         <div class="ms-alt-entries">
           <div class="ms-alt-center-line"></div>
-          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(53,249,47)"></div>
+          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(111,174,135)"></div>
           <div class="ms-alt-cap">
             <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
             <div class="ms-alt-cap-label">Start · ${escHtml(fmtDate(proj.startDate))}</div>
@@ -4642,7 +4852,7 @@ function renderMilestoneTimeline(projId) {
           </div>
         </div>`
       : `<div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:40px 0">
-          No milestones yet. Click "+ Milestone" above to add one.
+          no milestones on this trajectory yet. click "+ Milestone" above to plot one.
         </div>`}
     </div>`;
 
@@ -4700,8 +4910,8 @@ function renderMsActivityList() {
     const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
     const cat  = task?.category ? CATEGORIES[task.category] : null;
     const modCatClr = getCatColor(task?.category);
-    const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:8px;color:var(--sage);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
+    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
         <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(a.text||a.title||'')}</span>
@@ -4815,7 +5025,7 @@ function showMsTaskSearchResults(query, evId, containerEl) {
   containerEl.style.display = 'block';
   containerEl.innerHTML = results.map(t => {
     const cat = t.category ? CATEGORIES[t.category] : null;
-    const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
     const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div>`;
     return `<div class="ms-task-search-result" data-task-id="${escAttr(t.id)}" data-ev-id="${escAttr(evId)}">${dot}<span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
   }).join('');
@@ -5054,7 +5264,7 @@ function initMilestonesPanel() {
         modalSearchRes.style.display = 'block';
         modalSearchRes.innerHTML = results.map(t => {
           const cat = t.category ? CATEGORIES[t.category] : null;
-          const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+          const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
           return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
         }).join('');
       }
@@ -5322,7 +5532,7 @@ function initMilestonesPanel() {
     const calEl = document.getElementById('pm-cal-grid');
     if (calEl) {
       let html = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d =>
-        `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:center;padding:2px">${d}</div>`).join('');
+        `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;padding:2px">${d}</div>`).join('');
       for (let i = 0; i < firstDow; i++) html += `<div></div>`;
       for (let d = 1; d <= daysInMonth; d++) {
         const ds = `${key}-${String(d).padStart(2,'0')}`;
@@ -5621,6 +5831,22 @@ function initMilestonesPanel() {
   };
 })();
 
+
+/* ══ KINETIC: project cards tilt toward the cursor ══ */
+let _msTiltCard = null;
+document.addEventListener('pointermove', e => {
+  const card = e.target.closest?.('.ms-dash-card-outer');
+  if (card !== _msTiltCard) {
+    if (_msTiltCard) { _msTiltCard.style.transform = ''; _msTiltCard.classList.remove('tilting'); }
+    _msTiltCard = card || null;
+    if (card) card.classList.add('tilting');
+  }
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  const dx = (e.clientX - r.left) / r.width - 0.5;
+  const dy = (e.clientY - r.top) / r.height - 0.5;
+  card.style.transform = `perspective(700px) rotateX(${(-dy * 5).toFixed(2)}deg) rotateY(${(dx * 6).toFixed(2)}deg) translateZ(4px)`;
+});
 /* ══ FOCUS BUCKETS ══ */
 const BUCKET_COLORS = ['#4a7c5e','#c45c2a','#e8a020','#6b9fd4','#9b7fd4','#c49a6c','#8a8070'];
 let _focusBuckets = [];
@@ -5683,7 +5909,7 @@ function renderFocusBuckets() {
             <span style="flex:1;min-width:0">${linkifyText(it.text)}</span>
             <span class="focus-item-del" data-fbdel-item="${escAttr(it.id)}" data-fbdel-bucket="${escAttr(b.id)}">✕</span>
           </div>
-        `).join('') : '<div class="focus-bucket-items-empty">No items</div>'}
+        `).join('') : '<div class="focus-bucket-items-empty">empty bucket. gravity intact.</div>'}
       </div>
       <div class="focus-add-item">
         <input type="text" placeholder="Add item..." maxlength="300" data-add-item-bucket="${escAttr(b.id)}" />
@@ -6179,7 +6405,7 @@ function _tdDrawTimeline(now){
   // ── Calendar event arcs ──────────────────────────────────
   const phase=performance.now()*0.001;
   evtSpans.forEach(({aS,aE2,cS,cE,isPast,ev})=>{
-    const evG='rgba(53,249,47,';
+    const evG='rgba(111,174,135,';
     // Thin fill around single arc
     ctx.beginPath();
     ctx.arc(cx,cy_arc,midR+4,aS,aE2);
@@ -6215,12 +6441,12 @@ function _tdDrawTimeline(now){
       // Soft outer glow pass
       ctx.save();
       ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
-      ctx.strokeStyle=`rgba(53,249,47,${(glowAlpha*0.30).toFixed(2)})`;
-      ctx.lineWidth=6; ctx.shadowColor='rgba(53,249,47,0.6)'; ctx.shadowBlur=14; ctx.stroke();
+      ctx.strokeStyle=`rgba(111,174,135,${(glowAlpha*0.30).toFixed(2)})`;
+      ctx.lineWidth=6; ctx.shadowColor='rgba(111,174,135,0.6)'; ctx.shadowBlur=14; ctx.stroke();
       // Core bright line
       ctx.beginPath(); ctx.moveTo(lx0,ly0); ctx.lineTo(lx1,ly1);
-      ctx.strokeStyle=`rgba(53,249,47,${glowAlpha.toFixed(2)})`;
-      ctx.lineWidth=1.2; ctx.shadowColor='rgba(53,249,47,0.9)'; ctx.shadowBlur=8; ctx.stroke();
+      ctx.strokeStyle=`rgba(111,174,135,${glowAlpha.toFixed(2)})`;
+      ctx.lineWidth=1.2; ctx.shadowColor='rgba(111,174,135,0.9)'; ctx.shadowBlur=8; ctx.stroke();
       ctx.restore();
       // Event title text at end of connector — etched on the bezel, not glued to the line
       const titleTxt = ev.title.length > 18 ? ev.title.slice(0,17)+'…' : ev.title;
@@ -6284,11 +6510,11 @@ function _tdDrawTimeline(now){
   if(ongoing && ey<maxY){
     const label=ongoing.title?(ongoing.title.length>20?ongoing.title.slice(0,19)+'…':ongoing.title):'event';
     ctx.font="300 10px 'DM Mono',monospace";
-    ctx.fillStyle='rgba(53,249,47,0.60)';
+    ctx.fillStyle='rgba(111,174,135,0.60)';
     ctx.fillText('ongoing · '+label,cx,ey); ey+=15;
     if(ey<maxY){
       ctx.font="300 9px 'DM Mono',monospace";
-      ctx.fillStyle='rgba(53,249,47,0.38)';
+      ctx.fillStyle='rgba(111,174,135,0.38)';
       ctx.fillText('continues '+(ongoing.eMins-nowMins)+'m more',cx,ey); ey+=20;
     }
   }
@@ -6302,7 +6528,7 @@ function _tdDrawTimeline(now){
       ctx.fillText(label,cx,ey); ey+=15;
       if(ey<maxY){
         ctx.font="300 9px 'DM Mono',monospace";
-        ctx.fillStyle='rgba(53,249,47,0.65)';
+        ctx.fillStyle='rgba(111,174,135,0.65)';
         ctx.fillText('in '+delta+'m',cx,ey); ey+=20;
       }
     });
@@ -6312,6 +6538,14 @@ function _tdDrawTimeline(now){
     ctx.fillText('nothing in next 30m',cx,ey);
   }
 
+  // Drift indicator — shown while the rings are scrubbed away from now
+  if (Math.abs(_tdScrubOffset) > 500) {
+    ctx.font="300 10px 'DM Mono',monospace";
+    ctx.fillStyle='rgba(212,162,78,0.85)';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    const dir=_tdScrubOffset>0?'ahead':'behind';
+    ctx.fillText(`⟲ adrift · ${_tdFmtOffset(Math.abs(_tdScrubOffset))} ${dir} · release returns to now`,cx,6);
+  }
 }
 
 function _tdInit(){
@@ -6499,8 +6733,8 @@ function _tdUpdateRing(info,now,animEase){
      ties Timedrift into the cross-app threshold reward system.
      Revert by setting _TD_DLV2_ENABLED = false. */
   const dlv2Green = _TD_DLV2_ENABLED && ring.id === 'hr' && _tdDlv2IsFocusGoalMet();
-  const activeStroke = dlv2Green ? 'rgba(53,249,47,1)' : 'rgba(255,255,255,1)';
-  const activeFill   = dlv2Green ? 'rgba(53,249,47,1)' : 'rgba(255,255,255,1)';
+  const activeStroke = dlv2Green ? 'rgba(111,174,135,1)' : 'rgba(255,255,255,1)';
+  const activeFill   = dlv2Green ? 'rgba(111,174,135,1)' : 'rgba(255,255,255,1)';
   g.querySelectorAll('.td-ri').forEach(item=>{
     const i=+item.dataset.i, maj=item.dataset.maj==='1';
     let dist=i-exact;
@@ -6524,8 +6758,76 @@ function _tdUpdateCenter(now){
   if(_tdElYear) _tdElYear.textContent=String(now.getFullYear());
 }
 
+/* ── Time scrub — drag any ring to drift through time ─────
+   The whole panel renders from `now`, so offsetting `now` time-travels
+   everything: rings, horizon arc, that day's events. Release springs back. */
+let _tdScrubOffset=0, _tdScrubDrag=null, _tdScrubReleaseT0=0, _tdScrubReleaseFrom=0;
+
+function _tdFmtOffset(ms){
+  const m=Math.round(ms/60000);
+  if(m<60) return m+'m';
+  const h=Math.round(m/60); if(h<48) return h+'h';
+  return Math.round(h/24)+'d';
+}
+
+function _tdScrubNow(){
+  if(!_tdScrubDrag && _tdScrubReleaseT0){
+    const age=performance.now()-_tdScrubReleaseT0, D=800;
+    if(age>=D){ _tdScrubReleaseT0=0; _tdScrubOffset=0; }
+    else { _tdScrubOffset=_tdScrubReleaseFrom*(1-(1-Math.pow(1-age/D,3))); }
+  }
+  return new Date(Date.now()+_tdScrubOffset);
+}
+
+function _tdInitScrub(){
+  if(!_tdSvg||_tdSvg.dataset.scrub==='1') return;
+  _tdSvg.dataset.scrub='1';
+  // ms per ring item; min ring counts down so its drag direction flips
+  const UNIT={dom:86400e3,mon:2629800e3,dow:86400e3,hr:3600e3,min:60e3,sec:1000};
+  const SIGN={dom:1,mon:1,dow:1,hr:1,min:-1,sec:1};
+  const BANDS=[['dom',42,74],['mon',74,106],['dow',106,138],['hr',138,170],['min',170,202],['sec',202,234]];
+  const center=()=>{
+    const r=_tdSvg.getBoundingClientRect();
+    // viewBox "0 530 1000 315" — ring centre (500,500) sits above the visible crop
+    return { x:r.left+r.width*0.5, y:r.top+((500-530)/315)*r.height, scale:r.width/1000 };
+  };
+  _tdSvg.addEventListener('pointerdown',e=>{
+    const c=center();
+    const d=Math.hypot(e.clientX-c.x,e.clientY-c.y)/c.scale;
+    const band=BANDS.find(([,ri,ro])=>d>=ri&&d<=ro+8);
+    if(!band) return;
+    e.preventDefault();
+    _tdScrubReleaseT0=0;
+    _tdScrubDrag={ id:band[0], lastA:Math.atan2(e.clientY-c.y,e.clientX-c.x), c };
+    try{_tdSvg.setPointerCapture(e.pointerId);}catch{}
+    _tdSvg.classList.add('td-scrubbing');
+  });
+  _tdSvg.addEventListener('pointermove',e=>{
+    if(!_tdScrubDrag) return;
+    const {c,id}=_tdScrubDrag;
+    const a=Math.atan2(e.clientY-c.y,e.clientX-c.x);
+    let dA=a-_tdScrubDrag.lastA;
+    if(dA>Math.PI)dA-=2*Math.PI; if(dA<-Math.PI)dA+=2*Math.PI;
+    _tdScrubDrag.lastA=a;
+    const ring=TD_RINGS.find(r=>r.id===id);
+    const dExact=-(dA*180/Math.PI)*ring.items.length/360;
+    _tdScrubOffset+=SIGN[id]*dExact*UNIT[id];
+    // Clamp the drift to ±1 year — it's a scrub, not a wormhole
+    _tdScrubOffset=_tdClamp(_tdScrubOffset,-31557600e3,31557600e3);
+  });
+  const endScrub=()=>{
+    if(!_tdScrubDrag) return;
+    _tdScrubDrag=null;
+    _tdSvg.classList.remove('td-scrubbing');
+    _tdScrubReleaseFrom=_tdScrubOffset;
+    _tdScrubReleaseT0=performance.now();
+  };
+  _tdSvg.addEventListener('pointerup',endScrub);
+  _tdSvg.addEventListener('pointercancel',endScrub);
+}
+
 function _tdFrame(){
-  const now=new Date();
+  const now=_tdScrubNow();
   if(!_tdAnimT0) _tdAnimT0=performance.now();
   const t0=performance.now();
   const progress=Math.min(1,(t0-_tdAnimT0)/900);
@@ -6553,6 +6855,7 @@ function startTimedrift(){
   const panel = document.getElementById('panel-timedrift');
   if (panel) panel.classList.toggle('td-dlv2', _TD_DLV2_ENABLED);
   _tdInit();
+  _tdInitScrub();
   _tdLayout();
   if(!_tdResizeObs){
     _tdResizeObs=new ResizeObserver(()=>{
@@ -6635,11 +6938,47 @@ function showToast(msg, type = 'info', duration = 3000) {
   }, duration);
 }
 
+/* ── Undo toast — reversible actions get a 6s escape hatch ── */
+function showUndoToast(msg, onUndo, duration = 6000) {
+  const container = document.getElementById('cdx-toast-container');
+  if (!container) { return; }
+  const toast = document.createElement('div');
+  toast.className = 'cdx-toast info';
+  const msgEl = document.createElement('span');
+  msgEl.className = 'cdx-toast-msg';
+  msgEl.textContent = msg;
+  const btn = document.createElement('button');
+  btn.className = 'cdx-toast-undo';
+  btn.type = 'button';
+  btn.textContent = 'undo';
+  let dismissed = false;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  };
+  btn.addEventListener('click', async () => {
+    dismiss();
+    try { await onUndo(); } catch (e) {
+      console.error('undo failed:', e);
+      showToast('undo failed — the cosmos resisted.', 'error');
+    }
+  });
+  toast.appendChild(msgEl);
+  toast.appendChild(btn);
+  container.appendChild(toast);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('show'));
+  });
+  setTimeout(dismiss, duration);
+}
+
 // Surface otherwise-silent async failures (e.g. Firestore writes that lack a try/catch)
 // instead of letting a change quietly fail with no feedback to the user.
 window.addEventListener('unhandledrejection', ev => {
   console.error('Unhandled async error:', ev.reason);
-  try { showToast('Something went wrong — your change may not have saved.', 'error', 5000); } catch (_) {}
+  try { showToast('that didn\'t save — the cosmos is flaky. try again.', 'error', 5000); } catch (_) {}
 });
 // Refresh the orb immediately when the tab becomes visible again (paired with the hidden-guard above).
 document.addEventListener('visibilitychange', () => { if (!document.hidden) drawCosmodex(); });
@@ -6875,7 +7214,7 @@ function _renderTaskGroup(container, tasks, taskProjMap, rowIdxRef) {
     const isCollapsed = localStorage.getItem(storageKey) !== 'false';
     const indLabel = document.createElement('div');
     indLabel.className = 'tasks-initiative-label';
-    indLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:8px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:var(--muted)"></span>Independent<span class="tasks-initiative-count">${standalone.length}</span>`;
+    indLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:10px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:var(--muted)"></span>Independent<span class="tasks-initiative-count">${standalone.length}</span>`;
     const indContainer = document.createElement('div');
     indContainer.style.display = isCollapsed ? 'none' : '';
     indLabel.addEventListener('click', () => {
@@ -6899,7 +7238,7 @@ function _renderTaskGroup(container, tasks, taskProjMap, rowIdxRef) {
 
     const initLabel = document.createElement('div');
     initLabel.className = 'tasks-initiative-label';
-    initLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:8px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:${escAttr(projGroup.projectColor)}"></span>${escHtml(projGroup.projectTitle)}<span class="tasks-initiative-count">${projGroup.tasks.length}</span>`;
+    initLabel.innerHTML = `<span style="margin-right:4px;transition:transform 0.2s;display:inline-block;font-size:10px;${isCollapsed ? '' : 'transform:rotate(90deg)'}">\u203A</span><span class="tasks-initiative-dot" style="background:${escAttr(projGroup.projectColor)}"></span>${escHtml(projGroup.projectTitle)}<span class="tasks-initiative-count">${projGroup.tasks.length}</span>`;
 
     const initContainer = document.createElement('div');
     initContainer.style.display = isCollapsed ? 'none' : '';
@@ -6978,6 +7317,11 @@ function renderTasks() {
 
   // Someday Graveyard
   renderSomedaySection(body, filtered.filter(t => t.someday), rowIdxRef.idx);
+
+  // All clear — say so, in voice
+  if (!body.children.length) {
+    body.innerHTML = '<div class="tasks-void-empty">inbox zero. the void approves. ✦<br><span>press n to disturb the peace</span></div>';
+  }
 }
 
 /* ── Task Decay helper ───────────────────────────────── */
@@ -7015,7 +7359,7 @@ function buildTaskRow(task, idx) {
 
   const PRIORITY_LABELS = { high: 'High', med: 'Med', low: 'Low' };
   const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority] || '' : '';
-  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:9px;color:${task.priority==='high'?'var(--rust)':task.priority==='med'?'var(--amber)':'var(--muted)'}">${priorityLabel}</span>` : '';
+  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--rust)':task.priority==='med'?'var(--amber)':'var(--muted)'}">${priorityLabel}</span>` : '';
 
   let recurBadge = '';
   if (task.recurrence) {
@@ -7044,7 +7388,7 @@ function buildTaskRow(task, idx) {
 
   // Time-spent badge
   const timeBadge = (task.done && task.timeSpentMinutes)
-    ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
+    ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
     : '';
 
   // Friction indicator
@@ -7151,7 +7495,7 @@ function buildSubtaskRow(parentId, sub) {
   let schedBadge = '';
   if (sub.calEventId) {
     const ev = CAL_EVENTS.find(e => e.id === sub.calEventId);
-    if (ev?.startTime) schedBadge = `<span class="task-cal-badge" style="font-size:9px">⊙ ${fmtTimeSched(ev.startTime)}</span>`;
+    if (ev?.startTime) schedBadge = `<span class="task-cal-badge" style="font-size:10px">⊙ ${fmtTimeSched(ev.startTime)}</span>`;
   }
 
   row.innerHTML = `
@@ -7428,9 +7772,16 @@ async function toggleTask(taskId, timeSpentMinutes = null) {
   const updates = { done: !task.done };
   if (!task.done) {
     updates.doneDate = localDateStr(new Date());
+    updates.doneAt = new Date().toISOString(); // exact time — used by the orbit recap constellation
     if (timeSpentMinutes != null) updates.timeSpentMinutes = timeSpentMinutes;
   }
+  // Celebration fires before the snapshot re-render wipes the row
+  if (!task.done) _taskFireCelebration(taskId, task);
   await updateTask(taskId, updates);
+  if (!task.done) {
+    const short = task.title.length > 30 ? task.title.slice(0, 30) + '…' : task.title;
+    showUndoToast(`done: ${short}`, () => updateTask(taskId, { done: false, doneDate: null }));
+  }
   // Sync done status to linked milestone activities
   const newDone = !task.done;
   for (const msEv of MILESTONE_EVENTS) {
@@ -7440,6 +7791,47 @@ async function toggleTask(taskId, timeSpentMinutes = null) {
       updateMilestoneEvent(msEv.id, { activities });
     }
   }
+}
+
+/* ── Task completion celebration ──────────────────────────
+   Same reward grammar as habits: burst + identity vote + haptic.
+   Elements are appended to <body> so the snapshot re-render can't wipe them. */
+function _taskFireCelebration(taskId, task) {
+  const esc = (window.CSS && CSS.escape) ? CSS.escape(taskId) : taskId;
+  const check = document.querySelector(`[data-check="${esc}"]`);
+  if (!check) return;
+  const r = check.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+
+  const ring = document.createElement('div');
+  ring.className = 'task-burst-ring';
+  ring.style.left = cx + 'px'; ring.style.top = cy + 'px';
+  document.body.appendChild(ring);
+  setTimeout(() => ring.remove(), 700);
+
+  for (let i = 0; i < 6; i++) {
+    const p = document.createElement('div');
+    p.className = 'task-burst-star';
+    p.textContent = '✦';
+    const ang = (i / 6) * Math.PI * 2 + Math.random() * 0.6;
+    const dist = 18 + Math.random() * 22;
+    p.style.left = cx + 'px'; p.style.top = cy + 'px';
+    p.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 900);
+  }
+
+  const proj = (typeof MILESTONE_PROJECTS !== 'undefined' ? MILESTONE_PROJECTS : [])
+    .find(p => p.id === task.projectId);
+  const vote = document.createElement('div');
+  vote.className = 'task-vote-float';
+  vote.textContent = '+1 for ' + (proj ? proj.title : 'future you');
+  vote.style.left = (r.right + 10) + 'px'; vote.style.top = cy + 'px';
+  document.body.appendChild(vote);
+  setTimeout(() => vote.remove(), 1900);
+
+  if (navigator.vibrate) { try { navigator.vibrate(10); } catch {} }
 }
 
 /* ── Time-to-complete popover ─────────────────────────── */
@@ -7524,6 +7916,7 @@ async function _safeDeleteCalEvent(eventId) {
 async function deleteTask(taskId) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
+  const snapshot = { ...task };   // for undo — restore with the same doc id
   const { deleteDoc } = window.CDX_FB;
   try {
     // Delete the task's own linked calendar event
@@ -7544,7 +7937,13 @@ async function deleteTask(taskId) {
       }
     }
     await deleteDoc(_ud('tasks', taskId));
-    showToast('Task deleted', 'info');
+    showUndoToast('task banished.', async () => {
+      const { setDoc, serverTimestamp } = window.CDX_FB;
+      const { id, ...data } = snapshot;
+      // calEventId / milestone links were cleaned up above and are not restored
+      delete data.calEventId;
+      await setDoc(_ud('tasks', id), { ...data, updatedAt: serverTimestamp() });
+    });
   } catch (err) {
     console.error('deleteTask error:', err);
     showToast('Failed to delete task', 'error');
@@ -7744,7 +8143,7 @@ function renderDayView(date) {
   if (alldayRow) alldayRow.style.display = '';
   if (alldayRow) alldayRow.innerHTML = allDayEvs.length
     ? allDayEvs.map(ev => `<span class="cal-allday-chip" data-event-id="${escAttr(ev.id)}">${escHtml(ev.title)}</span>`).join('')
-    : `<span style="font-size:9px;color:var(--muted);font-family:var(--font-mono)">All-day</span>`;
+    : `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">All-day</span>`;
 
   // Clear old event chips
   container.querySelectorAll('.cal-event').forEach(e => e.remove());
@@ -7820,14 +8219,14 @@ function renderWeekView(date) {
     const isToday = ds === today;
     const isWeekend = (i === 5 || i === 6); // Sat=5, Sun=6
     const hol = HOLIDAYS[ds];
-    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(53,249,47,0.9);text-shadow:0 0 8px rgba(53,249,47,0.4);border-bottom:2px solid rgba(53,249,47,0.45)' : ''}">
+    html += `<div class="week-day-header${isToday ? ' today' : ''}${isWeekend ? ' weekend' : ''}" data-date="${ds}" style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;${isToday ? 'color:rgba(111,174,135,0.9);text-shadow:0 0 8px rgba(111,174,135,0.4);border-bottom:2px solid rgba(111,174,135,0.45)' : ''}">
       ${DAYS[i]} ${d.getDate()}${hol ? `<br><span style="font-size:7px;color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);border-radius:2px;padding:0 2px;display:block">${escHtml(hol.name)}</span>` : ''}
     </div>`;
   }
   html += `</div>`;
   // All-day row
   const weekCols = `grid-template-columns:48px repeat(7,1fr)`;
-  html += `<div class="week-allday-row" style="${weekCols}"><div class="week-time-label" style="font-size:8px;color:var(--muted)">all-day</div>`;
+  html += `<div class="week-allday-row" style="${weekCols}"><div class="week-time-label" style="font-size:10px;color:var(--muted)">all-day</div>`;
   for (let i = 0; i < 7; i++) {
     const d  = new Date(ws); d.setDate(d.getDate() + i);
     const ds = localDateStr(d);
@@ -8006,7 +8405,7 @@ function buildMonthCell(dateStr, isCurrentMonth) {
     const color = getCatColor(TASKS.find(t => t.id === ev.taskId)?.category);
     return `<span class="month-event-pill" data-event-id="${escAttr(ev.id)}" style="background:${color}22;color:${color};cursor:pointer">${escHtml(ev.title)}</span>`;
   }).join('');
-  const more = timedEvs.length > 2 ? `<span style="font-size:8px;color:var(--muted);font-family:var(--font-mono)">+${timedEvs.length-2} more</span>` : '';
+  const more = timedEvs.length > 2 ? `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">+${timedEvs.length-2} more</span>` : '';
 
   return `<div class="${classes}" data-date="${dateStr}">
     <span class="month-day-num">${day}</span>
@@ -8132,7 +8531,87 @@ function initCalNav() {
   });
 }
 
-/* ── Drag-to-calendar (modal) ─────────────────────────── */
+/* ── Drag-to-timebox ──────────────────────────────────────
+   Implementation intentions: dropping a task on a time slot converts
+   "I'll do X" into "I'll do X at 2:15pm". 15-min snap, ghost preview,
+   direct schedule (no modal) for plain tasks, undo toast. */
+
+let _dragGhostEl = null;
+
+function _dragSnapQuarter(slot, clientY) {
+  const rect = slot.getBoundingClientRect();
+  const frac = Math.min(0.999, Math.max(0, (clientY - rect.top) / rect.height));
+  const mins = Math.floor(frac * 4) * 15;
+  return { mins, rect };
+}
+
+function _showDragGhost(slot, hour, mins, rect) {
+  if (!_dragGhostEl) {
+    _dragGhostEl = document.createElement('div');
+    _dragGhostEl.className = 'cal-drop-ghost';
+    document.body.appendChild(_dragGhostEl);
+  }
+  const task = TASKS.find(t => t.id === _dragTaskId);
+  const start = `${String(hour).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+  const title = _dragSubId
+    ? (task?.subtasks?.find(s => s.id === _dragSubId)?.title || task?.title || '')
+    : (task?.title || '');
+  _dragGhostEl.textContent = `${fmtTimeSched(start)} — ${title}`;
+  _dragGhostEl.style.left   = rect.left + 'px';
+  _dragGhostEl.style.width  = rect.width + 'px';
+  _dragGhostEl.style.top    = (rect.top + (mins / 60) * rect.height) + 'px';
+  _dragGhostEl.style.height = Math.max(14, rect.height / 2) + 'px';
+}
+
+function _clearDragGhost() {
+  _dragGhostEl?.remove();
+  _dragGhostEl = null;
+}
+
+/* Direct schedule (drag-drop path) — mirrors confirmSchedule for a single task/subtask */
+async function scheduleTaskDirect(date, startTime, taskId, subId, duration = 30) {
+  const { addDoc, serverTimestamp, setDoc, doc } = window.CDX_FB;
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task) return;
+  const endTime = addMinutes(startTime, duration);
+  const color = getCatColor(task.category);
+  const sub = subId ? task.subtasks?.find(s => s.id === subId) : null;
+  if (subId && !sub) return;
+  const title = sub ? sub.title : task.title;
+
+  // Snapshot the event being replaced so undo can restore it
+  const prevEvId = sub ? sub.calEventId : task.calEventId;
+  const prevEv = prevEvId ? CAL_EVENTS.find(ev => ev.id === prevEvId) : null;
+  const prevEvData = prevEv ? { ...prevEv } : null;
+
+  await _safeDeleteCalEvent(prevEvId);
+  const payload = sub
+    ? { title, taskId, subId, date, startTime, endTime, duration, color, createdAt: serverTimestamp() }
+    : { title, taskId, date, startTime, endTime, duration, color, createdAt: serverTimestamp() };
+  const ref = await addDoc(_uc('calEvents'), payload);
+  if (sub) {
+    await updateTask(taskId, { subtasks: task.subtasks.map(s => s.id === subId ? { ...s, calEventId: ref.id } : s) });
+  } else {
+    await updateTask(taskId, { calEventId: ref.id });
+  }
+
+  showUndoToast(`${fmtTimeSched(startTime)} claimed. future you says thanks.`, async () => {
+    await _safeDeleteCalEvent(ref.id);
+    let restoredId = null;
+    if (prevEvData) {
+      const { id, ...data } = prevEvData;
+      await setDoc(_ud('calEvents', id), data);
+      restoredId = id;
+    }
+    const fresh = TASKS.find(t => t.id === taskId);
+    if (sub) {
+      await updateTask(taskId, { subtasks: (fresh?.subtasks || []).map(s => s.id === subId ? { ...s, calEventId: restoredId } : s) });
+    } else {
+      await updateTask(taskId, { calEventId: restoredId });
+    }
+  });
+}
+
 function initCalDropZones() {
   // Day view
   const dayContainer = document.getElementById('cal-hours-container');
@@ -8141,20 +8620,30 @@ function initCalDropZones() {
       const slot = e.target.closest('.cal-hour-slot');
       if (!slot || !_dragTaskId) return;
       e.preventDefault();
-      document.querySelectorAll('.cal-hour-slot.drop-over').forEach(s => s.classList.remove('drop-over'));
-      slot.classList.add('drop-over');
+      const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
+      const { mins, rect } = _dragSnapQuarter(slot, e.clientY);
+      _showDragGhost(slot, h, mins, rect);
     });
     dayContainer.addEventListener('dragleave', e => {
-      e.target.closest('.cal-hour-slot')?.classList.remove('drop-over');
+      if (!dayContainer.contains(e.relatedTarget)) _clearDragGhost();
     });
     dayContainer.addEventListener('drop', e => {
       const slot = e.target.closest('.cal-hour-slot');
       if (!slot || !_dragTaskId) return;
       e.preventDefault();
-      slot.classList.remove('drop-over');
+      _clearDragGhost();
       const h = parseInt(slot.closest('.cal-hour-row')?.dataset.hour ?? '9');
-      openScheduleModal(localDateStr(_calDate), `${String(h).padStart(2,'0')}:00`, _dragTaskId, _dragSubId);
+      const { mins } = _dragSnapQuarter(slot, e.clientY);
+      const start = `${String(h).padStart(2,'0')}:${String(mins).padStart(2,'0')}`;
+      const task = TASKS.find(t => t.id === _dragTaskId);
+      // Tasks with subtasks keep the modal (it offers scheduling them together)
+      if (!_dragSubId && task?.subtasks?.length) {
+        openScheduleModal(localDateStr(_calDate), start, _dragTaskId, _dragSubId);
+      } else {
+        scheduleTaskDirect(localDateStr(_calDate), start, _dragTaskId, _dragSubId);
+      }
     });
+    document.addEventListener('dragend', _clearDragGhost);
     // Click empty slot to create new event (or open pomodoro for spanning multi-hour events)
     // Half-hour precision: top half of slot = :00, bottom half = :30
     dayContainer.addEventListener('click', e => {
@@ -8599,7 +9088,7 @@ function renderSettingsCatList() {
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
       <div style="width:14px;height:14px;border-radius:50%;background:${cat.color};flex-shrink:0"></div>
       <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(cat.label)}</span>
-      <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);background:var(--elevated);border:1px solid var(--border);border-radius:4px;padding:1px 5px">${escHtml(key)}</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--elevated);border:1px solid var(--border);border-radius:4px;padding:1px 5px">${escHtml(key)}</span>
       <button class="task-action-btn danger" data-del-cat="${escAttr(key)}" title="Delete">✕</button>
     </div>`).join('');
   list.querySelectorAll('[data-del-cat]').forEach(btn => {
@@ -8691,7 +9180,7 @@ function renderSettingsPeople() {
   }
   list.innerHTML = PEOPLE.map(p => `
     <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
-      <div style="width:26px;height:26px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(p.initials)}</div>
+      <div style="width:26px;height:26px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(p.initials)}</div>
       <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(p.name)}</span>
       <button class="task-action-btn danger" data-del-person="${escAttr(p.id)}" title="Remove">✕</button>
     </div>`).join('');
@@ -8877,8 +9366,8 @@ function _cosmodexDrawCore(ctx, W, H, expanded, dpr) {
   const baseR  = maxR * (expanded ? 0.52 : 0.65);
   const eventR = maxR * (expanded ? 0.70 : 0.72);
 
-  const today  = localDateStr(new Date());
-  const now    = new Date();
+  const now    = new Date(Date.now() + (window._orbTimeOffset || 0)); // Bubble drag preview
+  const today  = localDateStr(now);
   const curH   = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
   const TWO_PI = Math.PI * 2;
   const GAP    = (TWO_PI / 24) * 0.06;
@@ -9062,7 +9551,7 @@ function drawCosmodex() {
     _orbGeometry = null;
   }
 
-  const now = new Date();
+  const now = new Date(Date.now() + (window._orbTimeOffset || 0));
   const today = localDateStr(now);
 
   // Update date line in orb header
@@ -9091,7 +9580,7 @@ function drawCosmodex() {
     if (nextEl) {
       if (upcoming.length === 0) {
         if (nextLabelEl) nextLabelEl.textContent = 'Schedule';
-        nextEl.textContent = 'Nothing planned today';
+        nextEl.textContent = 'nothing planned. a perfectly empty orbit — suspicious.';
       } else {
         if (nextLabelEl) nextLabelEl.textContent = 'Next';
         const next = upcoming[0];
@@ -9134,7 +9623,7 @@ function drawCosmodex() {
       if (nextEl2) {
         if (upcoming2.length === 0) {
           if (nextLabelEl2) nextLabelEl2.textContent = 'Schedule';
-          nextEl2.textContent = 'Nothing planned today';
+          nextEl2.textContent = 'nothing planned. a perfectly empty orbit — suspicious.';
         } else {
           if (nextLabelEl2) nextLabelEl2.textContent = 'Next';
           const next2 = upcoming2[0];
@@ -9150,6 +9639,40 @@ function drawCosmodex() {
 // Tick every second (drives both mini and expanded states)
 _cosmodexInterval = setInterval(drawCosmodex, 1000);
 drawCosmodex(); // immediate first draw
+
+/* ── Entropy — the rail-side dice (choice-overload breaker) ── */
+function rollEntropy() {
+  const btn = document.getElementById('task-entropy-btn');
+  if (!btn || btn.dataset.rolling === '1') return;
+  let pool = TASKS.filter(t => !t.done && (t.energyType === 'shallow' || t.energyType === 'admin'));
+  if (pool.length === 0) pool = TASKS.filter(t => !t.done);
+  if (pool.length === 0) { showToast('nothing left to roll. the void approves.', 'info'); return; }
+
+  btn.dataset.rolling = '1';
+  btn.classList.add('rolling');
+  let frame = 0;
+  const ticker = setInterval(() => {
+    btn.textContent = DICE_FACES[frame % 6];
+    frame++;
+    if (frame >= 14) {
+      clearInterval(ticker);
+      btn.classList.remove('rolling');
+      btn.dataset.rolling = '0';
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+      btn.textContent = DICE_FACES[Math.floor(Math.random() * 6)];
+      const row = document.querySelector(`#tasks-body .task-row[data-task-id="${(window.CSS && CSS.escape) ? CSS.escape(picked.id) : picked.id}"]`);
+      if (row) {
+        _kbSelect(row);
+        row.classList.remove('entropy-hit');
+        void row.offsetWidth;
+        row.classList.add('entropy-hit');
+      }
+      const short = picked.title.length > 34 ? picked.title.slice(0, 34) + '…' : picked.title;
+      showToast(`the universe has spoken: ${short}`, 'info', 4000);
+    }
+  }, 55);
+}
+document.getElementById('task-entropy-btn')?.addEventListener('click', rollEntropy);
 
 /* ── Dice Gadget ───────────────────────────────────────── */
 const DICE_FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
@@ -9539,12 +10062,12 @@ function showInitiativeTasks(proj) {
   if (listEl) {
     const renderTask = t => {
       const cat = t.category ? CATEGORIES[t.category] : null;
-      const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:9px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
+      const catBadge = cat ? `<span style="font-family:var(--font-mono);font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44">${cat.label}</span>` : '';
       return `<div style="display:flex;align-items:center;gap:10px;padding:9px 16px 9px 28px;border-bottom:1px solid var(--border)">
-        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--ink)">${t.done?'✓':''}</div>
+        <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
         <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
         ${catBadge}
-        ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
+        ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
       </div>`;
     };
 
@@ -9559,7 +10082,7 @@ function showInitiativeTasks(proj) {
       html += `<div style="display:flex;align-items:center;gap:8px;padding:10px 16px 7px;border-bottom:1px solid var(--border);background:var(--elevated);position:sticky;top:0;z-index:1">
         <span style="width:7px;height:7px;border-radius:50%;background:${proj.color};flex-shrink:0"></span>
         <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.06em;color:var(--cream);font-weight:500;flex:1">${escHtml(ev.title || 'Milestone')}</span>
-        ${dateLabel ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${dateLabel}</span>` : ''}
+        ${dateLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${dateLabel}</span>` : ''}
       </div>`;
       evTasks.forEach(t => { html += renderTask(t); });
     });
@@ -9578,7 +10101,7 @@ function showPersonTasks(person) {
   const listEl  = document.getElementById('person-tasks-list');
   if (titleEl) {
     titleEl.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px">
-      <span style="width:20px;height:20px;border-radius:50%;background:${person.color};display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;color:#0d0c0a">${escHtml(person.initials)}</span>
+      <span style="width:20px;height:20px;border-radius:50%;background:${person.color};display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#0d0c0a">${escHtml(person.initials)}</span>
       Tasks linked to @${escHtml(person.name)}
     </span>`;
   }
@@ -9589,12 +10112,12 @@ function showPersonTasks(person) {
       const open = tasks.filter(t => !t.done);
       const done = tasks.filter(t => t.done);
       const renderGroup = (arr, label) => arr.length ? `
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px">${label}</div>
         ${arr.map(t => `
           <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--border)">
-            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;color:var(--ink)">${t.done?'✓':''}</div>
+            <div style="width:14px;height:14px;border-radius:4px;border:1.5px solid ${t.done?'var(--sage)':'var(--border)'};background:${t.done?'var(--sage)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--ink)">${t.done?'✓':''}</div>
             <span style="flex:1;font-size:13px;color:${t.done?'var(--muted)':'var(--cream)'};${t.done?'text-decoration:line-through':''}">${escHtml(t.title)}</span>
-            ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
+            ${t.dueDate ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${fmtDate(t.dueDate)}</span>` : ''}
           </div>`).join('')}` : '';
       listEl.innerHTML = renderGroup(open, 'Open') + renderGroup(done, 'Done');
     }
@@ -9621,7 +10144,7 @@ function renderCmdResults(query) {
     c.label.toLowerCase().includes(query.toLowerCase())
   );
   if (!filtered.length) {
-    container.innerHTML = `<div class="cmd-empty">No results</div>`;
+    container.innerHTML = `<div class="cmd-empty">the cosmos found nothing. try fewer letters.</div>`;
     return;
   }
   container.innerHTML = filtered.map((c, i) => `
@@ -9629,7 +10152,7 @@ function renderCmdResults(query) {
       ${c._personColor
         ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:${c._personColor};font-size:7px;font-weight:600;color:#0d0c0a;flex-shrink:0">${escHtml(c._personInitials)}</span>`
         : c._projColor
-          ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:${c._projColor};font-size:9px;color:#0d0c0a;flex-shrink:0">◉</span>`
+          ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:${c._projColor};font-size:10px;color:#0d0c0a;flex-shrink:0">◉</span>`
           : `<span class="cmd-result-icon">${c.icon}</span>`}
       ${escHtml(c.label)}
       ${c.keys ? `<span class="cmd-result-keys">${c.keys}</span>` : ''}
@@ -9675,21 +10198,87 @@ document.getElementById('cmd-palette')?.addEventListener('click', e => {
 });
 
 /* ── Keyboard shortcuts ────────────────────────────────── */
+
+/* Task-rail selection (j/k/x/s) */
+let _kbSelTaskId = null;
+
+function _kbVisibleRows() {
+  return [...document.querySelectorAll('#tasks-body .task-row')]
+    .filter(r => r.offsetParent !== null);
+}
+function _kbSelect(row) {
+  document.querySelectorAll('.task-row.kb-selected').forEach(r => r.classList.remove('kb-selected'));
+  if (!row) { _kbSelTaskId = null; return; }
+  row.classList.add('kb-selected');
+  _kbSelTaskId = row.dataset.taskId;
+  row.scrollIntoView({ block: 'nearest' });
+}
+function _kbMove(dir) {
+  const rows = _kbVisibleRows();
+  if (!rows.length) return;
+  const idx = rows.findIndex(r => r.dataset.taskId === _kbSelTaskId);
+  const next = idx === -1 ? (dir > 0 ? rows[0] : rows[rows.length - 1])
+                          : rows[Math.min(rows.length - 1, Math.max(0, idx + dir))];
+  _kbSelect(next);
+}
+
+/* "?" shortcut chart */
+function toggleShortcutChart() {
+  let el = document.getElementById('kb-chart');
+  if (el) { el.remove(); return; }
+  el = document.createElement('div');
+  el.id = 'kb-chart';
+  const rows = [
+    ['n', 'new task'], ['j / k', 'drift down / up the rail'], ['x', 'complete selection'],
+    ['s', 'edit / schedule selection'], ['e', 'entropy — roll a random task'],
+    ['t', 'today'], ['[  /  ]', 'previous / next day'],
+    ['⌘K · ⌘Space', 'command palette'], ['esc', 'close the nearest thing'], ['?', 'this chart'],
+  ];
+  el.innerHTML = `<div class="kb-chart-card" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="kb-chart-title">star chart</div>
+    ${rows.map(([k, d]) => `<div class="kb-chart-row"><span class="kb-chart-key">${k}</span><span class="kb-chart-desc">${d}</span></div>`).join('')}
+  </div>`;
+  el.addEventListener('click', () => el.remove());
+  document.body.appendChild(el);
+}
+
 document.addEventListener('keydown', e => {
-  // N — focus the task input
-  if (e.key === 'n' && !e.target.matches('input,textarea,select')) {
-    document.getElementById('task-add-input')?.focus();
-    return;
-  }
-  // Cmd/Ctrl+Space — command palette (skip if a modal overlay is already open)
-  if ((e.metaKey || e.ctrlKey) && e.key === ' ') {
+  const inField = e.target.matches('input,textarea,select,[contenteditable="true"]');
+
+  // Cmd/Ctrl+K or Cmd/Ctrl+Space — command palette (skip if a modal overlay is already open)
+  if ((e.metaKey || e.ctrlKey) && (e.key === ' ' || e.key.toLowerCase() === 'k')) {
     e.preventDefault();
     const pal = document.getElementById('cmd-palette');
     if (pal.classList.contains('open')) { closeCmdPalette(); }
     else if (!document.querySelector('.overlay.open')) { openCmdPalette(); }
+    return;
+  }
+
+  if (!inField && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    // N — focus the task input
+    if (e.key === 'n') { e.preventDefault(); document.getElementById('task-add-input')?.focus(); return; }
+    // j / k — walk the task rail
+    if (e.key === 'j') { _kbMove(1);  return; }
+    if (e.key === 'k') { _kbMove(-1); return; }
+    // x — complete the selected task
+    if (e.key === 'x' && _kbSelTaskId) { toggleTask(_kbSelTaskId); return; }
+    // s — schedule/edit the selected task
+    if (e.key === 's' && _kbSelTaskId) { openTaskEditModal(_kbSelTaskId); return; }
+    // e — entropy: let the universe pick
+    if (e.key === 'e') { if (typeof rollEntropy === 'function') rollEntropy(); return; }
+    // t — jump to today
+    if (e.key === 't') { document.getElementById('cal-today')?.click(); return; }
+    // [ / ] — previous / next day
+    if (e.key === '[') { document.getElementById('cal-prev')?.click(); return; }
+    if (e.key === ']') { document.getElementById('cal-next')?.click(); return; }
+    // ? — shortcut chart
+    if (e.key === '?') { toggleShortcutChart(); return; }
   }
   // ESC — close topmost open thing
   if (e.key === 'Escape') {
+    const chart = document.getElementById('kb-chart');
+    if (chart) { chart.remove(); return; }
+    if (document.querySelector('.task-row.kb-selected')) { _kbSelect(null); return; }
     if (document.getElementById('cmd-palette').classList.contains('open')) {
       closeCmdPalette(); return;
     }
@@ -9980,6 +10569,19 @@ async function restoreFromSomeday(taskId) {
 /* ═══════════════════════════════════════════════════════════
    DAILY RITUAL
 ═══════════════════════════════════════════════════════════ */
+/* One-click re-entry: every overdue task moves to tomorrow. Reversible. */
+async function rescheduleAllOverdue() {
+  const today = localDateStr(new Date());
+  const overdue = TASKS.filter(t => !t.done && t.dueDate && t.dueDate < today);
+  if (!overdue.length) { showToast('no slipped orbits. all clear.', 'info'); return; }
+  const tomorrow = localDateStr(new Date(Date.now() + 86400000));
+  const previous = overdue.map(t => ({ id: t.id, dueDate: t.dueDate }));
+  for (const t of overdue) await updateTask(t.id, { dueDate: tomorrow });
+  showUndoToast(`${overdue.length} task${overdue.length > 1 ? 's' : ''} re-entered — tomorrow morning.`, async () => {
+    for (const p of previous) await updateTask(p.id, { dueDate: p.dueDate });
+  });
+}
+
 function computeMomentumScore() {
   // Habit streak contribution (up to 50pts)
   const today = localDateStr(new Date());
@@ -10349,14 +10951,14 @@ function renderDoneWall() {
   grid.innerHTML = tasks.map(task => {
     const cat = task.category ? CATEGORIES[task.category] : null;
     const catBadge = cat
-      ? `<span style="font-family:var(--font-mono);font-size:9px;padding:1px 6px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;white-space:nowrap">${cat.label}</span>`
+      ? `<span style="font-family:var(--font-mono);font-size:10px;padding:1px 6px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;white-space:nowrap">${cat.label}</span>`
       : '';
     const dateLabel = task.doneDate ? fmtDate(task.doneDate) : '';
     const timeBadge = task.timeSpentMinutes
-      ? `<span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
+      ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);white-space:nowrap">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : (task.timeSpentMinutes / 60).toFixed(1) + 'h'}</span>`
       : '';
     return `<div class="done-card">
-      <span style="font-family:var(--font-mono);font-size:9px;color:var(--sage);flex-shrink:0">✓</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);flex-shrink:0">✓</span>
       <span class="done-card-title">${escHtml(task.title)}</span>
       <div class="done-card-meta">${catBadge}${timeBadge}</div>
       ${dateLabel ? `<span class="done-card-date">${dateLabel}</span>` : ''}
@@ -10846,6 +11448,58 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   document.getElementById('td-pomo-toggle')?.addEventListener('click', togglePomoCol);
 })();
 
+
+/* ══ KINETIC: Bubble time-drag — spin the day dial to preview any hour ══ */
+(function initOrbTimeDrag() {
+  const cvs = document.getElementById('cosmodex-canvas');
+  if (!cvs) return;
+  window._orbTimeOffset = 0;
+  let drag = null, springRaf = null;
+
+  const center = () => {
+    const r = cvs.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  };
+
+  cvs.addEventListener('pointerdown', e => {
+    if (!orb.classList.contains('expanded')) return;
+    if (springRaf) { cancelAnimationFrame(springRaf); springRaf = null; }
+    const c = center();
+    drag = { lastA: Math.atan2(e.clientY - c.y, e.clientX - c.x), c };
+    try { cvs.setPointerCapture(e.pointerId); } catch {}
+    cvs.classList.add('orb-dragging');
+  });
+  cvs.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const a = Math.atan2(e.clientY - drag.c.y, e.clientX - drag.c.x);
+    let dA = a - drag.lastA;
+    if (dA > Math.PI) dA -= Math.PI * 2;
+    if (dA < -Math.PI) dA += Math.PI * 2;
+    drag.lastA = a;
+    drag.moved = (drag.moved || 0) + Math.abs(dA);
+    // full turn of the dial = 24 h; clamp preview to ±48 h
+    window._orbTimeOffset = Math.max(-172800e3, Math.min(172800e3,
+      window._orbTimeOffset + (dA / (Math.PI * 2)) * 86400e3));
+    drawCosmodex();
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    const wasSpin = (drag.moved || 0) > 0.02;
+    drag = null;
+    cvs.classList.remove('orb-dragging');
+    if (!wasSpin) { window._orbTimeOffset = 0; drawCosmodex(); return; } // plain click: petal taps still work
+    const from = window._orbTimeOffset, t0 = performance.now(), D = 700;
+    const spring = () => {
+      const p = Math.min(1, (performance.now() - t0) / D);
+      window._orbTimeOffset = from * (1 - (1 - Math.pow(1 - p, 3)));
+      drawCosmodex();
+      springRaf = p < 1 ? requestAnimationFrame(spring) : null;
+    };
+    spring();
+  };
+  cvs.addEventListener('pointerup', endDrag);
+  cvs.addEventListener('pointercancel', endDrag);
+})();
 /* ══ MIND MAP ENGINE ══════════════════════════════════════════════════════ */
 window.initMindMap = (function(){
   let _init = false;
@@ -11794,6 +12448,35 @@ function _drillSaveApiKey(key) {
   s.apiKeys[s.provider || 'anthropic'] = key.trim();
   _saveDrillSettings(s);
 }
+
+/* ══ KINETIC: scrub the drill timer — drag the digits to trade seconds ══ */
+let _drillScrub = null;
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest?.('#drill-timer-display');
+  if (!el) return;
+  _drillScrub = { x: e.clientX, left: Math.max(0, _drillTimerLeft) };
+  el.classList.add('scrubbing');
+});
+document.addEventListener('pointermove', e => {
+  if (!_drillScrub) return;
+  const dx = e.clientX - _drillScrub.x;
+  _drillTimerLeft = Math.max(0, Math.min(30 * 60, _drillScrub.left + Math.round(dx / 4) * 5));
+  _renderDrillTimerDisplay();
+});
+document.addEventListener('pointerup', () => {
+  if (!_drillScrub) return;
+  document.getElementById('drill-timer-display')?.classList.remove('scrubbing');
+  // Scrubbed to a positive time with no countdown running → start one
+  if (_drillTimerLeft > 0 && !_drillTimerId) {
+    _drillTimerTotal = Math.max(_drillTimerTotal || 0, _drillTimerLeft);
+    _drillTimerId = setInterval(() => {
+      _drillTimerLeft--;
+      _renderDrillTimerDisplay();
+      if (_drillTimerLeft <= 0) stopDrillTimer();
+    }, 1000);
+  }
+  _drillScrub = null;
+});
 /* ══ COMM DRILL — GRADING PROVIDERS (optional auto-grade automation) ══ */
 // → future file: cosmodex-drill-providers.js
 // Off-by-default direct-API grading for the Communication Drill (src/11-comm-drill.js).
@@ -11914,3 +12597,158 @@ async function drillAutoGrade() {
     if (btn) { btn.disabled = false; btn.textContent = 'Auto-Grade'; }
   }
 }
+/* ══ ORBIT RECAP ══
+   End-of-day constellation: a 24h dial sweeps the day, stars pop where
+   tasks were completed, then connect into a constellation (peak-end rule —
+   the day is remembered by its sky, not its backlog).
+   Open via command palette ("orbit complete") or auto once per evening. */
+
+let _orRaf = null;
+
+function _orStarAngle(task) {
+  // Angle on the 24h dial (0h at top, clockwise). Best source wins:
+  // doneAt timestamp → linked calEvent start → seeded pseudo-time (9:00–21:00).
+  if (task.doneAt) {
+    const d = new Date(task.doneAt);
+    if (!isNaN(d)) return ((d.getHours() * 60 + d.getMinutes()) / 1440) * Math.PI * 2 - Math.PI / 2;
+  }
+  const ev = task.calEventId ? CAL_EVENTS.find(e => e.id === task.calEventId) : null;
+  if (ev?.startTime) {
+    const [h, m] = ev.startTime.split(':').map(Number);
+    return ((h * 60 + m) / 1440) * Math.PI * 2 - Math.PI / 2;
+  }
+  let hash = 0;
+  for (const ch of String(task.id)) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  const mins = 540 + (hash % 720); // 9:00–21:00
+  return (mins / 1440) * Math.PI * 2 - Math.PI / 2;
+}
+
+function openOrbitRecap() {
+  if (document.getElementById('orbit-recap')) return;
+  const today = localDateStr(new Date());
+  const doneToday = TASKS.filter(t => t.done && t.doneDate === today);
+  const focusSecs = doneToday.reduce((s, t) =>
+    s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0) + ((t.timeSpentMinutes || 0) * 60), 0);
+  const focusStr = focusSecs >= 3600
+    ? (focusSecs / 3600).toFixed(1).replace(/\.0$/, '') + ' focus hours'
+    : focusSecs > 0 ? Math.round(focusSecs / 60) + ' focus minutes' : null;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'orbit-recap';
+  overlay.innerHTML = `
+    <canvas id="orbit-recap-cvs" width="520" height="520" aria-label="Today as a constellation"></canvas>
+    <div class="orbit-recap-line" id="orbit-recap-line"></div>
+    <div class="orbit-recap-hint">click anywhere to return to the present</div>`;
+  overlay.addEventListener('click', closeOrbitRecap);
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('show'));
+
+  const cvs = document.getElementById('orbit-recap-cvs');
+  const ctx = cvs.getContext('2d');
+  const W = 520, H = 520, cx = W / 2, cy = H / 2, R = 190;
+  const now = new Date();
+  const nowAng = ((now.getHours() * 60 + now.getMinutes()) / 1440) * Math.PI * 2 - Math.PI / 2;
+
+  const stars = doneToday
+    .map(t => ({ ang: _orStarAngle(t), title: t.title }))
+    .sort((a, b) => a.ang - b.ang)
+    .map(s => ({ ...s, r: R * (0.55 + 0.35 * Math.abs(Math.sin(s.ang * 7))) }));
+
+  const t0 = performance.now();
+  const SWEEP_MS = 1600, LINK_MS = 900;
+
+  function frame() {
+    const t = performance.now() - t0;
+    ctx.clearRect(0, 0, W, H);
+
+    // Dial
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+    for (let h = 0; h < 24; h += 3) {
+      const a = (h / 24) * Math.PI * 2 - Math.PI / 2;
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = "300 10px 'DM Mono',monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(h), cx + (R + 18) * Math.cos(a), cy + (R + 18) * Math.sin(a));
+    }
+
+    // Sweep from midnight to now
+    const sweepP = Math.min(1, t / SWEEP_MS);
+    const eased = 1 - Math.pow(1 - sweepP, 3);
+    const sweepAng = -Math.PI / 2 + eased * (nowAng + Math.PI / 2 + (nowAng < -Math.PI / 2 ? Math.PI * 2 : 0));
+    ctx.strokeStyle = 'rgba(212,162,78,0.5)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, sweepAng); ctx.stroke();
+    ctx.strokeStyle = 'rgba(212,162,78,0.9)';
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(sweepAng), cy + R * Math.sin(sweepAng)); ctx.stroke();
+
+    // Stars pop as the sweep passes them
+    const visible = stars.filter(s => {
+      const norm = (s.ang + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
+      const swept = (sweepAng + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2.0001);
+      return norm <= swept || sweepP >= 1;
+    });
+    // Constellation lines after the sweep completes
+    if (sweepP >= 1 && visible.length > 1) {
+      const linkP = Math.min(1, (t - SWEEP_MS) / LINK_MS);
+      const segs = (visible.length - 1) * linkP;
+      ctx.strokeStyle = 'rgba(212,162,78,0.30)'; ctx.lineWidth = 0.7;
+      for (let i = 0; i < Math.floor(segs); i++) {
+        const a = visible[i], b = visible[i + 1];
+        ctx.beginPath();
+        ctx.moveTo(cx + a.r * Math.cos(a.ang), cy + a.r * Math.sin(a.ang));
+        ctx.lineTo(cx + b.r * Math.cos(b.ang), cy + b.r * Math.sin(b.ang));
+        ctx.stroke();
+      }
+    }
+    visible.forEach(s => {
+      const x = cx + s.r * Math.cos(s.ang), y = cy + s.r * Math.sin(s.ang);
+      ctx.fillStyle = 'rgba(212,162,78,0.95)';
+      ctx.shadowColor = 'rgba(212,162,78,0.8)'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    // Caption after the constellation forms
+    if (t > SWEEP_MS + LINK_MS) {
+      const line = document.getElementById('orbit-recap-line');
+      if (line && !line.textContent) {
+        const parts = [`${doneToday.length} task${doneToday.length === 1 ? '' : 's'}`];
+        if (focusStr) parts.push(focusStr);
+        line.textContent = doneToday.length
+          ? parts.join(' · ') + ' · orbit complete.'
+          : 'a quiet orbit. they happen.';
+        line.classList.add('show');
+      }
+    }
+    _orRaf = requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+function closeOrbitRecap() {
+  if (_orRaf) { cancelAnimationFrame(_orRaf); _orRaf = null; }
+  const el = document.getElementById('orbit-recap');
+  if (!el) return;
+  el.classList.remove('show');
+  setTimeout(() => el.remove(), 350);
+}
+
+/* Palette entry + evening auto-open (once per day, only if something got done) */
+if (typeof CMD_COMMANDS_BASE !== 'undefined') {
+  CMD_COMMANDS_BASE.push({ label: 'Orbit complete — today\'s recap', icon: '✦', action: openOrbitRecap, keys: '' });
+}
+
+function _orMaybeAutoOpen() {
+  if (new Date().getHours() < 21) return;
+  const today = localDateStr(new Date());
+  if (localStorage.getItem('cdx_recap_date') === today) return;
+  if (!TASKS.some(t => t.done && t.doneDate === today)) return;
+  if (document.querySelector('.overlay.open') || document.getElementById('orbit-recap')) return;
+  localStorage.setItem('cdx_recap_date', today);
+  openOrbitRecap();
+}
+setInterval(_orMaybeAutoOpen, 10 * 60 * 1000);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('orbit-recap')) closeOrbitRecap();
+}, true);

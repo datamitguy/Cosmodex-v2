@@ -227,7 +227,7 @@ function renderMilestoneDashboard() {
       <div class="ms-card-milestones">
         ${visibleEvents.map(ev => {
           const evDone = (ev.activities||[]).length > 0 && (ev.activities||[]).every(a => a.done);
-          const dotColor = evDone ? 'rgb(53,249,47)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
+          const dotColor = evDone ? 'rgb(111,174,135)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
           const linkedTasks = (ev.activities||[]).filter(a => a.taskId).slice(0,3)
             .map(a => { const t = TASKS.find(t => t.id === a.taskId); return t ? { title: t.title, done: t.done } : { title: a.text, done: a.done }; });
           return `<div>
@@ -241,25 +241,25 @@ function renderMilestoneDashboard() {
             </div>` : ''}
           </div>`;
         }).join('')}
-        ${events.length > 4 ? `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.08em;padding-left:11px">+${events.length-4} more</div>` : ''}
-      </div>` : `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:0.06em;opacity:0.6">No milestones yet</div>`;
+        ${events.length > 4 ? `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding-left:11px">+${events.length-4} more</div>` : ''}
+      </div>` : `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em;opacity:0.6">no milestones charted yet</div>`;
 
     outer.innerHTML = `
       <div class="ms-dash-card-inner">
         <div class="ms-dash-card-title">${escHtml(proj.title)}</div>
         <div class="ms-dash-card-meta">
-          ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px;font-family:var(--font-mono);font-size:9px;letter-spacing:0.05em">${cat.label}</span>` : ''}
+          ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.05em">${cat.label}</span>` : ''}
           <span>${escHtml(fmtDate(proj.startDate))} – ${escHtml(fmtDate(proj.endDate))}</span>
         </div>
         ${msListHtml}
         <div class="ms-dash-card-footer">
           <div>
-            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(53,249,47)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
+            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(111,174,135)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
             <div class="ms-dash-acts-label">${doneActs}/${totalActs} done</div>
           </div>
           <div style="text-align:right;display:flex;align-items:center;gap:8px">
             <div class="ms-dash-milestones-count">${events.length} ms</div>
-            <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
+            <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
           </div>
         </div>
       </div>`;
@@ -304,10 +304,10 @@ function showArchivedProjectsOverlay() {
               return `<div class="ms-arch-item" data-arch-proj="${proj.id}" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:background 150ms">
                 <div style="display:flex;align-items:center;gap:8px">
                   <div style="flex:1;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.7)">${escHtml(proj.title)}</div>
-                  <span style="font-family:var(--font-mono);font-size:9px;color:var(--sage)">✓ done</span>
-                  <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:9px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--sage)">✓ done</span>
+                  <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
                 </div>
-                <div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
+                <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
               </div>`;
             }).join('')}
       </div>
@@ -365,10 +365,10 @@ function renderArchivedPage() {
         <div style="flex:1;height:2px;background:rgba(255,255,255,0.08);border-radius:2px;max-width:80px">
           <div style="height:2px;background:var(--sage);border-radius:2px;width:${pct}%"></div>
         </div>
-        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${doneActs}/${allActs.length}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${doneActs}/${allActs.length}</span>
       </div>
       <div style="display:flex;justify-content:flex-end">
-        <button class="btn-ghost arch-page-unarchive-btn" data-arch-unarchive="${proj.id}" style="font-size:9px;padding:4px 10px;color:var(--muted)">Unarchive</button>
+        <button class="btn-ghost arch-page-unarchive-btn" data-arch-unarchive="${proj.id}" style="font-size:10px;padding:4px 10px;color:var(--muted)">Unarchive</button>
       </div>
     </div>`;
   }).join('');
@@ -449,7 +449,7 @@ function renderMilestoneListsPanel(projId) {
   body.innerHTML = `
     <div style="padding:6px 0 8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted)">${doneCount}/${items.length} done</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${doneCount}/${items.length} done</span>
       </div>
       <div id="ms-items-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
         ${items.map(item => `
@@ -462,7 +462,7 @@ function renderMilestoneListsPanel(projId) {
       </div>
       <div style="display:flex;gap:4px">
         <input id="ms-new-item-inp" class="form-input" placeholder="Add item…" style="flex:1;font-size:11px;padding:4px 7px;height:26px">
-        <button id="ms-new-item-btn" class="btn-primary" style="font-size:9px;padding:4px 8px;height:26px;flex-shrink:0">+</button>
+        <button id="ms-new-item-btn" class="btn-primary" style="font-size:10px;padding:4px 8px;height:26px;flex-shrink:0">+</button>
       </div>
     </div>`;
 
@@ -510,14 +510,14 @@ function renderMilestoneTimeline(projId) {
     const doneCount = acts.filter(a => a.done).length;
     const isPast = new Date(ev.date) < new Date();
     const dotColor = doneCount === acts.length && acts.length > 0
-      ? 'rgb(53,249,47)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
+      ? 'rgb(111,174,135)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
 
     const actItems = acts.map(a => {
       const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
       const cat = task?.category ? CATEGORIES[task.category] : null;
       const actCatClr = getCatColor(task?.category);
       const catBadge = cat
-        ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${actCatClr}22;color:${actCatClr};border:1px solid ${actCatClr}44;font-family:var(--font-mono)">${cat.label}</span>`
+        ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${actCatClr}22;color:${actCatClr};border:1px solid ${actCatClr}44;font-family:var(--font-mono)">${cat.label}</span>`
         : '';
       return `<div class="ms-action-item">
         <div class="ms-action-check ${a.done?'done':''}" data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">${a.done?'✓':''}</div>
@@ -532,7 +532,7 @@ function renderMilestoneTimeline(projId) {
         <div class="ms-alt-card-title">${escHtml(ev.title)}</div>
         ${ev.description ? `<div class="ms-alt-card-desc">${escHtml(ev.description)}</div>` : ''}
         <div class="ms-action-items-list" data-ev-id="${escAttr(ev.id)}" style="margin-bottom:10px">
-          ${actItems || '<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);padding:4px 0">No tasks yet.</div>'}
+          ${actItems || '<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:4px 0">No tasks yet.</div>'}
         </div>
         <div class="ms-add-task-row" data-ev-id="${escAttr(ev.id)}" style="border-top:1px solid var(--border);padding-top:8px">
           <div style="display:flex;gap:6px;margin-bottom:4px">
@@ -549,9 +549,9 @@ function renderMilestoneTimeline(projId) {
 
     const dotCol = `
       <div class="ms-alt-dot-col">
-        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(53,249,47,0.9),0 0 20px rgba(53,249,47,0.5)':''}"></div>
+        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(111,174,135,0.9),0 0 20px rgba(111,174,135,0.5)':''}"></div>
         <div class="ms-alt-date-badge">${escHtml(fmtDate(ev.date))}</div>
-        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:8px;color:${doneCount===acts.length?'rgb(53,249,47)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
+        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:10px;color:${doneCount===acts.length?'rgb(111,174,135)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
       </div>`;
 
     // Alternate: even idx → card on left, odd → card on right
@@ -567,15 +567,15 @@ function renderMilestoneTimeline(projId) {
   const metaHtml = `
     <div style="padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
       <div style="margin-bottom:14px">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Notes & Context</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Notes & Context</div>
         <textarea id="ms-inline-notes" rows="2" placeholder="Add notes or context…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-body);font-size:12px;color:var(--cream);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
       </div>
       <div style="margin-bottom:14px">
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Mission Brief</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Mission Brief</div>
         <textarea id="ms-inline-mission" rows="2" placeholder="Why this matters…" style="width:100%;background:transparent;border:none;border-left:2px solid rgba(255,255,255,0.12);outline:none;font-family:var(--font-body);font-size:12px;color:var(--cream);line-height:1.6;resize:none;padding-left:10px;transition:border-color 0.2s"></textarea>
       </div>
       <div>
-        <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
         <textarea id="ms-inline-antigoals" rows="2" placeholder="What we will NOT do…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-mono);font-size:10px;color:var(--rust);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
       </div>
     </div>`;
@@ -588,10 +588,10 @@ function renderMilestoneTimeline(projId) {
       </div>
       <div class="ms-alt-progress-wrap">
         <div class="ms-alt-progress-bar" data-proj-bar="${escAttr(proj.id)}">
-          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(53,249,47);opacity:0.25"></div>
-          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(53,249,47);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(53,249,47,0.7),0 0 20px rgba(53,249,47,0.3)"></div>
+          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(111,174,135);opacity:0.25"></div>
+          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(111,174,135);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(111,174,135,0.7),0 0 20px rgba(111,174,135,0.3)"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:9px;color:var(--muted);margin-top:4px">
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">
           <span>${pct}% complete · ${doneActs}/${totalActs} tasks</span>
           <span>${Math.round(elapsedPct)}% elapsed</span>
         </div>
@@ -600,7 +600,7 @@ function renderMilestoneTimeline(projId) {
       ${events.length ? `
         <div class="ms-alt-entries">
           <div class="ms-alt-center-line"></div>
-          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(53,249,47)"></div>
+          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(111,174,135)"></div>
           <div class="ms-alt-cap">
             <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
             <div class="ms-alt-cap-label">Start · ${escHtml(fmtDate(proj.startDate))}</div>
@@ -612,7 +612,7 @@ function renderMilestoneTimeline(projId) {
           </div>
         </div>`
       : `<div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:40px 0">
-          No milestones yet. Click "+ Milestone" above to add one.
+          no milestones on this trajectory yet. click "+ Milestone" above to plot one.
         </div>`}
     </div>`;
 
@@ -670,8 +670,8 @@ function renderMsActivityList() {
     const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
     const cat  = task?.category ? CATEGORIES[task.category] : null;
     const modCatClr = getCatColor(task?.category);
-    const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:8px;color:var(--sage);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
+    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--sage);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
         <span style="flex:1;font-family:var(--font-body);font-size:13px;color:var(--cream)">${escHtml(a.text||a.title||'')}</span>
@@ -785,7 +785,7 @@ function showMsTaskSearchResults(query, evId, containerEl) {
   containerEl.style.display = 'block';
   containerEl.innerHTML = results.map(t => {
     const cat = t.category ? CATEGORIES[t.category] : null;
-    const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
     const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div>`;
     return `<div class="ms-task-search-result" data-task-id="${escAttr(t.id)}" data-ev-id="${escAttr(evId)}">${dot}<span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
   }).join('');
@@ -1024,7 +1024,7 @@ function initMilestonesPanel() {
         modalSearchRes.style.display = 'block';
         modalSearchRes.innerHTML = results.map(t => {
           const cat = t.category ? CATEGORIES[t.category] : null;
-          const catBadge = cat ? `<span style="font-size:8px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+          const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
           return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--rust)':t.priority==='med'?'var(--amber)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
         }).join('');
       }
@@ -1292,7 +1292,7 @@ function initMilestonesPanel() {
     const calEl = document.getElementById('pm-cal-grid');
     if (calEl) {
       let html = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d =>
-        `<div style="font-family:var(--font-mono);font-size:9px;color:var(--muted);text-align:center;padding:2px">${d}</div>`).join('');
+        `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);text-align:center;padding:2px">${d}</div>`).join('');
       for (let i = 0; i < firstDow; i++) html += `<div></div>`;
       for (let d = 1; d <= daysInMonth; d++) {
         const ds = `${key}-${String(d).padStart(2,'0')}`;
@@ -1591,3 +1591,19 @@ function initMilestonesPanel() {
   };
 })();
 
+
+/* ══ KINETIC: project cards tilt toward the cursor ══ */
+let _msTiltCard = null;
+document.addEventListener('pointermove', e => {
+  const card = e.target.closest?.('.ms-dash-card-outer');
+  if (card !== _msTiltCard) {
+    if (_msTiltCard) { _msTiltCard.style.transform = ''; _msTiltCard.classList.remove('tilting'); }
+    _msTiltCard = card || null;
+    if (card) card.classList.add('tilting');
+  }
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  const dx = (e.clientX - r.left) / r.width - 0.5;
+  const dy = (e.clientY - r.top) / r.height - 0.5;
+  card.style.transform = `perspective(700px) rotateX(${(-dy * 5).toFixed(2)}deg) rotateY(${(dx * 6).toFixed(2)}deg) translateZ(4px)`;
+});
