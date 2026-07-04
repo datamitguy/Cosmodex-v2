@@ -1310,60 +1310,71 @@
     </div>
     <div class="pf-body">
       <div class="pomo-body-inner" style="padding:16px 16px 14px">
-        <div class="pomo-ev-label">Focus Session</div>
-        <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
-        <div class="pomo-tasks">
-          <div class="pomo-tasks-head">
-            <span class="pomo-tasks-lbl" id="pomo-tasks-lbl">FOCUS TASK · TODAY</span>
-            <input id="pomo-task-search" class="pomo-tasks-search" placeholder="⌕ search all tasks…" autocomplete="off">
-          </div>
-          <div class="pomo-task-list" id="pomo-task-list"></div>
-        </div>
-        <div class="pomo-ring-wrap">
-          <div class="pf-breath-bg-outer"></div>
-          <div class="pf-breath-bg-inner"></div>
-          <canvas id="pomo-ring" width="188" height="188"></canvas>
-          <div class="pomo-center">
-            <div class="pomo-time" id="pomo-time">25:00</div>
-            <div class="pomo-phase-label" id="pomo-phase">Ready</div>
-          </div>
-        </div>
-        <div class="pomo-swipe-section">
-          <div class="pomo-swipe-ctrl">
-            <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
-            <div class="pomo-swipe-track" id="pomo-sw-track">
-              <div class="pomo-swipe-inner">
-                <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
-                  <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
-                  <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:10px;color:var(--muted)">min</div>
-                </div>
-                <div class="pomo-ticks" id="pomo-ticks"></div>
+        <div class="pomo-page-eyebrow">FOCUS · COMMIT MODE</div>
+        <div class="pomo-page-headline">One focus that cannot slip…</div>
+        <div class="pomo-page-cols">
+          <!-- LEFT: ring + timer + controls (design-system "commit" card) -->
+          <div class="pomo-col-focus">
+            <div class="pomo-ring-wrap">
+              <div class="pf-breath-bg-outer"></div>
+              <div class="pf-breath-bg-inner"></div>
+              <canvas id="pomo-ring" width="188" height="188"></canvas>
+              <div class="pomo-center">
+                <div class="pomo-time" id="pomo-time">25:00</div>
+                <div class="pomo-phase-label" id="pomo-phase">Ready</div>
               </div>
             </div>
-            <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
+            <div class="pomo-swipe-section">
+              <div class="pomo-swipe-ctrl">
+                <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
+                <div class="pomo-swipe-track" id="pomo-sw-track">
+                  <div class="pomo-swipe-inner">
+                    <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
+                      <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
+                      <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:10px;color:var(--muted)">min</div>
+                    </div>
+                    <div class="pomo-ticks" id="pomo-ticks"></div>
+                  </div>
+                </div>
+                <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
+              </div>
+            </div>
+            <div class="pomo-btns">
+              <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
+              <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
+            </div>
+            <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:#fff;margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
+              <div style="display:flex;gap:8px;justify-content:center">
+                <button id="pomo-done-yes" style="background:rgba(255,255,255,0.9);color:#000;border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
+                <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
+              </div>
+            </div>
+            <div class="pomo-sess" id="pomo-sess">
+              <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+              <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+            </div>
+            <div class="pomo-page-lockline">SESSION LOCKED · ESC TO LEAVE</div>
           </div>
-        </div>
-        <div class="pomo-btns">
-          <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
-          <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
-        </div>
-        <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
-          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:var(--gold);margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
-          <div style="display:flex;gap:8px;justify-content:center">
-            <button id="pomo-done-yes" style="background:var(--gold);color:var(--ink);border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
-            <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
-          </div>
-        </div>
-        <div class="pomo-sess" id="pomo-sess">
-          <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-          <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-        </div>
-        <div class="pomo-checklist">
-          <div class="pomo-checklist-lbl">Session checklist</div>
-          <div class="pomo-check-items" id="pomo-check-items"></div>
-          <div class="pomo-check-add">
-            <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
-            <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
+          <!-- RIGHT: focus task + session checklist (design-system "buckets") -->
+          <div class="pomo-col-side">
+            <div class="pomo-ev-label">Focus Session</div>
+            <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
+            <div class="pomo-tasks">
+              <div class="pomo-tasks-head">
+                <span class="pomo-tasks-lbl" id="pomo-tasks-lbl">FOCUS TASK · TODAY</span>
+                <input id="pomo-task-search" class="pomo-tasks-search" placeholder="⌕ search all tasks…" autocomplete="off">
+              </div>
+              <div class="pomo-task-list" id="pomo-task-list"></div>
+            </div>
+            <div class="pomo-checklist">
+              <div class="pomo-checklist-lbl">Session checklist</div>
+              <div class="pomo-check-items" id="pomo-check-items"></div>
+              <div class="pomo-check-add">
+                <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
+                <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
