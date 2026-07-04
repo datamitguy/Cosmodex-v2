@@ -199,6 +199,11 @@ let _settings = JSON.parse(localStorage.getItem('cdx_v2_settings') || 'null') ||
 if (!_settings.defaultCategory) _settings.defaultCategory = Object.keys(CATEGORIES)[0] || '';
 function saveSettings() { localStorage.setItem('cdx_v2_settings', JSON.stringify(_settings)); }
 
+// Focus/effort time attributed to a task. Counts ONLY the minutes the user
+// logs in the mandatory close prompt (timeSpentMinutes). The pomodoro/commit
+// timers no longer inflate focus stats — only deliberate task time adds up.
+function taskEffortSecs(t) { return (t && t.timeSpentMinutes ? t.timeSpentMinutes * 60 : 0); }
+
 /* ── Theme ─────────────────────────────────────────────── */
 (function initTheme() {
   const saved = localStorage.getItem('cdx_theme') || 'dark';
@@ -3925,7 +3930,7 @@ function renderInsights() {
   for (let i = 13; i >= 0; i--) {
     const ds = localDateStr(new Date(Date.now() - i * 86400000));
     const dayTasks = TASKS.filter(t => t.done && t.doneDate === ds);
-    const secs = dayTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+    const secs = dayTasks.reduce((s, t) => s + taskEffortSecs(t), 0);
     constData.push({ date: ds, tasks: dayTasks.length, secs });
   }
   if (panelVisible) {
@@ -3968,26 +3973,15 @@ function renderInsights() {
   // ── Focus Time ────────────────────────────────────────
   const focusThreshold = 4 * 3600; // 4h = neon green threshold
   const weekAgo = localDateStr(new Date(Date.now() - 6 * 86400000));
-  let weekSecs = 0, pomoSecs = 0, commitSecs = 0;
+  let weekSecs = 0;
   const byCat = {};
   TASKS.forEach(task => {
-    const pomo = task.sessionTimeSecs || 0, commit = task.timeSpentSeconds || 0;
-    const taskSecs = pomo + commit;
+    const taskSecs = taskEffortSecs(task);
     if (taskSecs <= 0) return;
-    pomoSecs += pomo; commitSecs += commit;
     const dd = task.doneDate || task.dueDate || '';
     if (dd >= weekAgo) weekSecs += taskSecs;
     const cat = task.category || 'uncategorised';
     byCat[cat] = (byCat[cat] || 0) + taskSecs;
-  });
-  CAL_EVENTS.forEach(ev => {
-    if (ev.allDay || !ev.duration) return;
-    const lt = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : null;
-    if (lt && (lt.sessionTimeSecs || lt.timeSpentSeconds)) return;
-    const secs = (ev.duration || 0) * 60;
-    if (ev.date >= weekAgo) weekSecs += secs;
-    const cat = (lt?.category) || 'scheduled';
-    byCat[cat] = (byCat[cat] || 0) + secs;
   });
   setEl('ins-focus-time', weekSecs > 0 ? _insFmtHrs(weekSecs) : '—');
   const focusBar = document.getElementById('ins-focus-bar');
@@ -3997,7 +3991,7 @@ function renderInsights() {
     focusBar.style.boxShadow = weekSecs >= focusThreshold ? '0 0 8px rgba(57,255,20,0.3)' : 'none';
   }
   const focusSub = document.getElementById('ins-focus-sub');
-  if (focusSub) focusSub.textContent = `Pomo ${_insFmtHrs(pomoSecs)} · Commit ${_insFmtHrs(commitSecs)}`;
+  if (focusSub) focusSub.textContent = weekSecs > 0 ? 'Logged task time this week' : 'Log time when you close a task';
 
   // ── Habit Rate (7-day) ────────────────────────────────
   const last7 = []; let h7Done = 0, h7Total = 0;
@@ -4034,7 +4028,7 @@ function renderInsights() {
     const d = new Date(Date.now() - i * 86400000);
     const ds = localDateStr(d);
     const dayTasks = TASKS.filter(t => t.done && t.doneDate === ds);
-    const secs = dayTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+    const secs = dayTasks.reduce((s, t) => s + taskEffortSecs(t), 0);
     pulseData.push({ date: ds, count: dayTasks.length, secs });
   }
   // Compute streaks + best day
@@ -4067,8 +4061,7 @@ function renderInsights() {
   const energyMap = { deep: 3, shallow: 2, quick: 1, admin: 1.5 };
   TASKS.forEach(t => {
     if (!t.category) return;
-    const pomo = t.sessionTimeSecs || 0, commit = t.timeSpentSeconds || 0;
-    const secs = pomo + commit;
+    const secs = taskEffortSecs(t);
     if (secs <= 0) return;
     const cat = t.category;
     if (!catDataMap[cat]) catDataMap[cat] = { cat, label: CATEGORIES[cat]?.label || cat, color: getCatColor(cat), prioSum: 0, energySum: 0, count: 0, totalSecs: 0 };
@@ -4338,14 +4331,14 @@ function _renderWeekDebrief() {
   const taskDeltaStr = taskDelta > 0 ? `▲ ${taskDelta} more` : taskDelta < 0 ? `▼ ${Math.abs(taskDelta)} fewer` : 'same as';
 
   // Focus time this week vs last
-  const focusThis = thisWeekTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
-  const focusPrev = prevWeekTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+  const focusThis = thisWeekTasks.reduce((s, t) => s + taskEffortSecs(t), 0);
+  const focusPrev = prevWeekTasks.reduce((s, t) => s + taskEffortSecs(t), 0);
 
   // Top categories this week
   const catSecs = {};
   thisWeekTasks.forEach(t => {
     const cat = t.category || 'uncategorised';
-    catSecs[cat] = (catSecs[cat] || 0) + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0);
+    catSecs[cat] = (catSecs[cat] || 0) + taskEffortSecs(t);
   });
   const topCats = Object.entries(catSecs).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
@@ -7122,8 +7115,7 @@ function _tdDlv2IsFocusGoalMet() {
     const weekAgo = localDateStr(new Date(Date.now() - 6 * 86400000));
     let weekSecs = 0;
     TASKS.forEach(t => {
-      const pomo = t.sessionTimeSecs || 0, commit = t.timeSpentSeconds || 0;
-      const taskSecs = pomo + commit;
+      const taskSecs = taskEffortSecs(t);
       if (taskSecs <= 0) return;
       const dd = t.doneDate || t.dueDate || '';
       if (dd >= weekAgo) weekSecs += taskSecs;
@@ -8868,15 +8860,23 @@ function handleCheckClick(taskId, clickEvent) {
         <span style="width:7px;height:7px;border-radius:50%;background:${getCatColor(id)}"></span>${escHtml(c.label)}</button>`;
     }).join('');
   }
-  // Position near click
-  const rect = clickEvent.target.getBoundingClientRect();
+  // Position near the click target when we have one; otherwise centre it in
+  // the viewport (used by keyboard / commit / pomo completion paths).
   const popW = 250, popH = 180;
-  let left = rect.left;
-  let top  = rect.bottom + 8;
-  if (left + popW > window.innerWidth - 12) left = window.innerWidth - popW - 12;
-  if (top + popH > window.innerHeight - 12) top = rect.top - popH - 8;
-  pop.style.left = left + 'px';
-  pop.style.top  = top + 'px';
+  const tgt = clickEvent && clickEvent.target && clickEvent.target.getBoundingClientRect
+    ? clickEvent.target : null;
+  if (tgt) {
+    const rect = tgt.getBoundingClientRect();
+    let left = rect.left;
+    let top  = rect.bottom + 8;
+    if (left + popW > window.innerWidth - 12) left = window.innerWidth - popW - 12;
+    if (top + popH > window.innerHeight - 12) top = rect.top - popH - 8;
+    pop.style.left = left + 'px';
+    pop.style.top  = top + 'px';
+  } else {
+    pop.style.left = Math.round((window.innerWidth - popW) / 2) + 'px';
+    pop.style.top  = Math.round((window.innerHeight - popH) / 2) + 'px';
+  }
   pop.style.display = 'block';
 }
 
@@ -9128,6 +9128,40 @@ async function confirmSchedule() {
 
 function initScheduleModal() {
   document.getElementById('sched-confirm-btn')?.addEventListener('click', confirmSchedule);
+}
+
+/* ── Drag-to-schedule helpers ─────────────────────────────
+   Shared by the dashboard time-block grid and the Calendar page. Dropping a
+   task onto a slot gives it a calEvent (a place on the timeline); dropping an
+   existing event moves it. Both keep the task ↔ calEvent link in sync. */
+async function scheduleTaskAt(taskId, date, startTime, duration = 30) {
+  const { addDoc, serverTimestamp } = window.CDX_FB;
+  const task = TASKS.find(t => t.id === taskId);
+  if (!task || !window.CDX_USER?.uid) return;
+  try {
+    await _safeDeleteCalEvent(task.calEventId);
+    const endTime = addMinutes(startTime, duration);
+    const ref = await addDoc(_uc('calEvents'), {
+      title: task.title, taskId, date, startTime, endTime, duration,
+      color: getCatColor(task.category), createdAt: serverTimestamp()
+    });
+    // Anchor the task to this day so it stops showing as "anytime/unscheduled".
+    await updateTask(taskId, { calEventId: ref.id, dueDate: date, someday: false });
+    showToast(`Scheduled at ${_dashFmtTime(startTime)}`, 'success');
+  } catch (e) { console.error('scheduleTaskAt', e); showToast('Could not schedule', 'error'); }
+}
+
+async function moveCalEventTo(eventId, date, startTime) {
+  const { updateDoc } = window.CDX_FB;
+  const ev = (CAL_EVENTS || []).find(e => e.id === eventId);
+  if (!ev) return;
+  try {
+    const dur = ev.duration || 30;
+    await updateDoc(_ud('calEvents', eventId), {
+      date, startTime, endTime: addMinutes(startTime, dur), allDay: false
+    });
+    if (ev.taskId) await updateTask(ev.taskId, { dueDate: date });
+  } catch (e) { console.error('moveCalEventTo', e); showToast('Could not move event', 'error'); }
 }
 
 /* ── Calendar helpers ─────────────────────────────────── */
@@ -11347,8 +11381,8 @@ document.addEventListener('keydown', e => {
     // j / k — walk the task rail
     if (e.key === 'j') { _kbMove(1);  return; }
     if (e.key === 'k') { _kbMove(-1); return; }
-    // x — complete the selected task
-    if (e.key === 'x' && _kbSelTaskId) { toggleTask(_kbSelTaskId); return; }
+    // x — complete the selected task (routes through the mandatory close prompt)
+    if (e.key === 'x' && _kbSelTaskId) { handleCheckClick(_kbSelTaskId); return; }
     // s — schedule/edit the selected task
     if (e.key === 's' && _kbSelTaskId) { openTaskEditModal(_kbSelTaskId); return; }
     // e — entropy: let the universe pick
@@ -11904,15 +11938,12 @@ function initCommitMode() {
     closeCommitMode();
   });
 
-  document.getElementById('commit-done-btn')?.addEventListener('click', async () => {
-    if (_commitTaskId) {
-      if (_commitElapsed > 0) {
-        await updateTask(_commitTaskId, { timeSpentSeconds: _commitElapsed, doneDate: localDateStr(new Date()) });
-      }
-      await toggleTask(_commitTaskId);
-      showToast('Task completed!', 'success');
-    }
+  document.getElementById('commit-done-btn')?.addEventListener('click', () => {
+    const taskId = _commitTaskId;
     closeCommitMode();
+    // Route through the mandatory close prompt (theme + logged time) instead of
+    // silently completing — keeps focus-time attribution deliberate.
+    if (taskId) handleCheckClick(taskId);
   });
 
   document.getElementById('commit-snapshot-save-btn')?.addEventListener('click', async () => {
@@ -12551,15 +12582,11 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
           const promptEl = document.getElementById('pomo-complete-prompt');
           if (promptEl && _pomoEvent?.taskId) {
             promptEl.style.display = 'block';
-            document.getElementById('pomo-done-yes').onclick = async () => {
+            document.getElementById('pomo-done-yes').onclick = () => {
               promptEl.style.display = 'none';
-              const { updateDoc, serverTimestamp } = window.CDX_FB;
-              try {
-                await updateDoc(_ud('tasks', _pomoEvent.taskId), {
-                  done: true, doneDate: localDateStr(new Date())
-                });
-                showToast('Task marked done ✓', 'success', 3000);
-              } catch(e) { showToast('Could not update task', 'error'); }
+              // Route through the mandatory close prompt (theme + logged time)
+              const tid = _pomoEvent?.taskId;
+              if (tid) handleCheckClick(tid);
             };
             document.getElementById('pomo-done-no').onclick = () => { promptEl.style.display = 'none'; };
           }
@@ -12899,9 +12926,10 @@ function buildAtkRow(task, projMap, today) {
     if (e.target.closest('[data-atk-check]')) return;
     openAtkDetail(task.id);
   });
-  row.querySelector('[data-atk-check]').addEventListener('click', async e => {
+  row.querySelector('[data-atk-check]').addEventListener('click', e => {
     e.stopPropagation();
-    await toggleTask(task.id);
+    // Completing routes through the theme/time prompt; reopening skips it
+    if (task.done) toggleTask(task.id); else handleCheckClick(task.id, e);
   });
   return row;
 }
@@ -13075,9 +13103,9 @@ function openCommitRitual(preselectTaskId) {
     document.getElementById('cr-begin')?.addEventListener('click', () => {
       const task = _ritualTaskId ? TASKS.find(t => t.id === _ritualTaskId) : null;
       const intent = (document.getElementById('cr-intent')?.value || '').trim();
-      if (!task && !intent) { showToast('Name the one thing first', 'error'); return; }
+      // A task or an intent is optional — you can just start the timer.
       window.setPomoTask && window.setPomoTask(task || null, _ritualDur);
-      if (!task && intent && window.setPomoTitle) window.setPomoTitle(intent);
+      if (!task && window.setPomoTitle) window.setPomoTitle(intent || null);
       close();
       openOverlay('pomo-overlay');
     });
@@ -13101,74 +13129,118 @@ function _dashFmtTime(t) {
 }
 function _dashPrioRank(p) { return p === 'high' ? 3 : p === 'low' ? 1 : 2; }
 
+/* Dashboard today = a 30-minute time-block grid (08:00–22:00). Tasks from the
+   "Due today" card are dragged onto a block to schedule them; placed events can
+   be dragged to a new block. Drag state is held in a page-local var (reliable
+   in-page; dataTransfer is also set so the browser initiates the drag). */
+const DASH_H0 = 8, DASH_H1 = 22, DASH_SLOT_H = 30;
+const DASH_SLOTS = (DASH_H1 - DASH_H0) * 2;
+let _dashDragPayload = null;
+
+function _dashSlotTime(idx) {
+  const mins = DASH_H0 * 60 + idx * 30;
+  return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+}
+
 function _dashRenderTodayLine() {
   const body = document.getElementById('dash-cal-body');
   if (!body) return;
   const today = localDateStr(new Date());
-  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const gridStart = DASH_H0 * 60, gridEnd = DASH_H1 * 60;
 
-  // 1. Milestones — pinned above the spine (reuse the global flag banner)
+  // 1. Milestones — pinned above the grid (reuse the global flag banner)
   const msHtml = (typeof _calMilestones === 'function') ? _calMilestones(today) : '';
 
-  // 2. Timed items: calendar events + tasks that live on the calendar
-  const events = (CAL_EVENTS || []).filter(e => e.date === today && !e.allDay);
-  const evTaskIds = new Set(events.map(e => e.taskId).filter(Boolean));
-  const timed = events.map(ev => {
-    const [h, m] = (ev.startTime || '9:00').split(':').map(Number);
-    return { kind: 'event', mins: h * 60 + (m || 0), time: ev.startTime, title: ev.title,
-             color: getCatColor(TASKS.find(t => t.id === ev.taskId)?.category), id: ev.id };
-  }).sort((a, b) => a.mins - b.mins);
-
-  // 3. Untimed tasks due today (not already represented by a calendar event)
-  const anytime = (TASKS || []).filter(t =>
-    !t.someday && t.dueDate === today && !evTaskIds.has(t.id)
-  ).sort((a, b) => (a.done - b.done) || (_dashPrioRank(b.priority) - _dashPrioRank(a.priority)));
-
-  let rows = '';
-  timed.forEach(it => {
-    const past = it.mins < nowMins;
-    rows += `<div class="dash-node event${past ? ' past' : ''}" data-ev="${escAttr(it.id)}">
-      <span class="dash-node-time">${escHtml(_dashFmtTime(it.time))}</span>
-      <span class="dash-node-dot" style="--nc:${it.color}"></span>
-      <span class="dash-node-card"><span class="dash-node-title">${escHtml(it.title)}</span></span>
-    </div>`;
-  });
-  if (anytime.length) {
-    rows += `<div class="dash-node-sep">ANYTIME</div>`;
-    anytime.forEach(t => {
-      const color = getCatColor(t.category);
-      rows += `<div class="dash-node task${t.done ? ' done' : ''}" data-task="${escAttr(t.id)}">
-        <span class="dash-node-time"></span>
-        <button class="dash-node-check${t.done ? ' on' : ''}" data-toggle="${escAttr(t.id)}" aria-label="Toggle done"></button>
-        <span class="dash-node-card"><span class="dash-node-title" data-open="${escAttr(t.id)}" style="--nc:${color}">${escHtml(t.title)}</span></span>
-      </div>`;
-    });
+  // 2. Rail + drop-zone slots
+  let rail = '', slots = '';
+  for (let s = 0; s < DASH_SLOTS; s++) {
+    const time = _dashSlotTime(s);
+    const onHour = time.endsWith(':00');
+    rail  += `<div class="dash-slot-rail${onHour ? ' hour' : ''}" style="height:${DASH_SLOT_H}px">${onHour ? escHtml(_dashFmtTime(time)) : ''}</div>`;
+    slots += `<div class="dash-slot${onHour ? ' hour' : ''}" data-slot="${time}" style="height:${DASH_SLOT_H}px"></div>`;
   }
 
-  const empty = (!timed.length && !anytime.length)
-    ? `<div class="dash-empty">Nothing scheduled today. ✦<br><span>Add a task, event, or milestone.</span></div>` : '';
+  // 3. Timed events → positioned chips (draggable to move)
+  const events = (CAL_EVENTS || []).filter(e => e.date === today && !e.allDay && e.startTime);
+  let chips = '';
+  events.forEach(ev => {
+    const [h, m] = ev.startTime.split(':').map(Number);
+    const startMins = h * 60 + (m || 0);
+    if (startMins >= gridEnd) return;
+    const dur = ev.duration || 30;
+    const top = Math.max(0, (startMins - gridStart) / 30) * DASH_SLOT_H;
+    const height = Math.max((dur / 30) * DASH_SLOT_H - 2, 22);
+    const task = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : null;
+    const color = getCatColor(task?.category);
+    const past = startMins + dur <= nowMins;
+    chips += `<div class="dash-chip${task?.done ? ' done' : ''}${past ? ' past' : ''}" draggable="true"
+        data-ev-chip="${escAttr(ev.id)}" style="top:${top}px;height:${height}px;--nc:${color}">
+        <span class="dash-chip-time">${escHtml(_dashFmtTime(ev.startTime))}</span>
+        <span class="dash-chip-title">${escHtml(ev.title)}</span>
+      </div>`;
+  });
+
+  // 4. Now-line
+  let nowLine = '';
+  if (nowMins >= gridStart && nowMins <= gridEnd) {
+    const top = ((nowMins - gridStart) / 30) * DASH_SLOT_H;
+    nowLine = `<div class="dash-nowline" style="top:${top}px"><span class="dash-nowline-dot"></span></div>`;
+  }
 
   body.innerHTML =
     (msHtml ? `<div class="dash-ms-row">${msHtml}</div>` : '') +
-    `<div class="dash-spine-wrap">${rows || empty}</div>`;
+    `<div class="dash-day-grid">
+       <div class="dash-slot-railcol">${rail}</div>
+       <div class="dash-slot-col">${slots}
+         <div class="dash-chip-layer">${chips}${nowLine}</div>
+         <div class="dash-drop-marker" style="display:none"></div>
+       </div>
+     </div>`;
 
   if (typeof _wireCalMilestones === 'function') _wireCalMilestones(body);
-  // Event click → edit modal
-  body.querySelectorAll('.dash-node.event[data-ev]').forEach(el => {
-    el.addEventListener('click', e => {
-      const ev = (CAL_EVENTS || []).find(x => x.id === el.dataset.ev);
-      if (ev) showEventModal(ev, e.clientX, e.clientY);
+  _dashWireGrid(body, today);
+}
+
+function _dashWireGrid(body, dateStr) {
+  const col = body.querySelector('.dash-slot-col');
+  const marker = body.querySelector('.dash-drop-marker');
+  if (col && marker) {
+    const slotIdxAt = clientY => {
+      const r = col.getBoundingClientRect();
+      return Math.max(0, Math.min(DASH_SLOTS - 1, Math.floor((clientY - r.top) / DASH_SLOT_H)));
+    };
+    col.addEventListener('dragover', e => {
+      if (!_dashDragPayload) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      marker.style.display = 'block';
+      marker.style.top = (slotIdxAt(e.clientY) * DASH_SLOT_H) + 'px';
     });
-  });
-  // Task checkbox → toggle done
-  body.querySelectorAll('[data-toggle]').forEach(el => {
-    el.addEventListener('click', e => { e.stopPropagation(); toggleTask(el.dataset.toggle); });
-  });
-  // Task title → open its detail on the Tasks page
-  body.querySelectorAll('[data-open]').forEach(el => {
-    el.addEventListener('click', () => {
-      showMainPanel('alltasks');
-      setTimeout(() => window.openAtkDetail?.(el.dataset.open), 40);
+    col.addEventListener('dragleave', e => { if (!col.contains(e.relatedTarget)) marker.style.display = 'none'; });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      marker.style.display = 'none';
+      const p = _dashDragPayload; _dashDragPayload = null;
+      if (!p) return;
+      const time = _dashSlotTime(slotIdxAt(e.clientY));
+      if (p.kind === 'task') scheduleTaskAt(p.id, dateStr, time, 30);
+      else if (p.kind === 'event') moveCalEventTo(p.id, dateStr, time);
+    });
+  }
+  // Placed event chips — drag to move, click to edit
+  body.querySelectorAll('[data-ev-chip]').forEach(el => {
+    el.addEventListener('dragstart', e => {
+      _dashDragPayload = { kind: 'event', id: el.dataset.evChip };
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'event:' + el.dataset.evChip);
+      el.classList.add('dragging');
+    });
+    el.addEventListener('dragend', () => { _dashDragPayload = null; el.classList.remove('dragging'); });
+    el.addEventListener('click', e => {
+      const ev = (CAL_EVENTS || []).find(x => x.id === el.dataset.evChip);
+      if (ev) showEventModal(ev, e.clientX, e.clientY);
     });
   });
 }
@@ -13255,9 +13327,9 @@ function _dashRenderCards() {
         <div class="dash-commit-timer" id="dash-commit-timer">${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div>
         <div class="dash-commit-task">${escHtml(task?.title || 'Focus session')}</div>`;
     } else {
-      // Real telemetry: minutes focused today (pomodoro + commit) across tasks
+      // Real telemetry: minutes of logged task time today (close-prompt only)
       let secs = 0;
-      (TASKS || []).forEach(t => { if ((t.doneDate || t.dueDate) === today) secs += (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0); });
+      (TASKS || []).forEach(t => { if ((t.doneDate || t.dueDate) === today) secs += taskEffortSecs(t); });
       const mins = Math.round(secs / 60);
       cmEl.innerHTML = `<div class="dash-eyebrow">DEEP WORK · TODAY</div>
         <div class="dash-commit-timer">${mins}<span class="dash-big-unit">min</span></div>
@@ -13350,7 +13422,8 @@ function _dashRenderTasks() {
 
   const rows = due.map(t => {
     const overdue = t.dueDate < today;
-    return `<div class="dash-task-row" data-dash-task="${escAttr(t.id)}" title="Timebox this — start a commit session">
+    return `<div class="dash-task-row" draggable="true" data-dash-task="${escAttr(t.id)}" title="Drag onto the timeline to place it — or click to pick a time">
+      <span class="dash-task-grip">⠿</span>
       <span class="dash-task-dot" style="--nc:${getCatColor(t.category)}"></span>
       <span class="dash-task-name">${escHtml(t.title)}</span>
       ${overdue ? '<span class="dash-task-over">OVERDUE</span>' : ''}
@@ -13359,11 +13432,20 @@ function _dashRenderTasks() {
   }).join('');
 
   el.innerHTML =
-    `<div class="dash-eyebrow">DUE TODAY · ${due.length} · TIMEBOX</div>
+    `<div class="dash-eyebrow">DUE TODAY · ${due.length} · DRAG TO TIMEBOX</div>
      <div class="dash-task-list">${rows}</div>`;
 
-  el.querySelectorAll('[data-dash-task]').forEach(r =>
-    r.addEventListener('click', () => openCommitRitual(r.dataset.dashTask)));
+  el.querySelectorAll('[data-dash-task]').forEach(r => {
+    r.addEventListener('dragstart', e => {
+      _dashDragPayload = { kind: 'task', id: r.dataset.dashTask };
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'task:' + r.dataset.dashTask);
+      r.classList.add('dragging');
+    });
+    r.addEventListener('dragend', () => { _dashDragPayload = null; r.classList.remove('dragging'); });
+    // Plain click (no drag) → open the schedule modal to pick a time today
+    r.addEventListener('click', () => openScheduleModal(today, '09:00', r.dataset.dashTask, null));
+  });
 }
 
 function renderDashboardBoard() {
@@ -14555,8 +14637,7 @@ function openOrbitRecap() {
   if (document.getElementById('orbit-recap')) return;
   const today = localDateStr(new Date());
   const doneToday = TASKS.filter(t => t.done && t.doneDate === today);
-  const focusSecs = doneToday.reduce((s, t) =>
-    s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0) + ((t.timeSpentMinutes || 0) * 60), 0);
+  const focusSecs = doneToday.reduce((s, t) => s + taskEffortSecs(t), 0);
   const focusStr = focusSecs >= 3600
     ? (focusSecs / 3600).toFixed(1).replace(/\.0$/, '') + ' focus hours'
     : focusSecs > 0 ? Math.round(focusSecs / 60) + ' focus minutes' : null;
@@ -15391,6 +15472,7 @@ function _hxWire(panel) {
 
 let _calxView = 'week';          // 'day' | 'week' | 'month'
 let _calxRef  = new Date();      // anchor date the current view is built around
+let _calxDrag = null;            // { kind:'task'|'event', id } while dragging
 
 const CALX_HR_START = 7;
 const CALX_HR_END   = 22;        // grid spans 07:00–22:00
@@ -15488,7 +15570,7 @@ function _calxColumnHtml(ds, rowH, isToday, nowH) {
     const top = (e._sH - CALX_HR_START) * rowH;
     const hgt = Math.max((e._eH - e._sH) * rowH - 3, 22);
     const clr = _calxEventColor(e);
-    html += `<div class="calx-ev" data-calx-ev="${escAttr(e.taskId || '')}" title="${escAttr(e.title)}"
+    html += `<div class="calx-ev" draggable="true" data-calx-ev="${escAttr(e.taskId || '')}" data-ev-move="${escAttr(e.id)}" title="${escAttr(e.title)} — drag to reschedule"
       style="top:${top}px;height:${hgt}px;--ec:${clr};background:linear-gradient(135deg, ${clr}22, rgba(255,255,255,.03) 70%);border-left-color:${clr}">
       <div class="calx-ev-title">${escHtml(e.title)}</div>
       <div class="calx-ev-meta">${_calxFmtH(e._sH)}<span class="calx-ev-dot" style="background:${clr}"></span></div>
@@ -15504,16 +15586,14 @@ function _calxDayHtml() {
   const now = new Date();
   const isToday = ds === localDateStr(now);
   const nowH = now.getHours() + now.getMinutes() / 60;
-  const allDay = _calxAllDay(ds);
   let rail = '';
   for (let h = CALX_HR_START; h < CALX_HR_END; h++)
     rail += `<div class="calx-hr" style="height:${rowH}px">${String(h).padStart(2,'0')}:00</div>`;
   return `
-    ${allDay.length ? `<div class="calx-allday">${allDay.map(a => _calxChip(a)).join('')}</div>` : ''}
     <div class="calx-glass">
       <div class="calx-daygrid">
         <div class="calx-railcol">${rail}</div>
-        <div class="calx-col" data-calx-col="${ds}">${_calxColumnHtml(ds, rowH, isToday, nowH)}</div>
+        <div class="calx-col" data-calx-col="${ds}" data-rowh="${rowH}">${_calxColumnHtml(ds, rowH, isToday, nowH)}</div>
       </div>
     </div>`;
 }
@@ -15541,7 +15621,7 @@ function _calxWeekHtml() {
   const cols = days.map(d => {
     const ds = localDateStr(d);
     const isToday = ds === todayDs;
-    return `<div class="calx-col${isToday ? ' today' : ''}" data-calx-col="${ds}">${_calxColumnHtml(ds, rowH, isToday, nowH)}</div>`;
+    return `<div class="calx-col${isToday ? ' today' : ''}" data-calx-col="${ds}" data-rowh="${rowH}">${_calxColumnHtml(ds, rowH, isToday, nowH)}</div>`;
   }).join('');
 
   return `
@@ -15582,7 +15662,11 @@ function _calxMonthHtml() {
 }
 
 function _calxChip(a) {
-  return `<div class="calx-chip" data-calx-ev="${escAttr(a.taskId || '')}" style="border-left-color:${a.color}">
+  // Unscheduled task → drag onto a slot to schedule; all-day event → drag to time.
+  const dragAttr = a.isTask
+    ? `draggable="true" data-task-drag="${escAttr(a.taskId)}"`
+    : (a.id ? `draggable="true" data-ev-move="${escAttr(a.id)}"` : '');
+  return `<div class="calx-chip" ${dragAttr} data-calx-ev="${escAttr(a.taskId || '')}" style="border-left-color:${a.color}" title="${escAttr(a.title)}${a.isTask ? ' — drag onto a time to schedule' : ''}">
     <span class="calx-ev-dot" style="background:${a.color}"></span>${escHtml(a.title)}${a.isTask ? '<span class="calx-chip-tag">DUE</span>' : ''}</div>`;
 }
 
@@ -15594,12 +15678,47 @@ function _calxLegendHtml() {
     `<span class="calx-leg"><span class="calx-ev-dot" style="background:${getCatColor(id)}"></span>${escHtml(CATEGORIES[id].label)}</span>`).join('')}</div>`;
 }
 
+/* ── Top band: milestones + all-day / unscheduled (day & week) ──────────
+   Milestones are pinned here (⚑, not draggable). Unscheduled tasks due in the
+   range and all-day events sit alongside as draggable chips → drop onto a slot
+   to give them a time. */
+function _calxVisibleDates() {
+  if (_calxView === 'day') return [localDateStr(_calxRef)];
+  if (_calxView === 'week') {
+    const ws = _calxWeekStart(_calxRef);
+    return Array.from({ length: 7 }, (_, i) => { const d = new Date(ws); d.setDate(ws.getDate() + i); return localDateStr(d); });
+  }
+  return []; // month view carries its own per-cell chips
+}
+function _calxMilestoneChips(dates) {
+  const set = new Set(dates);
+  return (typeof MILESTONE_EVENTS !== 'undefined' ? MILESTONE_EVENTS : [])
+    .filter(e => set.has(String(e.date || '').slice(0, 10)))
+    .map(e => {
+      const c = (typeof _pcalProjColor === 'function') ? _pcalProjColor(e.projectId) : 'rgb(53,249,47)';
+      return `<div class="calx-ms" data-ms-id="${escAttr(e.id)}" data-ms-proj="${escAttr(e.projectId || '')}" style="--c:${c}" title="◆ ${escAttr(e.title || 'Milestone')}">
+        <span class="calx-ms-ico">⚑</span>${escHtml(e.title || 'Milestone')}</div>`;
+    }).join('');
+}
+function _calxTopBandHtml() {
+  const dates = _calxVisibleDates();
+  if (!dates.length) return '';
+  const ms = _calxMilestoneChips(dates);
+  const allDay = dates.flatMap(ds => _calxAllDay(ds));
+  if (!ms && !allDay.length) return '';
+  return `<div class="calx-band">
+    <span class="calx-band-label">ON TOP</span>
+    ${ms}
+    ${allDay.map(a => _calxChip(a)).join('')}
+  </div>`;
+}
+
 /* ── Main render + wiring ──────────────────────────────────────────────── */
 function renderCalendarX() {
   const panel = document.getElementById('panel-calendarx');
   if (!panel) return;
   const body = _calxView === 'day' ? _calxDayHtml() : _calxView === 'week' ? _calxWeekHtml() : _calxMonthHtml();
-  panel.innerHTML = `<div class="calx-root">${_calxHeaderHtml()}${_calxLegendHtml()}${body}</div>`;
+  panel.innerHTML = `<div class="calx-root">${_calxHeaderHtml()}${_calxLegendHtml()}${_calxTopBandHtml()}${body}</div>`;
   _calxWire(panel);
 }
 window.renderCalendarX = renderCalendarX;
@@ -15641,4 +15760,76 @@ function _calxWire(panel) {
       document.getElementById('nav-alltasks')?.classList.add('active');
       document.getElementById('nav-calendarx')?.classList.remove('active');
     }));
+
+  // Milestone chips in the top band → open the milestone editor
+  panel.querySelectorAll('.calx-ms[data-ms-id]').forEach(el =>
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      if (typeof openMsEventModal === 'function') openMsEventModal(el.dataset.msProj || null, el.dataset.msId);
+    }));
+
+  _calxWireDnd(panel);
 }
+
+/* ── Drag-to-schedule / drag-to-move on the Calendar ────────────────────── */
+function _calxWireDnd(panel) {
+  const startDrag = (el, kind, id) => {
+    el.addEventListener('dragstart', e => {
+      _calxDrag = { kind, id };
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', kind + ':' + id);
+      el.classList.add('calx-dragging');
+    });
+    el.addEventListener('dragend', () => { _calxDrag = null; el.classList.remove('calx-dragging'); _calxClearMarks(panel); });
+  };
+  panel.querySelectorAll('[data-task-drag]').forEach(el => startDrag(el, 'task', el.dataset.taskDrag));
+  panel.querySelectorAll('[data-ev-move]').forEach(el => startDrag(el, 'event', el.dataset.evMove));
+
+  // Time-grid columns (day & week): drop at the pointed 30-min mark
+  panel.querySelectorAll('.calx-col[data-calx-col]').forEach(col => {
+    const rowH = +col.dataset.rowh || 46;
+    const timeAt = clientY => {
+      const r = col.getBoundingClientRect();
+      let mins = CALX_HR_START * 60 + ((clientY - r.top) / rowH) * 60;
+      mins = Math.round(mins / 30) * 30;
+      mins = Math.max(CALX_HR_START * 60, Math.min(CALX_HR_END * 60 - 30, mins));
+      return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+    };
+    col.addEventListener('dragover', e => {
+      if (!_calxDrag) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      let mark = col.querySelector('.calx-drop-line');
+      if (!mark) { mark = document.createElement('div'); mark.className = 'calx-drop-line'; col.appendChild(mark); }
+      const r = col.getBoundingClientRect();
+      const t = timeAt(e.clientY);
+      const [hh, mm] = t.split(':').map(Number);
+      mark.style.top = ((hh * 60 + mm - CALX_HR_START * 60) / 60 * rowH) + 'px';
+    });
+    col.addEventListener('dragleave', e => { if (!col.contains(e.relatedTarget)) col.querySelector('.calx-drop-line')?.remove(); });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      const ds = col.dataset.calxCol;
+      const time = timeAt(e.clientY);
+      const p = _calxDrag; _calxDrag = null; _calxClearMarks(panel);
+      if (!p) return;
+      if (p.kind === 'task') scheduleTaskAt(p.id, ds, time, 30);
+      else moveCalEventTo(p.id, ds, time);
+    });
+  });
+
+  // Month cells: drop schedules/moves to that date at 09:00
+  panel.querySelectorAll('.calx-mcell[data-calx-slot]').forEach(cell => {
+    cell.addEventListener('dragover', e => { if (_calxDrag) { e.preventDefault(); cell.classList.add('calx-drop-cell'); } });
+    cell.addEventListener('dragleave', () => cell.classList.remove('calx-drop-cell'));
+    cell.addEventListener('drop', e => {
+      e.preventDefault(); cell.classList.remove('calx-drop-cell');
+      const ds = cell.dataset.calxSlot.split('|')[0];
+      const p = _calxDrag; _calxDrag = null;
+      if (!p) return;
+      if (p.kind === 'task') scheduleTaskAt(p.id, ds, '09:00', 30);
+      else moveCalEventTo(p.id, ds, '09:00');
+    });
+  });
+}
+function _calxClearMarks(panel) { panel.querySelectorAll('.calx-drop-line').forEach(m => m.remove()); panel.querySelectorAll('.calx-drop-cell').forEach(c => c.classList.remove('calx-drop-cell')); }

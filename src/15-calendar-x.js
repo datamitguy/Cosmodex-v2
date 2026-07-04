@@ -7,6 +7,7 @@
 
 let _calxView = 'week';          // 'day' | 'week' | 'month'
 let _calxRef  = new Date();      // anchor date the current view is built around
+let _calxDrag = null;            // { kind:'task'|'event', id } while dragging
 
 const CALX_HR_START = 7;
 const CALX_HR_END   = 22;        // grid spans 07:00–22:00
@@ -104,7 +105,7 @@ function _calxColumnHtml(ds, rowH, isToday, nowH) {
     const top = (e._sH - CALX_HR_START) * rowH;
     const hgt = Math.max((e._eH - e._sH) * rowH - 3, 22);
     const clr = _calxEventColor(e);
-    html += `<div class="calx-ev" data-calx-ev="${escAttr(e.taskId || '')}" title="${escAttr(e.title)}"
+    html += `<div class="calx-ev" draggable="true" data-calx-ev="${escAttr(e.taskId || '')}" data-ev-move="${escAttr(e.id)}" title="${escAttr(e.title)} — drag to reschedule"
       style="top:${top}px;height:${hgt}px;--ec:${clr};background:linear-gradient(135deg, ${clr}22, rgba(255,255,255,.03) 70%);border-left-color:${clr}">
       <div class="calx-ev-title">${escHtml(e.title)}</div>
       <div class="calx-ev-meta">${_calxFmtH(e._sH)}<span class="calx-ev-dot" style="background:${clr}"></span></div>
@@ -120,16 +121,14 @@ function _calxDayHtml() {
   const now = new Date();
   const isToday = ds === localDateStr(now);
   const nowH = now.getHours() + now.getMinutes() / 60;
-  const allDay = _calxAllDay(ds);
   let rail = '';
   for (let h = CALX_HR_START; h < CALX_HR_END; h++)
     rail += `<div class="calx-hr" style="height:${rowH}px">${String(h).padStart(2,'0')}:00</div>`;
   return `
-    ${allDay.length ? `<div class="calx-allday">${allDay.map(a => _calxChip(a)).join('')}</div>` : ''}
     <div class="calx-glass">
       <div class="calx-daygrid">
         <div class="calx-railcol">${rail}</div>
-        <div class="calx-col" data-calx-col="${ds}">${_calxColumnHtml(ds, rowH, isToday, nowH)}</div>
+        <div class="calx-col" data-calx-col="${ds}" data-rowh="${rowH}">${_calxColumnHtml(ds, rowH, isToday, nowH)}</div>
       </div>
     </div>`;
 }
@@ -157,7 +156,7 @@ function _calxWeekHtml() {
   const cols = days.map(d => {
     const ds = localDateStr(d);
     const isToday = ds === todayDs;
-    return `<div class="calx-col${isToday ? ' today' : ''}" data-calx-col="${ds}">${_calxColumnHtml(ds, rowH, isToday, nowH)}</div>`;
+    return `<div class="calx-col${isToday ? ' today' : ''}" data-calx-col="${ds}" data-rowh="${rowH}">${_calxColumnHtml(ds, rowH, isToday, nowH)}</div>`;
   }).join('');
 
   return `
@@ -198,7 +197,11 @@ function _calxMonthHtml() {
 }
 
 function _calxChip(a) {
-  return `<div class="calx-chip" data-calx-ev="${escAttr(a.taskId || '')}" style="border-left-color:${a.color}">
+  // Unscheduled task → drag onto a slot to schedule; all-day event → drag to time.
+  const dragAttr = a.isTask
+    ? `draggable="true" data-task-drag="${escAttr(a.taskId)}"`
+    : (a.id ? `draggable="true" data-ev-move="${escAttr(a.id)}"` : '');
+  return `<div class="calx-chip" ${dragAttr} data-calx-ev="${escAttr(a.taskId || '')}" style="border-left-color:${a.color}" title="${escAttr(a.title)}${a.isTask ? ' — drag onto a time to schedule' : ''}">
     <span class="calx-ev-dot" style="background:${a.color}"></span>${escHtml(a.title)}${a.isTask ? '<span class="calx-chip-tag">DUE</span>' : ''}</div>`;
 }
 
@@ -210,12 +213,47 @@ function _calxLegendHtml() {
     `<span class="calx-leg"><span class="calx-ev-dot" style="background:${getCatColor(id)}"></span>${escHtml(CATEGORIES[id].label)}</span>`).join('')}</div>`;
 }
 
+/* ── Top band: milestones + all-day / unscheduled (day & week) ──────────
+   Milestones are pinned here (⚑, not draggable). Unscheduled tasks due in the
+   range and all-day events sit alongside as draggable chips → drop onto a slot
+   to give them a time. */
+function _calxVisibleDates() {
+  if (_calxView === 'day') return [localDateStr(_calxRef)];
+  if (_calxView === 'week') {
+    const ws = _calxWeekStart(_calxRef);
+    return Array.from({ length: 7 }, (_, i) => { const d = new Date(ws); d.setDate(ws.getDate() + i); return localDateStr(d); });
+  }
+  return []; // month view carries its own per-cell chips
+}
+function _calxMilestoneChips(dates) {
+  const set = new Set(dates);
+  return (typeof MILESTONE_EVENTS !== 'undefined' ? MILESTONE_EVENTS : [])
+    .filter(e => set.has(String(e.date || '').slice(0, 10)))
+    .map(e => {
+      const c = (typeof _pcalProjColor === 'function') ? _pcalProjColor(e.projectId) : 'rgb(53,249,47)';
+      return `<div class="calx-ms" data-ms-id="${escAttr(e.id)}" data-ms-proj="${escAttr(e.projectId || '')}" style="--c:${c}" title="◆ ${escAttr(e.title || 'Milestone')}">
+        <span class="calx-ms-ico">⚑</span>${escHtml(e.title || 'Milestone')}</div>`;
+    }).join('');
+}
+function _calxTopBandHtml() {
+  const dates = _calxVisibleDates();
+  if (!dates.length) return '';
+  const ms = _calxMilestoneChips(dates);
+  const allDay = dates.flatMap(ds => _calxAllDay(ds));
+  if (!ms && !allDay.length) return '';
+  return `<div class="calx-band">
+    <span class="calx-band-label">ON TOP</span>
+    ${ms}
+    ${allDay.map(a => _calxChip(a)).join('')}
+  </div>`;
+}
+
 /* ── Main render + wiring ──────────────────────────────────────────────── */
 function renderCalendarX() {
   const panel = document.getElementById('panel-calendarx');
   if (!panel) return;
   const body = _calxView === 'day' ? _calxDayHtml() : _calxView === 'week' ? _calxWeekHtml() : _calxMonthHtml();
-  panel.innerHTML = `<div class="calx-root">${_calxHeaderHtml()}${_calxLegendHtml()}${body}</div>`;
+  panel.innerHTML = `<div class="calx-root">${_calxHeaderHtml()}${_calxLegendHtml()}${_calxTopBandHtml()}${body}</div>`;
   _calxWire(panel);
 }
 window.renderCalendarX = renderCalendarX;
@@ -257,4 +295,76 @@ function _calxWire(panel) {
       document.getElementById('nav-alltasks')?.classList.add('active');
       document.getElementById('nav-calendarx')?.classList.remove('active');
     }));
+
+  // Milestone chips in the top band → open the milestone editor
+  panel.querySelectorAll('.calx-ms[data-ms-id]').forEach(el =>
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      if (typeof openMsEventModal === 'function') openMsEventModal(el.dataset.msProj || null, el.dataset.msId);
+    }));
+
+  _calxWireDnd(panel);
 }
+
+/* ── Drag-to-schedule / drag-to-move on the Calendar ────────────────────── */
+function _calxWireDnd(panel) {
+  const startDrag = (el, kind, id) => {
+    el.addEventListener('dragstart', e => {
+      _calxDrag = { kind, id };
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', kind + ':' + id);
+      el.classList.add('calx-dragging');
+    });
+    el.addEventListener('dragend', () => { _calxDrag = null; el.classList.remove('calx-dragging'); _calxClearMarks(panel); });
+  };
+  panel.querySelectorAll('[data-task-drag]').forEach(el => startDrag(el, 'task', el.dataset.taskDrag));
+  panel.querySelectorAll('[data-ev-move]').forEach(el => startDrag(el, 'event', el.dataset.evMove));
+
+  // Time-grid columns (day & week): drop at the pointed 30-min mark
+  panel.querySelectorAll('.calx-col[data-calx-col]').forEach(col => {
+    const rowH = +col.dataset.rowh || 46;
+    const timeAt = clientY => {
+      const r = col.getBoundingClientRect();
+      let mins = CALX_HR_START * 60 + ((clientY - r.top) / rowH) * 60;
+      mins = Math.round(mins / 30) * 30;
+      mins = Math.max(CALX_HR_START * 60, Math.min(CALX_HR_END * 60 - 30, mins));
+      return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+    };
+    col.addEventListener('dragover', e => {
+      if (!_calxDrag) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      let mark = col.querySelector('.calx-drop-line');
+      if (!mark) { mark = document.createElement('div'); mark.className = 'calx-drop-line'; col.appendChild(mark); }
+      const r = col.getBoundingClientRect();
+      const t = timeAt(e.clientY);
+      const [hh, mm] = t.split(':').map(Number);
+      mark.style.top = ((hh * 60 + mm - CALX_HR_START * 60) / 60 * rowH) + 'px';
+    });
+    col.addEventListener('dragleave', e => { if (!col.contains(e.relatedTarget)) col.querySelector('.calx-drop-line')?.remove(); });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      const ds = col.dataset.calxCol;
+      const time = timeAt(e.clientY);
+      const p = _calxDrag; _calxDrag = null; _calxClearMarks(panel);
+      if (!p) return;
+      if (p.kind === 'task') scheduleTaskAt(p.id, ds, time, 30);
+      else moveCalEventTo(p.id, ds, time);
+    });
+  });
+
+  // Month cells: drop schedules/moves to that date at 09:00
+  panel.querySelectorAll('.calx-mcell[data-calx-slot]').forEach(cell => {
+    cell.addEventListener('dragover', e => { if (_calxDrag) { e.preventDefault(); cell.classList.add('calx-drop-cell'); } });
+    cell.addEventListener('dragleave', () => cell.classList.remove('calx-drop-cell'));
+    cell.addEventListener('drop', e => {
+      e.preventDefault(); cell.classList.remove('calx-drop-cell');
+      const ds = cell.dataset.calxSlot.split('|')[0];
+      const p = _calxDrag; _calxDrag = null;
+      if (!p) return;
+      if (p.kind === 'task') scheduleTaskAt(p.id, ds, '09:00', 30);
+      else moveCalEventTo(p.id, ds, '09:00');
+    });
+  });
+}
+function _calxClearMarks(panel) { panel.querySelectorAll('.calx-drop-line').forEach(m => m.remove()); panel.querySelectorAll('.calx-drop-cell').forEach(c => c.classList.remove('calx-drop-cell')); }

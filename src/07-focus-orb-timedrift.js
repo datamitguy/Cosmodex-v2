@@ -397,8 +397,7 @@ function _tdDlv2IsFocusGoalMet() {
     const weekAgo = localDateStr(new Date(Date.now() - 6 * 86400000));
     let weekSecs = 0;
     TASKS.forEach(t => {
-      const pomo = t.sessionTimeSecs || 0, commit = t.timeSpentSeconds || 0;
-      const taskSecs = pomo + commit;
+      const taskSecs = taskEffortSecs(t);
       if (taskSecs <= 0) return;
       const dd = t.doneDate || t.dueDate || '';
       if (dd >= weekAgo) weekSecs += taskSecs;

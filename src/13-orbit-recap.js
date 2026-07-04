@@ -28,8 +28,7 @@ function openOrbitRecap() {
   if (document.getElementById('orbit-recap')) return;
   const today = localDateStr(new Date());
   const doneToday = TASKS.filter(t => t.done && t.doneDate === today);
-  const focusSecs = doneToday.reduce((s, t) =>
-    s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0) + ((t.timeSpentMinutes || 0) * 60), 0);
+  const focusSecs = doneToday.reduce((s, t) => s + taskEffortSecs(t), 0);
   const focusStr = focusSecs >= 3600
     ? (focusSecs / 3600).toFixed(1).replace(/\.0$/, '') + ' focus hours'
     : focusSecs > 0 ? Math.round(focusSecs / 60) + ' focus minutes' : null;

@@ -601,7 +601,7 @@ function renderInsights() {
   for (let i = 13; i >= 0; i--) {
     const ds = localDateStr(new Date(Date.now() - i * 86400000));
     const dayTasks = TASKS.filter(t => t.done && t.doneDate === ds);
-    const secs = dayTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+    const secs = dayTasks.reduce((s, t) => s + taskEffortSecs(t), 0);
     constData.push({ date: ds, tasks: dayTasks.length, secs });
   }
   if (panelVisible) {
@@ -644,26 +644,15 @@ function renderInsights() {
   // ── Focus Time ────────────────────────────────────────
   const focusThreshold = 4 * 3600; // 4h = neon green threshold
   const weekAgo = localDateStr(new Date(Date.now() - 6 * 86400000));
-  let weekSecs = 0, pomoSecs = 0, commitSecs = 0;
+  let weekSecs = 0;
   const byCat = {};
   TASKS.forEach(task => {
-    const pomo = task.sessionTimeSecs || 0, commit = task.timeSpentSeconds || 0;
-    const taskSecs = pomo + commit;
+    const taskSecs = taskEffortSecs(task);
     if (taskSecs <= 0) return;
-    pomoSecs += pomo; commitSecs += commit;
     const dd = task.doneDate || task.dueDate || '';
     if (dd >= weekAgo) weekSecs += taskSecs;
     const cat = task.category || 'uncategorised';
     byCat[cat] = (byCat[cat] || 0) + taskSecs;
-  });
-  CAL_EVENTS.forEach(ev => {
-    if (ev.allDay || !ev.duration) return;
-    const lt = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : null;
-    if (lt && (lt.sessionTimeSecs || lt.timeSpentSeconds)) return;
-    const secs = (ev.duration || 0) * 60;
-    if (ev.date >= weekAgo) weekSecs += secs;
-    const cat = (lt?.category) || 'scheduled';
-    byCat[cat] = (byCat[cat] || 0) + secs;
   });
   setEl('ins-focus-time', weekSecs > 0 ? _insFmtHrs(weekSecs) : '—');
   const focusBar = document.getElementById('ins-focus-bar');
@@ -673,7 +662,7 @@ function renderInsights() {
     focusBar.style.boxShadow = weekSecs >= focusThreshold ? '0 0 8px rgba(57,255,20,0.3)' : 'none';
   }
   const focusSub = document.getElementById('ins-focus-sub');
-  if (focusSub) focusSub.textContent = `Pomo ${_insFmtHrs(pomoSecs)} · Commit ${_insFmtHrs(commitSecs)}`;
+  if (focusSub) focusSub.textContent = weekSecs > 0 ? 'Logged task time this week' : 'Log time when you close a task';
 
   // ── Habit Rate (7-day) ────────────────────────────────
   const last7 = []; let h7Done = 0, h7Total = 0;
@@ -710,7 +699,7 @@ function renderInsights() {
     const d = new Date(Date.now() - i * 86400000);
     const ds = localDateStr(d);
     const dayTasks = TASKS.filter(t => t.done && t.doneDate === ds);
-    const secs = dayTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+    const secs = dayTasks.reduce((s, t) => s + taskEffortSecs(t), 0);
     pulseData.push({ date: ds, count: dayTasks.length, secs });
   }
   // Compute streaks + best day
@@ -743,8 +732,7 @@ function renderInsights() {
   const energyMap = { deep: 3, shallow: 2, quick: 1, admin: 1.5 };
   TASKS.forEach(t => {
     if (!t.category) return;
-    const pomo = t.sessionTimeSecs || 0, commit = t.timeSpentSeconds || 0;
-    const secs = pomo + commit;
+    const secs = taskEffortSecs(t);
     if (secs <= 0) return;
     const cat = t.category;
     if (!catDataMap[cat]) catDataMap[cat] = { cat, label: CATEGORIES[cat]?.label || cat, color: getCatColor(cat), prioSum: 0, energySum: 0, count: 0, totalSecs: 0 };
@@ -1014,14 +1002,14 @@ function _renderWeekDebrief() {
   const taskDeltaStr = taskDelta > 0 ? `▲ ${taskDelta} more` : taskDelta < 0 ? `▼ ${Math.abs(taskDelta)} fewer` : 'same as';
 
   // Focus time this week vs last
-  const focusThis = thisWeekTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
-  const focusPrev = prevWeekTasks.reduce((s, t) => s + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0), 0);
+  const focusThis = thisWeekTasks.reduce((s, t) => s + taskEffortSecs(t), 0);
+  const focusPrev = prevWeekTasks.reduce((s, t) => s + taskEffortSecs(t), 0);
 
   // Top categories this week
   const catSecs = {};
   thisWeekTasks.forEach(t => {
     const cat = t.category || 'uncategorised';
-    catSecs[cat] = (catSecs[cat] || 0) + (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0);
+    catSecs[cat] = (catSecs[cat] || 0) + taskEffortSecs(t);
   });
   const topCats = Object.entries(catSecs).sort((a, b) => b[1] - a[1]).slice(0, 3);
 

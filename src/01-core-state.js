@@ -199,6 +199,11 @@ let _settings = JSON.parse(localStorage.getItem('cdx_v2_settings') || 'null') ||
 if (!_settings.defaultCategory) _settings.defaultCategory = Object.keys(CATEGORIES)[0] || '';
 function saveSettings() { localStorage.setItem('cdx_v2_settings', JSON.stringify(_settings)); }
 
+// Focus/effort time attributed to a task. Counts ONLY the minutes the user
+// logs in the mandatory close prompt (timeSpentMinutes). The pomodoro/commit
+// timers no longer inflate focus stats — only deliberate task time adds up.
+function taskEffortSecs(t) { return (t && t.timeSpentMinutes ? t.timeSpentMinutes * 60 : 0); }
+
 /* ── Theme ─────────────────────────────────────────────── */
 (function initTheme() {
   const saved = localStorage.getItem('cdx_theme') || 'dark';
