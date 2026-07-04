@@ -7696,3 +7696,50 @@ select.sched-input { background: #181818; }
 .atk-list { border-top:1px solid rgba(255,255,255,.06); }
 .atk-empty { padding:70px 0; text-align:center; font-family:var(--font-display); font-style:italic; font-size:17px; color:rgba(255,255,255,.4); }
 .atk-empty span { display:block; margin-top:8px; font-family:var(--font-mono); font-style:normal; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.3); }
+
+/* ══ LISTS — types (simple / task / rated) ══ */
+.lists-type-select {
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); border-radius:7px;
+  color:var(--cream); font-family:var(--font-mono); font-size:11px; letter-spacing:.04em;
+  padding:5px 9px; outline:none; cursor:pointer; flex-shrink:0;
+}
+.lists-type-select:focus { border-color:var(--gold-dim); }
+.lists-type-select option { background:#111; color:var(--cream); }
+
+/* Sidebar card icon chip (replaces the plain colour dot) */
+.list-sidebar-card-icon {
+  width:26px; height:26px; border-radius:7px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
+}
+
+/* Task-list item checkbox */
+.list-item-check {
+  width:22px; height:22px; border-radius:6px; flex-shrink:0; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; color:var(--neon);
+  border:1px solid rgba(255,255,255,.18); background:transparent; transition:all .15s;
+}
+.list-item-check:hover { border-color:var(--neon-dim); }
+.list-item-check.done { background:rgba(57,255,20,.12); border-color:var(--neon-dim); box-shadow:0 0 6px rgba(57,255,20,.35); }
+.list-detail-item-text.done { color:var(--muted); text-decoration:line-through; }
+
+/* Rated-list stars */
+.list-item-rating { display:flex; gap:2px; flex-shrink:0; }
+.list-star { cursor:pointer; font-size:15px; line-height:1; color:rgba(255,255,255,.16); transition:color .12s, transform .12s; }
+.list-star:hover { transform:scale(1.15); }
+.list-star.on { color:var(--gold); text-shadow:0 0 6px var(--gold-glow); }
+
+/* Completion ribbon (task lists) */
+.list-ribbon {
+  margin:0 20px 4px; padding:12px 14px; border-radius:10px;
+  background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+}
+.list-ribbon-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.list-ribbon-cell { display:flex; flex-direction:column; gap:2px; }
+.list-ribbon-k { font-family:var(--font-mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.list-ribbon-v { font-family:var(--font-display); font-weight:300; font-size:20px; color:#fff; font-variant-numeric:tabular-nums; }
+.list-ribbon-v.done { color:var(--neon); text-shadow:0 0 10px rgba(57,255,20,.3); }
+.list-ribbon-bar { margin-top:10px; height:5px; border-radius:3px; background:rgba(255,255,255,.06); overflow:hidden; }
+.list-ribbon-fill { height:100%; border-radius:3px; background:linear-gradient(90deg, var(--neon-dim), var(--neon)); box-shadow:0 0 8px rgba(57,255,20,.4); transition:width .3s; }

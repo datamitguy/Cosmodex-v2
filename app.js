@@ -389,18 +389,52 @@ function showMainPanel(name) {
 
 /* ══ LISTS — FIRESTORE CRUD ══ */
 // → future file: cosmodex-lists.js
-async function addList(title) {
+
+// List types: 'simple' (bullets), 'task' (checkable — shows completion ribbon),
+// 'rated' (5-star rating per item). Legacy lists with no type read as 'simple'.
+const LIST_TYPE_META = {
+  simple: { icon: '✦', label: 'Simple' },
+  task:   { icon: '✓', label: 'Task' },
+  rated:  { icon: '★', label: 'Rated' },
+};
+const listTypeOf = l => (l && LIST_TYPE_META[l.type]) ? l.type : 'simple';
+
+async function addList(title, type = 'simple') {
   if (!title?.trim()) { showToast('List name cannot be empty', 'error'); return; }
+  if (!LIST_TYPE_META[type]) type = 'simple';
   const { addDoc, serverTimestamp } = window.CDX_FB;
   const color = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
   try {
     await addDoc(_uc('lists'), {
-      title: title.trim(), color, items: [], why: '', notes: '',
+      title: title.trim(), type, color, items: [], why: '', notes: '',
       createdAt: serverTimestamp(), updatedAt: serverTimestamp()
     });
   } catch (err) {
     console.error('addList error:', err);
     showToast('Failed to create list', 'error');
+  }
+}
+
+async function setListType(listId, type) {
+  if (!LIST_TYPE_META[type]) return;
+  await updateList(listId, { type });
+}
+
+// Rating for 'rated' lists — clicking the current value clears it back to 0
+async function setListItemRating(listId, itemId, rating) {
+  const { runTransaction, serverTimestamp } = window.CDX_FB;
+  try {
+    await runTransaction(window.CDX_DB, async (transaction) => {
+      const ref = _ud('lists', listId);
+      const snap = await transaction.get(ref);
+      if (!snap.exists()) return;
+      const items = (snap.data().items || []).map(i =>
+        i.id === itemId ? { ...i, rating: (i.rating === rating ? 0 : rating) } : i);
+      transaction.update(ref, { items, updatedAt: serverTimestamp() });
+    });
+  } catch (err) {
+    console.error('setListItemRating error:', err);
+    showToast('Failed to update rating', 'error');
   }
 }
 
@@ -538,13 +572,18 @@ function renderLists() {
     return;
   }
   sidebar.innerHTML = visible.map(l => {
-    const total = (l.items||[]).length;
+    const items = l.items || [];
+    const total = items.length;
+    const type = listTypeOf(l);
     const isActive = _listView === l.id;
+    const countLabel = type === 'task'
+      ? `${items.filter(i => i.done).length}/${total}`
+      : (total > 0 ? `${total} item${total !== 1 ? 's' : ''}` : '—');
     return `
       <div class="list-sidebar-card ${isActive?'active':''}" data-list-id="${escAttr(l.id)}">
-        <div class="list-sidebar-card-dot" style="background:${escAttr(l.color)}"></div>
+        <div class="list-sidebar-card-icon" style="color:${escAttr(l.color)};border-color:${escAttr(l.color)}44">${LIST_TYPE_META[type].icon}</div>
         <span class="list-sidebar-card-name">${escHtml(l.title)}</span>
-        <span class="list-sidebar-card-count">${total > 0 ? `${total} item${total !== 1 ? 's' : ''}` : '—'}</span>
+        <span class="list-sidebar-card-count">${countLabel}</span>
       </div>`;
   }).join('');
   // Re-bind if current list is open
@@ -563,17 +602,44 @@ function renderListDetail(listId) {
   if (emptyState) emptyState.style.display = 'none';
   if (detailContent) detailContent.style.display = 'flex';
 
+  const type = listTypeOf(list);
   const nameEl = document.getElementById('lists-detail-name');
   const countEl = document.getElementById('lists-detail-count');
   const colorEl = document.getElementById('lists-detail-color-strip');
+  const typeSel = document.getElementById('lists-detail-type-select');
   const whyEl = document.getElementById('lists-detail-why');
   const notesEl = document.getElementById('lists-detail-notes');
   if (nameEl) nameEl.textContent = list.title;
   if (colorEl) colorEl.style.background = list.color;
+  if (typeSel) typeSel.value = type;
   if (whyEl && document.activeElement !== whyEl) whyEl.value = list.why || '';
   if (notesEl && document.activeElement !== notesEl) notesEl.value = list.notes || '';
   const items = list.items || [];
-  if (countEl) countEl.textContent = items.length > 0 ? `${items.length} item${items.length !== 1 ? 's' : ''}` : 'empty';
+  if (countEl) countEl.textContent = `${LIST_TYPE_META[type].label.toUpperCase()} · ${items.length} ITEM${items.length !== 1 ? 'S' : ''}`;
+
+  // Completion ribbon — task lists only ("bottom ribbon for completed")
+  const ribbon = document.getElementById('lists-completion-ribbon');
+  if (ribbon) {
+    if (type === 'task' && items.length) {
+      const done = items.filter(i => i.done).length;
+      const total = items.length, remaining = total - done;
+      const pct = Math.round(done / total * 100);
+      ribbon.style.display = '';
+      ribbon.innerHTML = `
+        <div class="list-ribbon">
+          <div class="list-ribbon-stats">
+            <div class="list-ribbon-cell"><span class="list-ribbon-k">Total</span><span class="list-ribbon-v">${total}</span></div>
+            <div class="list-ribbon-cell"><span class="list-ribbon-k">Done</span><span class="list-ribbon-v done">${done}</span></div>
+            <div class="list-ribbon-cell"><span class="list-ribbon-k">Remaining</span><span class="list-ribbon-v">${remaining}</span></div>
+            <div class="list-ribbon-cell"><span class="list-ribbon-k">Complete</span><span class="list-ribbon-v">${pct}%</span></div>
+          </div>
+          <div class="list-ribbon-bar"><div class="list-ribbon-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    } else {
+      ribbon.style.display = 'none';
+      ribbon.innerHTML = '';
+    }
+  }
 
   const body = document.getElementById('lists-detail-items');
   if (!body) return;
@@ -582,14 +648,28 @@ function renderListDetail(listId) {
     return;
   }
   const accentColor = list.color || 'var(--gold)';
+  const allowSub = type !== 'rated';
   body.innerHTML = items.map((item, idx) => {
     const subs = item.subitems || [];
+    // Leading control depends on list type
+    let lead;
+    if (type === 'task') {
+      lead = `<div class="list-item-check ${item.done ? 'done' : ''}" data-toggle-item="${escAttr(item.id)}">${item.done ? '✓' : ''}</div>`;
+    } else if (type === 'rated') {
+      const rating = item.rating || 0;
+      lead = `<div class="list-item-rating" data-rate-item="${escAttr(item.id)}">${[1,2,3,4,5].map(n =>
+        `<span class="list-star ${n <= rating ? 'on' : ''}" data-rate-val="${n}">★</span>`).join('')}</div>`;
+    } else {
+      lead = `<div class="list-item-marker" style="background:${accentColor}18;color:${accentColor};border:1px solid ${accentColor}33">◆</div>`;
+    }
+    const textCls = `list-detail-item-text${type === 'task' && item.done ? ' done' : ''}`;
     return `
-    <div class="list-detail-item-wrap" draggable="true" data-idx="${idx}" style="animation-delay:${idx*20}ms">
+    <div class="list-detail-item-wrap type-${type}" draggable="true" data-idx="${idx}" style="animation-delay:${idx*20}ms">
       <div class="list-detail-item" data-item-id="${escAttr(item.id)}">
-        <div class="list-item-marker" style="background:${accentColor}18;color:${accentColor};border:1px solid ${accentColor}33">◆</div>
-        <span class="list-detail-item-text" data-item-id="${escAttr(item.id)}">${linkifyText(item.text)}</span>
-        <span class="list-detail-item-addsub" data-addsub-item="${escAttr(item.id)}" title="Add sub-item">⊕</span>
+        ${type === 'rated' ? '' : lead}
+        <span class="${textCls}" data-item-id="${escAttr(item.id)}">${linkifyText(item.text)}</span>
+        ${type === 'rated' ? lead : ''}
+        ${allowSub ? `<span class="list-detail-item-addsub" data-addsub-item="${escAttr(item.id)}" title="Add sub-item">⊕</span>` : ''}
         <span class="list-detail-item-del" data-del-item="${escAttr(item.id)}">✕</span>
       </div>
       ${subs.length ? `<div class="list-subitems">${subs.map(s => `
@@ -598,10 +678,10 @@ function renderListDetail(listId) {
           <span class="list-subitem-text">${linkifyText(s.text)}</span>
           <span class="list-subitem-del" data-del-sub="${escAttr(s.id)}" data-del-sub-parent="${escAttr(item.id)}">✕</span>
         </div>`).join('')}</div>` : ''}
-      <div class="list-subitem-input-row" data-subinput-parent="${escAttr(item.id)}" style="display:none">
+      ${allowSub ? `<div class="list-subitem-input-row" data-subinput-parent="${escAttr(item.id)}" style="display:none">
         <input class="list-subitem-input" type="text" placeholder="Add sub-item..." maxlength="200" />
         <button class="list-subitem-input-btn" data-confirm-sub="${escAttr(item.id)}">Add</button>
-      </div>
+      </div>` : ''}
     </div>`;
   }).join('');
 }
@@ -711,8 +791,9 @@ function initListsPage() {
   async function doCreateList() {
     const title = newTitleInp.value.trim();
     if (!title) { newTitleInp.focus(); return; }
+    const type = document.getElementById('lists-new-type')?.value || 'simple';
     newTitleInp.value = '';
-    await addList(title);
+    await addList(title, type);
   }
   createBtn?.addEventListener('click', doCreateList);
   newTitleInp?.addEventListener('keydown', e => { if (e.key === 'Enter') doCreateList(); });
@@ -742,8 +823,25 @@ function initListsPage() {
   addBtn?.addEventListener('click', doAddItem);
   inp?.addEventListener('keydown', e => { if (e.key === 'Enter') doAddItem(); });
 
+  // Change the selected list's type
+  document.getElementById('lists-detail-type-select')?.addEventListener('change', async e => {
+    if (_listView) await setListType(_listView, e.target.value);
+  });
+
   // Item deletes + subitem actions (delegated)
   document.getElementById('lists-detail-items')?.addEventListener('click', async e => {
+    // Toggle a task-list item done
+    const toggleItem = e.target.closest('[data-toggle-item]');
+    if (toggleItem && _listView) { await toggleListItem(_listView, toggleItem.dataset.toggleItem); return; }
+
+    // Set a rated-list item's star rating
+    const star = e.target.closest('[data-rate-val]');
+    if (star && _listView) {
+      const rateWrap = star.closest('[data-rate-item]');
+      if (rateWrap) await setListItemRating(_listView, rateWrap.dataset.rateItem, +star.dataset.rateVal);
+      return;
+    }
+
     // Delete top-level item
     const del = e.target.closest('[data-del-item]');
     if (del && _listView) { await deleteListItem(_listView, del.dataset.delItem); return; }
