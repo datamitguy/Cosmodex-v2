@@ -31,7 +31,7 @@ function habitsSubscribe() {
     if (_habitsTab === 'habits') renderHabitsTab();
     if (_habitsTab === 'hinsights') renderHabitsInsights();
     if (_habitsTab === 'reflect') renderReflect();
-    window.renderDashboardBoard?.(); // dashboard rituals card (guards on _mainPanel)
+    window.renderDashboardBoard?.(); window._hxAutoRefresh?.(); // dashboard rituals card (guards on _mainPanel)
   }, err => console.warn('habits onSnapshot:', err.message));
 
   // For 13-week heatmap we need 91 days of logs
@@ -44,7 +44,7 @@ function habitsSubscribe() {
       if (_habitsTab === 'habits') renderHabitsTab();
       if (_habitsTab === 'hinsights') renderHabitsInsights();
       if (_habitsTab === 'reflect') renderReflect();
-      window.renderDashboardBoard?.();
+      window.renderDashboardBoard?.(); window._hxAutoRefresh?.();
     }, err => console.warn('habitLogs onSnapshot:', err.message));
 }
 
@@ -55,7 +55,7 @@ function routinesSubscribe() {
   _routinesUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'routines', 'config'), snap => {
     if (snap.exists()) { const d = snap.data(); _routines = { morning: d.morning||[], evening: d.evening||[] }; }
     if (_habitsTab === 'today') _todayRenderMorningMode();
-    window.renderDashboardBoard?.();
+    window.renderDashboardBoard?.(); window._hxAutoRefresh?.();
   }, err => console.warn('routines onSnapshot:', err.message));
 }
 
@@ -66,6 +66,7 @@ function behavSubscribe() {
   _behavUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'behaviours', 'current'), snap => {
     if (snap.exists()) { const d = snap.data(); _behav = { identity: d.identity||'', keystone: d.keystone||[], notes: d.notes||'' }; }
     if (_habitsTab === 'reflect') renderReflect();
+    window._hxAutoRefresh?.();
   }, err => console.warn('behaviours onSnapshot:', err.message));
 }
 
@@ -101,6 +102,7 @@ function hbSettingsSubscribe() {
     }
     if (_habitsTab === 'today') renderToday();
     if (_habitsTab === 'reflect') renderReflect();
+    window._hxAutoRefresh?.();
   }, err => console.warn('hbSettings onSnapshot:', err.message));
 }
 

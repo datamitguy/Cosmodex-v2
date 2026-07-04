@@ -29,7 +29,12 @@ function showMainPanel(name) {
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
   if (name === 'alltasks') { renderTasksPage(); }
-  if (name === 'habits') { switchHabitsTab(_habitsTab === 'tracker' ? 'today' : (_habitsTab || 'today')); }
+  if (name === 'habits') {
+    // New design-system habits UI (14-habits-x.js). Ensure data subscriptions are
+    // live (subscribe-once guards make these cheap), then render.
+    habitsSubscribe?.(); routinesSubscribe?.(); behavSubscribe?.(); hbSettingsSubscribe?.();
+    window.initHabitsX ? window.initHabitsX('today') : switchHabitsTab('today');
+  }
   if (name === 'insights') { habitsSubscribe(); requestAnimationFrame(() => { renderInsights(); loadDoneWall(); }); }
   if (name === 'drill') { renderDrill(); }
   const orbEl = document.getElementById('cosmodex-orb');
