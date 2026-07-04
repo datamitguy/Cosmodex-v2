@@ -142,6 +142,10 @@
         <span class="nav-item-icon">▤</span>
         Lists
       </div>
+      <div class="nav-item" data-panel="alltasks" id="nav-alltasks">
+        <span class="nav-item-icon">✓</span>
+        Tasks
+      </div>
     </div>
 
     <div class="nav-section">
@@ -514,6 +518,9 @@
       </div>
       <div id="archived-page-body" style="flex:1;overflow-y:auto;padding:8px 0"></div>
     </div>
+
+    <!-- Tasks Panel (full page — every captured task, opened from the Tasks nav item) -->
+    <div id="panel-alltasks" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000"></div>
 
     <!-- Lists Panel (full page) -->
     <div id="panel-lists" style="display:none;flex:1;flex-direction:column;overflow:hidden">

@@ -266,6 +266,13 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       showMainPanel('lists');
       return;
     }
+    // Tasks → full page (every captured task)
+    if (panel === 'alltasks') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('alltasks');
+      return;
+    }
     // Habits → full page
     if (panel === 'habits') {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -352,6 +359,7 @@ function showMainPanel(name) {
   document.getElementById('main-content-panels').style.display = name === 'default' ? '' : 'none';
   document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
   document.getElementById('panel-tasks').style.display       = name === 'default' ? '' : 'none';
+  document.getElementById('panel-alltasks').style.display    = name === 'alltasks' ? 'flex' : 'none';
   document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
   document.getElementById('panel-archived').style.display    = name === 'archived' ? 'flex' : 'none';
   document.getElementById('panel-lists').style.display       = name === 'lists' ? 'flex' : 'none';
@@ -362,12 +370,13 @@ function showMainPanel(name) {
   document.getElementById('panel-getabstract').style.display = name === 'getabstract' ? 'flex' : 'none';
   document.getElementById('panel-mindmap').style.display     = name === 'mindmap' ? 'flex' : 'none';
   document.getElementById('panel-trial').style.display       = name === 'trial' ? 'flex' : 'none';
-  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
+  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
+  if (name === 'alltasks') { renderTasksPage(); }
   if (name === 'habits') { switchHabitsTab(_habitsTab === 'tracker' ? 'today' : (_habitsTab || 'today')); }
   if (name === 'insights') { habitsSubscribe(); requestAnimationFrame(() => { renderInsights(); loadDoneWall(); }); }
   if (name === 'drill') { renderDrill(); }
@@ -7763,8 +7772,10 @@ async function cycleTaskCategory(taskId) {
   await updateTask(taskId, { category: next });
 }
 
-/* ── Event delegation on tasks-body ──────────────────── */
-document.getElementById('tasks-body').addEventListener('click', e => {
+/* ── Event delegation for task lists (dashboard #tasks-body + Tasks page) ──
+   Extracted into named handlers + wireTaskListEvents() so any container that
+   holds buildTaskRow() rows gets identical behaviour. */
+function _tlClick(e) {
   const check    = e.target.closest('[data-check]');
   const subCheck = e.target.closest('[data-subcheck]');
   const del      = e.target.closest('[data-del]');
@@ -7826,10 +7837,10 @@ document.getElementById('tasks-body').addEventListener('click', e => {
     startInlineEdit(editEl);
     return;
   }
-});
+}
 
-/* Keyboard events on tasks-body */
-document.getElementById('tasks-body').addEventListener('keydown', e => {
+/* Keyboard events on task lists */
+function _tlKeydown(e) {
   if (e.key === 'Enter') {
     if (e.target.classList.contains('subtask-add-input')) {
       const parentId = e.target.dataset.parent;
@@ -7847,11 +7858,20 @@ document.getElementById('tasks-body').addEventListener('keydown', e => {
       e.target.closest('.subtask-add-row')?.classList.add('hidden');
     }
   }
-});
+}
 
-document.getElementById('tasks-body').addEventListener('focusout', e => {
+function _tlFocusout(e) {
   if (e.target.classList.contains('task-inline-input')) commitInlineEdit(e.target);
-});
+}
+
+function wireTaskListEvents(el) {
+  if (!el || el.dataset.tlWired) return;
+  el.dataset.tlWired = '1';
+  el.addEventListener('click', _tlClick);
+  el.addEventListener('keydown', _tlKeydown);
+  el.addEventListener('focusout', _tlFocusout);
+}
+wireTaskListEvents(document.getElementById('tasks-body'));
 
 /* ── Inline title editing ─────────────────────────────── */
 function startInlineEdit(titleEl) {
@@ -11734,6 +11754,163 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   cvs.addEventListener('pointerup', endDrag);
   cvs.addEventListener('pointercancel', endDrag);
 })();
+
+/* ══════════════════════════════════════════════════════════════════════
+   TASKS PAGE — full "every task you've captured" view (left-nav "Tasks").
+   Reuses the dashboard's buildTaskRow() + shared task-list event wiring, so
+   rows behave exactly like the Today list. Timeboxing (drag-to-schedule) is
+   intentionally disabled here — this page is for triage, not calendar work.
+   Chrome (filter pills, search, sort, inline add) follows the design kit.
+   ══════════════════════════════════════════════════════════════════════ */
+let _atkFilter = 'all';
+let _atkSort   = 'smart';
+let _atkQuery  = '';
+
+const _ATK_FILTERS = [
+  { id:'all',     label:'All',       match: () => true },
+  { id:'today',   label:'Today',     match: (t, today) => !t.done && !t.someday && t.dueDate === today },
+  { id:'week',    label:'This week', match: (t, today, wk) => !t.done && !t.someday && t.dueDate && t.dueDate >= today && t.dueDate <= wk },
+  { id:'overdue', label:'Overdue',   match: (t, today) => !t.done && !t.someday && t.dueDate && t.dueDate < today },
+  { id:'recur',   label:'Recurring', match: (t) => !!t.recurrence },
+  { id:'someday', label:'Someday',   match: (t) => !t.done && !!t.someday },
+  { id:'done',    label:'Done',      match: (t) => t.done },
+];
+const _ATK_SORTS = [
+  { id:'smart',   label:'Smart' },
+  { id:'due',     label:'Due' },
+  { id:'created', label:'Created' },
+  { id:'prio',    label:'Priority' },
+];
+const _ATK_PRIO_RANK = { high: 0, med: 1, low: 2 };
+
+function _atkCreatedMs(t) {
+  if (!t.createdAt) return 0;
+  return t.createdAt.toDate ? t.createdAt.toDate().getTime() : new Date(t.createdAt).getTime();
+}
+
+function _atkMatch(fid, t, today, wk) {
+  const f = _ATK_FILTERS.find(x => x.id === fid) || _ATK_FILTERS[0];
+  return f.match(t, today, wk);
+}
+
+// Build the static page chrome once; the list re-renders on filter/search/sort.
+function renderTasksPage() {
+  const panel = document.getElementById('panel-alltasks');
+  if (!panel) return;
+  if (!document.getElementById('alltasks-body')) {
+    panel.innerHTML = `
+      <div class="atk-scroll">
+        <div class="atk-head">
+          <div>
+            <div class="atk-eyebrow" id="atk-count-line">TASKS</div>
+            <div class="atk-title">Tasks</div>
+            <div class="atk-sub">Everything you've captured — one list, one truth.</div>
+          </div>
+        </div>
+        <div class="atk-filters" id="atk-filters"></div>
+        <div class="atk-searchsort">
+          <div class="atk-search">
+            <span class="atk-search-ic">⌕</span>
+            <input id="atk-search-input" placeholder="Search every task you've captured…" autocomplete="off">
+            <span class="atk-shown" id="atk-shown"></span>
+          </div>
+          <div class="atk-sortwrap">
+            <span class="atk-eyebrow">SORT</span>
+            <div class="atk-sort" id="atk-sort"></div>
+          </div>
+        </div>
+        <div class="atk-add">
+          <span class="atk-add-plus">+</span>
+          <input id="atk-add-input" placeholder="Capture a task… press Enter to add" autocomplete="off">
+          <span class="atk-eyebrow">ENTER ↵</span>
+        </div>
+        <div class="tasks-body atk-list" id="alltasks-body"></div>
+      </div>`;
+
+    // Sort toggle
+    document.getElementById('atk-sort').innerHTML = _ATK_SORTS.map(s =>
+      `<button class="atk-sort-btn" data-atk-sort="${s.id}">${s.label}</button>`).join('');
+    document.getElementById('atk-sort').addEventListener('click', e => {
+      const b = e.target.closest('[data-atk-sort]'); if (!b) return;
+      _atkSort = b.dataset.atkSort; renderAllTasksList();
+    });
+    // Filter pills (delegated)
+    document.getElementById('atk-filters').addEventListener('click', e => {
+      const b = e.target.closest('[data-atk-filter]'); if (!b) return;
+      _atkFilter = b.dataset.atkFilter; renderAllTasksList();
+    });
+    // Search
+    document.getElementById('atk-search-input').addEventListener('input', e => {
+      _atkQuery = e.target.value; renderAllTasksList();
+    });
+    // Inline add — reuse the app's addTask()
+    const addInput = document.getElementById('atk-add-input');
+    addInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && addInput.value.trim()) {
+        addTask(addInput.value.trim());
+        addInput.value = '';
+      }
+    });
+    // Rows behave exactly like the dashboard list
+    wireTaskListEvents(document.getElementById('alltasks-body'));
+  }
+  renderAllTasksList();
+}
+
+function renderAllTasksList() {
+  const body = document.getElementById('alltasks-body');
+  if (!body) return;
+  const today = localDateStr(new Date());
+  const wkDate = new Date(); wkDate.setDate(wkDate.getDate() + 6);
+  const wk = localDateStr(wkDate);
+  const q = _atkQuery.trim().toLowerCase();
+
+  // Counts per filter (over all tasks, ignoring category visibility — one truth)
+  const counts = {};
+  _ATK_FILTERS.forEach(f => { counts[f.id] = TASKS.filter(t => _atkMatch(f.id, t, today, wk)).length; });
+
+  // Filter pills
+  const filtersEl = document.getElementById('atk-filters');
+  if (filtersEl) filtersEl.innerHTML = _ATK_FILTERS.map(f =>
+    `<button class="atk-pill${_atkFilter === f.id ? ' active' : ''}" data-atk-filter="${f.id}">${f.label}<span class="atk-pill-n">${counts[f.id]}</span></button>`).join('');
+  // Sort active state
+  document.querySelectorAll('#atk-sort .atk-sort-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.atkSort === _atkSort));
+
+  // Apply filter + search
+  let rows = TASKS.filter(t => _atkMatch(_atkFilter, t, today, wk));
+  if (q) rows = rows.filter(t =>
+    (t.title || '').toLowerCase().includes(q) ||
+    (t.category ? (CATEGORIES[t.category]?.label || t.category) : '').toLowerCase().includes(q));
+
+  // Sort
+  const dueKey = t => t.dueDate || '9999-99-99';
+  if (_atkSort === 'due')          rows = [...rows].sort((a, b) => dueKey(a).localeCompare(dueKey(b)));
+  else if (_atkSort === 'created') rows = [...rows].sort((a, b) => _atkCreatedMs(b) - _atkCreatedMs(a));
+  else if (_atkSort === 'prio')    rows = [...rows].sort((a, b) => (_ATK_PRIO_RANK[a.priority] ?? 3) - (_ATK_PRIO_RANK[b.priority] ?? 3));
+  else /* smart */                 rows = [...rows].sort((a, b) =>
+    (a.done - b.done) || (dueKey(a).localeCompare(dueKey(b))) || ((_ATK_PRIO_RANK[a.priority] ?? 3) - (_ATK_PRIO_RANK[b.priority] ?? 3)));
+
+  // Header counts + shown
+  const openCount = TASKS.filter(t => !t.done).length;
+  const countLine = document.getElementById('atk-count-line');
+  if (countLine) countLine.textContent = `${TASKS.length} CAPTURED · ${openCount} OPEN`;
+  const shownEl = document.getElementById('atk-shown');
+  if (shownEl) shownEl.textContent = `${rows.length} SHOWN`;
+
+  // Render rows via the shared dashboard row builder (timeboxing disabled)
+  body.innerHTML = '';
+  if (!rows.length) {
+    body.innerHTML = `<div class="atk-empty">— None —<br><span>Nothing matches this filter</span></div>`;
+    return;
+  }
+  rows.forEach((task, i) => {
+    const wrap = buildTaskRow(task, i);
+    const rowEl = wrap.querySelector('.task-row');
+    if (rowEl) rowEl.draggable = false;   // no timeboxing on the Tasks page
+    body.appendChild(wrap);
+  });
+}
 /* ══ MIND MAP ENGINE ══════════════════════════════════════════════════════ */
 window.initMindMap = (function(){
   let _init = false;

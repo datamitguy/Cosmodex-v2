@@ -266,6 +266,13 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       showMainPanel('lists');
       return;
     }
+    // Tasks → full page (every captured task)
+    if (panel === 'alltasks') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('alltasks');
+      return;
+    }
     // Habits → full page
     if (panel === 'habits') {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
