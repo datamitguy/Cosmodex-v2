@@ -294,6 +294,13 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       showMainPanel('drill');
       return;
     }
+    // Calendar → full design-system calendar page
+    if (panel === 'calendarx') {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      showMainPanel('calendarx');
+      return;
+    }
     // Planning → full milestones panel
     if (panel === 'planning') {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));

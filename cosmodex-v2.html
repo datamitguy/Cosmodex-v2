@@ -146,6 +146,10 @@
         <span class="nav-item-icon">✓</span>
         Tasks
       </div>
+      <div class="nav-item" data-panel="calendarx" id="nav-calendarx">
+        <span class="nav-item-icon">▦</span>
+        Calendar
+      </div>
     </div>
 
     <div class="nav-section">
@@ -574,6 +578,9 @@
 
     <!-- Tasks Panel (full page — every captured task, opened from the Tasks nav item) -->
     <div id="panel-alltasks" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000"></div>
+
+    <!-- Calendar Panel (design-system calendar — day/week/month, wired to calEvents + tasks) -->
+    <div id="panel-calendarx" style="display:none;flex:1;min-height:0;flex-direction:column;overflow-y:auto;background:#000000"></div>
 
     <!-- Lists Panel (full page — design-kit composition) -->
     <div id="panel-lists" style="display:none;flex:1;flex-direction:column;overflow-y:auto;background:#000000">

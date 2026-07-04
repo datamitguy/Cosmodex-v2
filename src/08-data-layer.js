@@ -202,6 +202,7 @@ function initData() {
     renderTasks(); renderCalendar(); updateDashboardHero();
     drawCosmodex(); // immediate orb sync on calendar change
     if (_mainPanel === 'insights') renderInsights();
+    if (_mainPanel === 'calendarx') window._calxAutoRefresh?.();
   });
 
   _holidaysUnsub = onSnapshot(_uc('holidays'), snap => {
