@@ -5961,6 +5961,7 @@ document.addEventListener('pointermove', e => {
 let _pcalView   = 'month';       // 'month' | 'week'
 let _pcalAnchor = new Date();    // any date inside the visible month / week
 let _pcalProj   = null;          // filter project id (null = all initiatives)
+let _pcalShowAll = false;        // Week/Month tabs: also show tasks + holidays + all events
 
 const _PCAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const _PCAL_MON3   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -5993,22 +5994,49 @@ function _pcalItems(projId) {
 
   (CAL_EVENTS || []).forEach(ev => {
     const pid = _pcalEventProj(ev);
-    if (!pid) return;                     // planning calendar shows initiative work only
+    // In show-all mode we surface every event; otherwise only initiative-linked ones.
+    if (!pid && !_pcalShowAll) return;
     if (projId && pid !== projId) return;
     const ds = String(ev.date || '').slice(0, 10);
     if (!ds) return;
     push(ds, { kind:'event', id: ev.id, projectId: pid,
-      title: ev.title || 'Event', color: _pcalProjColor(pid),
+      title: ev.title || 'Event', color: pid ? _pcalProjColor(pid) : 'rgba(255,255,255,0.5)',
       startTime: ev.allDay ? null : (ev.startTime || null), duration: ev.duration || 60 });
   });
 
-  // Milestones first, then events by start time
+  // Show-all mode (Week/Month tabs): also surface tasks by due date + holidays.
+  if (_pcalShowAll && !projId) {
+    (TASKS || []).forEach(t => {
+      const ds = String(t.dueDate || '').slice(0, 10);
+      if (!ds) return;
+      push(ds, { kind:'task', id: t.id, projectId: t.projectId || null,
+        title: t.title || 'Task', color: getCatColor(t.category), done: !!t.done, startTime: null });
+    });
+    Object.values(HOLIDAYS || {}).forEach(h => {
+      const ds = String(h.date || '').slice(0, 10);
+      if (!ds) return;
+      push(ds, { kind:'holiday', id: h.docId || ds, title: h.name || 'Holiday', color: 'var(--gold)', startTime: null });
+    });
+  }
+
+  // Order within a day: milestone → holiday → timed event → task, then by time.
+  const rank = { milestone: 0, holiday: 1, event: 2, task: 3 };
   Object.values(byDate).forEach(arr => arr.sort((a, b) =>
-    (a.kind === b.kind) ? String(a.startTime||'').localeCompare(String(b.startTime||'')) : (a.kind === 'milestone' ? -1 : 1)));
+    (rank[a.kind] - rank[b.kind]) || String(a.startTime||'').localeCompare(String(b.startTime||''))));
   return byDate;
 }
 
 function _pcalChip(it) {
+  if (it.kind === 'task') {
+    return `<div class="pcal-chip task${it.done ? ' done' : ''}" data-pcal-open="task" data-id="${escAttr(it.id)}" style="--c:${it.color}" title="${escAttr(it.title)}">
+      <span class="pcal-taskdot">${it.done ? '✓' : '○'}</span><span class="pcal-chip-t">${escHtml(it.title)}</span>
+    </div>`;
+  }
+  if (it.kind === 'holiday') {
+    return `<div class="pcal-chip holiday" data-pcal-open="holiday" data-id="${escAttr(it.id)}" style="--c:var(--gold)" title="${escAttr(it.title)}">
+      <span class="pcal-diamond">✦</span><span class="pcal-chip-t">${escHtml(it.title)}</span>
+    </div>`;
+  }
   return `<div class="pcal-chip" data-pcal-open="${it.kind}" data-id="${escAttr(it.id)}" data-proj="${escAttr(it.projectId)}" style="--c:${it.color}" title="${escAttr(it.title)}">
       ${it.kind === 'milestone' ? '<span class="pcal-diamond">◆</span>' : '<span class="pcal-evdot"></span>'}
       <span class="pcal-chip-t">${escHtml(it.title)}</span>
@@ -6090,7 +6118,7 @@ function _pcalRenderWeek(byDate) {
   return `${header}${allday}<div class="pcal-wk-body">${rail}<div class="pcal-wk-cols">${cols}</div></div>`;
 }
 
-function _pcalToolbar() {
+function _pcalToolbar(hideToggle) {
   let label;
   if (_pcalView === 'week') {
     const ds = _pcalWeekDays(_pcalAnchor), a = ds[0], b = ds[6];
@@ -6106,16 +6134,17 @@ function _pcalToolbar() {
           <button class="pcal-nav-btn" data-pcal-nav="today">Today</button>
           <button class="pcal-nav-btn" data-pcal-nav="next">›</button>
         </div>
-        <div class="pcal-viewtoggle">
+        ${hideToggle ? '' : `<div class="pcal-viewtoggle">
           <button class="pcal-vt${_pcalView === 'week' ? ' active' : ''}" data-pcal-view="week">Week</button>
           <button class="pcal-vt${_pcalView === 'month' ? ' active' : ''}" data-pcal-view="month">Month</button>
-        </div>
+        </div>`}
       </div>
     </div>`;
 }
 
 function renderPlanningCalendar(projId) {
   _pcalProj = projId || null;
+  _pcalShowAll = false;   // projects-view calendar shows commitment work only
   const body = document.getElementById('plan-tl-body');
   if (!body) return;
   const byDate = _pcalItems(_pcalProj);
@@ -6196,11 +6225,12 @@ window.showPlanTab2 = function(tab) {
   window._planTab2 = tab;
   document.querySelectorAll('#plan-tabs2 .plan-tab2').forEach(b =>
     b.classList.toggle('active', b.dataset.ptab2 === tab));
-  const calMap = { week: 'week', month: 'month', buckets: 'focus' };
-  if (calMap[tab]) { _planShowView('calendar'); window._switchPlanCalTab && window._switchPlanCalTab(calMap[tab]); return; }
+  if (tab === 'buckets') { _planShowView('calendar'); window._switchPlanCalTab && window._switchPlanCalTab('focus'); return; }
   if (tab === 'commitments') { _planShowView('projects'); renderMilestones(); return; }
   _planShowView('design');
   if      (tab === 'thisweek') renderPlanThisWeek();
+  else if (tab === 'month')    renderPlanCalendarTab('month');
+  else if (tab === 'week')     renderPlanCalendarTab('week');
   else if (tab === 'quarter')  renderPlanQuarter();
   else if (tab === 'review')   renderPlanReview();
   else if (tab === 'north')    renderPlanNorth();
@@ -6215,6 +6245,8 @@ window._refreshPlanDesign = function() {
   if (ae && ae.closest && ae.closest('#plan-view-design') && /INPUT|TEXTAREA/.test(ae.tagName)) return;
   const t = window._planTab2;
   if      (t === 'thisweek') renderPlanThisWeek();
+  else if (t === 'month')    renderPlanCalendarTab('month');
+  else if (t === 'week')     renderPlanCalendarTab('week');
   else if (t === 'quarter')  renderPlanQuarter();
   else if (t === 'review')   renderPlanReview();
   else if (t === 'north')    renderPlanNorth();
@@ -6316,6 +6348,27 @@ function renderPlanThisWeek() {
   const days = _planWeekDays();
   const wkDoneTasks = TASKS.filter(t => t.done && days.includes(t.doneDate || t.dueDate)).length;
 
+  const DOW = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const todayStr = localDateStr(new Date());
+  const shapedCells = days.map((ds, i) => {
+    const d = new Date(ds + 'T00:00');
+    const isToday = ds === todayStr;
+    return `<div class="ptw-shape-cell${isToday ? ' today' : ''}">
+      <div class="ptw-shape-h"><span>${DOW[i]}</span><span class="ptw-shape-dd">${d.getDate()}</span></div>
+      <input class="ptw-shape-in" data-shape="${i}" placeholder="One anchor…" autocomplete="off">
+    </div>`;
+  }).join('');
+
+  const ENERGY = ['MON','TUE','WED','THU','FRI'];
+  const energyRows = ENERGY.map(dy => `
+    <div class="ptw-energy-row">
+      <span class="plan-tel">${dy}</span>
+      <div class="ptw-energy-track"><div class="ptw-energy-fill" data-efill="${dy}"></div></div>
+      <select class="ptw-energy-sel" data-energy="${dy}">
+        <option value="">—</option><option value="high">HIGH</option><option value="mid">MID</option><option value="low">LOW</option>
+      </select>
+    </div>`).join('');
+
   body.innerHTML = `
     ${_planHeader('THIS WEEK · YOUR WEEKLY COMMITMENTS', 'Commitments you made. Watch them meet reality.',
       'Weekly-cadence commitments live here. Big rocks first.',
@@ -6331,19 +6384,51 @@ function renderPlanThisWeek() {
       </div>
     </div>
     <div class="plan-glass">
-      <div class="plan-glass-head"><span class="plan-glass-title" style="color:var(--gold)">Not doing this week</span></div>
-      <div class="plan-dsn-sub">The list that protects the list — one per line.</div>
-      <textarea class="plan-dsn-textarea" id="ptw-notdoing" rows="5" placeholder="Read new AI papers (next week)&#10;Refactor the pipeline&#10;Coffee chats"></textarea>
+      <div class="plan-glass-head"><span class="plan-glass-title">The week, shaped</span></div>
+      <div class="plan-dsn-sub">Each day gets one anchor. One. Not three.</div>
+      <div class="ptw-shape-grid">${shapedCells}</div>
+    </div>
+    <div class="plan-two">
+      <div class="plan-glass">
+        <div class="plan-dsn-eyebrow">ENERGY FORECAST</div>
+        <div class="plan-glass-title" style="margin:2px 0 10px">Match the work to the day</div>
+        ${energyRows}
+      </div>
+      <div class="plan-glass">
+        <div class="plan-dsn-eyebrow" style="color:var(--gold)">NOT DOING THIS WEEK</div>
+        <div class="plan-glass-title" style="margin:2px 0 6px">The list that protects the list</div>
+        <div class="plan-dsn-sub">One per line.</div>
+        <textarea class="plan-dsn-textarea" id="ptw-notdoing" rows="6" placeholder="Read new AI papers (next week)&#10;Refactor the pipeline&#10;Coffee chats"></textarea>
+      </div>
     </div>`;
 
   document.getElementById('ptw-add').onclick = () => _addCommitment('weekly');
-  body.querySelectorAll('[data-commit]').forEach(el =>
-    el.onclick = () => openMsProjectModal(el.dataset.commit));
+  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => openMsProjectModal(el.dataset.commit));
 
   const key = _planWeekKey();
+  const EFILL = { high: 90, mid: 55, low: 30, '': 0 };
+  const applyEnergyBar = (dy, v) => {
+    const f = body.querySelector(`[data-efill="${dy}"]`);
+    if (f) { f.style.width = (EFILL[v] || 0) + '%'; f.classList.toggle('high', v === 'high'); }
+  };
+  const readThisWeek = () => ({
+    notDoing: document.getElementById('ptw-notdoing')?.value || '',
+    weekShaped: Array.from(body.querySelectorAll('[data-shape]')).map(i => i.value),
+    energy: Object.fromEntries(Array.from(body.querySelectorAll('[data-energy]')).map(s => [s.dataset.energy, s.value])),
+  });
+  const saveThisWeek = () => _planDebSave('weeklyPlans', key, readThisWeek);
+
   const nd = document.getElementById('ptw-notdoing');
-  _planLoadDoc('weeklyPlans', key).then(d => { if (nd && document.activeElement !== nd) nd.value = d.notDoing || ''; });
-  nd.oninput = () => _planDebSave('weeklyPlans', key, () => ({ notDoing: nd.value }));
+  nd.oninput = saveThisWeek;
+  body.querySelectorAll('[data-shape]').forEach(i => i.oninput = saveThisWeek);
+  body.querySelectorAll('[data-energy]').forEach(s => s.onchange = () => { applyEnergyBar(s.dataset.energy, s.value); saveThisWeek(); });
+
+  _planLoadDoc('weeklyPlans', key).then(d => {
+    if (nd && document.activeElement !== nd) nd.value = d.notDoing || '';
+    (d.weekShaped || []).forEach((v, i) => { const el = body.querySelector(`[data-shape="${i}"]`); if (el && document.activeElement !== el) el.value = v || ''; });
+    const en = d.energy || {};
+    body.querySelectorAll('[data-energy]').forEach(s => { s.value = en[s.dataset.energy] || ''; applyEnergyBar(s.dataset.energy, s.value); });
+  });
 }
 
 /* ── QUARTER ──────────────────────────────────────────────────────────── */
@@ -6507,6 +6592,64 @@ function renderPlanNorth() {
   ['vision','roles','values','eulogy'].forEach(id => {
     const el = document.getElementById('pns-' + id); if (el) el.oninput = save;
   });
+}
+
+/* ── Week/Month tabs: unified planning calendar (events+tasks+milestones+holidays) ── */
+function renderPlanCalendarTab(mode) {
+  const body = document.getElementById('plan-design-body'); if (!body) return;
+  _pcalView = mode; _pcalShowAll = true; _pcalProj = null;
+  const byDate = _pcalItems(null);
+  body.innerHTML = `
+    ${_planHeader(mode === 'week' ? 'WEEK · FULL CALENDAR' : 'MONTH · FULL CALENDAR',
+      mode === 'week' ? 'Your week, in full.' : 'Your month, in full.',
+      'Events, tasks, milestones and holidays — all in one place.',
+      `<button class="plan-liquid-btn" id="pcal2-addms">＋ Milestone</button>`)}
+    <div class="plan-glass" style="padding:14px">
+      <div class="pcal pcal-embed">${_pcalToolbar(true)}${mode === 'week' ? _pcalRenderWeek(byDate) : _pcalRenderMonth(byDate)}</div>
+    </div>`;
+  _wirePlanCal2(body, mode);
+}
+
+function _wirePlanCal2(body, mode) {
+  body.querySelectorAll('[data-pcal-nav]').forEach(b => b.onclick = () => {
+    const dir = b.dataset.pcalNav;
+    if (dir === 'today') _pcalAnchor = new Date();
+    else {
+      const step = dir === 'next' ? 1 : -1;
+      _pcalAnchor = mode === 'week'
+        ? new Date(_pcalAnchor.getFullYear(), _pcalAnchor.getMonth(), _pcalAnchor.getDate() + 7 * step)
+        : new Date(_pcalAnchor.getFullYear(), _pcalAnchor.getMonth() + step, 1);
+    }
+    renderPlanCalendarTab(mode);
+  });
+  body.querySelectorAll('[data-pcal-open]').forEach(el => el.onclick = (e) => {
+    e.stopPropagation();
+    const kind = el.dataset.pcalOpen, id = el.dataset.id, proj = el.dataset.proj;
+    if (kind === 'milestone') { openMsEventModal(proj, id); }
+    else if (kind === 'event') { const ev = (CAL_EVENTS || []).find(x => x.id === id); if (ev) showEventModal(ev, e.clientX, e.clientY); }
+    // task / holiday chips are display-only here
+  });
+  body.querySelectorAll('[data-pcal-day]').forEach(el => el.onclick = () => _planMilestonePicker(el.dataset.pcalDay));
+  const addBtn = document.getElementById('pcal2-addms');
+  if (addBtn) addBtn.onclick = () => _planMilestonePicker(localDateStr(new Date()));
+}
+
+// Lightweight commitment picker → open the milestone modal for the chosen commitment/date.
+function _planMilestonePicker(dateStr) {
+  const commits = MILESTONE_PROJECTS.filter(p => !p.isArchived);
+  if (!commits.length) { showToast('Create a commitment first', 'error'); return; }
+  if (commits.length === 1) { openMsEventModal(commits[0].id, null, dateStr || ''); return; }
+  const back = document.createElement('div');
+  back.className = 'pcal-picker-back';
+  back.innerHTML = `<div class="pcal-picker" role="dialog">
+    <div class="pcal-picker-h">Add milestone${dateStr ? ` · <span>${escHtml(dateStr)}</span>` : ''}</div>
+    ${commits.map(c => `<button class="pcal-picker-item" data-pid="${escAttr(c.id)}">
+      <span class="pcal-picker-dot" style="background:${c.color || 'rgba(255,255,255,.5)'}"></span>${escHtml(c.title)}</button>`).join('')}
+  </div>`;
+  document.body.appendChild(back);
+  back.addEventListener('click', e => { if (e.target === back) back.remove(); });
+  back.querySelectorAll('[data-pid]').forEach(b =>
+    b.onclick = () => { back.remove(); openMsEventModal(b.dataset.pid, null, dateStr || ''); });
 }
 /* ══ FOCUS BUCKETS ══ */
 const BUCKET_COLORS = ['#4a7c5e','#c45c2a','#e8a020','#6b9fd4','#9b7fd4','#c49a6c','#8a8070'];
