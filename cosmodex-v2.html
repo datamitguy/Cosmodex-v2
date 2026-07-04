@@ -184,6 +184,10 @@
         <span class="nav-item-icon">✎</span>
         Notes
       </div>
+      <div class="nav-item" id="btn-commit">
+        <span class="nav-item-icon">◈</span>
+        Commit
+      </div>
       <div class="nav-item" id="btn-focus">
         <span class="nav-item-icon">◎</span>
         Focus
@@ -1271,6 +1275,13 @@
       <div class="pomo-body-inner" style="padding:16px 16px 14px">
         <div class="pomo-ev-label">Focus Session</div>
         <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
+        <div class="pomo-tasks">
+          <div class="pomo-tasks-head">
+            <span class="pomo-tasks-lbl" id="pomo-tasks-lbl">FOCUS TASK · TODAY</span>
+            <input id="pomo-task-search" class="pomo-tasks-search" placeholder="⌕ search all tasks…" autocomplete="off">
+          </div>
+          <div class="pomo-task-list" id="pomo-task-list"></div>
+        </div>
         <div class="pomo-ring-wrap">
           <div class="pf-breath-bg-outer"></div>
           <div class="pf-breath-bg-inner"></div>
@@ -1323,6 +1334,30 @@
         <div class="pomo-lock-text">Session in progress.<br>Stop the timer to close.</div>
         <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Commit ritual overlay (design: "What is the one thing?") -->
+<div class="overlay commit-ritual-ov" id="commit-ritual-overlay" style="z-index:840">
+  <div class="cr-card">
+    <div class="cr-specular"></div>
+    <button class="cr-close" id="cr-close" title="Leave">×</button>
+    <div class="cr-ring"><span class="cr-glyph">◈</span></div>
+    <div class="cr-eyebrow">COMMIT RITUAL</div>
+    <div class="cr-title">What is the one thing?</div>
+    <input id="cr-intent" class="cr-intent" placeholder="Name the one focus that cannot slip…" autocomplete="off">
+    <div class="cr-suggest-lbl" id="cr-suggest-lbl">TODAY'S TASKS</div>
+    <div class="cr-suggest" id="cr-suggest"></div>
+    <div class="cr-durs" id="cr-durs">
+      <button class="cr-dur" data-dur="25">25m</button>
+      <button class="cr-dur active" data-dur="45">45m</button>
+      <button class="cr-dur" data-dur="90">90m</button>
+    </div>
+    <div class="cr-italic">"One focus that cannot slip…"</div>
+    <div class="cr-actions">
+      <button class="cr-begin" id="cr-begin">Begin</button>
+      <button class="cr-leave" id="cr-leave">Leave</button>
     </div>
   </div>
 </div>

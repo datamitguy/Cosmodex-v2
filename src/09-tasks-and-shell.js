@@ -4203,23 +4203,79 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
       const mins = Math.max(1, Math.round(ev.duration));
       setDuration(mins);
     }
-    // Show/hide delete event button
+    // Show/hide delete event button (only for real calendar events, not task-only focus)
     const delBtn = document.getElementById('pomo-del-event-btn');
-    if (delBtn) delBtn.style.display = _pomoEvent ? 'inline-flex' : 'none';
+    if (delBtn) delBtn.style.display = (_pomoEvent && !_pomoEvent._taskOnly) ? 'inline-flex' : 'none';
     // Hide completion prompt when opening fresh
     const prompt = document.getElementById('pomo-complete-prompt');
     if (prompt) prompt.style.display = 'none';
   };
 
+  // Focus-task picker: today's open tasks by default, search across all uncompleted.
+  function _pomoRenderTaskList(query) {
+    const listEl = document.getElementById('pomo-task-list');
+    const lblEl  = document.getElementById('pomo-tasks-lbl');
+    if (!listEl) return;
+    const q = (query || '').trim().toLowerCase();
+    const today = localDateStr(new Date());
+    let tasks;
+    if (q) { tasks = TASKS.filter(t => !t.done && (t.title || '').toLowerCase().includes(q)).slice(0, 25); if (lblEl) lblEl.textContent = 'SEARCH · UNCOMPLETED'; }
+    else   { tasks = TASKS.filter(t => !t.done && t.dueDate === today);                                   if (lblEl) lblEl.textContent = "FOCUS TASK · TODAY"; }
+    const activeId = _pomoEvent && _pomoEvent.taskId;
+    if (!tasks.length) {
+      listEl.innerHTML = `<div class="pomo-task-empty">${q ? 'No matching open tasks' : 'Nothing due today — search to pick a task'}</div>`;
+      return;
+    }
+    listEl.innerHTML = tasks.map(t => {
+      const cat = t.category ? CATEGORIES[t.category] : null;
+      return `<div class="pomo-task-item${t.id === activeId ? ' active' : ''}" data-pomo-task="${escAttr(t.id)}">
+        <span class="pomo-task-dot" style="background:${getCatColor(t.category)}"></span>
+        <span class="pomo-task-title">${escHtml(t.title)}</span>
+        ${cat ? `<span class="pomo-task-cat">${escHtml(cat.label.toUpperCase())}</span>` : ''}
+        ${t.id === activeId ? '<span class="pomo-task-live">● FOCUS</span>' : ''}
+      </div>`;
+    }).join('');
+    listEl.querySelectorAll('[data-pomo-task]').forEach(el => el.onclick = () => {
+      const t = TASKS.find(x => x.id === el.dataset.pomoTask); if (t) _pomoSelectTask(t);
+    });
+  }
+
+  function _pomoSelectTask(task) {
+    _pomoEvent = task ? { taskId: task.id, title: task.title, _taskOnly: true } : null;
+    const titleEl = document.getElementById('pomo-ev-title');
+    if (titleEl) titleEl.textContent = task ? task.title : '—';
+    const delBtn = document.getElementById('pomo-del-event-btn');
+    if (delBtn) delBtn.style.display = 'none';
+    _pomoRenderTaskList(document.getElementById('pomo-task-search')?.value || '');
+  }
+
+  // Commit ritual → Begin hands off here: set task + duration and reset to a fresh session.
+  window.setPomoTask = function(task, durMins) {
+    if (durMins) setDuration(durMins);
+    clearInterval(pomo.interval); pomo.running = false;
+    pomo.totalSecs = pomoDur * 60; pomo.remainSecs = pomoDur * 60;
+    _pomoSelectTask(task || null);
+    renderPomo();
+  };
+  window.setPomoTitle = function(title) {
+    _pomoEvent = title ? { title, _taskOnly: true } : null;
+    const titleEl = document.getElementById('pomo-ev-title');
+    if (titleEl) titleEl.textContent = title || '—';
+  };
+
   window.initPomoOverlay = function() {
     buildTicks(); renderPomo(); startBreathing(); renderFocusChecklist();
+    // Focus-task picker: default to today's tasks; search picks other open tasks.
+    _pomoRenderTaskList('');
+    const searchEl = document.getElementById('pomo-task-search');
+    if (searchEl && !searchEl.dataset.wired) { searchEl.dataset.wired = '1'; searchEl.addEventListener('input', e => _pomoRenderTaskList(e.target.value)); }
     // Reset completion prompt
     const prompt = document.getElementById('pomo-complete-prompt');
     if (prompt) prompt.style.display = 'none';
     // Wire delete event button
     const delBtn = document.getElementById('pomo-del-event-btn');
     if (delBtn) {
-      delBtn.style.display = _pomoEvent ? 'inline-flex' : 'none';
+      delBtn.style.display = (_pomoEvent && !_pomoEvent._taskOnly) ? 'inline-flex' : 'none';
       delBtn.onclick = async () => {
         if (!_pomoEvent) return;
         if (!await cdxConfirm(`Delete event "${_pomoEvent.title}"?`)) return;
@@ -4722,3 +4778,78 @@ function renderAtkDetail() {
   el.querySelector('[data-atk-sched]').onclick = () => openScheduleModal(task.dueDate || localDateStr(new Date()), '09:00', task.id, null);
   el.querySelector('[data-atk-del]').onclick = () => deleteTask(task.id);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   COMMIT RITUAL  (design: "What is the one thing?")
+   Nav 'Commit' → ritual → Begin hands the chosen task + duration
+   to the Focus (pomodoro) overlay via window.setPomoTask.
+   ═══════════════════════════════════════════════════════════ */
+let _ritualTaskId = null;
+let _ritualDur = 45;
+let _ritualWired = false;
+
+function _ritualRenderSuggest(query) {
+  const el = document.getElementById('cr-suggest');
+  const lbl = document.getElementById('cr-suggest-lbl');
+  if (!el) return;
+  const q = (query || '').trim().toLowerCase();
+  const today = localDateStr(new Date());
+  let tasks;
+  if (q) { tasks = TASKS.filter(t => !t.done && (t.title || '').toLowerCase().includes(q)).slice(0, 20); if (lbl) lbl.textContent = 'SEARCH · UNCOMPLETED'; }
+  else   { tasks = TASKS.filter(t => !t.done && t.dueDate === today);                                   if (lbl) lbl.textContent = "TODAY'S TASKS"; }
+  if (!tasks.length) {
+    el.innerHTML = `<div class="cr-suggest-empty">${q ? 'No matching open tasks' : 'Nothing due today — type a focus or search'}</div>`;
+    return;
+  }
+  el.innerHTML = tasks.map(t => {
+    const cat = t.category ? CATEGORIES[t.category] : null;
+    return `<button class="cr-suggest-item${t.id === _ritualTaskId ? ' active' : ''}" data-cr-task="${escAttr(t.id)}">
+      <span class="cr-suggest-dot" style="background:${getCatColor(t.category)}"></span>
+      <span class="cr-suggest-t">${escHtml(t.title)}</span>
+      ${cat ? `<span class="cr-suggest-cat">${escHtml(cat.label.toUpperCase())}</span>` : ''}
+    </button>`;
+  }).join('');
+  el.querySelectorAll('[data-cr-task]').forEach(b => b.onclick = () => {
+    const t = TASKS.find(x => x.id === b.dataset.crTask); if (!t) return;
+    _ritualTaskId = t.id;
+    const inp = document.getElementById('cr-intent'); if (inp) inp.value = t.title;
+    _ritualRenderSuggest(''); // show today's list with this one highlighted
+  });
+}
+
+function openCommitRitual() {
+  const ov = document.getElementById('commit-ritual-overlay');
+  if (!ov) return;
+  _ritualTaskId = null; _ritualDur = 45;
+  const inp = document.getElementById('cr-intent'); if (inp) inp.value = '';
+  document.querySelectorAll('#cr-durs .cr-dur').forEach(b => b.classList.toggle('active', +b.dataset.dur === _ritualDur));
+  _ritualRenderSuggest('');
+
+  if (!_ritualWired) {
+    _ritualWired = true;
+    const close = () => ov.classList.remove('open');
+    document.getElementById('cr-close')?.addEventListener('click', close);
+    document.getElementById('cr-leave')?.addEventListener('click', close);
+    ov.addEventListener('click', e => { if (e.target === ov) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && ov.classList.contains('open')) close(); });
+    inp?.addEventListener('input', e => { _ritualTaskId = null; _ritualRenderSuggest(e.target.value); });
+    document.getElementById('cr-durs')?.addEventListener('click', e => {
+      const b = e.target.closest('[data-dur]'); if (!b) return;
+      _ritualDur = +b.dataset.dur;
+      document.querySelectorAll('#cr-durs .cr-dur').forEach(x => x.classList.toggle('active', x === b));
+    });
+    document.getElementById('cr-begin')?.addEventListener('click', () => {
+      const task = _ritualTaskId ? TASKS.find(t => t.id === _ritualTaskId) : null;
+      const intent = (document.getElementById('cr-intent')?.value || '').trim();
+      if (!task && !intent) { showToast('Name the one thing first', 'error'); return; }
+      window.setPomoTask && window.setPomoTask(task || null, _ritualDur);
+      if (!task && intent && window.setPomoTitle) window.setPomoTitle(intent);
+      close();
+      openOverlay('pomo-overlay');
+    });
+  }
+  ov.classList.add('open');
+  setTimeout(() => document.getElementById('cr-intent')?.focus(), 60);
+}
+
+document.getElementById('btn-commit')?.addEventListener('click', openCommitRitual);
