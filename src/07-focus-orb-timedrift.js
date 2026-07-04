@@ -692,7 +692,7 @@ function _tdDrawTimeline(now){
   // Drift indicator — shown while the rings are scrubbed away from now
   if (Math.abs(_tdScrubOffset) > 500) {
     ctx.font="300 10px 'DM Mono',monospace";
-    ctx.fillStyle='rgba(212,162,78,0.85)';
+    ctx.fillStyle='rgba(255,255,255,0.85)';
     ctx.textAlign='center'; ctx.textBaseline='top';
     const dir=_tdScrubOffset>0?'ahead':'behind';
     ctx.fillText(`⟲ adrift · ${_tdFmtOffset(Math.abs(_tdScrubOffset))} ${dir} · release returns to now`,cx,6);

@@ -535,11 +535,11 @@ function _insDrawTrend(canvasId, data, labels, color, dates, isRedraw) {
     _insTrendCache = { canvasId, data, labels, color, dates, padL, stepX, hoverIdx };
     if (hoverIdx >= 0 && pts[hoverIdx]) {
       const [hx, hy] = pts[hoverIdx];
-      ctx.strokeStyle = 'rgba(212,162,78,0.5)'; ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(hx, padT); ctx.lineTo(hx, padT + plotH); ctx.stroke();
       ctx.beginPath(); ctx.arc(hx, hy, 4, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(212,162,78,1)';
-      ctx.shadowColor = 'rgba(212,162,78,0.7)'; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,1)';
+      ctx.shadowColor = 'rgba(255,255,255,0.7)'; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0;
     }
     _insInitTrendScrub(cvs);
   }

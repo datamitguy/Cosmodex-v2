@@ -210,7 +210,7 @@ function buildTaskRow(task, idx) {
 
   const PRIORITY_LABELS = { high: 'High', med: 'Med', low: 'Low' };
   const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority] || '' : '';
-  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--gold)':task.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'}">${priorityLabel}</span>` : '';
+  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--gold)':task.priority==='med'?'rgba(255,255,255,0.55)':'var(--muted)'}">${priorityLabel}</span>` : '';
 
   let recurBadge = '';
   if (task.recurrence) {
@@ -401,7 +401,7 @@ function _tlClick(e) {
   if (del)      { deleteTask(del.dataset.del); return; }
   if (delSub)   { deleteSubtask(delSub.dataset.delsub, delSub.dataset.sub); return; }
   if (setCat)   { cycleTaskCategory(setCat.dataset.setcat); return; }
-  if (commitBtn) { openCommitMode(commitBtn.dataset.commit); return; }
+  if (commitBtn) { openCommitRitual(commitBtn.dataset.commit); return; }
   if (frictionEl) { openFrictionModal(frictionEl.dataset.friction); return; }
   if (taskEditBtn) { openTaskEditModal(taskEditBtn.dataset.taskEdit); return; }
 
@@ -3587,6 +3587,23 @@ function initDailyRitual() {
     const focus = document.getElementById('ritual-focus-input')?.value.trim();
     if (focus) localStorage.setItem('cdx_daily_focus', focus);
     if (_ritualEnergy) localStorage.setItem('cdx_daily_energy', _ritualEnergy);
+    // Persist to the synced habitLogs doc (not localStorage-only) so the day's
+    // focus + energy survive a cache clear and follow the user across devices.
+    const uid = (typeof getHabitsUid === 'function') ? getHabitsUid() : null;
+    if (uid && window.CDX_FB && window.CDX_DB && (focus || _ritualEnergy)) {
+      const ds = localDateStr(new Date());
+      if (typeof _habitLogs !== 'undefined') {
+        _habitLogs[ds] = _habitLogs[ds] || { date: ds, completions: {} };
+        if (focus) _habitLogs[ds].nonNegotiable = focus;
+        if (_ritualEnergy) _habitLogs[ds].dailyEnergy = _ritualEnergy;
+      }
+      const { doc, setDoc } = window.CDX_FB;
+      const payload = { date: ds };
+      if (focus) payload.nonNegotiable = focus;
+      if (_ritualEnergy) payload.dailyEnergy = _ritualEnergy;
+      setDoc(doc(window.CDX_DB, 'users', uid, 'habitLogs', ds), payload, { merge: true })
+        .catch(e => console.warn('daily ritual persist failed:', e.message));
+    }
     closeRitual();
     showToast('Day started — ' + (focus ? `"${focus}"` : 'good luck!'), 'success', 4000);
   });
@@ -4805,7 +4822,7 @@ function renderAtkDetail() {
     if (e.key === 'Enter' && subAdd.value.trim()) { addSubtask(task.id, subAdd.value.trim()); subAdd.value = ''; }
   });
   const focusBtn = el.querySelector('[data-atk-focus]');
-  if (focusBtn) focusBtn.onclick = () => openCommitMode(task.id);
+  if (focusBtn) focusBtn.onclick = () => openCommitRitual(task.id);
   el.querySelector('[data-atk-sched]').onclick = () => openScheduleModal(task.dueDate || localDateStr(new Date()), '09:00', task.id, null);
   el.querySelector('[data-atk-del]').onclick = () => deleteTask(task.id);
 }
@@ -4848,11 +4865,15 @@ function _ritualRenderSuggest(query) {
   });
 }
 
-function openCommitRitual() {
+function openCommitRitual(preselectTaskId) {
   const ov = document.getElementById('commit-ritual-overlay');
   if (!ov) return;
-  _ritualTaskId = null; _ritualDur = 45;
-  const inp = document.getElementById('cr-intent'); if (inp) inp.value = '';
+  _ritualDur = 45;
+  // Preselect a task when launched from a task's Focus button so every focus
+  // entry point flows through one ritual → one Focus Timer (no parallel screens).
+  const pre = preselectTaskId ? TASKS.find(t => t.id === preselectTaskId) : null;
+  _ritualTaskId = pre ? pre.id : null;
+  const inp = document.getElementById('cr-intent'); if (inp) inp.value = pre ? pre.title : '';
   document.querySelectorAll('#cr-durs .cr-dur').forEach(b => b.classList.toggle('active', +b.dataset.dur === _ritualDur));
   _ritualRenderSuggest('');
 
@@ -5067,16 +5088,14 @@ function _dashRenderCards() {
 /* ── Today's rituals: habits + morning/evening routine steps ──
    Reads the habits-module globals (_habits / _routines / _habitLogs), which are
    already subscribed at boot by initHabitsPage(). Toggling reuses habitToggle().  */
-function _dashRoutineDone(ds) {
-  try { return JSON.parse(localStorage.getItem('hb-launcher-done-' + ds) || '{}'); } catch { return {}; }
-}
 function _dashRenderRituals() {
   const el = document.getElementById('dash-rituals');
   if (!el) return;
   const ds = localDateStr(new Date());
   const habits = (typeof _habits !== 'undefined' ? _habits : [])
     .filter(h => h && h.status !== 'archived' && h.status !== 'graduated');
-  const routineDone = _dashRoutineDone(ds);
+  // Firestore-backed routine completion (synced across devices) instead of localStorage.
+  const routineDone = (typeof _routineDoneMap === 'function') ? _routineDoneMap(ds) : {};
   const morning = (typeof _routines !== 'undefined' ? _routines.morning : []) || [];
   const evening = (typeof _routines !== 'undefined' ? _routines.evening : []) || [];
   const logDone = id => !!(typeof _habitLogs !== 'undefined' && _habitLogs[ds]?.completions?.[id]);
@@ -5102,8 +5121,9 @@ function _dashRenderRituals() {
   const routineBlock = (label, steps, kind) => {
     if (!steps.length) return '';
     return `<div class="dash-ritual-sub">${label}</div>` + steps.map((s, i) => {
-      const done = !!routineDone[kind === 'morning' ? i : 'e' + i];
-      return `<div class="dash-ritual-row${done ? ' done' : ''}" data-ritual-step="${kind}:${i}">
+      const key = (kind === 'morning' ? 'm' : 'e') + i;
+      const done = !!routineDone[key];
+      return `<div class="dash-ritual-row${done ? ' done' : ''}" data-ritual-step="${escAttr(key)}">
         <span class="dash-ritual-check${done ? ' on' : ''}">${done ? '✓' : ''}</span>
         <span class="dash-ritual-name">${escHtml(s.text || '')}</span>
         ${s.time ? `<span class="dash-ritual-time">${escHtml(s.time)}</span>` : ''}
@@ -5121,15 +5141,10 @@ function _dashRenderRituals() {
   el.querySelectorAll('[data-ritual-habit]').forEach(r => r.addEventListener('click', () => {
     habitToggle(r.dataset.ritualHabit, ds).then(() => _dashRenderRituals());
   }));
-  // Routine-step toggle (mirrors the Habits page localStorage flag)
+  // Routine-step toggle → Firestore-backed (synced), re-renders on resolve
   el.querySelectorAll('[data-ritual-step]').forEach(r => r.addEventListener('click', () => {
-    const [kind, i] = r.dataset.ritualStep.split(':');
-    const key = kind === 'morning' ? +i : 'e' + i;
-    const map = _dashRoutineDone(ds);
-    map[key] = !map[key];
-    localStorage.setItem('hb-launcher-done-' + ds, JSON.stringify(map));
-    if (typeof _todayRenderMorningMode === 'function' && _habitsTab === 'today') _todayRenderMorningMode();
-    _dashRenderRituals();
+    if (typeof toggleRoutineStep === 'function') toggleRoutineStep(ds, r.dataset.ritualStep).then(() => _dashRenderRituals());
+    else _dashRenderRituals();
   }));
 }
 

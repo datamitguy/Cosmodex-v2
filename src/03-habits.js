@@ -1893,6 +1893,31 @@ function routinesSave(data) {
   }, 800);
 }
 
+/* ── Routine-step completion — Firestore-backed (was localStorage-only, per-device).
+   Stored on the synced habitLogs/{date} doc as routineDone:{ m0:true, e1:true }. ── */
+function _routineDoneMap(ds) { return (_habitLogs[ds] && _habitLogs[ds].routineDone) || {}; }
+async function toggleRoutineStep(ds, key) {
+  const uid = getHabitsUid(); if (!uid || !window.CDX_DB) return;
+  if (!_habitLogs[ds]) _habitLogs[ds] = { date: ds, completions: {} };
+  if (!_habitLogs[ds].routineDone) _habitLogs[ds].routineDone = {};
+  const was = !!_habitLogs[ds].routineDone[key];
+  if (was) delete _habitLogs[ds].routineDone[key]; else _habitLogs[ds].routineDone[key] = true;
+  // optimistic UI
+  window.renderDashboardBoard?.();
+  if (_habitsTab === 'today') _todayRenderMorningMode?.();
+  const { doc, setDoc, updateDoc, deleteField } = window.CDX_FB;
+  try {
+    const ref = doc(window.CDX_DB, 'users', uid, 'habitLogs', ds);
+    if (was) await updateDoc(ref, { ['routineDone.' + key]: deleteField() });
+    else     await setDoc(ref, { date: ds, routineDone: { [key]: true } }, { merge: true });
+  } catch (e) {
+    console.warn('toggleRoutineStep error:', e);
+    // revert on failure
+    if (was) _habitLogs[ds].routineDone[key] = true; else delete _habitLogs[ds].routineDone[key];
+    window.renderDashboardBoard?.();
+  }
+}
+
 /* ══ BEHAVIOURS ══ */
 function renderBehaviours() {
   const idEl = document.getElementById('behav-identity');

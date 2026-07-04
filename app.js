@@ -2819,6 +2819,31 @@ function routinesSave(data) {
   }, 800);
 }
 
+/* ── Routine-step completion — Firestore-backed (was localStorage-only, per-device).
+   Stored on the synced habitLogs/{date} doc as routineDone:{ m0:true, e1:true }. ── */
+function _routineDoneMap(ds) { return (_habitLogs[ds] && _habitLogs[ds].routineDone) || {}; }
+async function toggleRoutineStep(ds, key) {
+  const uid = getHabitsUid(); if (!uid || !window.CDX_DB) return;
+  if (!_habitLogs[ds]) _habitLogs[ds] = { date: ds, completions: {} };
+  if (!_habitLogs[ds].routineDone) _habitLogs[ds].routineDone = {};
+  const was = !!_habitLogs[ds].routineDone[key];
+  if (was) delete _habitLogs[ds].routineDone[key]; else _habitLogs[ds].routineDone[key] = true;
+  // optimistic UI
+  window.renderDashboardBoard?.();
+  if (_habitsTab === 'today') _todayRenderMorningMode?.();
+  const { doc, setDoc, updateDoc, deleteField } = window.CDX_FB;
+  try {
+    const ref = doc(window.CDX_DB, 'users', uid, 'habitLogs', ds);
+    if (was) await updateDoc(ref, { ['routineDone.' + key]: deleteField() });
+    else     await setDoc(ref, { date: ds, routineDone: { [key]: true } }, { merge: true });
+  } catch (e) {
+    console.warn('toggleRoutineStep error:', e);
+    // revert on failure
+    if (was) _habitLogs[ds].routineDone[key] = true; else delete _habitLogs[ds].routineDone[key];
+    window.renderDashboardBoard?.();
+  }
+}
+
 /* ══ BEHAVIOURS ══ */
 function renderBehaviours() {
   const idEl = document.getElementById('behav-identity');
@@ -3217,7 +3242,7 @@ function hbLaunchDay() {
   btn.style.background = 'linear-gradient(135deg,var(--neon) 0%,#2d5a3d 100%)';
   btn.innerHTML = 'Day started ✓<span class="hb-lb-sub">Routine launched — good luck today</span>';
   setTimeout(() => {
-    btn.style.background = 'linear-gradient(135deg,var(--gold) 0%,#a88018 100%)';
+    btn.style.background = 'linear-gradient(135deg,var(--gold) 0%,#ffffff 100%)';
     btn.innerHTML = 'Begin the day<span class="hb-lb-sub">' + _hbTotalSteps + ' steps ready</span>';
     // re-fetch the ID'd element that got overwritten
     const restoredSub = btn.querySelector('.hb-lb-sub');
@@ -3824,11 +3849,11 @@ function _insDrawTrend(canvasId, data, labels, color, dates, isRedraw) {
     _insTrendCache = { canvasId, data, labels, color, dates, padL, stepX, hoverIdx };
     if (hoverIdx >= 0 && pts[hoverIdx]) {
       const [hx, hy] = pts[hoverIdx];
-      ctx.strokeStyle = 'rgba(212,162,78,0.5)'; ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(hx, padT); ctx.lineTo(hx, padT + plotH); ctx.stroke();
       ctx.beginPath(); ctx.arc(hx, hy, 4, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(212,162,78,1)';
-      ctx.shadowColor = 'rgba(212,162,78,0.7)'; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,255,1)';
+      ctx.shadowColor = 'rgba(255,255,255,0.7)'; ctx.shadowBlur = 8; ctx.fill(); ctx.shadowBlur = 0;
     }
     _insInitTrendScrub(cvs);
   }
@@ -5179,7 +5204,7 @@ function showMsTaskSearchResults(query, evId, containerEl) {
   containerEl.innerHTML = results.map(t => {
     const cat = t.category ? CATEGORIES[t.category] : null;
     const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-    const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'};flex-shrink:0"></div>`;
+    const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(255,255,255,0.55)':'var(--muted)'};flex-shrink:0"></div>`;
     return `<div class="ms-task-search-result" data-task-id="${escAttr(t.id)}" data-ev-id="${escAttr(evId)}">${dot}<span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
   }).join('');
 }
@@ -5420,7 +5445,7 @@ function initMilestonesPanel() {
         modalSearchRes.innerHTML = results.map(t => {
           const cat = t.category ? CATEGORIES[t.category] : null;
           const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
-          return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
+          return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(255,255,255,0.55)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
         }).join('');
       }
     });
@@ -7382,7 +7407,7 @@ function _tdDrawTimeline(now){
   // Drift indicator — shown while the rings are scrubbed away from now
   if (Math.abs(_tdScrubOffset) > 500) {
     ctx.font="300 10px 'DM Mono',monospace";
-    ctx.fillStyle='rgba(212,162,78,0.85)';
+    ctx.fillStyle='rgba(255,255,255,0.85)';
     ctx.textAlign='center'; ctx.textBaseline='top';
     const dir=_tdScrubOffset>0?'ahead':'behind';
     ctx.fillText(`⟲ adrift · ${_tdFmtOffset(Math.abs(_tdScrubOffset))} ${dir} · release returns to now`,cx,6);
@@ -7777,7 +7802,7 @@ function localDateStr(d) {
 }
 
 /* ── Custom confirm dialog ───────────────────────────── */
-function cdxConfirm(msg, { okLabel = 'Delete', okColor = '#d4a24e', okBg = 'rgba(212,162,78,0.18)', okBorder = 'rgba(212,162,78,0.4)' } = {}) {
+function cdxConfirm(msg, { okLabel = 'Delete', okColor = '#ffffff', okBg = 'rgba(255,255,255,0.18)', okBorder = 'rgba(255,255,255,0.4)' } = {}) {
   return new Promise(resolve => {
     const overlay = document.getElementById('cdx-confirm-overlay');
     const msgEl   = document.getElementById('cdx-confirm-msg');
@@ -8261,7 +8286,7 @@ function buildTaskRow(task, idx) {
 
   const PRIORITY_LABELS = { high: 'High', med: 'Med', low: 'Low' };
   const priorityLabel = task.priority ? PRIORITY_LABELS[task.priority] || '' : '';
-  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--gold)':task.priority==='med'?'rgba(212,162,78,0.55)':'var(--muted)'}">${priorityLabel}</span>` : '';
+  const priorityBadge = priorityLabel ? `<span style="font-family:var(--font-mono);font-size:10px;color:${task.priority==='high'?'var(--gold)':task.priority==='med'?'rgba(255,255,255,0.55)':'var(--muted)'}">${priorityLabel}</span>` : '';
 
   let recurBadge = '';
   if (task.recurrence) {
@@ -8452,7 +8477,7 @@ function _tlClick(e) {
   if (del)      { deleteTask(del.dataset.del); return; }
   if (delSub)   { deleteSubtask(delSub.dataset.delsub, delSub.dataset.sub); return; }
   if (setCat)   { cycleTaskCategory(setCat.dataset.setcat); return; }
-  if (commitBtn) { openCommitMode(commitBtn.dataset.commit); return; }
+  if (commitBtn) { openCommitRitual(commitBtn.dataset.commit); return; }
   if (frictionEl) { openFrictionModal(frictionEl.dataset.friction); return; }
   if (taskEditBtn) { openTaskEditModal(taskEditBtn.dataset.taskEdit); return; }
 
@@ -11638,6 +11663,23 @@ function initDailyRitual() {
     const focus = document.getElementById('ritual-focus-input')?.value.trim();
     if (focus) localStorage.setItem('cdx_daily_focus', focus);
     if (_ritualEnergy) localStorage.setItem('cdx_daily_energy', _ritualEnergy);
+    // Persist to the synced habitLogs doc (not localStorage-only) so the day's
+    // focus + energy survive a cache clear and follow the user across devices.
+    const uid = (typeof getHabitsUid === 'function') ? getHabitsUid() : null;
+    if (uid && window.CDX_FB && window.CDX_DB && (focus || _ritualEnergy)) {
+      const ds = localDateStr(new Date());
+      if (typeof _habitLogs !== 'undefined') {
+        _habitLogs[ds] = _habitLogs[ds] || { date: ds, completions: {} };
+        if (focus) _habitLogs[ds].nonNegotiable = focus;
+        if (_ritualEnergy) _habitLogs[ds].dailyEnergy = _ritualEnergy;
+      }
+      const { doc, setDoc } = window.CDX_FB;
+      const payload = { date: ds };
+      if (focus) payload.nonNegotiable = focus;
+      if (_ritualEnergy) payload.dailyEnergy = _ritualEnergy;
+      setDoc(doc(window.CDX_DB, 'users', uid, 'habitLogs', ds), payload, { merge: true })
+        .catch(e => console.warn('daily ritual persist failed:', e.message));
+    }
     closeRitual();
     showToast('Day started — ' + (focus ? `"${focus}"` : 'good luck!'), 'success', 4000);
   });
@@ -12856,7 +12898,7 @@ function renderAtkDetail() {
     if (e.key === 'Enter' && subAdd.value.trim()) { addSubtask(task.id, subAdd.value.trim()); subAdd.value = ''; }
   });
   const focusBtn = el.querySelector('[data-atk-focus]');
-  if (focusBtn) focusBtn.onclick = () => openCommitMode(task.id);
+  if (focusBtn) focusBtn.onclick = () => openCommitRitual(task.id);
   el.querySelector('[data-atk-sched]').onclick = () => openScheduleModal(task.dueDate || localDateStr(new Date()), '09:00', task.id, null);
   el.querySelector('[data-atk-del]').onclick = () => deleteTask(task.id);
 }
@@ -12899,11 +12941,15 @@ function _ritualRenderSuggest(query) {
   });
 }
 
-function openCommitRitual() {
+function openCommitRitual(preselectTaskId) {
   const ov = document.getElementById('commit-ritual-overlay');
   if (!ov) return;
-  _ritualTaskId = null; _ritualDur = 45;
-  const inp = document.getElementById('cr-intent'); if (inp) inp.value = '';
+  _ritualDur = 45;
+  // Preselect a task when launched from a task's Focus button so every focus
+  // entry point flows through one ritual → one Focus Timer (no parallel screens).
+  const pre = preselectTaskId ? TASKS.find(t => t.id === preselectTaskId) : null;
+  _ritualTaskId = pre ? pre.id : null;
+  const inp = document.getElementById('cr-intent'); if (inp) inp.value = pre ? pre.title : '';
   document.querySelectorAll('#cr-durs .cr-dur').forEach(b => b.classList.toggle('active', +b.dataset.dur === _ritualDur));
   _ritualRenderSuggest('');
 
@@ -13118,16 +13164,14 @@ function _dashRenderCards() {
 /* ── Today's rituals: habits + morning/evening routine steps ──
    Reads the habits-module globals (_habits / _routines / _habitLogs), which are
    already subscribed at boot by initHabitsPage(). Toggling reuses habitToggle().  */
-function _dashRoutineDone(ds) {
-  try { return JSON.parse(localStorage.getItem('hb-launcher-done-' + ds) || '{}'); } catch { return {}; }
-}
 function _dashRenderRituals() {
   const el = document.getElementById('dash-rituals');
   if (!el) return;
   const ds = localDateStr(new Date());
   const habits = (typeof _habits !== 'undefined' ? _habits : [])
     .filter(h => h && h.status !== 'archived' && h.status !== 'graduated');
-  const routineDone = _dashRoutineDone(ds);
+  // Firestore-backed routine completion (synced across devices) instead of localStorage.
+  const routineDone = (typeof _routineDoneMap === 'function') ? _routineDoneMap(ds) : {};
   const morning = (typeof _routines !== 'undefined' ? _routines.morning : []) || [];
   const evening = (typeof _routines !== 'undefined' ? _routines.evening : []) || [];
   const logDone = id => !!(typeof _habitLogs !== 'undefined' && _habitLogs[ds]?.completions?.[id]);
@@ -13153,8 +13197,9 @@ function _dashRenderRituals() {
   const routineBlock = (label, steps, kind) => {
     if (!steps.length) return '';
     return `<div class="dash-ritual-sub">${label}</div>` + steps.map((s, i) => {
-      const done = !!routineDone[kind === 'morning' ? i : 'e' + i];
-      return `<div class="dash-ritual-row${done ? ' done' : ''}" data-ritual-step="${kind}:${i}">
+      const key = (kind === 'morning' ? 'm' : 'e') + i;
+      const done = !!routineDone[key];
+      return `<div class="dash-ritual-row${done ? ' done' : ''}" data-ritual-step="${escAttr(key)}">
         <span class="dash-ritual-check${done ? ' on' : ''}">${done ? '✓' : ''}</span>
         <span class="dash-ritual-name">${escHtml(s.text || '')}</span>
         ${s.time ? `<span class="dash-ritual-time">${escHtml(s.time)}</span>` : ''}
@@ -13172,15 +13217,10 @@ function _dashRenderRituals() {
   el.querySelectorAll('[data-ritual-habit]').forEach(r => r.addEventListener('click', () => {
     habitToggle(r.dataset.ritualHabit, ds).then(() => _dashRenderRituals());
   }));
-  // Routine-step toggle (mirrors the Habits page localStorage flag)
+  // Routine-step toggle → Firestore-backed (synced), re-renders on resolve
   el.querySelectorAll('[data-ritual-step]').forEach(r => r.addEventListener('click', () => {
-    const [kind, i] = r.dataset.ritualStep.split(':');
-    const key = kind === 'morning' ? +i : 'e' + i;
-    const map = _dashRoutineDone(ds);
-    map[key] = !map[key];
-    localStorage.setItem('hb-launcher-done-' + ds, JSON.stringify(map));
-    if (typeof _todayRenderMorningMode === 'function' && _habitsTab === 'today') _todayRenderMorningMode();
-    _dashRenderRituals();
+    if (typeof toggleRoutineStep === 'function') toggleRoutineStep(ds, r.dataset.ritualStep).then(() => _dashRenderRituals());
+    else _dashRenderRituals();
   }));
 }
 
@@ -14421,9 +14461,9 @@ function openOrbitRecap() {
     const sweepP = Math.min(1, t / SWEEP_MS);
     const eased = 1 - Math.pow(1 - sweepP, 3);
     const sweepAng = -Math.PI / 2 + eased * (nowAng + Math.PI / 2 + (nowAng < -Math.PI / 2 ? Math.PI * 2 : 0));
-    ctx.strokeStyle = 'rgba(212,162,78,0.5)'; ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, sweepAng); ctx.stroke();
-    ctx.strokeStyle = 'rgba(212,162,78,0.9)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
     ctx.beginPath(); ctx.moveTo(cx, cy);
     ctx.lineTo(cx + R * Math.cos(sweepAng), cy + R * Math.sin(sweepAng)); ctx.stroke();
 
@@ -14506,8 +14546,12 @@ document.addEventListener('keydown', e => {
    ═══════════════════════════════════════════════════════════════════════════ */
 let _hxTab = 'today';
 let _hxBuilderStep = 1;
-let _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft' };
+let _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily' };
 let _hxReflectDraft = { open: false, habit: '', body: '' };
+let _hxModal = null;          // { type:'habit', id } | { type:'routines' }
+let _hxHabitEdit = null;      // working copy of the habit being edited
+
+const HX_CADENCES = [['daily', 'Daily'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends'], ['custom', 'Custom']];
 
 const HX_CATS = [
   { name: 'Mind',   color: 'rgba(255,255,255,.6)' },
@@ -14575,6 +14619,7 @@ function _hxToday() {
       </div>
       ${_hxDot(color)}
       <span class="hx-tel" style="font-size:11px;color:rgba(255,255,255,.65)">${_hxStreak(h.id)}d</span>
+      <button class="hx-row-manage" data-hx-edit="${escAttr(h.id)}" title="Edit / delete / graduate" aria-label="Manage habit">⋯</button>
     </div>`;
   }).join('') : `<div class="hx-empty">No habits yet — design one in the Builder tab.</div>`;
 
@@ -14589,7 +14634,7 @@ function _hxToday() {
   return `${_hxSecHead('TODAY · ' + dateLbl,
       identity ? 'I am ' + identity + '.' : 'I am someone who shows up consistently.',
       'Chain today to the anchor. Tomorrow, do it again.',
-      `<button class="hx-liquid" data-hx-gotab="builder">＋ Design a habit</button>`)}
+      `<div style="display:flex;gap:8px"><button class="hx-liquid" data-hx-routines>◷ Routines</button><button class="hx-liquid" data-hx-gotab="builder">＋ Design a habit</button></div>`)}
     <div class="hx-grid-15">
       <div class="hx-card" style="padding:22px">
         <div class="hx-ritual-head"><span class="hx-ritual-title">Daily ritual</span>
@@ -14652,6 +14697,10 @@ function _hxBuilderPane() {
     <div style="margin-top:14px"><div class="hx-eyebrow" style="margin-bottom:8px">CATEGORY</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${HX_CATS.map(c => `<button class="hx-chip${f.cat === c.name ? ' active' : ''}" data-hx-cat="${escAttr(c.name)}">${_hxDot(c.color, 7)} ${c.name}</button>`).join('')}
+      </div></div>
+    <div style="margin-top:14px"><div class="hx-eyebrow" style="margin-bottom:8px">CADENCE</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${HX_CADENCES.map(([v, l]) => `<button class="hx-chip${f.cadence === v ? ' active' : ''}" data-hx-cadence="${v}">${l}</button>`).join('')}
       </div></div>`;
   else if (step === 3) body = `
     <div class="hx-eyebrow">STEP 03 · ANCHOR</div>
@@ -14725,7 +14774,7 @@ function _hxProgress() {
     const kept = hist.filter(Boolean).length;
     return `<div class="hx-prow">
       <div><div style="display:flex;align-items:center;gap:8px">${_hxDot(color, 7)}<div class="hx-hname" style="font-size:14px">${escHtml(_hxName(h))}</div></div>
-        <div class="hx-rail-tel" style="margin-top:3px">${escHtml((h.category || 'HABIT').toUpperCase())} · ${_hxStreak(h.id)}D STREAK</div></div>
+        <div class="hx-rail-tel" style="margin-top:3px">${escHtml((h.category || 'Uncategorised').toUpperCase())} · ${_hxStreak(h.id)}D STREAK</div></div>
       <div class="hx-p28">${hist.map(v => `<span style="background:${v ? color + 'cc' : 'rgba(255,255,255,.04)'};border:1px solid ${v ? color : 'rgba(255,255,255,.06)'}${v ? ';box-shadow:0 0 6px ' + color + '66' : ''}"></span>`).join('')}</div>
       <span class="hx-tel" style="font-size:11px;color:rgba(255,255,255,.75)">${kept}/28</span>
       <span class="hx-tel" style="font-size:11px;color:#fff;text-shadow:0 0 8px rgba(255,255,255,.3)">${Math.round(kept / 28 * 100)}%</span>
@@ -14734,7 +14783,7 @@ function _hxProgress() {
 
   // category mix over 28d
   const catTotals = {}; let catSum = 0;
-  perHabit.forEach(({ h, hist }) => { const k = h.category || 'Other'; const n = hist.filter(Boolean).length; catTotals[k] = (catTotals[k] || 0) + n; catSum += n; });
+  perHabit.forEach(({ h, hist }) => { const k = h.category || 'Uncategorised'; const n = hist.filter(Boolean).length; catTotals[k] = (catTotals[k] || 0) + n; catSum += n; });
   const mix = Object.keys(catTotals).length ? Object.entries(catTotals).sort((a, b) => b[1] - a[1]).map(([name, n]) => {
     const pct = catSum ? Math.round(n / catSum * 100) : 0; const c = (HX_CATS.find(x => x.name === name) || {}).color || 'rgba(255,255,255,.5)';
     return `<div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span class="hx-tel" style="font-size:10px;color:rgba(255,255,255,.6)">${escHtml(name.toUpperCase())}</span><span class="hx-tel" style="font-size:10px;color:rgba(255,255,255,.5)">${pct}%</span></div>
@@ -14922,6 +14971,77 @@ function _hxBehaviours() {
     </div>`;
 }
 
+/* ═══ MODALS: habit edit/delete/graduate (B1) + routine editor (B2) ═══════ */
+function _hxHabitModalHtml() {
+  const h = _hxHabitEdit; if (!h) return '';
+  const graduated = h.status === 'graduated';
+  const cadence = (h.schedule && h.schedule.days) || 'daily';
+  return `<div class="hx-modal-backdrop" data-hx-modal-close>
+    <div class="hx-modal" role="dialog">
+      <div class="hx-modal-head"><span class="hx-modal-title">${graduated ? 'Graduated habit' : 'Edit habit'}</span>
+        <button class="hx-modal-x" data-hx-modal-close>×</button></div>
+      <div class="hx-modal-body">
+        <div class="hx-eyebrow" style="margin-bottom:6px">TINY BEHAVIOUR</div>
+        <input class="hx-input" id="hx-e-name" value="${escAttr(h.tinyBehavior || h.name || '')}" placeholder="Read 15 pages">
+        <div class="hx-eyebrow" style="margin:14px 0 6px">IDENTITY</div>
+        <input class="hx-input italic" id="hx-e-identity" value="${escAttr(h.identityTag || '')}" placeholder="a curious learner">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+          <div><div class="hx-eyebrow" style="margin-bottom:6px">AFTER (ANCHOR)</div>
+            <input class="hx-input body" id="hx-e-anchor" value="${escAttr(h.anchor && h.anchor.value || '')}" placeholder="I pour coffee"></div>
+          <div><div class="hx-eyebrow" style="margin-bottom:6px">SENSORY CUE</div>
+            <input class="hx-input body" id="hx-e-cue" value="${escAttr(h.cue || '')}" placeholder="Coffee maker beep"></div>
+        </div>
+        <div class="hx-eyebrow" style="margin:14px 0 6px">CELEBRATION</div>
+        <input class="hx-input body" id="hx-e-reward" value="${escAttr(h.reward || '')}" placeholder='Say "good" out loud'>
+        <div class="hx-eyebrow" style="margin:14px 0 8px">CATEGORY</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${HX_CATS.map(c => `<button class="hx-chip${h.category === c.name ? ' active' : ''}" data-hx-e-cat="${escAttr(c.name)}">${_hxDot(c.color, 7)} ${c.name}</button>`).join('')}
+        </div>
+        <div class="hx-eyebrow" style="margin:14px 0 8px">CADENCE</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${HX_CADENCES.map(([v, l]) => `<button class="hx-chip${cadence === v ? ' active' : ''}" data-hx-e-cadence="${v}">${l}</button>`).join('')}
+        </div>
+      </div>
+      <div class="hx-modal-foot">
+        <button class="hx-btn-danger" data-hx-delete>Delete</button>
+        <button class="hx-btn-ghost" data-hx-graduate>${graduated ? 'Reactivate' : 'Graduate'}</button>
+        <div style="flex:1"></div>
+        <button class="hx-btn-ghost" data-hx-modal-close>Cancel</button>
+        <button class="hx-liquid" data-hx-save>Save changes</button>
+      </div>
+    </div></div>`;
+}
+
+function _hxRoutinesModalHtml() {
+  const morning = (typeof _routines !== 'undefined' ? _routines.morning : []) || [];
+  const evening = (typeof _routines !== 'undefined' ? _routines.evening : []) || [];
+  const block = (slot, steps) => `
+    <div class="hx-eyebrow" style="margin:14px 0 8px">${slot.toUpperCase()} ROUTINE</div>
+    <div class="hx-rt-list">
+      ${steps.length ? steps.map((s, i) => `<div class="hx-rt-row">
+        <input class="hx-input mono" style="width:70px;text-align:center" data-hx-rt-time="${slot}:${i}" value="${escAttr(s.time || '')}" placeholder="07:00">
+        <input class="hx-input body" data-hx-rt-text="${slot}:${i}" value="${escAttr(s.text || '')}" placeholder="Step…">
+        <button class="hx-btn-danger" style="padding:6px 10px" data-hx-rt-del="${slot}:${i}">✕</button>
+      </div>`).join('') : `<div class="hx-empty">No ${slot} steps yet.</div>`}
+      <div class="hx-rt-row">
+        <input class="hx-input mono" style="width:70px;text-align:center" id="hx-rt-newtime-${slot}" placeholder="07:00">
+        <input class="hx-input body" id="hx-rt-newtext-${slot}" placeholder="Add a step…">
+        <button class="hx-liquid" data-hx-rt-add="${slot}">＋</button>
+      </div>
+    </div>`;
+  return `<div class="hx-modal-backdrop" data-hx-modal-close>
+    <div class="hx-modal" role="dialog">
+      <div class="hx-modal-head"><span class="hx-modal-title">Routines</span>
+        <button class="hx-modal-x" data-hx-modal-close>×</button></div>
+      <div class="hx-modal-body">
+        <span class="hx-sechead-italic" style="display:block;margin-bottom:4px">Morning &amp; evening steps. They appear on your dashboard to check off.</span>
+        ${block('morning', morning)}
+        ${block('evening', evening)}
+      </div>
+      <div class="hx-modal-foot"><div style="flex:1"></div><button class="hx-liquid" data-hx-modal-close>Done</button></div>
+    </div></div>`;
+}
+
 /* ── shell + render ──────────────────────────────────────────────────── */
 const _HX_TABS = ['today', 'builder', 'progress', 'reflect', 'behaviours'];
 function renderHabitsX() {
@@ -14934,13 +15054,17 @@ function renderHabitsX() {
   else if (_hxTab === 'reflect') body = _hxReflect();
   else body = _hxBehaviours();
 
+  let modal = '';
+  if (_hxModal && _hxModal.type === 'habit') modal = _hxHabitModalHtml();
+  else if (_hxModal && _hxModal.type === 'routines') modal = _hxRoutinesModalHtml();
+
   panel.innerHTML = `<div class="hx-root">
     <div class="hx-topbar">
       <div><div class="hx-eyebrow">HABITS</div><div class="hx-h1">Ritual engine</div></div>
       <div class="hx-spacer"></div>
       <div class="hx-tabs">${_HX_TABS.map(t => `<button class="hx-tab${_hxTab === t ? ' active' : ''}" data-hx-tab="${t}">${t}</button>`).join('')}</div>
     </div>
-    <div class="hx-pane" id="hx-pane">${body}</div>`;
+    <div class="hx-pane" id="hx-pane">${body}</div>${modal}`;
   _hxWire(panel);
 }
 window.renderHabitsX = renderHabitsX;
@@ -14974,6 +15098,7 @@ async function _hxCreateHabit() {
   doc0.cue = f.cue.trim();
   doc0.reward = f.reward.trim();
   doc0.fullBehavior = f.minimum.trim();
+  doc0.schedule = { days: f.cadence || 'daily', frequency: 1 };
   doc0.status = 'active';
   _habits.push(doc0);
   if (uid && window.CDX_FB && window.CDX_DB) {
@@ -14983,15 +15108,73 @@ async function _hxCreateHabit() {
         id, name: f.name.trim(), order: _habits.length - 1,
         identityTag: f.identity.trim(), valueTags: [], tinyBehavior: f.name.trim(), fullBehavior: f.minimum.trim(),
         anchor: doc0.anchor, cue: f.cue.trim(), reward: f.reward.trim(), category: f.cat,
-        schedule: { days: 'daily', frequency: 1 }, stackId: null,
+        schedule: { days: f.cadence || 'daily', frequency: 1 }, stackId: null,
         frictionTags: [], frictionFallbacks: {}, restDaysPlanned: [],
         status: 'active', graduatedAt: null, createdAt: serverTimestamp(), archivedAt: null,
       });
       showToast('Habit added to your daily ritual', 'success');
     } catch (e) { console.warn('hx create habit error:', e); _habits = _habits.filter(h => h.id !== id); showToast('Could not save habit', 'error'); }
   }
-  _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft' };
+  _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily' };
   _hxBuilderStep = 1; _hxTab = 'today';
+  renderHabitsX();
+  window.renderDashboardBoard && window.renderDashboardBoard();
+}
+
+/* Capture the habit-edit modal inputs into the working copy before a re-render/save */
+function _hxSyncHabitEdit() {
+  if (!_hxHabitEdit) return;
+  const g = id => document.getElementById(id);
+  const nm = g('hx-e-name'); if (nm) { _hxHabitEdit.tinyBehavior = nm.value; if (!_hxHabitEdit.name) _hxHabitEdit.name = nm.value; }
+  const idn = g('hx-e-identity'); if (idn) _hxHabitEdit.identityTag = idn.value;
+  const an = g('hx-e-anchor'); if (an) { const v = an.value.trim(); _hxHabitEdit.anchor = { type: v ? 'after' : 'anytime', value: v, linkedHabitId: (_hxHabitEdit.anchor && _hxHabitEdit.anchor.linkedHabitId) || null }; }
+  const cu = g('hx-e-cue'); if (cu) _hxHabitEdit.cue = cu.value;
+  const rw = g('hx-e-reward'); if (rw) _hxHabitEdit.reward = rw.value;
+}
+function _hxOpenHabitModal(id) {
+  const h = _habits.find(x => x.id === id); if (!h) return;
+  _hxHabitEdit = JSON.parse(JSON.stringify(h));  // working copy
+  _hxModal = { type: 'habit', id };
+  renderHabitsX();
+}
+function _hxCloseModal() { _hxModal = null; _hxHabitEdit = null; renderHabitsX(); }
+async function _hxSaveHabit() {
+  _hxSyncHabitEdit();
+  const h = _hxHabitEdit; if (!h) return;
+  const patch = {
+    tinyBehavior: (h.tinyBehavior || '').trim(),
+    identityTag: (h.identityTag || '').trim(),
+    anchor: h.anchor || { type: 'anytime', value: '', linkedHabitId: null },
+    cue: (h.cue || '').trim(),
+    reward: (h.reward || '').trim(),
+    category: h.category || '',
+    schedule: h.schedule || { days: 'daily', frequency: 1 },
+  };
+  // reflect locally right away
+  const live = _habits.find(x => x.id === h.id); if (live) Object.assign(live, patch);
+  if (typeof habitUpdate === 'function') await habitUpdate(h.id, patch);
+  showToast('Habit updated', 'success');
+  _hxModal = null; _hxHabitEdit = null;
+  renderHabitsX();
+  window.renderDashboardBoard && window.renderDashboardBoard();
+}
+async function _hxDeleteHabit() {
+  const h = _hxHabitEdit; if (!h) return;
+  const ok = (typeof cdxConfirm === 'function')
+    ? await cdxConfirm(`Delete "${_hxName(h)}"? This can't be undone.`, { okLabel: 'Delete', okColor: '#e05555', okBg: 'rgba(224,85,85,0.18)', okBorder: 'rgba(224,85,85,0.4)' })
+    : window.confirm('Delete this habit?');
+  if (!ok) return;
+  if (typeof habitDelete === 'function') await habitDelete(h.id);
+  _hxModal = null; _hxHabitEdit = null;
+  renderHabitsX();
+  window.renderDashboardBoard && window.renderDashboardBoard();
+}
+async function _hxGraduateHabit() {
+  const h = _hxHabitEdit; if (!h) return;
+  const graduated = h.status === 'graduated';
+  if (graduated) { if (typeof habitReactivate === 'function') await habitReactivate(h.id); }
+  else { if (typeof habitGraduate === 'function') await habitGraduate(h.id); }
+  _hxModal = null; _hxHabitEdit = null;
   renderHabitsX();
   window.renderDashboardBoard && window.renderDashboardBoard();
 }
@@ -15012,6 +15195,7 @@ function _hxWire(panel) {
   panel.querySelector('[data-hx-create]') && (panel.querySelector('[data-hx-create]').onclick = _hxCreateHabit);
   panel.querySelectorAll('[data-hx-step]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilderStep = +el.dataset.hxStep; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-cat]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.cat = el.dataset.hxCat; renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-cadence]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.cadence = el.dataset.hxCadence; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-seed-identity]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.identity = el.dataset.hxSeedIdentity; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-tmpl]').forEach(el => el.onclick = () => { const [n, a] = el.dataset.hxTmpl.split('|'); _hxSyncBuilder(); _hxBuilder.name = n; _hxBuilder.anchor = (a || '').replace(/^After I\s*/i, ''); _hxTab = 'builder'; _hxBuilderStep = 2; renderHabitsX(); });
   // keep recipe/loop preview live as the user types
@@ -15030,4 +15214,28 @@ function _hxWire(panel) {
   });
   panel.querySelectorAll('[data-hx-r-del]').forEach(el => el.onclick = () => { const arr = _hxReflectStore(); arr.splice(+el.dataset.hxRDel, 1); _hxReflectSave(arr); renderHabitsX(); });
   panel.querySelectorAll('[data-hx-prompt]').forEach(el => el.onclick = () => { _hxReflectDraft = { open: true, habit: '', body: el.dataset.hxPrompt + '\n\n' }; renderHabitsX(); const t = document.getElementById('hx-r-body'); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } });
+
+  // ── Habit manage (B1) ──
+  panel.querySelectorAll('[data-hx-edit]').forEach(el => el.onclick = e => { e.stopPropagation(); _hxOpenHabitModal(el.dataset.hxEdit); });
+  panel.querySelector('[data-hx-routines]') && (panel.querySelector('[data-hx-routines]').onclick = () => { _hxModal = { type: 'routines' }; renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-modal-close]').forEach(el => el.onclick = e => { if (e.target !== el) return; _hxCloseModal(); });
+  panel.querySelector('[data-hx-save]') && (panel.querySelector('[data-hx-save]').onclick = _hxSaveHabit);
+  panel.querySelector('[data-hx-delete]') && (panel.querySelector('[data-hx-delete]').onclick = _hxDeleteHabit);
+  panel.querySelector('[data-hx-graduate]') && (panel.querySelector('[data-hx-graduate]').onclick = _hxGraduateHabit);
+  panel.querySelectorAll('[data-hx-e-cat]').forEach(el => el.onclick = () => { _hxSyncHabitEdit(); if (_hxHabitEdit) _hxHabitEdit.category = el.dataset.hxECat; renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-e-cadence]').forEach(el => el.onclick = () => { _hxSyncHabitEdit(); if (_hxHabitEdit) _hxHabitEdit.schedule = { ...(_hxHabitEdit.schedule || {}), days: el.dataset.hxECadence, frequency: 1 }; renderHabitsX(); });
+
+  // ── Routine editor (B2) — reuses routineAdd/routineUpdate/routineDelete (Firestore) ──
+  panel.querySelectorAll('[data-hx-rt-del]').forEach(el => el.onclick = () => { const [slot, i] = el.dataset.hxRtDel.split(':'); if (typeof routineDelete === 'function') routineDelete(slot, +i); renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-rt-add]').forEach(el => el.onclick = () => {
+    const slot = el.dataset.hxRtAdd;
+    const text = (document.getElementById('hx-rt-newtext-' + slot)?.value || '').trim();
+    const time = (document.getElementById('hx-rt-newtime-' + slot)?.value || '').trim();
+    if (!text) { showToast('Add step text first', 'error'); return; }
+    (_routines[slot] = _routines[slot] || []).push({ time, text });
+    if (typeof routinesSave === 'function') routinesSave(_routines);
+    renderHabitsX();
+  });
+  panel.querySelectorAll('[data-hx-rt-text]').forEach(el => el.onchange = () => { const [slot, i] = el.dataset.hxRtText.split(':'); if (typeof routineUpdate === 'function') routineUpdate(slot, +i, 'text', el.value); });
+  panel.querySelectorAll('[data-hx-rt-time]').forEach(el => el.onchange = () => { const [slot, i] = el.dataset.hxRtTime.split(':'); if (typeof routineUpdate === 'function') routineUpdate(slot, +i, 'time', el.value); });
 }

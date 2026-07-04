@@ -77,9 +77,9 @@ function openOrbitRecap() {
     const sweepP = Math.min(1, t / SWEEP_MS);
     const eased = 1 - Math.pow(1 - sweepP, 3);
     const sweepAng = -Math.PI / 2 + eased * (nowAng + Math.PI / 2 + (nowAng < -Math.PI / 2 ? Math.PI * 2 : 0));
-    ctx.strokeStyle = 'rgba(212,162,78,0.5)'; ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, sweepAng); ctx.stroke();
-    ctx.strokeStyle = 'rgba(212,162,78,0.9)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
     ctx.beginPath(); ctx.moveTo(cx, cy);
     ctx.lineTo(cx + R * Math.cos(sweepAng), cy + R * Math.sin(sweepAng)); ctx.stroke();
 
