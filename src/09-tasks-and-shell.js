@@ -169,6 +169,8 @@ function renderTasks() {
     const editingDrawer = ae && ae.closest && ae.closest('#atk-detail') && /INPUT|TEXTAREA/.test(ae.tagName);
     if (!editingDrawer) renderAtkDetail();
   }
+  // Commitment progress on the planning design tabs tracks task completion.
+  window._refreshPlanDesign && window._refreshPlanDesign();
 }
 
 /* ── Task Decay helper ───────────────────────────────── */

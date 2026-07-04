@@ -347,12 +347,21 @@
 
     <!-- Milestones Panel (shown via Planning nav item) -->
     <div id="panel-milestones" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000">
-      <!-- View switcher -->
-      <div class="plan-switcher-bar">
-        <div class="plan-switcher-track">
-          <div class="plan-switcher-pill" id="plan-switcher-pill"></div>
-          <button class="plan-switcher-btn active" data-pview="projects">Projects &amp; Context</button>
-          <button class="plan-switcher-btn" data-pview="calendar">Week &amp; Month</button>
+      <!-- Planning hero + 7-tab bar -->
+      <div class="plan-hero">
+        <div class="plan-hero-head">
+          <div class="plan-hero-eyebrow">PLANNING</div>
+          <div class="plan-hero-title">The map above the day</div>
+        </div>
+        <div class="plan-tabs2" id="plan-tabs2">
+          <button class="plan-tab2 active" data-ptab2="thisweek">This Week</button>
+          <button class="plan-tab2" data-ptab2="review">Weekly Review</button>
+          <button class="plan-tab2" data-ptab2="quarter">Quarter</button>
+          <button class="plan-tab2" data-ptab2="north">North Star</button>
+          <span class="plan-tab2-sep"></span>
+          <button class="plan-tab2" data-ptab2="week">Week</button>
+          <button class="plan-tab2" data-ptab2="month">Month</button>
+          <button class="plan-tab2" data-ptab2="buckets">Buckets</button>
         </div>
       </div>
 
@@ -481,6 +490,11 @@
             <div id="focus-bucket-row" class="focus-bucket-row"></div>
           </div>
         </div>
+      </div>
+
+      <!-- VIEW C: design tabs (This Week / Weekly Review / Quarter / North Star) -->
+      <div id="plan-view-design" style="flex:1;display:none;overflow-y:auto;min-height:0">
+        <div id="plan-design-body" class="plan-design-body"></div>
       </div>
     </div>
 

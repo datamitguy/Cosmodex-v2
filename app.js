@@ -4531,6 +4531,8 @@ function msDateToPercent(dateStr, startDate, endDate) {
 }
 
 function renderMilestones() {
+  // Keep the design-kit tabs live when commitments/milestones change.
+  window._refreshPlanDesign && window._refreshPlanDesign();
   // Always show dashboard in left panel; timeline (if active) in right panel
   renderMilestoneDashboard();
   // Only manage timeline/center-panel state when actually on the Planning panel
@@ -5917,23 +5919,19 @@ function initMilestonesPanel() {
       document.getElementById('plan-right-toggle')?.addEventListener('click', () => togglePlanPanel('right'));
       document.getElementById('plan-left-expand')?.addEventListener('click',  e => { e.stopPropagation(); togglePlanPanel('left'); });
       document.getElementById('plan-right-expand')?.addEventListener('click', e => { e.stopPropagation(); togglePlanPanel('right'); });
-      document.getElementById('plan-ms-close')?.addEventListener('click', closeMilestoneDetail);
-      // View switcher (Projects & Context  ↔  Week & Month)
-      document.querySelectorAll('.plan-switcher-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          document.querySelectorAll('.plan-switcher-btn').forEach(b => b.classList.toggle('active', b === this));
-          const pill = document.getElementById('plan-switcher-pill');
-          const isCalendar = this.dataset.pview === 'calendar';
-          pill.style.transform = isCalendar ? 'translateX(100%)' : '';
-          document.getElementById('plan-view-projects').style.display = isCalendar ? 'none' : 'flex';
-          document.getElementById('plan-view-calendar').style.display = isCalendar ? 'flex' : 'none';
-          if (isCalendar) switchPlanRightTab('focus');
-          else renderMilestones();
-        });
+      document.getElementById('plan-ms-close')?.addEventListener('click', () => {
+        closeMilestoneDetail();
+        window.showPlanTab2 && window.showPlanTab2(window._planTab2 || 'quarter');
+      });
+      // Expose the calendar sub-tab switcher so the global 7-tab controller can drive it.
+      window._switchPlanCalTab = switchPlanRightTab;
+      // 7-tab bar: This Week / Weekly Review / Quarter / North Star / Week / Month / Buckets
+      document.querySelectorAll('#plan-tabs2 .plan-tab2').forEach(btn => {
+        btn.addEventListener('click', () => window.showPlanTab2(btn.dataset.ptab2));
       });
       restorePlanPanelStates();
     }
-    switchPlanRightTab('focus'); // default to Focus tab each time panel opens
+    window.showPlanTab2(window._planTab2 || 'thisweek'); // default tab each time the panel opens
   };
 })();
 
@@ -6174,6 +6172,340 @@ function showPlanningCalendarAll() {
   if (listsEmpty) listsEmpty.style.display = 'flex';
   if (listsBody)  listsBody.style.display  = 'none';
   renderPlanningCalendar(null);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PLANNING — design-kit 7-tab controller + views
+   Four new commitment/reflection tabs (This Week · Weekly Review · Quarter ·
+   North Star) render into #plan-view-design; Week/Month/Buckets route to the
+   existing calendar sub-views. Commitments = MILESTONE_PROJECTS, surfaced by
+   cadence. Reflective tabs persist to Firestore (weeklyPlans + planningMeta).
+   ══════════════════════════════════════════════════════════════════════ */
+window._planTab2 = 'thisweek';
+
+function _planShowView(view) { // 'projects' | 'calendar' | 'design'
+  const p = document.getElementById('plan-view-projects');
+  const c = document.getElementById('plan-view-calendar');
+  const d = document.getElementById('plan-view-design');
+  if (p) p.style.display = view === 'projects' ? 'flex'  : 'none';
+  if (c) c.style.display = view === 'calendar' ? 'flex'  : 'none';
+  if (d) d.style.display = view === 'design'   ? 'block' : 'none';
+}
+
+window.showPlanTab2 = function(tab) {
+  window._planTab2 = tab;
+  document.querySelectorAll('#plan-tabs2 .plan-tab2').forEach(b =>
+    b.classList.toggle('active', b.dataset.ptab2 === tab));
+  const calMap = { week: 'week', month: 'month', buckets: 'focus' };
+  if (calMap[tab]) { _planShowView('calendar'); window._switchPlanCalTab && window._switchPlanCalTab(calMap[tab]); return; }
+  _planShowView('design');
+  if      (tab === 'thisweek') renderPlanThisWeek();
+  else if (tab === 'quarter')  renderPlanQuarter();
+  else if (tab === 'review')   renderPlanReview();
+  else if (tab === 'north')    renderPlanNorth();
+};
+
+// Re-render the active design tab on data changes — but never while the user is
+// editing a field inside it.
+window._refreshPlanDesign = function() {
+  const v = document.getElementById('plan-view-design');
+  if (!v || v.style.display === 'none') return;
+  const ae = document.activeElement;
+  if (ae && ae.closest && ae.closest('#plan-view-design') && /INPUT|TEXTAREA/.test(ae.tagName)) return;
+  const t = window._planTab2;
+  if      (t === 'thisweek') renderPlanThisWeek();
+  else if (t === 'quarter')  renderPlanQuarter();
+  else if (t === 'review')   renderPlanReview();
+  else if (t === 'north')    renderPlanNorth();
+};
+
+/* ── Commitment progress (derived from linked tasks, then activities) ──── */
+function _commitmentTasks(projId) {
+  const map = {};
+  TASKS.forEach(t => { if (t.projectId === projId) map[t.id] = t; });
+  MILESTONE_EVENTS.filter(e => e.projectId === projId).forEach(e =>
+    (e.activities || []).forEach(a => {
+      if (a.taskId) { const t = TASKS.find(x => x.id === a.taskId); if (t) map[t.id] = t; }
+    }));
+  return Object.values(map);
+}
+function _commitmentProgress(projId) {
+  const ts = _commitmentTasks(projId);
+  if (ts.length) return ts.filter(t => t.done).length / ts.length;
+  const acts = MILESTONE_EVENTS.filter(e => e.projectId === projId).flatMap(e => e.activities || []);
+  if (acts.length) return acts.filter(a => a.done).length / acts.length;
+  return 0;
+}
+function _activeCommitments(cadence) {
+  return MILESTONE_PROJECTS
+    .filter(p => !p.isArchived && commitmentCadence(p) === cadence)
+    .sort((a, b) => (b.bigRock ? 1 : 0) - (a.bigRock ? 1 : 0));
+}
+function _addCommitment(cadence) {
+  openMsProjectModal();
+  const s = document.getElementById('ms-proj-cadence'); if (s) s.value = cadence;
+}
+
+/* ── Firestore doc helpers for reflective tabs ────────────────────────── */
+async function _planLoadDoc(coll, key) {
+  const uid = window.CDX_USER?.uid;
+  if (!uid || !window.CDX_FB || !window.CDX_DB) return {};
+  try {
+    const { doc, getDoc, collection } = window.CDX_FB;
+    const snap = await getDoc(doc(collection(window.CDX_DB, 'users', uid, coll), key));
+    return snap.exists() ? snap.data() : {};
+  } catch (e) { return {}; }
+}
+function _planSaveDoc(coll, key, payload) {
+  const uid = window.CDX_USER?.uid;
+  if (!uid || !window.CDX_FB || !window.CDX_DB) return;
+  const { doc, setDoc, collection, serverTimestamp } = window.CDX_FB;
+  setDoc(doc(collection(window.CDX_DB, 'users', uid, coll), key),
+    { ...payload, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
+}
+let _planDocSaveTimer;
+function _planDebSave(coll, key, getPayload) {
+  clearTimeout(_planDocSaveTimer);
+  _planDocSaveTimer = setTimeout(() => _planSaveDoc(coll, key, getPayload()), 700);
+}
+function _planWeekKey() {
+  const now = new Date(); const dow = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1)); mon.setHours(0,0,0,0);
+  return localDateStr(mon);
+}
+function _planWeekDays() {
+  const now = new Date(); const dow = now.getDay();
+  const mon = new Date(now); mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+  return Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return localDateStr(d); });
+}
+
+/* ── Shared bits ──────────────────────────────────────────────────────── */
+function _planHeader(eyebrow, title, italic, rightHtml) {
+  return `<div class="plan-dsn-head">
+    <div>
+      <div class="plan-dsn-eyebrow">${escHtml(eyebrow)}</div>
+      <div class="plan-dsn-title">${escHtml(title)}</div>
+      ${italic ? `<div class="plan-dsn-italic">${escHtml(italic)}</div>` : ''}
+    </div>
+    ${rightHtml || ''}
+  </div>`;
+}
+function _commitmentRow(c, opts) {
+  const pr  = _commitmentProgress(c.id);
+  const pct = Math.round(pr * 100);
+  const cat = c.category ? CATEGORIES[c.category] : null;
+  const clr = c.color || 'rgba(255,255,255,.55)';
+  return `<div class="plan-commit-row${c.bigRock ? ' bigrock' : ''}" data-commit="${escAttr(c.id)}" style="--commit-clr:${clr}">
+    <div class="plan-commit-top">
+      ${c.bigRock ? `<span class="plan-commit-rock">◆ BIG ROCK</span>` : ''}
+      <span class="plan-commit-name">${escHtml(c.title)}</span>
+      <div style="flex:1"></div>
+      ${cat ? `<span class="plan-pill">${escHtml(cat.label.toUpperCase())}</span>` : ''}
+      <span class="plan-commit-pct">${pct}%</span>
+    </div>
+    <div class="plan-commit-track"><div class="plan-commit-fill" style="width:${pct}%"></div></div>
+  </div>`;
+}
+
+/* ── THIS WEEK ────────────────────────────────────────────────────────── */
+function renderPlanThisWeek() {
+  const body = document.getElementById('plan-design-body'); if (!body) return;
+  const commits = _activeCommitments('weekly');
+  const done = commits.filter(c => _commitmentProgress(c.id) >= 1).length;
+  const days = _planWeekDays();
+  const wkDoneTasks = TASKS.filter(t => t.done && days.includes(t.doneDate || t.dueDate)).length;
+
+  body.innerHTML = `
+    ${_planHeader('THIS WEEK · YOUR WEEKLY COMMITMENTS', 'Commitments you made. Watch them meet reality.',
+      'Weekly-cadence commitments live here. Big rocks first.',
+      `<button class="plan-liquid-btn" id="ptw-add">＋ Add commitment</button>`)}
+    <div class="plan-glass">
+      <div class="plan-glass-head">
+        <span class="plan-glass-title">This week's commitments</span>
+        <span class="plan-tel">${done}/${commits.length} COMPLETE · ${wkDoneTasks} TASKS DONE</span>
+      </div>
+      <div class="plan-commit-list">
+        ${commits.length ? commits.map(c => _commitmentRow(c)).join('')
+          : `<div class="plan-empty">No weekly commitments yet. Add one, or set an existing commitment's cadence to Weekly.</div>`}
+      </div>
+    </div>
+    <div class="plan-glass">
+      <div class="plan-glass-head"><span class="plan-glass-title" style="color:var(--gold)">Not doing this week</span></div>
+      <div class="plan-dsn-sub">The list that protects the list — one per line.</div>
+      <textarea class="plan-dsn-textarea" id="ptw-notdoing" rows="5" placeholder="Read new AI papers (next week)&#10;Refactor the pipeline&#10;Coffee chats"></textarea>
+    </div>`;
+
+  document.getElementById('ptw-add').onclick = () => _addCommitment('weekly');
+  body.querySelectorAll('[data-commit]').forEach(el =>
+    el.onclick = () => openMsProjectModal(el.dataset.commit));
+
+  const key = _planWeekKey();
+  const nd = document.getElementById('ptw-notdoing');
+  _planLoadDoc('weeklyPlans', key).then(d => { if (nd && document.activeElement !== nd) nd.value = d.notDoing || ''; });
+  nd.oninput = () => _planDebSave('weeklyPlans', key, () => ({ notDoing: nd.value }));
+}
+
+/* ── QUARTER ──────────────────────────────────────────────────────────── */
+function renderPlanQuarter() {
+  const body = document.getElementById('plan-design-body'); if (!body) return;
+  const commits = _activeCommitments('quarterly');
+  const now = new Date();
+  const qNum = Math.floor(now.getMonth() / 3) + 1;
+  const avg = commits.length ? commits.reduce((s, c) => s + _commitmentProgress(c.id), 0) / commits.length : 0;
+  const qPct = Math.round(avg * 100);
+
+  const cardsHtml = commits.map(c => {
+    const pct = Math.round(_commitmentProgress(c.id) * 100);
+    const cat = c.category ? CATEGORIES[c.category] : null;
+    const evs = MILESTONE_EVENTS.filter(e => e.projectId === c.id)
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    const msHtml = evs.length ? evs.map(e => {
+      const acts = e.activities || [];
+      const allDone = acts.length && acts.every(a => a.done);
+      const someDone = acts.some(a => a.done);
+      const state = allDone ? 'done' : someDone ? 'wip' : 'todo';
+      return `<div class="plan-ms-row" data-msdetail="${escAttr(e.id)}">
+        <span class="plan-ms-box ${state}">${allDone ? '✓' : someDone ? '●' : ''}</span>
+        <span class="plan-ms-label ${allDone ? 'done' : ''}">${escHtml(e.title || 'Untitled')}</span>
+      </div>`;
+    }).join('') : `<div class="plan-ms-empty">No milestones yet.</div>`;
+    return `<div class="plan-goal-card" style="--commit-clr:${c.color || 'rgba(255,255,255,.4)'}">
+      <div class="plan-goal-top">
+        <div style="display:flex;gap:6px;align-items:center">
+          ${cat ? `<span class="plan-pill">${escHtml(cat.label.toUpperCase())}</span>` : ''}
+        </div>
+        <span class="plan-commit-pct">${pct}%</span>
+      </div>
+      <div class="plan-goal-title" data-commit="${escAttr(c.id)}">${escHtml(c.title)}</div>
+      <div class="plan-commit-track"><div class="plan-commit-fill" style="width:${pct}%"></div></div>
+      <div class="plan-ms-list">${msHtml}</div>
+      <button class="plan-ms-add" data-addms="${escAttr(c.id)}">＋ Milestone</button>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    ${_planHeader(`Q${qNum} ${now.getFullYear()} · GOALS ACROSS THE QUARTER`, 'Goals long enough to change something.',
+      'Quarterly-cadence commitments and their milestones.',
+      `<button class="plan-liquid-btn" id="pq-add">＋ Add commitment</button>`)}
+    <div class="plan-glass plan-quarter-bar">
+      <div class="plan-glass-head"><span class="plan-glass-title">Quarter progress</span>
+        <span class="plan-tel">${commits.length} COMMITMENTS · ${qPct}% AVG</span></div>
+      <div class="plan-commit-track big"><div class="plan-commit-fill neon" style="width:${qPct}%"></div></div>
+    </div>
+    <div class="plan-goal-grid">
+      ${commits.length ? cardsHtml : `<div class="plan-empty">No quarterly commitments yet. Add one, or set an existing commitment's cadence to Quarterly.</div>`}
+    </div>`;
+
+  document.getElementById('pq-add').onclick = () => _addCommitment('quarterly');
+  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => openMsProjectModal(el.dataset.commit));
+  body.querySelectorAll('[data-addms]').forEach(el => el.onclick = () => openMsEventModal(el.dataset.addms));
+  body.querySelectorAll('[data-msdetail]').forEach(el => el.onclick = () => openMsEventDetail(el.dataset.msdetail));
+}
+
+/* ── WEEKLY REVIEW ────────────────────────────────────────────────────── */
+function renderPlanReview() {
+  const body = document.getElementById('plan-design-body'); if (!body) return;
+  const key = _planWeekKey();
+  const days = _planWeekDays();
+  const wkDone = TASKS.filter(t => t.done && days.includes(t.doneDate || t.dueDate)).length;
+  const wkTotal = TASKS.filter(t => days.includes(t.dueDate)).length;
+  const commits = _activeCommitments('weekly');
+  const commitsDone = commits.filter(c => _commitmentProgress(c.id) >= 1).length;
+
+  const prompts = [
+    ['worked', 'What worked?', 'positive'],
+    ['didnt',  "What didn't?", 'warning'],
+    ['learned','What did I learn?', 'neutral'],
+    ['change', 'What will I change?', 'neutral'],
+  ];
+  body.innerHTML = `
+    ${_planHeader('WEEKLY REVIEW · FRIDAY RITUAL', 'The 20-minute look back.', 'Four prompts. Honest answers. Tomorrow starts Monday.')}
+    <div class="plan-review-grid">
+      <div class="plan-review-col">
+        ${prompts.map(([k, q, tone], i) => `
+          <div class="plan-glass plan-review-card ${tone}">
+            <div class="plan-tel review-num">REVIEW 0${i + 1}</div>
+            <div class="plan-glass-title" style="margin-top:2px">${q}</div>
+            <textarea class="plan-dsn-textarea" id="prv-${k}" rows="3" placeholder="Honest answer…"></textarea>
+          </div>`).join('')}
+      </div>
+      <div class="plan-review-col">
+        <div class="plan-glass">
+          <div class="plan-dsn-eyebrow">WEEK TELEMETRY</div>
+          <div class="plan-tele-grid">
+            <div><div class="plan-dsn-eyebrow">COMMITMENTS</div><div class="plan-tele-val">${commitsDone}/${commits.length}</div></div>
+            <div><div class="plan-dsn-eyebrow">TASKS DONE</div><div class="plan-tele-val">${wkDone}/${wkTotal}</div></div>
+          </div>
+        </div>
+        <div class="plan-glass">
+          <div class="plan-dsn-eyebrow">GRATITUDE</div>
+          <textarea class="plan-dsn-textarea" id="prv-gratitude" rows="4" placeholder="Three small things worth keeping…"></textarea>
+        </div>
+      </div>
+    </div>`;
+
+  _planLoadDoc('weeklyPlans', key).then(d => {
+    ['worked','didnt','learned','change','gratitude'].forEach(k => {
+      const el = document.getElementById('prv-' + k);
+      if (el && document.activeElement !== el) el.value = (d.review && d.review[k]) || '';
+    });
+  });
+  const saveReview = () => _planDebSave('weeklyPlans', key, () => ({
+    review: {
+      worked: document.getElementById('prv-worked')?.value || '',
+      didnt: document.getElementById('prv-didnt')?.value || '',
+      learned: document.getElementById('prv-learned')?.value || '',
+      change: document.getElementById('prv-change')?.value || '',
+      gratitude: document.getElementById('prv-gratitude')?.value || '',
+    }
+  }));
+  ['worked','didnt','learned','change','gratitude'].forEach(k => {
+    const el = document.getElementById('prv-' + k); if (el) el.oninput = saveReview;
+  });
+}
+
+/* ── NORTH STAR ───────────────────────────────────────────────────────── */
+function renderPlanNorth() {
+  const body = document.getElementById('plan-design-body'); if (!body) return;
+  body.innerHTML = `
+    ${_planHeader('NORTH STAR · THE THING UNDERNEATH', 'Why you do any of this.', 'The identity beneath the tasks. Revisit quarterly.')}
+    <div class="plan-glass plan-north-vision">
+      <div class="plan-dsn-eyebrow">VISION · 5 YEARS</div>
+      <textarea class="plan-dsn-textarea vision" id="pns-vision" rows="3" placeholder="A quiet craftsman who ships one thing that matters each year…"></textarea>
+    </div>
+    <div class="plan-north-grid">
+      <div class="plan-glass">
+        <div class="plan-dsn-eyebrow">ROLES</div>
+        <div class="plan-glass-title" style="margin:2px 0 8px">The hats I choose to wear</div>
+        <textarea class="plan-dsn-textarea" id="pns-roles" rows="6" placeholder="Partner — present, patient&#10;Craftsman — slow, rigorous&#10;(one per line)"></textarea>
+      </div>
+      <div class="plan-glass">
+        <div class="plan-dsn-eyebrow">VALUES</div>
+        <div class="plan-glass-title" style="margin:2px 0 8px">What I protect when it's costly</div>
+        <textarea class="plan-dsn-textarea" id="pns-values" rows="6" placeholder="Depth over breadth&#10;Slow compound&#10;Honest signal&#10;(one per line)"></textarea>
+      </div>
+    </div>
+    <div class="plan-glass">
+      <div class="plan-dsn-eyebrow">ONE-YEAR EULOGY TEST</div>
+      <div class="plan-glass-title" style="margin:2px 0 8px">If the year ended tonight, what would I want said?</div>
+      <textarea class="plan-dsn-textarea" id="pns-eulogy" rows="4" placeholder="He showed up. Every morning, the same quiet way…"></textarea>
+    </div>`;
+
+  _planLoadDoc('planningMeta', 'northStar').then(d => {
+    [['vision','vision'],['roles','roles'],['values','values'],['eulogy','eulogy']].forEach(([id, k]) => {
+      const el = document.getElementById('pns-' + id);
+      if (el && document.activeElement !== el) el.value = d[k] || '';
+    });
+  });
+  const save = () => _planDebSave('planningMeta', 'northStar', () => ({
+    vision: document.getElementById('pns-vision')?.value || '',
+    roles: document.getElementById('pns-roles')?.value || '',
+    values: document.getElementById('pns-values')?.value || '',
+    eulogy: document.getElementById('pns-eulogy')?.value || '',
+  }));
+  ['vision','roles','values','eulogy'].forEach(id => {
+    const el = document.getElementById('pns-' + id); if (el) el.oninput = save;
+  });
 }
 /* ══ FOCUS BUCKETS ══ */
 const BUCKET_COLORS = ['#4a7c5e','#c45c2a','#e8a020','#6b9fd4','#9b7fd4','#c49a6c','#8a8070'];
@@ -7704,6 +8036,8 @@ function renderTasks() {
     const editingDrawer = ae && ae.closest && ae.closest('#atk-detail') && /INPUT|TEXTAREA/.test(ae.tagName);
     if (!editingDrawer) renderAtkDetail();
   }
+  // Commitment progress on the planning design tabs tracks task completion.
+  window._refreshPlanDesign && window._refreshPlanDesign();
 }
 
 /* ── Task Decay helper ───────────────────────────────── */
