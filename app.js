@@ -5984,12 +5984,14 @@ function _pcalItems(projId) {
   const byDate = {};
   const push = (ds, item) => { (byDate[ds] = byDate[ds] || []).push(item); };
 
+  // Milestones are a global layer — they show on every calendar regardless of
+  // which commitment is in focus.
   MILESTONE_EVENTS.forEach(ev => {
-    if (projId && ev.projectId !== projId) return;
     const ds = String(ev.date || '').slice(0, 10);
     if (!ds) return;
     push(ds, { kind:'milestone', id: ev.id, projectId: ev.projectId,
-      title: ev.title || 'Milestone', color: _pcalProjColor(ev.projectId), startTime: null });
+      title: ev.title || 'Milestone', color: _pcalProjColor(ev.projectId), startTime: null,
+      foreign: !!(projId && ev.projectId !== projId) });
   });
 
   (CAL_EVENTS || []).forEach(ev => {
@@ -6037,8 +6039,13 @@ function _pcalChip(it) {
       <span class="pcal-diamond">✦</span><span class="pcal-chip-t">${escHtml(it.title)}</span>
     </div>`;
   }
+  if (it.kind === 'milestone') {
+    return `<div class="pcal-chip milestone${it.foreign ? ' foreign' : ''}" data-pcal-open="milestone" data-id="${escAttr(it.id)}" data-proj="${escAttr(it.projectId)}" style="--c:${it.color}" title="⚑ ${escAttr(it.title)}">
+      <span class="cal-ms-ico">⚑</span><span class="pcal-chip-t">${escHtml(it.title)}</span>
+    </div>`;
+  }
   return `<div class="pcal-chip" data-pcal-open="${it.kind}" data-id="${escAttr(it.id)}" data-proj="${escAttr(it.projectId)}" style="--c:${it.color}" title="${escAttr(it.title)}">
-      ${it.kind === 'milestone' ? '<span class="pcal-diamond">◆</span>' : '<span class="pcal-evdot"></span>'}
+      <span class="pcal-evdot"></span>
       <span class="pcal-chip-t">${escHtml(it.title)}</span>
     </div>`;
 }
@@ -7948,6 +7955,7 @@ function initData() {
     MILESTONE_PROJECTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderMilestones();
     renderTasks(); // re-render task panel so initiative grouping updates
+    renderCalendar(); // commitment colours drive the global milestone layer
     if (_mainPanel === 'archived') renderArchivedPage();
   });
 
@@ -7955,6 +7963,7 @@ function initData() {
     MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data(), activities: d.data().activities || [] }));
     renderMilestones();
     renderTasks(); // re-render task panel so initiative grouping updates
+    renderCalendar(); // milestones are a global calendar layer
   });
 
   _msListsUnsub = onSnapshot(_uc('milestone_lists'), snap => {
@@ -9011,10 +9020,12 @@ function renderDayView(date) {
 
   // Render all-day strip
   const alldayRow = document.getElementById('cal-allday-row');
+  const msDay = _calMilestones(dateStr);
   if (alldayRow) alldayRow.style.display = '';
-  if (alldayRow) alldayRow.innerHTML = allDayEvs.length
+  if (alldayRow) alldayRow.innerHTML = msDay + (allDayEvs.length
     ? allDayEvs.map(ev => `<span class="cal-allday-chip" data-event-id="${escAttr(ev.id)}">${escHtml(ev.title)}</span>`).join('')
-    : `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">All-day</span>`;
+    : (msDay ? '' : `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">All-day</span>`));
+  if (alldayRow) _wireCalMilestones(alldayRow);
 
   // Clear old event chips
   container.querySelectorAll('.cal-event').forEach(e => e.remove());
@@ -9102,7 +9113,7 @@ function renderWeekView(date) {
     const d  = new Date(ws); d.setDate(d.getDate() + i);
     const ds = localDateStr(d);
     const adEvs = CAL_EVENTS.filter(ev => ev.date === ds && ev.allDay);
-    html += `<div class="week-allday-cell">${adEvs.map(ev => `<span class="week-allday-chip">${escHtml(ev.title)}</span>`).join('')}</div>`;
+    html += `<div class="week-allday-cell">${_calMilestones(ds)}${adEvs.map(ev => `<span class="week-allday-chip">${escHtml(ev.title)}</span>`).join('')}</div>`;
   }
   html += `</div><div class="week-body">`;
 
@@ -9127,6 +9138,7 @@ function renderWeekView(date) {
   }
   html += `</div>`;
   weekView.innerHTML = html;
+  _wireCalMilestones(weekView);
 
   // Click week-event-chip → show event action modal
   weekView.querySelectorAll('.week-event-chip[data-event-id]').forEach(chip => {
@@ -9237,6 +9249,25 @@ function renderMonthView(date) {
       renderCalendar();
     });
   });
+  _wireCalMilestones(monthView);
+}
+
+// Global milestone layer — the same markers render on every calendar surface,
+// pinned to the top of a date, with their own flag design (not task/event chips).
+function _calMilestones(dateStr) {
+  const evs = (typeof MILESTONE_EVENTS !== 'undefined' ? MILESTONE_EVENTS : [])
+    .filter(e => String(e.date || '').slice(0, 10) === dateStr);
+  return evs.map(e => {
+    const c = (typeof _pcalProjColor === 'function') ? _pcalProjColor(e.projectId) : 'var(--gold)';
+    return `<div class="cal-ms" data-ms-id="${escAttr(e.id)}" data-ms-proj="${escAttr(e.projectId || '')}" style="--c:${c}" title="◆ ${escAttr(e.title || 'Milestone')}">
+      <span class="cal-ms-ico">⚑</span><span class="cal-ms-t">${escHtml(e.title || 'Milestone')}</span></div>`;
+  }).join('');
+}
+function _wireCalMilestones(scopeEl) {
+  scopeEl.querySelectorAll('.cal-ms[data-ms-id]').forEach(el => el.addEventListener('click', e => {
+    e.stopPropagation();
+    if (typeof openMsEventModal === 'function') openMsEventModal(el.dataset.msProj || null, el.dataset.msId);
+  }));
 }
 
 function buildMonthCell(dateStr, isCurrentMonth) {
@@ -9278,7 +9309,9 @@ function buildMonthCell(dateStr, isCurrentMonth) {
   }).join('');
   const more = timedEvs.length > 2 ? `<span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">+${timedEvs.length-2} more</span>` : '';
 
+  const msBanner = _calMilestones(dateStr);
   return `<div class="${classes}" data-date="${dateStr}">
+    ${msBanner}
     <span class="month-day-num">${day}</span>
     ${holBadge}${adBadges}${spark}${pills}${more}
   </div>`;
@@ -9398,6 +9431,9 @@ function initCalNav() {
   });
   document.getElementById('cal-today')?.addEventListener('click', () => {
     _calDate = new Date(); renderCalendar();
+  });
+  document.getElementById('cal-add-milestone')?.addEventListener('click', () => {
+    if (typeof _planMilestonePicker === 'function') _planMilestonePicker(localDateStr(_calDate || new Date()));
   });
 }
 

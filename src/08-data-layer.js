@@ -223,6 +223,7 @@ function initData() {
     MILESTONE_PROJECTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderMilestones();
     renderTasks(); // re-render task panel so initiative grouping updates
+    renderCalendar(); // commitment colours drive the global milestone layer
     if (_mainPanel === 'archived') renderArchivedPage();
   });
 
@@ -230,6 +231,7 @@ function initData() {
     MILESTONE_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data(), activities: d.data().activities || [] }));
     renderMilestones();
     renderTasks(); // re-render task panel so initiative grouping updates
+    renderCalendar(); // milestones are a global calendar layer
   });
 
   _msListsUnsub = onSnapshot(_uc('milestone_lists'), snap => {

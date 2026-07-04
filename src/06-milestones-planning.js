@@ -1631,12 +1631,14 @@ function _pcalItems(projId) {
   const byDate = {};
   const push = (ds, item) => { (byDate[ds] = byDate[ds] || []).push(item); };
 
+  // Milestones are a global layer — they show on every calendar regardless of
+  // which commitment is in focus.
   MILESTONE_EVENTS.forEach(ev => {
-    if (projId && ev.projectId !== projId) return;
     const ds = String(ev.date || '').slice(0, 10);
     if (!ds) return;
     push(ds, { kind:'milestone', id: ev.id, projectId: ev.projectId,
-      title: ev.title || 'Milestone', color: _pcalProjColor(ev.projectId), startTime: null });
+      title: ev.title || 'Milestone', color: _pcalProjColor(ev.projectId), startTime: null,
+      foreign: !!(projId && ev.projectId !== projId) });
   });
 
   (CAL_EVENTS || []).forEach(ev => {
@@ -1684,8 +1686,13 @@ function _pcalChip(it) {
       <span class="pcal-diamond">✦</span><span class="pcal-chip-t">${escHtml(it.title)}</span>
     </div>`;
   }
+  if (it.kind === 'milestone') {
+    return `<div class="pcal-chip milestone${it.foreign ? ' foreign' : ''}" data-pcal-open="milestone" data-id="${escAttr(it.id)}" data-proj="${escAttr(it.projectId)}" style="--c:${it.color}" title="⚑ ${escAttr(it.title)}">
+      <span class="cal-ms-ico">⚑</span><span class="pcal-chip-t">${escHtml(it.title)}</span>
+    </div>`;
+  }
   return `<div class="pcal-chip" data-pcal-open="${it.kind}" data-id="${escAttr(it.id)}" data-proj="${escAttr(it.projectId)}" style="--c:${it.color}" title="${escAttr(it.title)}">
-      ${it.kind === 'milestone' ? '<span class="pcal-diamond">◆</span>' : '<span class="pcal-evdot"></span>'}
+      <span class="pcal-evdot"></span>
       <span class="pcal-chip-t">${escHtml(it.title)}</span>
     </div>`;
 }

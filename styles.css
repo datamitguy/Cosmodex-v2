@@ -8069,3 +8069,29 @@ select.sched-input { background: #181818; }
 .ptw-energy-fill.high { background:rgba(53,249,47,.75); box-shadow:0 0 6px rgba(53,249,47,.6); }
 .ptw-energy-sel { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1); border-radius:6px; cursor:pointer;
   color:rgba(255,255,255,.75); font-family:var(--font-mono); font-size:9px; letter-spacing:.08em; padding:3px 4px; }
+
+/* ══ GLOBAL MILESTONE LAYER — flag banner pinned to the top of a date ══ */
+.cal-ms {
+  display:flex; align-items:center; gap:4px; width:100%; box-sizing:border-box;
+  margin:0 0 3px; padding:2px 6px 2px 5px; border-radius:4px; cursor:pointer;
+  background:linear-gradient(90deg, color-mix(in srgb, var(--c) 30%, transparent), color-mix(in srgb, var(--c) 8%, transparent));
+  border-left:3px solid var(--c);
+  box-shadow:0 0 8px color-mix(in srgb, var(--c) 22%, transparent);
+}
+.cal-ms:hover { background:linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), color-mix(in srgb, var(--c) 14%, transparent)); }
+.cal-ms-ico { font-size:9px; color:var(--c); filter:drop-shadow(0 0 3px color-mix(in srgb, var(--c) 60%, transparent)); flex-shrink:0; }
+.cal-ms-t {
+  font-family:var(--font-mono); font-size:9px; letter-spacing:.02em; font-weight:600;
+  color:#fff; text-transform:uppercase;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.week-allday-cell .cal-ms, .cal-allday-row .cal-ms { display:inline-flex; width:auto; max-width:100%; margin-right:4px; }
+
+/* Planning calendar milestone chip — same flag identity */
+.pcal-chip.milestone {
+  background:linear-gradient(90deg, color-mix(in srgb, var(--c) 32%, transparent), color-mix(in srgb, var(--c) 8%, transparent));
+  border-left:3px solid var(--c); box-shadow:0 0 8px color-mix(in srgb, var(--c) 22%, transparent);
+  font-weight:600;
+}
+.pcal-chip.milestone .cal-ms-ico { font-size:9px; color:var(--c); margin-right:2px; }
+.pcal-chip.milestone.foreign { opacity:.62; border-left-style:dashed; }
