@@ -4353,14 +4353,21 @@ function _weekPct(dates, habits) {
 
 /* ══ MILESTONES — FIRESTORE CRUD ══ */
 // → future file: cosmodex-planning.js
-async function addMilestoneProject(title, startDate, endDate, color, category='', notes='', missionBrief='', antiGoals='') {
+async function addMilestoneProject(title, startDate, endDate, color, category='', notes='', missionBrief='', antiGoals='', cadence='quarterly', bigRock=false) {
   const { addDoc, serverTimestamp } = window.CDX_FB;
   const ref = await addDoc(_uc('milestoneProjects'),
     { title, startDate, endDate, color, category: category||null, notes: notes||'',
       missionBrief: missionBrief||null, antiGoals: antiGoals||null,
+      cadence: cadence || 'quarterly', bigRock: !!bigRock,
       isArchived: false,
       createdAt: serverTimestamp() });
   return ref;
+}
+
+// A commitment's cadence, defaulting older records (no field) to quarterly.
+function commitmentCadence(p) {
+  const c = p && p.cadence;
+  return (c === 'weekly' || c === 'monthly' || c === 'quarterly') ? c : 'quarterly';
 }
 
 async function updateMilestoneProject(id, data) {
@@ -4369,33 +4376,50 @@ async function updateMilestoneProject(id, data) {
 }
 
 async function deleteMilestoneProject(id) {
-  const { deleteDoc, getDocs, query, where } = window.CDX_FB;
+  const { deleteDoc, updateDoc, getDocs, query, where } = window.CDX_FB;
   const [evSnap, listSnap] = await Promise.all([
     getDocs(query(_uc('milestoneEvents'), where('projectId', '==', id))),
     getDocs(query(_uc('milestone_lists'), where('projectId', '==', id))),
   ]);
-  // Cascade-delete tasks linked via milestone event activities
+  // Gather every task linked to this commitment — via event activities OR a direct projectId.
   const taskIds = [];
   evSnap.docs.forEach(d => {
-    (d.data().activities || []).forEach(a => { if (a.taskId) taskIds.push(a.taskId); });
+    (d.data().activities || []).forEach(a => { if (a.taskId && !taskIds.includes(a.taskId)) taskIds.push(a.taskId); });
   });
-  // Collect calEventIds from linked tasks (and their subtasks) to avoid orphans
-  const calEventIds = [];
-  taskIds.forEach(tid => {
-    const t = TASKS.find(t => t.id === tid);
-    if (t?.calEventId) calEventIds.push(t.calEventId);
-    (t?.subtasks || []).forEach(s => { if (s.calEventId) calEventIds.push(s.calEventId); });
-  });
-  CAL_EVENTS.filter(e => taskIds.includes(e.taskId)).forEach(e => {
-    if (!calEventIds.includes(e.id)) calEventIds.push(e.id);
-  });
+  TASKS.forEach(t => { if (t.projectId === id && !taskIds.includes(t.id)) taskIds.push(t.id); });
+  // Completed tasks are preserved (unlinked); incomplete ones are deleted with the commitment.
+  const { del, keep } = _partitionLinkedTasks(taskIds);
+  const calEventIds = _collectTaskCalEvents(del);
   await Promise.all([
     ...evSnap.docs.map(d => deleteDoc(d.ref)),
     ...listSnap.docs.map(d => deleteDoc(d.ref)),
-    ...taskIds.map(tid => deleteDoc(_ud('tasks', tid))),
+    ...del.map(tid => deleteDoc(_ud('tasks', tid))),
+    ...keep.map(tid => updateDoc(_ud('tasks', tid), { projectId: null })),
     ...calEventIds.map(cid => deleteDoc(_ud('calEvents', cid))),
   ]);
   await deleteDoc(_ud('milestoneProjects', id));
+}
+
+// Split linked task ids into those to delete (incomplete) vs keep (completed).
+function _partitionLinkedTasks(taskIds) {
+  const del = [], keep = [];
+  taskIds.forEach(tid => {
+    const t = TASKS.find(t => t.id === tid);
+    if (t && t.done) keep.push(tid); else if (t) del.push(tid);
+  });
+  return { del, keep };
+}
+
+// Calendar events belonging to the given tasks (and their subtasks), de-duped.
+function _collectTaskCalEvents(taskIds) {
+  const ids = [];
+  taskIds.forEach(tid => {
+    const t = TASKS.find(t => t.id === tid);
+    if (t?.calEventId) ids.push(t.calEventId);
+    (t?.subtasks || []).forEach(s => { if (s.calEventId) ids.push(s.calEventId); });
+  });
+  CAL_EVENTS.filter(e => taskIds.includes(e.taskId)).forEach(e => { if (!ids.includes(e.id)) ids.push(e.id); });
+  return ids;
 }
 
 async function addMilestoneEvent(projectId, title, date, description, activities) {
@@ -4410,22 +4434,16 @@ async function updateMilestoneEvent(id, data) {
 }
 
 async function deleteMilestoneEvent(id) {
-  const { deleteDoc } = window.CDX_FB;
+  const { deleteDoc, updateDoc } = window.CDX_FB;
   const ev = MILESTONE_EVENTS.find(e => e.id === id);
   const taskIds = (ev?.activities || []).filter(a => a.taskId).map(a => a.taskId);
-  // Collect calEvents linked to those tasks (and their subtasks) so they aren't orphaned
-  const calEventIds = [];
-  taskIds.forEach(tid => {
-    const t = TASKS.find(t => t.id === tid);
-    if (t?.calEventId) calEventIds.push(t.calEventId);
-    (t?.subtasks || []).forEach(s => { if (s.calEventId) calEventIds.push(s.calEventId); });
-  });
-  CAL_EVENTS.filter(e => taskIds.includes(e.taskId)).forEach(e => {
-    if (!calEventIds.includes(e.id)) calEventIds.push(e.id);
-  });
+  // Completed tasks are preserved (unlinked); incomplete ones are deleted with the milestone.
+  const { del, keep } = _partitionLinkedTasks(taskIds);
+  const calEventIds = _collectTaskCalEvents(del);
   await Promise.all([
     deleteDoc(_ud('milestoneEvents', id)),
-    ...taskIds.map(tid => deleteDoc(_ud('tasks', tid))),
+    ...del.map(tid => deleteDoc(_ud('tasks', tid))),
+    ...keep.map(tid => updateDoc(_ud('tasks', tid), { projectId: null })),
     ...calEventIds.map(cid => deleteDoc(_ud('calEvents', cid))),
   ]);
 }
@@ -4539,7 +4557,7 @@ function renderMilestoneDashboard() {
 
 
   if (!MILESTONE_PROJECTS.length) {
-    body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:60px">No initiatives yet.<br><br>Click "+ Initiative" to start.</div>`;
+    body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:60px">No commitments yet.<br><br>Click "+ New" to start.</div>`;
     return;
   }
 
@@ -4606,7 +4624,7 @@ function renderMilestoneDashboard() {
   });
 
   if (activeProjs.length) body.appendChild(grid);
-  else body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">All initiatives archived.</div>`;
+  else body.innerHTML = `<div style="color:var(--muted);font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-align:center;margin-top:40px">All commitments archived.</div>`;
 
   grid.querySelectorAll('[data-ms-dash-card]').forEach(card => {
     card.addEventListener('click', e => {
@@ -4630,12 +4648,12 @@ function showArchivedProjectsOverlay() {
   overlay.innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:420px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
       <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:8px">
-        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);flex:1">Archived Initiatives</span>
+        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);flex:1">Archived Commitments</span>
         <button id="ms-arch-overlay-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px">×</button>
       </div>
       <div style="overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
         ${archivedProjs.length === 0
-          ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:24px">No archived initiatives</div>`
+          ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:24px">No archived commitments</div>`
           : archivedProjs.map(proj => {
               const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
               const allActs = events.flatMap(e => e.activities || []);
@@ -4682,7 +4700,7 @@ function renderArchivedPage() {
   const archivedProjs = MILESTONE_PROJECTS.filter(p => p.isArchived);
   if (badge) badge.textContent = `${archivedProjs.length} archived`;
   if (archivedProjs.length === 0) {
-    body.innerHTML = `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:64px">No archived initiatives</div>`;
+    body.innerHTML = `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:64px">No archived commitments</div>`;
     return;
   }
   body.innerHTML = archivedProjs.map(proj => {
@@ -5023,7 +5041,7 @@ function renderMsActivityList() {
 function openMsProjectModal(projId = null) {
   _msProjEdit = projId;
   const proj = projId ? MILESTONE_PROJECTS.find(p => p.id === projId) : null;
-  document.getElementById('ms-proj-modal-title').textContent = proj ? 'Edit Initiative' : 'New Initiative';
+  document.getElementById('ms-proj-modal-title').textContent = proj ? 'Edit Commitment' : 'New Commitment';
   document.getElementById('ms-proj-title').value = proj ? proj.title : '';
   document.getElementById('ms-proj-start').value = proj ? proj.startDate : '';
   document.getElementById('ms-proj-end').value   = proj ? proj.endDate : '';
@@ -5046,6 +5064,10 @@ function openMsProjectModal(projId = null) {
   if (missionEl) missionEl.value = proj ? (proj.missionBrief || '') : '';
   const antiEl = document.getElementById('ms-proj-antigoals');
   if (antiEl) antiEl.value = proj ? (proj.antiGoals || '') : '';
+  const cadenceEl = document.getElementById('ms-proj-cadence');
+  if (cadenceEl) cadenceEl.value = proj ? commitmentCadence(proj) : 'quarterly';
+  const bigRockEl = document.getElementById('ms-proj-bigrock');
+  if (bigRockEl) bigRockEl.checked = proj ? !!proj.bigRock : false;
   const delBtn = document.getElementById('ms-proj-delete-btn');
   if (delBtn) delBtn.style.display = proj ? '' : 'none';
   openOverlay('ms-project-modal');
@@ -5168,20 +5190,22 @@ function initMilestonesPanel() {
     const notes       = document.getElementById('ms-proj-notes')?.value.trim() || '';
     const missionBrief = document.getElementById('ms-proj-mission')?.value.trim() || '';
     const antiGoals   = document.getElementById('ms-proj-antigoals')?.value.trim() || '';
+    const cadence     = document.getElementById('ms-proj-cadence')?.value || 'quarterly';
+    const bigRock     = !!document.getElementById('ms-proj-bigrock')?.checked;
     if (!title || !start || !end) { showToast('Title, Start Date, and End Date are required.', 'error'); return; }
     if (end < start) { showToast('End date must be on or after start date.', 'error'); return; }
     try {
       if (_msProjEdit) {
-        await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes, missionBrief: missionBrief||null, antiGoals: antiGoals||null });
+        await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes, missionBrief: missionBrief||null, antiGoals: antiGoals||null, cadence, bigRock });
         closeOverlay('ms-project-modal');
       } else {
-        const newRef = await addMilestoneProject(title, start, end, color, category, notes, missionBrief, antiGoals);
+        const newRef = await addMilestoneProject(title, start, end, color, category, notes, missionBrief, antiGoals, cadence, bigRock);
         closeOverlay('ms-project-modal');
         if (newRef?.id) { _msView = 'timeline'; _msFocusProj = newRef.id; showPlanningTimeline(newRef.id); }
       }
     } catch (err) {
-      console.error('Failed to save initiative:', err);
-      showToast('Failed to save initiative', 'error');
+      console.error('Failed to save commitment:', err);
+      showToast('Failed to save commitment', 'error');
     }
   });
 
@@ -5189,7 +5213,7 @@ function initMilestonesPanel() {
   document.getElementById('ms-proj-delete-btn').addEventListener('click', async () => {
     if (!_msProjEdit) return;
     const proj = MILESTONE_PROJECTS.find(p => p.id === _msProjEdit);
-    if (await cdxConfirm(`Delete initiative "${proj ? proj.title : ''}" and all its milestones?`)) {
+    if (await cdxConfirm(`Delete commitment "${proj ? proj.title : ''}" and all its milestones?`)) {
       await deleteMilestoneProject(_msProjEdit);
       closeOverlay('ms-project-modal');
     }
@@ -6140,7 +6164,7 @@ function showPlanningCalendarAll() {
   if (empty)   empty.style.display   = 'none';
   if (content) content.style.display = 'flex';
   const titleEl = document.getElementById('plan-ctx-title');
-  if (titleEl) titleEl.textContent = 'All Initiatives';
+  if (titleEl) titleEl.textContent = 'All Commitments';
   ['plan-tl-add-ms', 'plan-edit-proj', 'plan-ms-close'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = 'none';
   });

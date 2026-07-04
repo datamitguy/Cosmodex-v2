@@ -506,7 +506,7 @@
     <!-- Archived Panel (shown via Archived nav item) -->
     <div id="panel-archived" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000">
       <div style="padding:20px 28px 16px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:12px">
-        <span style="font-family:var(--font-display);font-size:22px;color:#fff;font-weight:600">Archived Initiatives</span>
+        <span style="font-family:var(--font-display);font-size:22px;color:#fff;font-weight:600">Archived Commitments</span>
         <span id="archived-count-badge" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:2px 8px"></span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 120px 160px 140px 120px;gap:0;padding:8px 28px;border-bottom:1px solid rgba(255,255,255,0.06)">
@@ -1358,13 +1358,13 @@
 <div class="overlay" id="ms-project-modal" style="z-index:860">
   <div class="overlay-panel" style="width:min(480px,92vw)">
     <div class="overlay-header">
-      <span class="overlay-title" id="ms-proj-modal-title">New Initiative</span>
+      <span class="overlay-title" id="ms-proj-modal-title">New Commitment</span>
       <button class="overlay-close" data-close="ms-project-modal">✕</button>
     </div>
     <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
       <div class="form-group">
-        <label class="form-label">Initiative Name</label>
-        <input id="ms-proj-title" class="form-input" placeholder="e.g. Product Launch" autocomplete="off">
+        <label class="form-label">Commitment Name</label>
+        <input id="ms-proj-title" class="form-input" placeholder="e.g. Ship Cosmodex v2" autocomplete="off">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="form-group">
@@ -1388,23 +1388,37 @@
           <!-- populated by openMsProjectModal -->
         </select>
       </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end">
+        <div class="form-group">
+          <label class="form-label">Cadence <span style="font-size:10px;color:var(--muted);font-weight:400">(where it shows)</span></label>
+          <select id="ms-proj-cadence" class="form-input" style="cursor:pointer">
+            <option value="weekly">Weekly — This Week</option>
+            <option value="monthly">Monthly — Month</option>
+            <option value="quarterly" selected>Quarterly — Quarter</option>
+          </select>
+        </div>
+        <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding-bottom:10px;white-space:nowrap">
+          <input id="ms-proj-bigrock" type="checkbox" style="cursor:pointer">
+          ◆ Big rock
+        </label>
+      </div>
       <div class="form-group">
         <label class="form-label">Notes / Context</label>
         <textarea id="ms-proj-notes" class="form-input" rows="3" placeholder="Background context, goals, constraints…"></textarea>
       </div>
       <div class="form-group los-narrative-group">
         <label class="form-label">Mission Brief <span style="font-size:10px;color:var(--muted);font-weight:400">(why this matters)</span></label>
-        <textarea id="ms-proj-mission" class="form-input" rows="2" placeholder="The purpose behind this initiative…"></textarea>
+        <textarea id="ms-proj-mission" class="form-input" rows="2" placeholder="The purpose behind this commitment…"></textarea>
       </div>
       <div class="form-group los-narrative-group">
         <label class="form-label">Anti-Goals <span style="font-size:10px;color:var(--muted);font-weight:400">(what we will NOT do)</span></label>
         <textarea id="ms-proj-antigoals" class="form-input" rows="2" placeholder="Scope boundaries and explicit non-goals…"></textarea>
       </div>
       <div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">
-        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--gold);display:none">Delete Initiative</button>
+        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--gold);display:none">Delete Commitment</button>
         <div style="display:flex;gap:8px;margin-left:auto">
           <button data-close="ms-project-modal" class="btn-ghost">Cancel</button>
-          <button id="ms-proj-confirm" class="btn-primary">Save Initiative</button>
+          <button id="ms-proj-confirm" class="btn-primary">Save Commitment</button>
         </div>
       </div>
     </div>
