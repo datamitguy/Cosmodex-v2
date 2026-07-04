@@ -8162,3 +8162,110 @@ select.sched-input { background: #181818; }
 .pomo-task-cat { font-family:var(--font-mono); font-size:8px; letter-spacing:.06em; color:rgba(255,255,255,.4); }
 .pomo-task-live { font-family:var(--font-mono); font-size:8px; letter-spacing:.08em; color:rgb(53,249,47); text-shadow:0 0 6px rgba(53,249,47,.6); }
 .pomo-task-empty { font-family:var(--font-display); font-style:italic; font-size:12px; color:rgba(255,255,255,.4); padding:6px 2px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MINIMALIST DASHBOARD — compact today spine + telemetry cards
+   ═══════════════════════════════════════════════════════════════════════════ */
+.dash-board { flex:1; overflow-y:auto; min-height:0; background:#000; }
+.dash-grid {
+  display:grid; grid-template-columns:1.5fr 1fr; gap:18px;
+  padding:28px 32px 120px; max-width:1120px; margin:0 auto;
+}
+@media (max-width:900px){ .dash-grid { grid-template-columns:1fr; } }
+
+/* Glass surface w/ specular top edge (matches design-system GlassCard) */
+.dash-glass {
+  position:relative; background:rgba(255,255,255,0.03);
+  backdrop-filter:blur(32px) saturate(140%); -webkit-backdrop-filter:blur(32px) saturate(140%);
+  border:1px solid rgba(255,255,255,0.08); border-radius:20px;
+  box-shadow:0 16px 40px rgba(0,0,0,0.8);
+}
+.dash-glass::before {
+  content:''; position:absolute; top:0; left:16px; right:16px; height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+}
+.dash-eyebrow {
+  font-family:var(--font-mono); font-size:9px; font-weight:400;
+  letter-spacing:0.18em; text-transform:uppercase; color:rgba(255,255,255,0.5);
+}
+
+/* ── Left: compact today calendar ── */
+.dash-cal { padding:24px; display:flex; flex-direction:column; }
+.dash-cal-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; }
+.dash-cal-title { font-family:var(--font-display); font-weight:300; font-size:22px; color:#fff; margin-top:6px; letter-spacing:0.02em; }
+.dash-cal-actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+.dash-btn {
+  font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase;
+  padding:6px 11px; border-radius:8px; cursor:pointer;
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.75);
+  transition:all .25s var(--ease-glass);
+}
+.dash-btn:hover { border-color:rgba(255,255,255,0.32); color:#fff; transform:translateY(-1px); }
+
+.dash-ms-row { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+
+/* The thick white vertical spine */
+.dash-spine-wrap { position:relative; padding-left:2px; }
+.dash-spine-wrap::before {
+  content:''; position:absolute; top:8px; bottom:8px; left:59px; width:3px;
+  background:rgba(255,255,255,0.9); border-radius:2px;
+  box-shadow:0 0 10px rgba(255,255,255,0.35);
+}
+.dash-node {
+  display:grid; grid-template-columns:52px 16px 1fr; align-items:center; gap:0;
+  padding:9px 0; cursor:pointer; position:relative;
+}
+.dash-node-time {
+  font-family:var(--font-mono); font-size:10px; color:rgba(255,255,255,0.5);
+  font-variant-numeric:tabular-nums; text-align:right; padding-right:8px; white-space:nowrap;
+}
+.dash-node-dot {
+  width:11px; height:11px; border-radius:50%; justify-self:center; z-index:1;
+  background:var(--nc,#fff); box-shadow:0 0 8px var(--nc,#fff), 0 0 0 3px #000;
+}
+.dash-node-check {
+  width:15px; height:15px; border-radius:50%; justify-self:center; z-index:1; cursor:pointer;
+  background:#000; border:2px solid rgba(255,255,255,0.35); padding:0;
+  box-shadow:0 0 0 3px #000; transition:all .2s var(--ease-glass);
+}
+.dash-node-check:hover { border-color:rgba(255,255,255,0.7); }
+.dash-node-check.on { background:rgb(53,249,47); border-color:rgb(53,249,47); box-shadow:0 0 8px rgba(53,249,47,.6), 0 0 0 3px #000; }
+.dash-node-card { padding-left:12px; min-width:0; }
+.dash-node-title {
+  font-family:var(--font-display); font-weight:300; font-size:16px; color:rgba(255,255,255,0.9);
+  display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%;
+}
+.dash-node.event.past .dash-node-title { color:rgba(255,255,255,0.45); }
+.dash-node.task.done .dash-node-title { color:rgba(255,255,255,0.4); text-decoration:line-through; }
+.dash-node-sep {
+  font-family:var(--font-mono); font-size:9px; letter-spacing:0.18em; color:rgba(255,255,255,0.35);
+  padding:14px 0 4px 71px;
+}
+.dash-empty {
+  font-family:var(--font-display); font-style:italic; font-size:15px; color:rgba(255,255,255,0.5);
+  text-align:center; padding:36px 12px; line-height:1.6;
+}
+.dash-empty span { font-family:var(--font-mono); font-style:normal; font-size:10px; letter-spacing:0.06em; color:rgba(255,255,255,0.35); }
+
+/* ── Right: telemetry cards ── */
+.dash-side { display:flex; flex-direction:column; gap:18px; }
+.dash-card { padding:22px; }
+.dash-nn-title { font-family:var(--font-display); font-style:italic; font-size:19px; color:#fff; line-height:1.35; margin-top:10px; cursor:pointer; }
+.dash-nn-title.muted { color:rgba(255,255,255,0.55); cursor:default; }
+.dash-nn-meta { font-family:var(--font-mono); font-size:9px; letter-spacing:0.12em; color:rgba(255,255,255,0.45); margin-top:8px; }
+.dash-streak-num { display:flex; align-items:baseline; gap:10px; margin-top:10px; }
+.dash-big { font-family:var(--font-display); font-weight:300; font-size:42px; color:#fff; text-shadow:0 0 24px rgba(255,255,255,0.12); font-variant-numeric:tabular-nums; }
+.dash-big-unit { font-family:var(--font-display); font-weight:300; font-size:15px; color:rgba(255,255,255,0.5); margin-left:4px; }
+.dash-streak-bar { display:flex; gap:6px; margin-top:16px; }
+.dash-streak-cell { flex:1; height:24px; border-radius:3px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); }
+.dash-streak-cell.on { background:rgba(255,255,255,0.65); box-shadow:0 0 8px rgba(255,255,255,0.12); }
+.dash-streak-cell.today { border-color:rgba(53,249,47,0.6); box-shadow:0 0 8px rgba(53,249,47,0.3); }
+.dash-commit-timer { font-family:var(--font-mono); font-size:34px; color:#fff; text-shadow:0 0 20px rgba(255,255,255,0.18); font-variant-numeric:tabular-nums; margin-top:10px; }
+.dash-commit-task { font-family:var(--font-display); font-style:italic; font-size:13px; color:rgba(255,255,255,0.65); margin-top:4px; }
+.dash-cta {
+  margin-top:14px; font-family:var(--font-mono); font-size:10px; letter-spacing:0.12em; text-transform:uppercase;
+  padding:9px 18px; border-radius:8px; cursor:pointer;
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.85);
+  transition:all .25s var(--ease-glass);
+}
+.dash-cta:hover { border-color:rgba(255,255,255,0.32); color:#fff; transform:translateY(-1px); }

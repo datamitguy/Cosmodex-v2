@@ -350,6 +350,36 @@
 
     </div><!-- /main-content-panels -->
 
+    <!-- ══ DASHBOARD (minimalist — replaces calendar+tasks panes) ══ -->
+    <div id="dash-board" class="dash-board">
+      <div class="dash-grid">
+
+        <!-- LEFT: compact today calendar (single spine) -->
+        <div class="dash-cal dash-glass">
+          <div class="dash-cal-head">
+            <div>
+              <div class="dash-eyebrow">TODAY</div>
+              <div class="dash-cal-title" id="dash-cal-title">—</div>
+            </div>
+            <div class="dash-cal-actions">
+              <button class="dash-btn" id="dash-add-task" title="Add a task">◈ Task</button>
+              <button class="dash-btn" id="dash-add-event" title="Add an event">＋ Event</button>
+              <button class="dash-btn" id="dash-add-ms" title="Add a milestone">⚑ Milestone</button>
+            </div>
+          </div>
+          <div class="dash-cal-body" id="dash-cal-body"><!-- built by renderDashboardBoard() --></div>
+        </div>
+
+        <!-- RIGHT: telemetry cards -->
+        <div class="dash-side">
+          <div class="dash-card dash-glass" id="dash-nn"><!-- non-negotiable --></div>
+          <div class="dash-card dash-glass" id="dash-streak"><!-- streak --></div>
+          <div class="dash-card dash-glass" id="dash-commit"><!-- deep work / commit --></div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Milestones Panel (shown via Planning nav item) -->
     <div id="panel-milestones" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000">
       <!-- Planning hero + 7-tab bar -->

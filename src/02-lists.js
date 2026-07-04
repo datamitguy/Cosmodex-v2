@@ -3,9 +3,13 @@
 function showMainPanel(name) {
   _mainPanel = name;
   document.getElementById('dashboard-hero').style.display     = name === 'default' ? '' : 'none';
-  document.getElementById('main-content-panels').style.display = name === 'default' ? '' : 'none';
-  document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
-  document.getElementById('panel-tasks').style.display       = name === 'default' ? '' : 'none';
+  // The old calendar+tasks panes are retired from the dashboard; they stay in the
+  // DOM (hidden) so the calendar engine still renders harmlessly for other code.
+  document.getElementById('main-content-panels').style.display = 'none';
+  document.getElementById('panel-calendar').style.display    = 'none';
+  document.getElementById('panel-tasks').style.display       = 'none';
+  const dashBoard = document.getElementById('dash-board');
+  if (dashBoard) dashBoard.style.display = name === 'default' ? '' : 'none';
   document.getElementById('panel-alltasks').style.display    = name === 'alltasks' ? 'flex' : 'none';
   document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
   document.getElementById('panel-archived').style.display    = name === 'archived' ? 'flex' : 'none';
@@ -20,6 +24,7 @@ function showMainPanel(name) {
   const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
+  if (name === 'default') { window.renderDashboardBoard?.(); }
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }

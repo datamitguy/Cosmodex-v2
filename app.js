@@ -356,9 +356,13 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
 function showMainPanel(name) {
   _mainPanel = name;
   document.getElementById('dashboard-hero').style.display     = name === 'default' ? '' : 'none';
-  document.getElementById('main-content-panels').style.display = name === 'default' ? '' : 'none';
-  document.getElementById('panel-calendar').style.display    = name === 'default' ? '' : 'none';
-  document.getElementById('panel-tasks').style.display       = name === 'default' ? '' : 'none';
+  // The old calendar+tasks panes are retired from the dashboard; they stay in the
+  // DOM (hidden) so the calendar engine still renders harmlessly for other code.
+  document.getElementById('main-content-panels').style.display = 'none';
+  document.getElementById('panel-calendar').style.display    = 'none';
+  document.getElementById('panel-tasks').style.display       = 'none';
+  const dashBoard = document.getElementById('dash-board');
+  if (dashBoard) dashBoard.style.display = name === 'default' ? '' : 'none';
   document.getElementById('panel-alltasks').style.display    = name === 'alltasks' ? 'flex' : 'none';
   document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
   document.getElementById('panel-archived').style.display    = name === 'archived' ? 'flex' : 'none';
@@ -373,6 +377,7 @@ function showMainPanel(name) {
   const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
+  if (name === 'default') { window.renderDashboardBoard?.(); }
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
@@ -8191,6 +8196,8 @@ function renderTasks() {
   }
   // Commitment progress on the planning design tabs tracks task completion.
   window._refreshPlanDesign && window._refreshPlanDesign();
+  // Minimalist dashboard reflects today's tasks/cards.
+  if (_mainPanel === 'default') window.renderDashboardBoard && window.renderDashboardBoard();
 }
 
 /* ── Task Decay helper ───────────────────────────────── */
@@ -8977,6 +8984,8 @@ function renderCalendar() {
   if (_calView === 'week')  renderWeekView(_calDate);
   if (_calView === 'month') renderMonthView(_calDate);
   updateCalLabel();
+  // Events + milestones also feed the minimalist dashboard's today spine.
+  if (_mainPanel === 'default') window.renderDashboardBoard && window.renderDashboardBoard();
 }
 
 function updateCalLabel() {
@@ -10872,6 +10881,12 @@ function closeOverlay(id) {
 // Close-outside uses mousedown-origin tracking to avoid false closes when users
 // click inside an input (especially number-input spinner arrows, which can fire
 // click events with unexpected targets in some browsers).
+// Focus / Commit are deliberate "locked" modes: while one is open, the outside
+// world cannot be interacted with (the full-screen backdrop already blocks it)
+// AND a click on the backdrop or Escape must NOT dismiss it — the user has to
+// exit explicitly via the overlay's own controls.
+const LOCKED_OVERLAYS = new Set(['pomo-overlay', 'commit-overlay']);
+
 let _overlayMousedownInsidePanel = false;
 document.addEventListener('mousedown', e => {
   _overlayMousedownInsidePanel = !!e.target.closest?.('.overlay-panel, #td-pomo-float');
@@ -10894,6 +10909,7 @@ document.addEventListener('click', e => {
   // Only close if the click target is an open overlay itself AND not inside its panel
   const overlay = e.target.closest?.('.overlay.open');
   if (overlay && !e.target.closest('.overlay-panel, #td-pomo-float')) {
+    if (LOCKED_OVERLAYS.has(overlay.id)) return; // focus/commit mode — no click-outside dismiss
     if (overlay.id === 'pomo-overlay') {
       document.getElementById('pomo-close')?.click();
     } else {
@@ -11191,7 +11207,7 @@ document.addEventListener('keydown', e => {
     if (orb.classList.contains('expanded')) {
       closeOrb(); return;
     }
-    document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+    document.querySelectorAll('.overlay.open').forEach(o => { if (!LOCKED_OVERLAYS.has(o.id)) o.classList.remove('open'); });
   }
 });
 
@@ -12873,6 +12889,189 @@ function openCommitRitual() {
 }
 
 document.getElementById('btn-commit')?.addEventListener('click', openCommitRitual);
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MINIMALIST DASHBOARD — compact today spine + telemetry cards
+   Replaces the old calendar+tasks two-pane home. All CRUD reuses existing
+   global functions (addTask / toggleTask / showEventModal / openScheduleModal /
+   _calMilestones / _planMilestonePicker / openCommitRitual).
+   ═══════════════════════════════════════════════════════════════════════════ */
+function _dashFmtTime(t) {
+  if (!t) return '';
+  return (typeof fmtTimeSched === 'function') ? fmtTimeSched(t) : t;
+}
+function _dashPrioRank(p) { return p === 'high' ? 3 : p === 'low' ? 1 : 2; }
+
+function _dashRenderTodayLine() {
+  const body = document.getElementById('dash-cal-body');
+  if (!body) return;
+  const today = localDateStr(new Date());
+  const nowMins = new Date().getHours() * 60 + new Date().getMinutes();
+
+  // 1. Milestones — pinned above the spine (reuse the global flag banner)
+  const msHtml = (typeof _calMilestones === 'function') ? _calMilestones(today) : '';
+
+  // 2. Timed items: calendar events + tasks that live on the calendar
+  const events = (CAL_EVENTS || []).filter(e => e.date === today && !e.allDay);
+  const evTaskIds = new Set(events.map(e => e.taskId).filter(Boolean));
+  const timed = events.map(ev => {
+    const [h, m] = (ev.startTime || '9:00').split(':').map(Number);
+    return { kind: 'event', mins: h * 60 + (m || 0), time: ev.startTime, title: ev.title,
+             color: getCatColor(TASKS.find(t => t.id === ev.taskId)?.category), id: ev.id };
+  }).sort((a, b) => a.mins - b.mins);
+
+  // 3. Untimed tasks due today (not already represented by a calendar event)
+  const anytime = (TASKS || []).filter(t =>
+    !t.someday && t.dueDate === today && !evTaskIds.has(t.id)
+  ).sort((a, b) => (a.done - b.done) || (_dashPrioRank(b.priority) - _dashPrioRank(a.priority)));
+
+  let rows = '';
+  timed.forEach(it => {
+    const past = it.mins < nowMins;
+    rows += `<div class="dash-node event${past ? ' past' : ''}" data-ev="${escAttr(it.id)}">
+      <span class="dash-node-time">${escHtml(_dashFmtTime(it.time))}</span>
+      <span class="dash-node-dot" style="--nc:${it.color}"></span>
+      <span class="dash-node-card"><span class="dash-node-title">${escHtml(it.title)}</span></span>
+    </div>`;
+  });
+  if (anytime.length) {
+    rows += `<div class="dash-node-sep">ANYTIME</div>`;
+    anytime.forEach(t => {
+      const color = getCatColor(t.category);
+      rows += `<div class="dash-node task${t.done ? ' done' : ''}" data-task="${escAttr(t.id)}">
+        <span class="dash-node-time"></span>
+        <button class="dash-node-check${t.done ? ' on' : ''}" data-toggle="${escAttr(t.id)}" aria-label="Toggle done"></button>
+        <span class="dash-node-card"><span class="dash-node-title" data-open="${escAttr(t.id)}" style="--nc:${color}">${escHtml(t.title)}</span></span>
+      </div>`;
+    });
+  }
+
+  const empty = (!timed.length && !anytime.length)
+    ? `<div class="dash-empty">Nothing scheduled today. ✦<br><span>Add a task, event, or milestone.</span></div>` : '';
+
+  body.innerHTML =
+    (msHtml ? `<div class="dash-ms-row">${msHtml}</div>` : '') +
+    `<div class="dash-spine-wrap">${rows || empty}</div>`;
+
+  if (typeof _wireCalMilestones === 'function') _wireCalMilestones(body);
+  // Event click → edit modal
+  body.querySelectorAll('.dash-node.event[data-ev]').forEach(el => {
+    el.addEventListener('click', e => {
+      const ev = (CAL_EVENTS || []).find(x => x.id === el.dataset.ev);
+      if (ev) showEventModal(ev, e.clientX, e.clientY);
+    });
+  });
+  // Task checkbox → toggle done
+  body.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', e => { e.stopPropagation(); toggleTask(el.dataset.toggle); });
+  });
+  // Task title → open its detail on the Tasks page
+  body.querySelectorAll('[data-open]').forEach(el => {
+    el.addEventListener('click', () => {
+      showMainPanel('alltasks');
+      setTimeout(() => window.openAtkDetail?.(el.dataset.open), 40);
+    });
+  });
+}
+
+function _dashRenderCards() {
+  const today = localDateStr(new Date());
+
+  // ── Non-negotiable: highest-priority incomplete task due today or overdue ──
+  const nnEl = document.getElementById('dash-nn');
+  if (nnEl) {
+    const pool = (TASKS || []).filter(t => !t.someday && !t.done && t.dueDate && t.dueDate <= today)
+      .sort((a, b) => (_dashPrioRank(b.priority) - _dashPrioRank(a.priority)) || (a.dueDate < b.dueDate ? -1 : 1));
+    const nn = pool[0];
+    nnEl.innerHTML = `<div class="dash-eyebrow">TODAY'S NON-NEGOTIABLE</div>` + (nn
+      ? `<div class="dash-nn-title" data-open="${escAttr(nn.id)}">“${escHtml(nn.title)}”</div>
+         <div class="dash-nn-meta">${nn.dueDate < today ? 'OVERDUE · ' : ''}${(nn.priority || 'med').toUpperCase()} PRIORITY</div>`
+      : `<div class="dash-nn-title muted">Nothing pressing.</div>
+         <div class="dash-nn-meta">Your top-priority task appears here.</div>`);
+    nnEl.querySelector('[data-open]')?.addEventListener('click', () => {
+      showMainPanel('alltasks');
+      setTimeout(() => window.openAtkDetail?.(nn.id), 40);
+    });
+  }
+
+  // ── Streak: consecutive days with a completed task + last-7 bar ──
+  const stEl = document.getElementById('dash-streak');
+  if (stEl) {
+    const doneDays = new Set((TASKS || []).filter(t => t.done && t.doneDate).map(t => t.doneDate));
+    const dstr = d => localDateStr(d);
+    // streak counts back from today (with a one-day grace if today is empty so far)
+    let streak = 0; const cur = new Date();
+    if (!doneDays.has(dstr(cur))) cur.setDate(cur.getDate() - 1);
+    while (doneDays.has(dstr(cur))) { streak++; cur.setDate(cur.getDate() - 1); }
+    // last 7 calendar days (Mon-anchored week not required — rolling 7)
+    const ws = weekStart(new Date());
+    const cells = [];
+    for (let i = 0; i < 7; i++) { const d = new Date(ws); d.setDate(d.getDate() + i); cells.push({ ds: dstr(d), today: dstr(d) === today }); }
+    stEl.innerHTML = `<div class="dash-eyebrow">STREAK · DAILY</div>
+      <div class="dash-streak-num"><span class="dash-big">${streak}</span><span class="dash-big-unit">day${streak === 1 ? '' : 's'}</span></div>
+      <div class="dash-streak-bar">${cells.map(c =>
+        `<div class="dash-streak-cell${doneDays.has(c.ds) ? ' on' : ''}${c.today ? ' today' : ''}"></div>`).join('')}</div>
+      <div class="dash-eyebrow" style="margin-top:8px">M · T · W · T · F · S · S</div>`;
+  }
+
+  // ── Deep work / commit ──
+  const cmEl = document.getElementById('dash-commit');
+  if (cmEl) {
+    const running = _commitInterval && _commitTaskId;
+    if (running) {
+      const task = TASKS.find(t => t.id === _commitTaskId);
+      const m = Math.floor(_commitElapsed / 60), s = _commitElapsed % 60;
+      cmEl.innerHTML = `<div class="dash-eyebrow">RUNNING · COMMIT MODE</div>
+        <div class="dash-commit-timer" id="dash-commit-timer">${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div>
+        <div class="dash-commit-task">${escHtml(task?.title || 'Focus session')}</div>`;
+    } else {
+      // Real telemetry: minutes focused today (pomodoro + commit) across tasks
+      let secs = 0;
+      (TASKS || []).forEach(t => { if ((t.doneDate || t.dueDate) === today) secs += (t.sessionTimeSecs || 0) + (t.timeSpentSeconds || 0); });
+      const mins = Math.round(secs / 60);
+      cmEl.innerHTML = `<div class="dash-eyebrow">DEEP WORK · TODAY</div>
+        <div class="dash-commit-timer">${mins}<span class="dash-big-unit">min</span></div>
+        <button class="dash-cta" id="dash-begin-commit">◈ Begin commit</button>`;
+      cmEl.querySelector('#dash-begin-commit')?.addEventListener('click', () => openCommitRitual());
+    }
+  }
+}
+
+function renderDashboardBoard() {
+  if (_mainPanel !== 'default') return;
+  const titleEl = document.getElementById('dash-cal-title');
+  if (titleEl) titleEl.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  _dashRenderTodayLine();
+  _dashRenderCards();
+}
+window.renderDashboardBoard = renderDashboardBoard;
+
+// Toolbar actions
+document.getElementById('dash-add-task')?.addEventListener('click', () => {
+  const title = prompt('New task for today:');
+  if (title && title.trim()) addTask(title.trim(), 'med', localDateStr(new Date()));
+});
+document.getElementById('dash-add-event')?.addEventListener('click', () => {
+  openQuickCalModal(localDateStr(new Date()), '09:00');
+});
+document.getElementById('dash-add-ms')?.addEventListener('click', () => {
+  window._planMilestonePicker
+    ? window._planMilestonePicker(localDateStr(new Date()))
+    : document.getElementById('cal-add-milestone')?.click();
+});
+
+// Keep the running-commit timer live while the dashboard is visible
+setInterval(() => {
+  if (_mainPanel !== 'default') return;
+  if (_commitInterval && _commitTaskId) {
+    const el = document.getElementById('dash-commit-timer');
+    if (el) {
+      const m = Math.floor(_commitElapsed / 60), s = _commitElapsed % 60;
+      el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+  }
+}, 1000);
 /* ══ MIND MAP ENGINE ══════════════════════════════════════════════════════ */
 window.initMindMap = (function(){
   let _init = false;
