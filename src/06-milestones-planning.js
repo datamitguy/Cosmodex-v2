@@ -164,29 +164,15 @@ function renderMilestones() {
   renderMilestoneDashboard();
   // Only manage timeline/center-panel state when actually on the Planning panel
   if (_mainPanel !== 'milestones') return;
-  if (_msView === 'timeline' && _msFocusProj) {
-    if (MILESTONE_PROJECTS.find(p => p.id === _msFocusProj)) {
-      showPlanningTimeline(_msFocusProj);
-    } else {
-      // Focused project was deleted — reset panel to empty state
-      _msView = 'dashboard';
-      _msFocusProj = null;
-      const empty   = document.getElementById('plan-ctx-empty');
-      const content = document.getElementById('plan-ctx-content');
-      if (empty)   empty.style.display   = 'flex';
-      if (content) content.style.display = 'none';
-      const titleEl = document.getElementById('plan-ctx-title');
-      if (titleEl) titleEl.textContent = 'Milestones';
-      ['plan-tl-add-ms', 'plan-edit-proj', 'plan-ms-close'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-      });
-      const listsEmpty = document.getElementById('plan-lists-empty');
-      const listsBody  = document.getElementById('plan-tl-lists-body');
-      if (listsEmpty) listsEmpty.style.display = 'flex';
-      if (listsBody)  listsBody.style.display  = 'none';
-      document.querySelectorAll('.plan-left .ms-dash-card-outer').forEach(c => c.classList.remove('ctx-active'));
-    }
+  if (_msView === 'timeline' && _msFocusProj && MILESTONE_PROJECTS.find(p => p.id === _msFocusProj)) {
+    // An initiative is selected — filter the calendar (and lists) to it
+    showPlanningTimeline(_msFocusProj);
+  } else {
+    // Nothing selected (or the focused project was deleted) — show every
+    // initiative's milestones + events on the calendar.
+    _msView = 'dashboard';
+    _msFocusProj = null;
+    showPlanningCalendarAll();
   }
 }
 
@@ -428,8 +414,8 @@ function showPlanningTimeline(projId) {
   // Auto-expand right panel if collapsed
   if (_planRightCollapsed) togglePlanPanel('right');
 
-  // Render content
-  renderMilestoneTimeline(projId);
+  // Render content — calendar filtered to this initiative
+  renderPlanningCalendar(projId);
   ensureMilestoneList(projId, proj.title).then(() => renderMilestoneListsPanel(projId));
 }
 
@@ -1503,27 +1489,10 @@ function initMilestonesPanel() {
   }
 
   function closeMilestoneDetail() {
-    // Reset milestone center panel to empty state
-    const empty   = document.getElementById('plan-ctx-empty');
-    const content = document.getElementById('plan-ctx-content');
-    const titleEl = document.getElementById('plan-ctx-title');
-    const addBtn  = document.getElementById('plan-tl-add-ms');
-    const closeBtn = document.getElementById('plan-ms-close');
-    const listsEmpty = document.getElementById('plan-lists-empty');
-    const listsBody  = document.getElementById('plan-tl-lists-body');
-    if (empty)   empty.style.display   = 'flex';
-    if (content) content.style.display = 'none';
-    if (titleEl) titleEl.textContent   = 'Milestones';
-    if (addBtn)  addBtn.style.display  = 'none';
-    if (closeBtn) closeBtn.style.display = 'none';
-    const editProjBtn = document.getElementById('plan-edit-proj');
-    if (editProjBtn) editProjBtn.style.display = 'none';
-    if (listsEmpty) listsEmpty.style.display = 'flex';
-    if (listsBody)  listsBody.style.display  = 'none';
-    // Remove active highlight from all project cards
-    document.querySelectorAll('.plan-left .ms-dash-card-outer').forEach(c => c.classList.remove('ctx-active'));
+    // Deselect the initiative and fall back to the all-initiatives calendar
     _msView = 'dashboard';
     _msFocusProj = null;
+    showPlanningCalendarAll();
   }
 
   function togglePlanPanel(side) {
@@ -1607,3 +1576,225 @@ document.addEventListener('pointermove', e => {
   const dy = (e.clientY - r.top) / r.height - 0.5;
   card.style.transform = `perspective(700px) rotateX(${(-dy * 5).toFixed(2)}deg) rotateY(${(dx * 6).toFixed(2)}deg) translateZ(4px)`;
 });
+
+/* ══════════════════════════════════════════════════════════════════════
+   PLANNING CALENDAR — Month / Week view of initiative milestones + events.
+   Replaces the old vertical milestone timeline in the planning centre panel.
+   _pcalProj null → every initiative's items, colour-coded by initiative;
+   a project id → filtered to that one. Aesthetic from the design kit.
+   ══════════════════════════════════════════════════════════════════════ */
+let _pcalView   = 'month';       // 'month' | 'week'
+let _pcalAnchor = new Date();    // any date inside the visible month / week
+let _pcalProj   = null;          // filter project id (null = all initiatives)
+
+const _PCAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const _PCAL_MON3   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const _PCAL_DOW    = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+
+function _pcalProjColor(projId) {
+  const p = MILESTONE_PROJECTS.find(pr => pr.id === projId);
+  return (p && p.color) || 'rgba(255,255,255,0.55)';
+}
+
+// Which initiative a calendar event belongs to (direct field or via its task)
+function _pcalEventProj(ev) {
+  if (ev.projectId) return ev.projectId;
+  const t = TASKS.find(t => t.calEventId === ev.id) || (ev.taskId ? TASKS.find(t => t.id === ev.taskId) : null);
+  return t ? (t.projectId || null) : null;
+}
+
+// Items (milestones + initiative-linked events) grouped by 'YYYY-MM-DD'
+function _pcalItems(projId) {
+  const byDate = {};
+  const push = (ds, item) => { (byDate[ds] = byDate[ds] || []).push(item); };
+
+  MILESTONE_EVENTS.forEach(ev => {
+    if (projId && ev.projectId !== projId) return;
+    const ds = String(ev.date || '').slice(0, 10);
+    if (!ds) return;
+    push(ds, { kind:'milestone', id: ev.id, projectId: ev.projectId,
+      title: ev.title || 'Milestone', color: _pcalProjColor(ev.projectId), startTime: null });
+  });
+
+  (CAL_EVENTS || []).forEach(ev => {
+    const pid = _pcalEventProj(ev);
+    if (!pid) return;                     // planning calendar shows initiative work only
+    if (projId && pid !== projId) return;
+    const ds = String(ev.date || '').slice(0, 10);
+    if (!ds) return;
+    push(ds, { kind:'event', id: ev.id, projectId: pid,
+      title: ev.title || 'Event', color: _pcalProjColor(pid),
+      startTime: ev.allDay ? null : (ev.startTime || null), duration: ev.duration || 60 });
+  });
+
+  // Milestones first, then events by start time
+  Object.values(byDate).forEach(arr => arr.sort((a, b) =>
+    (a.kind === b.kind) ? String(a.startTime||'').localeCompare(String(b.startTime||'')) : (a.kind === 'milestone' ? -1 : 1)));
+  return byDate;
+}
+
+function _pcalChip(it) {
+  return `<div class="pcal-chip" data-pcal-open="${it.kind}" data-id="${escAttr(it.id)}" data-proj="${escAttr(it.projectId)}" style="--c:${it.color}" title="${escAttr(it.title)}">
+      ${it.kind === 'milestone' ? '<span class="pcal-diamond">◆</span>' : '<span class="pcal-evdot"></span>'}
+      <span class="pcal-chip-t">${escHtml(it.title)}</span>
+    </div>`;
+}
+
+function _pcalMonthCells(anchor) {
+  const y = anchor.getFullYear(), m = anchor.getMonth();
+  const offset = (new Date(y, m, 1).getDay() + 6) % 7;   // Mon = 0
+  const todayStr = localDateStr(new Date());
+  const cells = [];
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(y, m, 1 - offset + i);
+    const ds = localDateStr(d);
+    cells.push({ date: d.getDate(), ds, inMonth: d.getMonth() === m, isToday: ds === todayStr, weekend: (d.getDay() + 6) % 7 >= 5 });
+  }
+  return cells;
+}
+
+function _pcalWeekDays(anchor) {
+  const off = (anchor.getDay() + 6) % 7;
+  return Array.from({ length: 7 }, (_, i) =>
+    new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() - off + i));
+}
+
+function _pcalRenderMonth(byDate) {
+  const cells = _pcalMonthCells(_pcalAnchor);
+  const dow = _PCAL_DOW.map(d => `<div class="pcal-dow">${d}</div>`).join('');
+  const grid = cells.map(c => {
+    const items = byDate[c.ds] || [];
+    const chips = items.slice(0, 3).map(_pcalChip).join('');
+    const more = items.length > 3 ? `<div class="pcal-more">+${items.length - 3} more</div>` : '';
+    return `<div class="pcal-cell${c.inMonth ? '' : ' out'}${c.isToday ? ' today' : ''}${c.weekend ? ' wknd' : ''}" data-pcal-day="${c.ds}">
+        <div class="pcal-cell-h">
+          <span class="pcal-date">${c.date}</span>
+          ${c.isToday ? '<span class="pcal-today-tag">TODAY</span>' : ''}
+          ${items.length ? `<span class="pcal-count">·${items.length}</span>` : ''}
+        </div>
+        <div class="pcal-cell-body">${chips}${more}</div>
+      </div>`;
+  }).join('');
+  return `<div class="pcal-month"><div class="pcal-dow-row">${dow}</div><div class="pcal-grid">${grid}</div></div>`;
+}
+
+function _pcalRenderWeek(byDate) {
+  const days = _pcalWeekDays(_pcalAnchor);
+  const todayStr = localDateStr(new Date());
+  const H0 = 7, H1 = 21, HH = 44;
+  const hours = []; for (let h = H0; h <= H1; h++) hours.push(h);
+
+  const header = `<div class="pcal-wk-hrow"><div class="pcal-wk-corner"></div>` +
+    days.map((d, i) => `<div class="pcal-wk-dh${localDateStr(d) === todayStr ? ' today' : ''}">
+        <span class="pcal-wk-dn">${_PCAL_DOW[i]}</span><span class="pcal-wk-dd">${d.getDate()}</span></div>`).join('') + `</div>`;
+
+  const allday = `<div class="pcal-wk-allrow"><div class="pcal-wk-alllbl">ALL-DAY</div>` +
+    days.map(d => {
+      const items = (byDate[localDateStr(d)] || []).filter(it => it.kind === 'milestone' || !it.startTime);
+      return `<div class="pcal-wk-allcell">${items.map(_pcalChip).join('')}</div>`;
+    }).join('') + `</div>`;
+
+  const rail = `<div class="pcal-wk-rail">` +
+    hours.map(h => `<div class="pcal-wk-hr" style="height:${HH}px"><span>${String(h).padStart(2,'0')}</span></div>`).join('') + `</div>`;
+
+  const cols = days.map(d => {
+    const ds = localDateStr(d);
+    const timed = (byDate[ds] || []).filter(it => it.kind === 'event' && it.startTime);
+    const slots = hours.map(() => `<div class="pcal-wk-slot" style="height:${HH}px"></div>`).join('');
+    const evs = timed.map(it => {
+      const [hh, mm] = it.startTime.split(':').map(Number);
+      const top = Math.max(0, (hh + (mm || 0) / 60 - H0) * HH);
+      const height = Math.max(20, ((it.duration || 60) / 60) * HH - 3);
+      return `<div class="pcal-wk-ev" data-pcal-open="event" data-id="${escAttr(it.id)}" data-proj="${escAttr(it.projectId)}"
+          style="--c:${it.color};top:${top}px;height:${height}px" title="${escAttr(it.title)}">
+          <span class="pcal-wk-ev-t">${escHtml(it.title)}</span><span class="pcal-wk-ev-time">${it.startTime}</span></div>`;
+    }).join('');
+    return `<div class="pcal-wk-col${ds === todayStr ? ' today' : ''}">${slots}<div class="pcal-wk-events">${evs}</div></div>`;
+  }).join('');
+
+  return `${header}${allday}<div class="pcal-wk-body">${rail}<div class="pcal-wk-cols">${cols}</div></div>`;
+}
+
+function _pcalToolbar() {
+  let label;
+  if (_pcalView === 'week') {
+    const ds = _pcalWeekDays(_pcalAnchor), a = ds[0], b = ds[6];
+    label = `${_PCAL_MON3[a.getMonth()]} ${a.getDate()} – ${_PCAL_MON3[b.getMonth()]} ${b.getDate()}`;
+  } else {
+    label = `${_PCAL_MONTHS[_pcalAnchor.getMonth()]} ${_pcalAnchor.getFullYear()}`;
+  }
+  return `<div class="pcal-toolbar">
+      <span class="pcal-title">${label}</span>
+      <div class="pcal-tb-right">
+        <div class="pcal-nav">
+          <button class="pcal-nav-btn" data-pcal-nav="prev">‹</button>
+          <button class="pcal-nav-btn" data-pcal-nav="today">Today</button>
+          <button class="pcal-nav-btn" data-pcal-nav="next">›</button>
+        </div>
+        <div class="pcal-viewtoggle">
+          <button class="pcal-vt${_pcalView === 'week' ? ' active' : ''}" data-pcal-view="week">Week</button>
+          <button class="pcal-vt${_pcalView === 'month' ? ' active' : ''}" data-pcal-view="month">Month</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderPlanningCalendar(projId) {
+  _pcalProj = projId || null;
+  const body = document.getElementById('plan-tl-body');
+  if (!body) return;
+  const byDate = _pcalItems(_pcalProj);
+  const anyItems = Object.keys(byDate).length > 0;
+  const empty = anyItems ? '' :
+    `<div class="pcal-empty">${_pcalProj ? 'No milestones or events for this initiative yet.' : 'No initiative milestones or events scheduled yet.'}</div>`;
+  body.innerHTML = `<div class="pcal">${_pcalToolbar()}${_pcalView === 'week' ? _pcalRenderWeek(byDate) : _pcalRenderMonth(byDate)}${empty}</div>`;
+
+  body.querySelectorAll('[data-pcal-view]').forEach(b =>
+    b.onclick = () => { _pcalView = b.dataset.pcalView; renderPlanningCalendar(_pcalProj); });
+  body.querySelectorAll('[data-pcal-nav]').forEach(b => b.onclick = () => {
+    const dir = b.dataset.pcalNav;
+    if (dir === 'today') _pcalAnchor = new Date();
+    else {
+      const step = dir === 'next' ? 1 : -1;
+      _pcalAnchor = _pcalView === 'week'
+        ? new Date(_pcalAnchor.getFullYear(), _pcalAnchor.getMonth(), _pcalAnchor.getDate() + 7 * step)
+        : new Date(_pcalAnchor.getFullYear(), _pcalAnchor.getMonth() + step, 1);
+    }
+    renderPlanningCalendar(_pcalProj);
+  });
+  body.querySelectorAll('[data-pcal-open]').forEach(el => el.onclick = (e) => {
+    e.stopPropagation();
+    const kind = el.dataset.pcalOpen, id = el.dataset.id, proj = el.dataset.proj;
+    if (kind === 'milestone' && typeof openMsEventModal === 'function') {
+      openMsEventModal(proj, id);
+    } else if (kind === 'event' && typeof showEventModal === 'function') {
+      const ev = (CAL_EVENTS || []).find(x => x.id === id);
+      if (ev) showEventModal(ev, e.clientX, e.clientY);
+    }
+  });
+  // Empty-day click adds a milestone to the selected initiative (month view only)
+  if (_pcalProj && _pcalView === 'month') {
+    body.querySelectorAll('[data-pcal-day]').forEach(cell => cell.onclick = () => {
+      if (typeof openMsEventModal === 'function') openMsEventModal(_pcalProj, null, cell.dataset.pcalDay);
+    });
+  }
+}
+
+// Default centre-panel state: calendar across every initiative
+function showPlanningCalendarAll() {
+  const empty   = document.getElementById('plan-ctx-empty');
+  const content = document.getElementById('plan-ctx-content');
+  if (empty)   empty.style.display   = 'none';
+  if (content) content.style.display = 'flex';
+  const titleEl = document.getElementById('plan-ctx-title');
+  if (titleEl) titleEl.textContent = 'All Initiatives';
+  ['plan-tl-add-ms', 'plan-edit-proj', 'plan-ms-close'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  document.querySelectorAll('.plan-left .ms-dash-card-outer').forEach(c => c.classList.remove('ctx-active'));
+  const listsEmpty = document.getElementById('plan-lists-empty');
+  const listsBody  = document.getElementById('plan-tl-lists-body');
+  if (listsEmpty) listsEmpty.style.display = 'flex';
+  if (listsBody)  listsBody.style.display  = 'none';
+  renderPlanningCalendar(null);
+}

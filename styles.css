@@ -7604,3 +7604,66 @@ select.sched-input { background: #181818; }
   mask: radial-gradient(circle, transparent 0 17.5%, #000 18.5% 100%);
 }
 #td-svg { position: relative; z-index: 1; }
+
+/* ══ PLANNING CALENDAR (Month / Week) ══ */
+.pcal { display:flex; flex-direction:column; gap:14px; }
+.pcal-toolbar { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.pcal-title { font-family:var(--font-display); font-size:22px; font-weight:300; color:#fff; }
+.pcal-tb-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.pcal-nav { display:flex; gap:6px; }
+.pcal-nav-btn { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.75); border-radius:8px; padding:5px 11px; font-family:var(--font-mono); font-size:11px; cursor:pointer; transition:all .2s; }
+.pcal-nav-btn:hover { background:rgba(255,255,255,.09); color:#fff; }
+.pcal-viewtoggle { display:flex; gap:3px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-radius:100px; padding:3px; }
+.pcal-vt { padding:6px 14px; border-radius:100px; border:none; cursor:pointer; background:transparent; color:rgba(255,255,255,.5); font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; transition:all .2s; }
+.pcal-vt.active { background:rgba(255,255,255,.12); color:#fff; text-shadow:0 0 10px rgba(255,255,255,.4); }
+.pcal-empty { padding:26px; text-align:center; font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; color:var(--muted); }
+
+/* Month grid */
+.pcal-month { border:1px solid rgba(255,255,255,.08); border-radius:14px; overflow:hidden; background:rgba(255,255,255,.02); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+.pcal-dow-row { display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.02); }
+.pcal-dow { padding:9px 12px; font-family:var(--font-mono); font-size:9px; letter-spacing:.12em; color:rgba(255,255,255,.4); border-left:1px solid rgba(255,255,255,.03); }
+.pcal-grid { display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:minmax(92px,auto); }
+.pcal-cell { min-height:92px; padding:7px 8px; border-left:1px solid rgba(255,255,255,.04); border-top:1px solid rgba(255,255,255,.04); cursor:pointer; transition:background .2s; }
+.pcal-cell:hover { background:rgba(255,255,255,.03); }
+.pcal-cell.out { opacity:.4; }
+.pcal-cell.wknd { background:rgba(255,255,255,.008); }
+.pcal-cell.today { background:rgba(57,255,20,.05); }
+.pcal-cell-h { display:flex; align-items:baseline; gap:6px; }
+.pcal-date { font-family:var(--font-display); font-weight:300; font-size:16px; color:rgba(255,255,255,.82); font-variant-numeric:tabular-nums; line-height:1; }
+.pcal-cell.today .pcal-date { color:#fff; text-shadow:0 0 12px rgba(57,255,20,.5); }
+.pcal-today-tag { font-family:var(--font-mono); font-size:8px; letter-spacing:.1em; color:rgb(57,255,20); text-shadow:0 0 6px rgba(57,255,20,.5); }
+.pcal-count { margin-left:auto; font-family:var(--font-mono); font-size:9px; color:rgba(255,255,255,.35); }
+.pcal-cell-body { margin-top:6px; display:flex; flex-direction:column; gap:3px; }
+.pcal-more { font-family:var(--font-mono); font-size:8px; color:rgba(255,255,255,.4); padding-left:2px; }
+
+/* Chips (used in month + week all-day) */
+.pcal-chip { display:flex; align-items:center; gap:5px; padding:2px 6px; border-radius:5px; cursor:pointer; overflow:hidden; background:rgba(255,255,255,.045); border-left:2px solid var(--c); transition:background .2s; }
+.pcal-chip:hover { background:rgba(255,255,255,.1); }
+.pcal-chip-t { flex:1; font-family:var(--font-body); font-size:10px; color:rgba(255,255,255,.85); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pcal-diamond { color:var(--c); font-size:8px; line-height:1; }
+.pcal-evdot { width:5px; height:5px; border-radius:50%; background:var(--c); flex-shrink:0; }
+
+/* Week grid */
+.pcal-wk-hrow { display:grid; grid-template-columns:56px repeat(7,1fr); border:1px solid rgba(255,255,255,.08); border-bottom:none; border-radius:14px 14px 0 0; overflow:hidden; background:rgba(255,255,255,.02); }
+.pcal-wk-dh { padding:10px 8px; text-align:center; border-left:1px solid rgba(255,255,255,.04); }
+.pcal-wk-dh.today { background:rgba(57,255,20,.05); }
+.pcal-wk-dn { display:block; font-family:var(--font-mono); font-size:9px; letter-spacing:.1em; color:rgba(255,255,255,.4); }
+.pcal-wk-dh.today .pcal-wk-dn { color:rgb(57,255,20); }
+.pcal-wk-dd { display:block; margin-top:2px; font-family:var(--font-display); font-weight:300; font-size:20px; color:rgba(255,255,255,.75); font-variant-numeric:tabular-nums; }
+.pcal-wk-dh.today .pcal-wk-dd { color:#fff; text-shadow:0 0 14px rgba(57,255,20,.4); }
+.pcal-wk-allrow { display:grid; grid-template-columns:56px repeat(7,1fr); border-left:1px solid rgba(255,255,255,.08); border-right:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.015); }
+.pcal-wk-alllbl { padding:6px 8px; font-family:var(--font-mono); font-size:8px; letter-spacing:.1em; color:rgba(255,255,255,.3); align-self:center; }
+.pcal-wk-allcell { padding:4px; display:flex; flex-direction:column; gap:3px; border-left:1px solid rgba(255,255,255,.04); min-height:24px; }
+.pcal-wk-body { display:grid; grid-template-columns:56px 1fr; border:1px solid rgba(255,255,255,.08); border-radius:0 0 14px 14px; overflow:hidden; background:rgba(255,255,255,.02); }
+.pcal-wk-rail { display:flex; flex-direction:column; }
+.pcal-wk-hr { display:flex; align-items:flex-start; justify-content:flex-end; padding:4px 8px 0 0; border-top:1px solid rgba(255,255,255,.03); }
+.pcal-wk-hr span { font-family:var(--font-mono); font-size:9px; color:rgba(255,255,255,.35); }
+.pcal-wk-cols { display:grid; grid-template-columns:repeat(7,1fr); }
+.pcal-wk-col { position:relative; border-left:1px solid rgba(255,255,255,.05); }
+.pcal-wk-col.today { background:rgba(57,255,20,.015); }
+.pcal-wk-slot { border-top:1px solid rgba(255,255,255,.03); }
+.pcal-wk-events { position:absolute; inset:0; pointer-events:none; }
+.pcal-wk-ev { position:absolute; left:3px; right:3px; border-radius:7px; padding:3px 6px; overflow:hidden; pointer-events:auto; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-left:2px solid var(--c); cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.3); }
+.pcal-wk-ev:hover { background:rgba(255,255,255,.1); }
+.pcal-wk-ev-t { display:block; font-family:var(--font-display); font-weight:300; font-size:11px; color:rgba(255,255,255,.9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pcal-wk-ev-time { font-family:var(--font-mono); font-size:8px; color:rgba(255,255,255,.5); }
