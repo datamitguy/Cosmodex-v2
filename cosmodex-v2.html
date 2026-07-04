@@ -381,6 +381,7 @@
           <div class="dash-card dash-glass" id="dash-streak"><!-- streak --></div>
           <div class="dash-card dash-glass" id="dash-commit"><!-- deep work / commit --></div>
           <div class="dash-card dash-glass" id="dash-rituals"><!-- today's habits + routines --></div>
+          <div class="dash-card dash-glass dash-tasks-card" id="dash-tasks"><!-- tasks due today · timebox --></div>
         </div>
 
       </div>
@@ -1903,8 +1904,13 @@
     <input id="task-time-custom" type="number" min="1" max="999" placeholder="Custom (min)" class="form-input" style="font-size:12px;padding:5px 8px;width:100%;flex:1">
     <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap">min</span>
   </div>
-  <div style="display:flex;gap:6px;justify-content:flex-end">
-    <button id="task-time-skip" class="btn-ghost" style="font-size:11px;padding:6px 12px">Skip</button>
+  <div id="task-time-theme-wrap" style="margin-bottom:12px">
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Theme</div>
+    <div id="task-time-cats" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+  <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center">
+    <span id="task-time-warn" style="flex:1;font-family:var(--font-mono);font-size:9px;color:var(--danger,#e05555);display:none">Pick a theme</span>
+    <button id="task-time-skip" class="btn-ghost" style="font-size:11px;padding:6px 12px">Skip time</button>
     <button id="task-time-confirm" class="btn-primary" style="font-size:11px;padding:6px 14px">Done</button>
   </div>
 </div>

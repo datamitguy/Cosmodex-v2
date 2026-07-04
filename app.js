@@ -8708,6 +8708,41 @@ async function addTask(title, priority = 'med', dueDate = '', category = '', rec
   }
 }
 
+/* Duplicate an existing task into a fresh, not-done copy. Useful when a task is
+   in-progress or already done but needs to be done again. Copies the shape/meta
+   (priority, due, category, recurrence, energy, people, notes, subtasks) but
+   resets completion state and any single-use links (calendar event, deferrals). */
+async function duplicateTask(taskId) {
+  const src = TASKS.find(t => t.id === taskId);
+  if (!src) return;
+  const { addDoc, serverTimestamp } = window.CDX_FB;
+  try {
+    const ref = await addDoc(_uc('tasks'), {
+      title: src.title,
+      done: false,
+      priority: src.priority || 'med',
+      dueDate: src.dueDate || null,
+      category: src.category || null,
+      recurrence: src.recurrence || null,
+      energyType: src.energyType || null,
+      people: (src.people && src.people.length) ? src.people : null,
+      projectId: src.projectId || null,
+      notes: src.notes || null,
+      // Fresh copy: subtasks reset to not-done, no calendar link, no time logged
+      subtasks: (src.subtasks || []).map(s => ({ ...s, id: crypto.randomUUID(), done: false })),
+      calEventId: null,
+      deferrals: 0,
+      createdAt: serverTimestamp()
+    });
+    showToast('Task duplicated', 'success');
+    // Select the new copy in the Tasks page detail pane if we're there
+    if (_mainPanel === 'alltasks') { _atkSelectedId = ref.id; }
+  } catch (err) {
+    console.error('duplicateTask error:', err);
+    showToast('Failed to duplicate task', 'error');
+  }
+}
+
 async function updateTask(taskId, data) {
   const { updateDoc, serverTimestamp } = window.CDX_FB;
   try {
@@ -8718,7 +8753,7 @@ async function updateTask(taskId, data) {
   }
 }
 
-async function toggleTask(taskId, timeSpentMinutes = null) {
+async function toggleTask(taskId, timeSpentMinutes = null, category = null) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
   const updates = { done: !task.done };
@@ -8726,6 +8761,7 @@ async function toggleTask(taskId, timeSpentMinutes = null) {
     updates.doneDate = localDateStr(new Date());
     updates.doneAt = new Date().toISOString(); // exact time — used by the orbit recap constellation
     if (timeSpentMinutes != null) updates.timeSpentMinutes = timeSpentMinutes;
+    if (category) updates.category = category;
   }
   // Celebration fires before the snapshot re-render wipes the row
   if (!task.done) _taskFireCelebration(taskId, task);
@@ -8789,6 +8825,7 @@ function _taskFireCelebration(taskId, task) {
 /* ── Time-to-complete popover ─────────────────────────── */
 let _timePickerTaskId = null;
 let _timePickerMins   = null;
+let _timePickerCat    = null;
 
 function handleCheckClick(taskId, clickEvent) {
   const task = TASKS.find(t => t.id === taskId);
@@ -8798,11 +8835,28 @@ function handleCheckClick(taskId, clickEvent) {
   // Completing: show time picker near the checkbox
   _timePickerTaskId = taskId;
   _timePickerMins   = null;
+  _timePickerCat    = task.category || null;
   const pop = document.getElementById('task-time-popover');
   // Reset state
   pop.querySelectorAll('.time-opt-btn').forEach(b => b.classList.remove('active'));
   const customInp = document.getElementById('task-time-custom');
   if (customInp) customInp.value = '';
+  const warn = document.getElementById('task-time-warn');
+  if (warn) warn.style.display = 'none';
+  // Populate theme chips from CATEGORIES; preselect the task's current theme
+  const catWrap = document.getElementById('task-time-cats');
+  if (catWrap) {
+    catWrap.innerHTML = Object.keys(CATEGORIES).map(id => {
+      const c = CATEGORIES[id];
+      const active = id === _timePickerCat;
+      return `<button class="time-cat-btn${active ? ' active' : ''}" data-cat="${escAttr(id)}"
+        style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;cursor:pointer;
+        background:${active ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)'};
+        border:1px solid ${active ? 'rgba(255,255,255,0.35)' : 'var(--border)'};
+        color:${active ? '#fff' : 'var(--muted)'};font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase">
+        <span style="width:7px;height:7px;border-radius:50%;background:${getCatColor(id)}"></span>${escHtml(c.label)}</button>`;
+    }).join('');
+  }
   // Position near click
   const rect = clickEvent.target.getBoundingClientRect();
   const popW = 250, popH = 180;
@@ -8834,15 +8888,42 @@ function initTimePickerPopover() {
     _timePickerMins = isNaN(v) || v <= 0 ? null : v;
   });
 
+  // Theme chips (delegated — repopulated each open)
+  document.getElementById('task-time-cats')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-cat]'); if (!b) return;
+    _timePickerCat = b.dataset.cat;
+    pop.querySelectorAll('.time-cat-btn').forEach(x => {
+      const on = x === b;
+      x.classList.toggle('active', on);
+      x.style.background = on ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)';
+      x.style.border = `1px solid ${on ? 'rgba(255,255,255,0.35)' : 'var(--border)'}`;
+      x.style.color = on ? '#fff' : 'var(--muted)';
+    });
+    const warn = document.getElementById('task-time-warn');
+    if (warn) warn.style.display = 'none';
+  });
+
   document.getElementById('task-time-confirm')?.addEventListener('click', async () => {
+    // Theme is mandatory on completion — nudge instead of closing if unset
+    if (!_timePickerCat) {
+      const warn = document.getElementById('task-time-warn');
+      if (warn) warn.style.display = 'block';
+      return;
+    }
     pop.style.display = 'none';
-    if (_timePickerTaskId) await toggleTask(_timePickerTaskId, _timePickerMins);
+    if (_timePickerTaskId) await toggleTask(_timePickerTaskId, _timePickerMins, _timePickerCat);
     _timePickerTaskId = null;
   });
 
+  // "Skip time" — still records the theme (mandatory), just no minutes logged
   document.getElementById('task-time-skip')?.addEventListener('click', async () => {
+    if (!_timePickerCat) {
+      const warn = document.getElementById('task-time-warn');
+      if (warn) warn.style.display = 'block';
+      return;
+    }
     pop.style.display = 'none';
-    if (_timePickerTaskId) await toggleTask(_timePickerTaskId, null);
+    if (_timePickerTaskId) await toggleTask(_timePickerTaskId, null, _timePickerCat);
     _timePickerTaskId = null;
   });
 
@@ -11242,8 +11323,16 @@ document.addEventListener('keydown', e => {
   }
 
   if (!inField && !e.metaKey && !e.ctrlKey && !e.altKey) {
-    // N — focus the task input
-    if (e.key === 'n') { e.preventDefault(); document.getElementById('task-add-input')?.focus(); return; }
+    // N — new task from anywhere: jump to the Tasks page and focus its capture input
+    if (e.key === 'n') {
+      e.preventDefault();
+      if (_mainPanel !== 'alltasks') showMainPanel('alltasks');
+      setTimeout(() => {
+        const inp = document.getElementById('atk-add-input') || document.getElementById('task-add-input');
+        inp?.focus();
+      }, _mainPanel === 'alltasks' ? 0 : 40);
+      return;
+    }
     // j / k — walk the task rail
     if (e.key === 'j') { _kbMove(1);  return; }
     if (e.key === 'k') { _kbMove(-1); return; }
@@ -12100,7 +12189,8 @@ window.addEventListener('cdx-auth-ready', () => {
     initFrictionModal();
     initDoneWall();
     updateDashboardHero();
-    setTimeout(openDailyRitual, 1200);
+    // (Removed: the first-open "single focus for today" ritual prompt. Today's
+    //  anchor is now captured on the dashboard, so the startup prompt is redundant.)
   });
 }, { once: true });
 
@@ -12875,13 +12965,17 @@ function renderAtkDetail() {
       <button class="atk-foot-btn" data-atk-edit>✎ Edit</button>
       ${task.done ? '' : '<button class="atk-foot-btn" data-atk-focus>◉ Focus</button>'}
       <button class="atk-foot-btn" data-atk-sched>☷ Schedule</button>
+      <button class="atk-foot-btn" data-atk-dup title="Duplicate this task">⧉ Duplicate</button>
       <div style="flex:1"></div>
       <button class="atk-foot-btn danger" data-atk-del title="Delete task">🗑</button>
     </div>`;
 
   el.querySelector('[data-atk-close]').onclick = () => { _atkSelectedId = null; renderAllTasksList(); renderAtkDetail(); };
   el.querySelectorAll('[data-atk-edit]').forEach(b => b.onclick = () => openTaskEditModal(task.id));
-  el.querySelector('[data-atk-toggle]').onclick = () => toggleTask(task.id);
+  el.querySelector('[data-atk-toggle]').onclick = (e) => {
+    // Reopening skips the prompt; completing routes through the theme/time popover
+    if (task.done) toggleTask(task.id); else handleCheckClick(task.id, e);
+  };
   el.querySelector('[data-atk-prio]').onclick = () => {
     const order = ['high', 'med', 'low'];
     const next = order[(order.indexOf(task.priority) + 1) % order.length];
@@ -12900,6 +12994,7 @@ function renderAtkDetail() {
   const focusBtn = el.querySelector('[data-atk-focus]');
   if (focusBtn) focusBtn.onclick = () => openCommitRitual(task.id);
   el.querySelector('[data-atk-sched]').onclick = () => openScheduleModal(task.dueDate || localDateStr(new Date()), '09:00', task.id, null);
+  el.querySelector('[data-atk-dup]').onclick = () => duplicateTask(task.id);
   el.querySelector('[data-atk-del]').onclick = () => deleteTask(task.id);
 }
 
@@ -13224,6 +13319,42 @@ function _dashRenderRituals() {
   }));
 }
 
+/* ── Tasks due today: quick-timebox list ──
+   Incomplete tasks whose dueDate is today (or overdue). Each row is a one-click
+   entry into the Commit Ritual (timebox → focus timer) for that task. */
+function _dashRenderTasks() {
+  const el = document.getElementById('dash-tasks');
+  if (!el) return;
+  const today = localDateStr(new Date());
+  const due = (TASKS || [])
+    .filter(t => !t.done && t.dueDate && t.dueDate <= today)
+    .sort((a, b) => (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0));
+
+  if (!due.length) {
+    el.innerHTML = `<div class="dash-eyebrow">DUE TODAY · TIMEBOX</div>
+      <div class="dash-nn-title muted" style="font-size:14px">Nothing due today.</div>
+      <div class="dash-nn-meta">Enjoy the open runway — or pull work forward.</div>`;
+    return;
+  }
+
+  const rows = due.map(t => {
+    const overdue = t.dueDate < today;
+    return `<div class="dash-task-row" data-dash-task="${escAttr(t.id)}" title="Timebox this — start a commit session">
+      <span class="dash-task-dot" style="--nc:${getCatColor(t.category)}"></span>
+      <span class="dash-task-name">${escHtml(t.title)}</span>
+      ${overdue ? '<span class="dash-task-over">OVERDUE</span>' : ''}
+      <span class="dash-task-box">◷ Timebox</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML =
+    `<div class="dash-eyebrow">DUE TODAY · ${due.length} · TIMEBOX</div>
+     <div class="dash-task-list">${rows}</div>`;
+
+  el.querySelectorAll('[data-dash-task]').forEach(r =>
+    r.addEventListener('click', () => openCommitRitual(r.dataset.dashTask)));
+}
+
 function renderDashboardBoard() {
   if (_mainPanel !== 'default') return;
   const titleEl = document.getElementById('dash-cal-title');
@@ -13231,6 +13362,7 @@ function renderDashboardBoard() {
   _dashRenderTodayLine();
   _dashRenderCards();
   _dashRenderRituals();
+  _dashRenderTasks();
 }
 window.renderDashboardBoard = renderDashboardBoard;
 
