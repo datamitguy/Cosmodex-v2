@@ -6198,6 +6198,7 @@ window.showPlanTab2 = function(tab) {
     b.classList.toggle('active', b.dataset.ptab2 === tab));
   const calMap = { week: 'week', month: 'month', buckets: 'focus' };
   if (calMap[tab]) { _planShowView('calendar'); window._switchPlanCalTab && window._switchPlanCalTab(calMap[tab]); return; }
+  if (tab === 'commitments') { _planShowView('projects'); renderMilestones(); return; }
   _planShowView('design');
   if      (tab === 'thisweek') renderPlanThisWeek();
   else if (tab === 'quarter')  renderPlanQuarter();
