@@ -8269,3 +8269,11 @@ select.sched-input { background: #181818; }
   transition:all .25s var(--ease-glass);
 }
 .dash-cta:hover { border-color:rgba(255,255,255,0.32); color:#fff; transform:translateY(-1px); }
+.dash-quick-add { margin-bottom:14px; }
+.dash-quick-add-input {
+  width:100%; box-sizing:border-box; padding:11px 14px; border-radius:10px;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.14); color:var(--cream);
+  font-family:var(--font-body); font-size:14px; outline:none; transition:border-color .2s var(--ease-glass);
+}
+.dash-quick-add-input::placeholder { color:rgba(255,255,255,0.4); }
+.dash-quick-add-input:focus { border-color:rgba(53,249,47,0.55); box-shadow:0 0 0 3px rgba(53,249,47,0.1); }

@@ -5023,10 +5023,25 @@ function renderDashboardBoard() {
 window.renderDashboardBoard = renderDashboardBoard;
 
 // Toolbar actions
-document.getElementById('dash-add-task')?.addEventListener('click', () => {
-  const title = prompt('New task for today:');
-  if (title && title.trim()) addTask(title.trim(), 'med', localDateStr(new Date()));
-});
+(function _wireDashQuickAdd() {
+  const qa = document.getElementById('dash-quick-add');
+  const inp = document.getElementById('dash-quick-add-input');
+  const hide = () => { if (qa) qa.style.display = 'none'; if (inp) inp.value = ''; };
+  document.getElementById('dash-add-task')?.addEventListener('click', () => {
+    if (!qa) return;
+    const showing = qa.style.display !== 'none';
+    qa.style.display = showing ? 'none' : '';
+    if (!showing) setTimeout(() => inp?.focus(), 20);
+  });
+  inp?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const v = inp.value.trim();
+      if (v) addTask(v, 'med', localDateStr(new Date()));
+      hide();
+    } else if (e.key === 'Escape') { hide(); }
+  });
+  inp?.addEventListener('blur', () => setTimeout(hide, 120));
+})();
 document.getElementById('dash-add-event')?.addEventListener('click', () => {
   openQuickCalModal(localDateStr(new Date()), '09:00');
 });

@@ -249,7 +249,9 @@
       </div>
     </div>
 
-    <div id="main-content-panels">
+    <!-- Retired from the dashboard (replaced by #dash-board); kept in the DOM,
+         hidden, so the calendar engine's render paths keep working. -->
+    <div id="main-content-panels" style="display:none">
 
     <!-- Calendar Panel -->
     <div id="panel-calendar">
@@ -366,6 +368,9 @@
               <button class="dash-btn" id="dash-add-event" title="Add an event">＋ Event</button>
               <button class="dash-btn" id="dash-add-ms" title="Add a milestone">⚑ Milestone</button>
             </div>
+          </div>
+          <div class="dash-quick-add" id="dash-quick-add" style="display:none">
+            <input id="dash-quick-add-input" class="dash-quick-add-input" type="text" placeholder="New task for today…  ·  Enter to add, Esc to cancel" autocomplete="off" />
           </div>
           <div class="dash-cal-body" id="dash-cal-body"><!-- built by renderDashboardBoard() --></div>
         </div>
