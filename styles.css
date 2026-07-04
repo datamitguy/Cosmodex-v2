@@ -7731,15 +7731,72 @@ select.sched-input { background: #181818; }
 .list-star.on { color:var(--gold); text-shadow:0 0 6px var(--gold-glow); }
 
 /* Completion ribbon (task lists) */
-.list-ribbon {
-  margin:0 20px 4px; padding:12px 14px; border-radius:10px;
-  background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+.list-ribbon { display:flex; flex-direction:column; gap:0; }
+.list-ribbon-stats {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.06); border-radius:12px; overflow:hidden;
 }
-.list-ribbon-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-.list-ribbon-cell { display:flex; flex-direction:column; gap:2px; }
+.list-ribbon-cell { display:flex; flex-direction:column; gap:3px; padding:14px 18px; background:rgba(14,14,16,.6); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
 .list-ribbon-k { font-family:var(--font-mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
-.list-ribbon-v { font-family:var(--font-display); font-weight:300; font-size:20px; color:#fff; font-variant-numeric:tabular-nums; }
+.list-ribbon-v { font-family:var(--font-display); font-weight:300; font-size:24px; color:#fff; font-variant-numeric:tabular-nums; text-shadow:0 0 10px rgba(255,255,255,.12); }
 .list-ribbon-v.done { color:var(--neon); text-shadow:0 0 10px rgba(57,255,20,.3); }
-.list-ribbon-bar { margin-top:10px; height:5px; border-radius:3px; background:rgba(255,255,255,.06); overflow:hidden; }
+.list-ribbon-bar { margin-top:8px; height:5px; border-radius:3px; background:rgba(255,255,255,.06); overflow:hidden; }
 .list-ribbon-fill { height:100%; border-radius:3px; background:linear-gradient(90deg, var(--neon-dim), var(--neon)); box-shadow:0 0 8px rgba(57,255,20,.4); transition:width .3s; }
+
+/* ══ LISTS PAGE — design-kit composition ══ */
+.lists-page { padding:28px 40px 90px; max-width:1180px; margin:0 auto; width:100%; }
+.lists-page-head { margin-bottom:24px; }
+.lists-eyebrow { font-family:var(--font-mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.4); }
+.lists-page-title { font-family:var(--font-display); font-weight:300; font-size:32px; color:#fff; margin-top:4px; }
+.lists-page-sub { font-family:var(--font-display); font-style:italic; font-weight:300; font-size:13px; color:rgba(255,255,255,.5); margin-top:6px; max-width:640px; line-height:1.5; }
+.lists-grid { display:grid; grid-template-columns:264px 1fr; gap:22px; align-items:start; }
+
+/* Left column */
+.lists-col-left { display:flex; flex-direction:column; gap:10px; }
+.lists-create-card { display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+.lists-create-input, .lists-search-input { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:9px 12px; font-family:var(--font-body); font-size:13px; color:#fff; outline:none; transition:border-color .2s; }
+.lists-create-input:focus, .lists-search-input:focus { border-color:var(--gold-dim); }
+.lists-search-input { font-size:12px; }
+.lists-create-btn { width:100%; padding:9px 12px; border-radius:8px; cursor:pointer; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); color:#fff; font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; transition:all .2s; }
+.lists-create-btn:hover { background:rgba(255,255,255,.14); }
+.lists-sidebar-items { display:flex; flex-direction:column; gap:6px; margin-top:2px; }
+
+/* Sidebar list cards — glass */
+.list-sidebar-card { padding:11px 13px; border-radius:10px; cursor:pointer; display:flex; align-items:center; gap:11px; margin-bottom:0; position:relative; border:1px solid rgba(255,255,255,.05); border-left:3px solid rgba(255,255,255,.28); background:rgba(255,255,255,.015); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); transition:background .15s, border-color .15s; }
+.list-sidebar-card:hover { background:rgba(255,255,255,.05); }
+.list-sidebar-card.active { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.22); border-left-color:var(--gold); }
+
+/* Right column */
+.lists-col-right { min-width:0; }
+.lists-empty { min-height:320px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--muted); border:1px dashed rgba(255,255,255,.08); border-radius:16px; background:rgba(255,255,255,.01); }
+.lists-empty-label { font-family:var(--font-mono); font-size:10px; letter-spacing:.15em; text-transform:uppercase; }
+.lists-detail { flex-direction:column; gap:16px; }
+
+/* Header card */
+.lists-headcard { position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; padding:20px 22px; border-radius:16px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1); backdrop-filter:blur(32px) saturate(140%); -webkit-backdrop-filter:blur(32px) saturate(140%); }
+.lists-headcard-glow { position:absolute; top:-40px; right:-40px; width:180px; height:180px; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.06), transparent 70%); pointer-events:none; }
+.lists-headcard-icon { width:46px; height:46px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:20px; border:1px solid rgba(255,255,255,.18); position:relative; }
+.lists-headcard-main { flex:1; min-width:0; position:relative; }
+.lists-headcard-eyebrow { font-family:var(--font-mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.45); }
+.lists-headcard-name { font-family:var(--font-display); font-weight:300; font-size:24px; color:#fff; margin-top:3px; outline:none; border-radius:4px; padding:1px 3px; margin-left:-3px; }
+.lists-headcard-name:focus { background:rgba(255,255,255,.05); }
+.lists-head-del { flex-shrink:0; background:transparent; border:1px solid rgba(255,255,255,.1); border-radius:8px; width:32px; height:32px; cursor:pointer; color:rgba(255,255,255,.45); font-size:13px; transition:all .2s; }
+.lists-head-del:hover { color:var(--gold); border-color:var(--gold-dim); }
+.lists-delete-confirm { display:flex; align-items:center; gap:6px; }
+
+/* Purpose / notes */
+.lists-meta { display:flex; gap:16px; padding:0 4px; }
+.lists-meta-field { flex:1; display:flex; flex-direction:column; gap:3px; min-width:0; }
+.lists-meta-field label { font-family:var(--font-mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.35); }
+.lists-meta-field textarea { resize:none; font-family:var(--font-body); font-size:12px; color:rgba(255,255,255,.75); background:transparent; border:none; border-bottom:1px solid rgba(255,255,255,.08); outline:none; padding:3px 0; line-height:1.5; width:100%; transition:border-color .2s; }
+.lists-meta-field textarea:focus { border-bottom-color:var(--gold-dim); }
+
+/* Items card */
+.lists-items-card { padding:8px 18px 14px; border-radius:16px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.1); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+.lists-additem { display:flex; align-items:center; gap:10px; margin-top:12px; padding:11px 14px; border-radius:10px; background:rgba(255,255,255,.015); border:1px dashed rgba(255,255,255,.1); }
+.lists-additem-plus { color:rgba(255,255,255,.45); font-size:16px; }
+.lists-additem-input { flex:1; background:transparent; border:none; outline:none; font-family:var(--font-display); font-weight:300; font-size:15px; color:#fff; }
+.lists-additem-input::placeholder { color:rgba(255,255,255,.32); font-style:italic; }
+.lists-additem-btn { padding:6px 14px; border-radius:8px; cursor:pointer; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.16); color:#fff; font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+.lists-additem-btn:hover { background:rgba(255,255,255,.14); }

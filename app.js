@@ -610,7 +610,13 @@ function renderListDetail(listId) {
   const whyEl = document.getElementById('lists-detail-why');
   const notesEl = document.getElementById('lists-detail-notes');
   if (nameEl) nameEl.textContent = list.title;
-  if (colorEl) colorEl.style.background = list.color;
+  if (colorEl) {
+    // Repurposed as the header icon chip: type glyph tinted by the list colour
+    colorEl.textContent = LIST_TYPE_META[type].icon;
+    colorEl.style.color = list.color || 'var(--gold)';
+    colorEl.style.borderColor = (list.color || 'rgba(255,255,255,0.2)') + '55';
+    colorEl.style.background = (list.color || 'rgba(255,255,255,0.06)') + '18';
+  }
   if (typeSel) typeSel.value = type;
   if (whyEl && document.activeElement !== whyEl) whyEl.value = list.why || '';
   if (notesEl && document.activeElement !== notesEl) notesEl.value = list.notes || '';
