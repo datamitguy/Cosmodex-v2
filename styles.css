@@ -7693,9 +7693,132 @@ select.sched-input { background: #181818; }
 .atk-add-plus { color:rgba(255,255,255,.6); font-size:18px; }
 .atk-add input { flex:1; background:transparent; border:none; outline:none; font-family:var(--font-display); font-weight:300; font-size:16px; color:#fff; }
 .atk-add input::placeholder { color:rgba(255,255,255,.32); }
-.atk-list { border-top:1px solid rgba(255,255,255,.06); }
+.atk-list { border-top:none; }
 .atk-empty { padding:70px 0; text-align:center; font-family:var(--font-display); font-style:italic; font-size:17px; color:rgba(255,255,255,.4); }
 .atk-empty span { display:block; margin-top:8px; font-family:var(--font-mono); font-style:normal; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.3); }
+
+/* ── Tasks page: layout + tabular rows + detail drawer (design-kit) ─────── */
+.atk-layout { flex:1; display:flex; min-height:0; }
+.atk-main { flex:1; min-width:0; display:flex; flex-direction:column; }
+
+/* Column header */
+.atk-colhead {
+  display:grid; grid-template-columns:22px 14px 1fr 120px 110px 90px 80px;
+  gap:12px; align-items:center; padding:8px 16px;
+  font-family:var(--font-mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase;
+  color:rgba(255,255,255,.35);
+  border-top:1px solid rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.06);
+}
+.atk-colhead span:last-child { text-align:right; }
+
+/* Row */
+.atk-row {
+  display:grid; grid-template-columns:22px 14px 1fr 120px 110px 90px 80px;
+  gap:12px; align-items:center; padding:12px 16px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  cursor:pointer; transition:background .2s ease;
+}
+.atk-row:hover { background:rgba(255,255,255,.02); }
+.atk-row.sel { background:rgba(255,255,255,.05); }
+.atk-check {
+  width:18px; height:18px; border-radius:5px; border:1px solid rgba(255,255,255,.15);
+  display:grid; place-items:center; cursor:pointer; color:#fff; font-size:10px;
+  transition:all .2s ease;
+}
+.atk-check:hover { border-color:rgba(255,255,255,.35); }
+.atk-check.done { border-color:rgba(255,255,255,.3); background:rgba(255,255,255,.08); text-shadow:0 0 6px rgba(255,255,255,.4); }
+.atk-catdot { width:8px; height:8px; border-radius:50%; box-sizing:border-box; }
+.atk-titlecell { min-width:0; }
+.atk-rtitle {
+  font-family:var(--font-display); font-weight:300; font-size:15px; color:rgba(255,255,255,.92);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.atk-rtitle.done { color:rgba(255,255,255,.45); text-decoration:line-through; }
+.atk-rmeta { display:flex; gap:10px; align-items:center; margin-top:3px; }
+.atk-tel { font-family:var(--font-mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.45); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.atk-tel.dim { color:rgba(255,255,255,.32); }
+.atk-tel.list { font-size:10px; color:rgba(255,255,255,.5); }
+.atk-dash { color:rgba(255,255,255,.2); font-family:var(--font-mono); font-size:10px; }
+.atk-duecell { display:flex; }
+.atk-due {
+  display:inline-block; font-family:var(--font-mono); font-size:9px; letter-spacing:.08em;
+  padding:3px 9px; border-radius:100px; border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.7); white-space:nowrap;
+}
+.atk-due.overdue { border-color:rgba(196,92,42,.4); color:#c45c2a; }
+.atk-due.someday { color:rgba(255,255,255,.4); border-color:rgba(255,255,255,.08); }
+.atk-priocell { display:flex; justify-content:flex-end; gap:3px; align-items:center; }
+.atk-priocell.inline { justify-content:flex-start; }
+.atk-dot { width:4px; height:4px; border-radius:50%; background:rgba(255,255,255,.15); }
+.atk-dot.on { background:#fff; box-shadow:0 0 4px rgba(255,255,255,.4); }
+
+/* Detail drawer */
+.atk-detail {
+  width:340px; flex-shrink:0; display:flex; flex-direction:column; overflow:hidden;
+  border-left:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.02);
+  backdrop-filter:blur(24px) saturate(140%); -webkit-backdrop-filter:blur(24px) saturate(140%);
+}
+.atk-detail-empty {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  text-align:center; font-family:var(--font-display); font-style:italic; font-size:15px; color:rgba(255,255,255,.4);
+}
+.atk-detail-empty span { display:block; margin-top:6px; font-family:var(--font-mono); font-style:normal; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.28); }
+.atk-detail-empty-mark { font-size:26px; color:rgba(255,255,255,.18); }
+.atk-detail-head { padding:22px 22px 14px; border-bottom:1px solid rgba(255,255,255,.05); }
+.atk-detail-topline { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.atk-detail-x {
+  width:24px; height:24px; background:transparent; border:1px solid rgba(255,255,255,.1);
+  border-radius:6px; cursor:pointer; color:rgba(255,255,255,.5); font-size:12px; line-height:1;
+}
+.atk-detail-x:hover { border-color:rgba(255,255,255,.3); color:#fff; }
+.atk-detail-title { font-family:var(--font-display); font-weight:300; font-size:22px; line-height:1.25; color:#fff; }
+.atk-detail-title.done { color:rgba(255,255,255,.5); text-decoration:line-through; }
+.atk-detail-body { padding:22px; display:flex; flex-direction:column; gap:18px; overflow-y:auto; flex:1; }
+.atk-status-btn {
+  display:inline-flex; align-items:center; gap:8px; padding:7px 14px; border-radius:100px; cursor:pointer;
+  background:rgba(53,249,47,.08); border:1px solid rgba(53,249,47,.3); color:rgb(53,249,47);
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+  text-shadow:0 0 6px rgba(53,249,47,.35);
+}
+.atk-status-btn.done { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.2); color:#fff; text-shadow:none; }
+.atk-detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px 14px; }
+.atk-detail-val { font-family:var(--font-mono); font-size:12px; color:rgba(255,255,255,.88); margin-top:5px; display:flex; align-items:center; gap:6px; }
+.atk-prio-click { cursor:pointer; }
+.atk-prio-click:hover { color:#fff; }
+.atk-notes {
+  width:100%; box-sizing:border-box; min-height:70px; resize:vertical;
+  font-family:var(--font-body); font-size:13px; line-height:1.6; color:rgba(255,255,255,.88);
+  padding:10px 12px; border-radius:8px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); outline:none;
+}
+.atk-notes:focus { border-color:rgba(255,255,255,.18); }
+.atk-notes::placeholder { color:rgba(255,255,255,.3); font-style:italic; }
+.atk-subs { display:flex; flex-direction:column; gap:6px; }
+.atk-subs-empty { font-family:var(--font-display); font-style:italic; font-size:13px; color:rgba(255,255,255,.4); }
+.atk-sub-item { display:flex; align-items:center; gap:10px; }
+.atk-sub-item span { font-family:var(--font-body); font-size:13px; color:rgba(255,255,255,.85); }
+.atk-sub-item span.done { color:rgba(255,255,255,.4); text-decoration:line-through; }
+.atk-subcheck {
+  width:16px; height:16px; border-radius:4px; border:1px solid rgba(255,255,255,.15);
+  display:grid; place-items:center; cursor:pointer; color:#fff; font-size:9px; flex-shrink:0;
+}
+.atk-subcheck.done { border-color:rgba(255,255,255,.3); background:rgba(255,255,255,.08); }
+.atk-subadd {
+  width:100%; box-sizing:border-box; margin-top:8px; background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.06); border-radius:8px; padding:8px 12px; outline:none;
+  font-family:var(--font-body); font-size:12px; color:#fff;
+}
+.atk-subadd:focus { border-color:rgba(255,255,255,.18); }
+.atk-subadd::placeholder { color:rgba(255,255,255,.3); }
+.atk-detail-foot { padding:16px; border-top:1px solid rgba(255,255,255,.06); display:flex; gap:8px; align-items:center; }
+.atk-foot-btn {
+  background:rgba(255,255,255,.04); color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.12);
+  border-radius:8px; padding:10px 14px; cursor:pointer;
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+}
+.atk-foot-btn:hover { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); }
+.atk-foot-btn.danger { color:#c45c2a; border-color:rgba(196,92,42,.4); background:transparent; }
+.atk-foot-btn.danger:hover { background:rgba(196,92,42,.12); }
 
 /* ══ LISTS — types (simple / task / rated) ══ */
 .lists-type-select {

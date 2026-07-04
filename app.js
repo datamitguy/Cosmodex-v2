@@ -7670,6 +7670,16 @@ function renderTasks() {
   if (!body.children.length) {
     body.innerHTML = '<div class="tasks-void-empty">inbox zero. the void approves. ✦<br><span>press n to disturb the peace</span></div>';
   }
+
+  // Keep the standalone Tasks page + its drawer live on data changes.
+  const atkPanel = document.getElementById('panel-alltasks');
+  if (atkPanel && atkPanel.style.display !== 'none' && document.getElementById('alltasks-body')) {
+    renderAllTasksList();
+    // Don't rebuild the drawer while the user is editing inside it.
+    const ae = document.activeElement;
+    const editingDrawer = ae && ae.closest && ae.closest('#atk-detail') && /INPUT|TEXTAREA/.test(ae.tagName);
+    if (!editingDrawer) renderAtkDetail();
+  }
 }
 
 /* ── Task Decay helper ───────────────────────────────── */
@@ -11903,32 +11913,42 @@ function renderTasksPage() {
   if (!panel) return;
   if (!document.getElementById('alltasks-body')) {
     panel.innerHTML = `
-      <div class="atk-scroll">
-        <div class="atk-head">
-          <div>
-            <div class="atk-eyebrow" id="atk-count-line">TASKS</div>
-            <div class="atk-title">Tasks</div>
-            <div class="atk-sub">Everything you've captured — one list, one truth.</div>
+      <div class="atk-layout">
+        <div class="atk-main">
+          <div class="atk-scroll">
+            <div class="atk-head">
+              <div>
+                <div class="atk-eyebrow" id="atk-count-line">TASKS</div>
+                <div class="atk-title">Tasks</div>
+                <div class="atk-sub">Everything you've captured — one list, one truth.</div>
+              </div>
+            </div>
+            <div class="atk-filters" id="atk-filters"></div>
+            <div class="atk-searchsort">
+              <div class="atk-search">
+                <span class="atk-search-ic">⌕</span>
+                <input id="atk-search-input" placeholder="Search every task you've captured…" autocomplete="off">
+                <span class="atk-shown" id="atk-shown"></span>
+              </div>
+              <div class="atk-sortwrap">
+                <span class="atk-eyebrow">SORT</span>
+                <div class="atk-sort" id="atk-sort"></div>
+              </div>
+            </div>
+            <div class="atk-add">
+              <span class="atk-add-plus">+</span>
+              <input id="atk-add-input" placeholder="Capture a task… press Enter to add" autocomplete="off">
+              <span class="atk-eyebrow">ENTER ↵</span>
+            </div>
+            <div class="atk-colhead">
+              <span></span><span></span>
+              <span>Task</span><span>List</span><span>Due</span><span>Category</span>
+              <span style="text-align:right">Prio</span>
+            </div>
+            <div class="atk-list" id="alltasks-body"></div>
           </div>
         </div>
-        <div class="atk-filters" id="atk-filters"></div>
-        <div class="atk-searchsort">
-          <div class="atk-search">
-            <span class="atk-search-ic">⌕</span>
-            <input id="atk-search-input" placeholder="Search every task you've captured…" autocomplete="off">
-            <span class="atk-shown" id="atk-shown"></span>
-          </div>
-          <div class="atk-sortwrap">
-            <span class="atk-eyebrow">SORT</span>
-            <div class="atk-sort" id="atk-sort"></div>
-          </div>
-        </div>
-        <div class="atk-add">
-          <span class="atk-add-plus">+</span>
-          <input id="atk-add-input" placeholder="Capture a task… press Enter to add" autocomplete="off">
-          <span class="atk-eyebrow">ENTER ↵</span>
-        </div>
-        <div class="tasks-body atk-list" id="alltasks-body"></div>
+        <aside class="atk-detail" id="atk-detail"></aside>
       </div>`;
 
     // Sort toggle
@@ -11955,10 +11975,9 @@ function renderTasksPage() {
         addInput.value = '';
       }
     });
-    // Rows behave exactly like the dashboard list
-    wireTaskListEvents(document.getElementById('alltasks-body'));
   }
   renderAllTasksList();
+  renderAtkDetail();
 }
 
 function renderAllTasksList() {
@@ -12002,18 +12021,188 @@ function renderAllTasksList() {
   const shownEl = document.getElementById('atk-shown');
   if (shownEl) shownEl.textContent = `${rows.length} SHOWN`;
 
-  // Render rows via the shared dashboard row builder (timeboxing disabled)
+  // Render design-kit tabular rows (checkbox · dot · title · list · due · cat · prio)
+  const projMap = _buildTaskToProjectMap();
   body.innerHTML = '';
   if (!rows.length) {
     body.innerHTML = `<div class="atk-empty">— None —<br><span>Nothing matches this filter</span></div>`;
     return;
   }
-  rows.forEach((task, i) => {
-    const wrap = buildTaskRow(task, i);
-    const rowEl = wrap.querySelector('.task-row');
-    if (rowEl) rowEl.draggable = false;   // no timeboxing on the Tasks page
-    body.appendChild(wrap);
+  rows.forEach(task => body.appendChild(buildAtkRow(task, projMap, today)));
+}
+
+/* ── Tabular row + detail drawer (design-kit Tasks.jsx) ───────────────────
+   The Tasks page uses its own clean row/grid + a right-hand detail drawer,
+   distinct from the dashboard's rich stacked rows. Real task fields map to
+   the design's columns; the drawer surfaces status/notes/subtasks/actions. */
+let _atkSelectedId = null;
+
+function _recurLabel(r) {
+  if (!r) return '';
+  const m = { daily:'Daily', weekdays:'Weekdays', weekly:'Weekly', monthly:'Monthly', yearly:'Yearly' };
+  if (m[r]) return m[r];
+  return r.startsWith('custom:') ? r.replace('custom:', '') : r;
+}
+
+function _atkRelTime(task) {
+  const ms = _atkCreatedMs(task);
+  if (!ms) return '';
+  const diff = Date.now() - ms;
+  const min = Math.floor(diff / 60000);
+  if (min < 1)  return 'just now';
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24)  return `${hr}h ago`;
+  const d = Math.floor(hr / 24);
+  if (d < 7)    return `${d}d ago`;
+  const w = Math.floor(d / 7);
+  if (w < 5)    return `${w}w ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12)  return `${mo}mo ago`;
+  return `${Math.floor(d / 365)}y ago`;
+}
+
+function _atkPrioLevel(p) { return p === 'high' ? 3 : p === 'med' ? 2 : p === 'low' ? 1 : 0; }
+function _atkPrioDots(p) {
+  const lvl = _atkPrioLevel(p);
+  return [1,2,3].map(i => `<span class="atk-dot${i <= lvl ? ' on' : ''}"></span>`).join('');
+}
+
+function buildAtkRow(task, projMap, today) {
+  const row = document.createElement('div');
+  row.className = 'atk-row' + (task.id === _atkSelectedId ? ' sel' : '') + (task.done ? ' done' : '');
+  row.dataset.taskId = task.id;
+
+  const cat       = task.category ? CATEGORIES[task.category] : null;
+  const catClr    = getCatColor(task.category);
+  const proj      = projMap[task.id];
+  const isOverdue = task.dueDate && task.dueDate < today && !task.done;
+
+  const recur   = task.recurrence ? `<span class="atk-tel">↻ ${escHtml(_recurLabel(task.recurrence).toUpperCase())}</span>` : '';
+  const note    = task.notes ? `<span class="atk-tel">✎ NOTE</span>` : '';
+  const created = _atkCreatedMs(task) ? `<span class="atk-tel dim">${escHtml(_atkRelTime(task).toUpperCase())}</span>` : '';
+
+  const dueCell = task.dueDate
+    ? `<span class="atk-due${isOverdue ? ' overdue' : ''}">${isOverdue ? '△ ' : ''}${escHtml(fmtDate(task.dueDate).toUpperCase())}</span>`
+    : (task.someday ? `<span class="atk-due someday">SOMEDAY</span>` : `<span class="atk-dash">—</span>`);
+
+  row.innerHTML = `
+    <div class="atk-check${task.done ? ' done' : ''}" data-atk-check="${escAttr(task.id)}">${task.done ? '✓' : ''}</div>
+    <span class="atk-catdot" style="${cat ? `background:${catClr};box-shadow:0 0 6px ${catClr}88` : 'background:transparent;border:1px solid rgba(255,255,255,.15)'}"></span>
+    <div class="atk-titlecell">
+      <div class="atk-rtitle${task.done ? ' done' : ''}">${escHtml(task.title)}</div>
+      <div class="atk-rmeta">${recur}${note}${created}</div>
+    </div>
+    <span class="atk-tel list"${proj ? ` style="color:${proj.projectColor}"` : ''}>${proj ? escHtml(proj.projectTitle) : '<span class="atk-dash">—</span>'}</span>
+    <div class="atk-duecell">${dueCell}</div>
+    <span class="atk-tel">${cat ? escHtml(cat.label.toUpperCase()) : '<span class="atk-dash">—</span>'}</span>
+    <div class="atk-priocell">${_atkPrioDots(task.priority)}</div>`;
+
+  row.addEventListener('click', e => {
+    if (e.target.closest('[data-atk-check]')) return;
+    openAtkDetail(task.id);
   });
+  row.querySelector('[data-atk-check]').addEventListener('click', async e => {
+    e.stopPropagation();
+    await toggleTask(task.id);
+  });
+  return row;
+}
+
+function openAtkDetail(taskId) {
+  _atkSelectedId = taskId;
+  renderAllTasksList();
+  renderAtkDetail();
+}
+
+function renderAtkDetail() {
+  const el = document.getElementById('atk-detail');
+  if (!el) return;
+  const task = TASKS.find(t => t.id === _atkSelectedId);
+  if (!task) {
+    _atkSelectedId = null;
+    el.classList.remove('open');
+    el.innerHTML = `<div class="atk-detail-empty"><div class="atk-detail-empty-mark">✦</div><div>Select a task<br><span>to see its full context</span></div></div>`;
+    return;
+  }
+  el.classList.add('open');
+
+  const cat     = task.category ? CATEGORIES[task.category] : null;
+  const catClr  = getCatColor(task.category);
+  const proj    = _buildTaskToProjectMap()[task.id];
+  const dueTxt  = task.dueDate ? fmtDate(task.dueDate) : (task.someday ? 'Someday' : '—');
+  const recurTxt= task.recurrence ? _recurLabel(task.recurrence) : '—';
+  const created = _atkCreatedMs(task) ? _atkRelTime(task) : '—';
+  const prioTxt = task.priority ? task.priority.toUpperCase() : '—';
+
+  const subs = task.subtasks || [];
+  const subsHtml = subs.length
+    ? subs.map(s => `<div class="atk-sub-item">
+        <div class="atk-subcheck${s.done ? ' done' : ''}" data-atk-subcheck="${escAttr(s.id)}">${s.done ? '✓' : ''}</div>
+        <span class="${s.done ? 'done' : ''}">${escHtml(s.title)}</span></div>`).join('')
+    : `<div class="atk-subs-empty">— None —</div>`;
+
+  const eyebrow = `${cat ? escHtml(cat.label.toUpperCase()) : 'NO CATEGORY'}${proj ? ' · ' + escHtml(proj.projectTitle.toUpperCase()) : ''}`;
+
+  el.innerHTML = `
+    <div class="atk-detail-head">
+      <div class="atk-detail-topline">
+        <span class="atk-catdot" style="${cat ? `background:${catClr};box-shadow:0 0 6px ${catClr}88` : 'background:transparent;border:1px solid rgba(255,255,255,.15)'}"></span>
+        <span class="atk-tel">${eyebrow}</span>
+        <div style="flex:1"></div>
+        <button class="atk-detail-x" data-atk-close>×</button>
+      </div>
+      <div class="atk-detail-title${task.done ? ' done' : ''}">${escHtml(task.title)}</div>
+    </div>
+    <div class="atk-detail-body">
+      <div>
+        <div class="atk-eyebrow" style="margin-bottom:8px">STATUS</div>
+        <button class="atk-status-btn${task.done ? ' done' : ''}" data-atk-toggle>${task.done ? '✓ Done — reopen' : '● Mark done'}</button>
+      </div>
+      <div class="atk-detail-grid">
+        <div><div class="atk-eyebrow">DUE</div><div class="atk-detail-val">${escHtml(dueTxt)}</div></div>
+        <div><div class="atk-eyebrow">RECURRENCE</div><div class="atk-detail-val">↻ ${escHtml(recurTxt)}</div></div>
+        <div><div class="atk-eyebrow">PRIORITY</div><div class="atk-detail-val atk-prio-click" data-atk-prio title="Click to cycle"><span class="atk-priocell inline">${_atkPrioDots(task.priority)}</span> ${prioTxt}</div></div>
+        <div><div class="atk-eyebrow">CREATED</div><div class="atk-detail-val">${escHtml(created)}</div></div>
+      </div>
+      <div>
+        <div class="atk-eyebrow" style="margin-bottom:8px">NOTES</div>
+        <textarea class="atk-notes" data-atk-notes placeholder="No notes yet…">${escHtml(task.notes || '')}</textarea>
+      </div>
+      <div>
+        <div class="atk-eyebrow" style="margin-bottom:8px">SUBTASKS</div>
+        <div class="atk-subs">${subsHtml}</div>
+        <input class="atk-subadd" data-atk-subadd placeholder="Add subtask… press Enter" autocomplete="off">
+      </div>
+    </div>
+    <div class="atk-detail-foot">
+      ${task.done ? '' : '<button class="atk-foot-btn" data-atk-focus>◉ Focus</button>'}
+      <button class="atk-foot-btn" data-atk-sched>☷ Schedule</button>
+      <div style="flex:1"></div>
+      <button class="atk-foot-btn danger" data-atk-del title="Delete task">🗑</button>
+    </div>`;
+
+  el.querySelector('[data-atk-close]').onclick = () => { _atkSelectedId = null; renderAllTasksList(); renderAtkDetail(); };
+  el.querySelector('[data-atk-toggle]').onclick = () => toggleTask(task.id);
+  el.querySelector('[data-atk-prio]').onclick = () => {
+    const order = ['high', 'med', 'low'];
+    const next = order[(order.indexOf(task.priority) + 1) % order.length];
+    updateTask(task.id, { priority: next });
+  };
+  const notes = el.querySelector('[data-atk-notes]');
+  notes.addEventListener('blur', () => {
+    if ((task.notes || '') !== notes.value) updateTask(task.id, { notes: notes.value });
+  });
+  el.querySelectorAll('[data-atk-subcheck]').forEach(c =>
+    c.onclick = () => toggleSubtask(task.id, c.dataset.atkSubcheck));
+  const subAdd = el.querySelector('[data-atk-subadd]');
+  subAdd.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && subAdd.value.trim()) { addSubtask(task.id, subAdd.value.trim()); subAdd.value = ''; }
+  });
+  const focusBtn = el.querySelector('[data-atk-focus]');
+  if (focusBtn) focusBtn.onclick = () => openCommitMode(task.id);
+  el.querySelector('[data-atk-sched]').onclick = () => openScheduleModal(task.dueDate || localDateStr(new Date()), '09:00', task.id, null);
+  el.querySelector('[data-atk-del]').onclick = () => deleteTask(task.id);
 }
 /* ══ MIND MAP ENGINE ══════════════════════════════════════════════════════ */
 window.initMindMap = (function(){
