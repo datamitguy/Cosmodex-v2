@@ -377,7 +377,7 @@ function showMainPanel(name) {
   const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
-  if (name === 'default') { window.renderDashboardBoard?.(); }
+  if (name === 'default') { window._dashInvalidateAnchor?.(); window.renderDashboardBoard?.(); }
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
@@ -933,11 +933,15 @@ function last7Days() {
 function habitsSubscribe() {
   const uid = getHabitsUid();
   if (!uid || !window.CDX_DB) return;
-  const { collection, query, where, onSnapshot } = window.CDX_FB;
-  const db = window.CDX_DB;
-
+  // Subscribe once. Switching Habits tabs used to tear down and re-establish these
+  // listeners on every click, re-downloading the full habits list + 91 days of logs
+  // each time. The snapshots stay live and update the in-memory arrays; callers just
+  // re-render from cache. cleanupAllListeners() nulls these on sign-out.
+  if (_habitsUnsub && _habitLogsUnsub) return;
   if (_habitsUnsub) { _habitsUnsub(); _habitsUnsub = null; }
   if (_habitLogsUnsub) { _habitLogsUnsub(); _habitLogsUnsub = null; }
+  const { collection, query, where, onSnapshot } = window.CDX_FB;
+  const db = window.CDX_DB;
 
   _habitsUnsub = onSnapshot(collection(db, 'users', uid, 'habits'), snap => {
     // Keep graduated habits in memory (Reflect + Habits tab need them)
@@ -948,6 +952,7 @@ function habitsSubscribe() {
     if (_habitsTab === 'habits') renderHabitsTab();
     if (_habitsTab === 'hinsights') renderHabitsInsights();
     if (_habitsTab === 'reflect') renderReflect();
+    window.renderDashboardBoard?.(); // dashboard rituals card (guards on _mainPanel)
   }, err => console.warn('habits onSnapshot:', err.message));
 
   // For 13-week heatmap we need 91 days of logs
@@ -960,6 +965,7 @@ function habitsSubscribe() {
       if (_habitsTab === 'habits') renderHabitsTab();
       if (_habitsTab === 'hinsights') renderHabitsInsights();
       if (_habitsTab === 'reflect') renderReflect();
+      window.renderDashboardBoard?.();
     }, err => console.warn('habitLogs onSnapshot:', err.message));
 }
 
@@ -970,6 +976,7 @@ function routinesSubscribe() {
   _routinesUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'routines', 'config'), snap => {
     if (snap.exists()) { const d = snap.data(); _routines = { morning: d.morning||[], evening: d.evening||[] }; }
     if (_habitsTab === 'today') _todayRenderMorningMode();
+    window.renderDashboardBoard?.();
   }, err => console.warn('routines onSnapshot:', err.message));
 }
 
@@ -1596,7 +1603,7 @@ async function habitDelete(habitId) {
   renderHabits();
   if (_habitsTab === 'habits') renderHabitsTab();
   if (_habitsTab === 'today') renderToday();
-  const { doc, deleteDoc, getDocs, collection, updateDoc, deleteField } = window.CDX_FB;
+  const { doc, deleteDoc, writeBatch, deleteField } = window.CDX_FB;
   try {
     await deleteDoc(doc(window.CDX_DB, 'users', uid, 'habits', habitId));
   } catch(e) {
@@ -1605,12 +1612,21 @@ async function habitDelete(habitId) {
     renderHabits();
     return;
   }
-  // Best-effort: purge this habit's entries from every habitLogs doc so stats don't count a ghost
+  // Purge this habit's completions from the *cached* logs only (≤91 days already in
+  // memory), in a single bounded WriteBatch. The old path did getDocs() over the whole
+  // habitLogs collection and fired one updateDoc per matching day — potentially hundreds
+  // of parallel writes that throttled Firestore. Older logs keep a harmless ghost key;
+  // stats iterate live _habits so a deleted habit never counts.
   try {
-    const snap = await getDocs(collection(window.CDX_DB, 'users', uid, 'habitLogs'));
-    await Promise.all(snap.docs
-      .filter(d => d.data()?.completions && Object.prototype.hasOwnProperty.call(d.data().completions, habitId))
-      .map(d => updateDoc(d.ref, { ['completions.' + habitId]: deleteField() })));
+    const dates = Object.keys(_habitLogs).filter(ds => _habitLogs[ds]?.completions
+      && Object.prototype.hasOwnProperty.call(_habitLogs[ds].completions, habitId));
+    dates.forEach(ds => { delete _habitLogs[ds].completions[habitId]; });
+    for (let i = 0; i < dates.length; i += 400) {
+      const batch = writeBatch(window.CDX_DB);
+      dates.slice(i, i + 400).forEach(ds =>
+        batch.update(doc(window.CDX_DB, 'users', uid, 'habitLogs', ds), { ['completions.' + habitId]: deleteField() }));
+      await batch.commit();
+    }
   } catch(e) { console.warn('habitLogs purge after habitDelete failed:', e.message); }
 }
 
@@ -4381,7 +4397,7 @@ async function updateMilestoneProject(id, data) {
 }
 
 async function deleteMilestoneProject(id) {
-  const { deleteDoc, updateDoc, getDocs, query, where } = window.CDX_FB;
+  const { getDocs, query, where, writeBatch } = window.CDX_FB;
   const [evSnap, listSnap] = await Promise.all([
     getDocs(query(_uc('milestoneEvents'), where('projectId', '==', id))),
     getDocs(query(_uc('milestone_lists'), where('projectId', '==', id))),
@@ -4395,14 +4411,16 @@ async function deleteMilestoneProject(id) {
   // Completed tasks are preserved (unlinked); incomplete ones are deleted with the commitment.
   const { del, keep } = _partitionLinkedTasks(taskIds);
   const calEventIds = _collectTaskCalEvents(del);
-  await Promise.all([
-    ...evSnap.docs.map(d => deleteDoc(d.ref)),
-    ...listSnap.docs.map(d => deleteDoc(d.ref)),
-    ...del.map(tid => deleteDoc(_ud('tasks', tid))),
-    ...keep.map(tid => updateDoc(_ud('tasks', tid), { projectId: null })),
-    ...calEventIds.map(cid => deleteDoc(_ud('calEvents', cid))),
-  ]);
-  await deleteDoc(_ud('milestoneProjects', id));
+  // Atomic cascade: one WriteBatch so a mid-flight failure can't leave orphaned
+  // events/lists/tasks/calEvents pointing at a deleted commitment.
+  const batch = writeBatch(window.CDX_DB);
+  evSnap.docs.forEach(d => batch.delete(d.ref));
+  listSnap.docs.forEach(d => batch.delete(d.ref));
+  del.forEach(tid => batch.delete(_ud('tasks', tid)));
+  keep.forEach(tid => batch.update(_ud('tasks', tid), { projectId: null }));
+  calEventIds.forEach(cid => batch.delete(_ud('calEvents', cid)));
+  batch.delete(_ud('milestoneProjects', id));
+  await batch.commit();
 }
 
 // Split linked task ids into those to delete (incomplete) vs keep (completed).
@@ -7843,17 +7861,18 @@ window.addEventListener('unhandledrejection', ev => {
 // Refresh the orb immediately when the tab becomes visible again (paired with the hidden-guard above).
 document.addEventListener('visibilitychange', () => { if (!document.hidden) drawCosmodex(); });
 
-// Double-submit guard: absorb rapid repeat clicks on any create/confirm/save/add button,
-// so double-clicking "Confirm" can't create two records. Capture phase + stopImmediatePropagation
-// blocks the second click before the button's own handler runs. 800ms cooldown per button.
+// Double-submit guard: absorb an accidental double-click on single-shot confirm/save
+// buttons so a record isn't created twice. Deliberately scoped to confirm/save only —
+// "add"/"create" controls (subtasks, list items, focus buckets) are meant to be clicked
+// rapidly, so guarding them made the app feel like it dropped clicks. 450ms cooldown.
 const _cdxClickGuard = new WeakMap();
 document.addEventListener('click', e => {
   const btn = e.target.closest('button, [data-confirm]');
   if (!btn) return;
   const cls = typeof btn.className === 'string' ? btn.className : '';
-  if (!/(?:^|[-_ ])(confirm|save|create|add)(?:[-_ ]|$)/i.test((btn.id || '') + ' ' + cls)) return;
+  if (!/(?:^|[-_ ])(confirm|save)(?:[-_ ]|$)/i.test((btn.id || '') + ' ' + cls)) return;
   const now = Date.now();
-  if (now - (_cdxClickGuard.get(btn) || 0) < 800) { e.stopImmediatePropagation(); e.preventDefault(); return; }
+  if (now - (_cdxClickGuard.get(btn) || 0) < 450) { e.stopImmediatePropagation(); e.preventDefault(); return; }
   _cdxClickGuard.set(btn, now);
 }, true);
 
@@ -8571,6 +8590,19 @@ function openTaskEditModal(taskId) {
       `<option value="${escAttr(k)}">${escHtml(v.label)}</option>`).join('');
   catSel.value = task.category || '';
 
+  // Recurrence select — preserve an existing custom:… value as its own option
+  const recSel = document.getElementById('te-recur');
+  if (recSel) {
+    const rv = task.recurrence || '';
+    recSel.querySelectorAll('option[data-custom]').forEach(o => o.remove());
+    if (rv && !Array.from(recSel.options).some(o => o.value === rv)) {
+      const o = document.createElement('option');
+      o.value = rv; o.dataset.custom = '1'; o.textContent = _recurLabel(rv);
+      recSel.appendChild(o);
+    }
+    recSel.value = rv;
+  }
+
   // Energy picker
   const picker = document.getElementById('te-energy-picker');
   picker.querySelectorAll('.energy-pill').forEach(p => {
@@ -8587,12 +8619,13 @@ async function confirmTaskEdit() {
   const dueDate  = document.getElementById('te-date').value || null;
   const priority = document.getElementById('te-priority').value;
   const category = document.getElementById('te-category').value || null;
+  const recurrence = document.getElementById('te-recur')?.value || '';
   const notes    = document.getElementById('te-notes').value.trim() || null;
   const energyType = document.getElementById('te-energy-picker')
     .querySelector('.energy-pill.active')?.dataset.energy || null;
 
   if (!title) { showToast('Title is required', 'error'); return; }
-  await updateTask(_editTaskId, { title, dueDate, priority, category, notes, energyType });
+  await updateTask(_editTaskId, { title, dueDate, priority, category, recurrence, notes, energyType });
   syncTaskTitleToMilestone(_editTaskId, title);
   closeOverlay('task-edit-modal');
   _editTaskId = null;
@@ -11968,9 +12001,10 @@ window.addEventListener('cdx-auth-ready', () => {
       _catUnsub = onSnapshot(doc(window.CDX_DB, 'users', _catUser.uid, 'config', 'categories'), snap => {
         if (snap.exists()) {
           const data = snap.data();
-          if (data?.categories && typeof data.categories === 'object') {
-            // Merge: Firestore wins for existing keys; preserve local-only keys
-            CATEGORIES = Object.assign({}, CATEGORIES, data.categories);
+          if (data?.categories && typeof data.categories === 'object' && Object.keys(data.categories).length) {
+            // Firestore is the single source of truth: overwrite so deletions on
+            // another device propagate here instead of resurrecting via merge.
+            CATEGORIES = data.categories;
             saveCategoriesLocal();
             renderSettingsCatList?.();
             renderSettingsCats?.();
@@ -11985,11 +12019,9 @@ window.addEventListener('cdx-auth-ready', () => {
         if (snap.exists()) {
           const data = snap.data();
           if (Array.isArray(data?.people)) {
-            // Merge: keep local-only people (by name) not yet in Firestore
-            const remotePeople = data.people;
-            const remoteNames = new Set(remotePeople.map(p => p.name));
-            const localOnly = PEOPLE.filter(p => !remoteNames.has(p.name));
-            PEOPLE = [...remotePeople, ...localOnly];
+            // Firestore is the single source of truth: overwrite so a person
+            // deleted on another device isn't resurrected by a local-only merge.
+            PEOPLE = data.people;
             localStorage.setItem('cdx_people', JSON.stringify(PEOPLE));
             renderSettingsPeople?.();
           }
@@ -12176,18 +12208,23 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
 
   function drawPomoRing() {
     const cv = document.getElementById('pomo-ring'); if (!cv) return;
-    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = 50;
+    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = W * 0.40;
+    const lw = Math.max(6, W * 0.045);
     ctx.clearRect(0, 0, W, H);
     const frac = pomo.totalSecs > 0 ? pomo.remainSecs / pomo.totalSecs : 1;
     const sa = -Math.PI / 2, ea = sa + (1 - frac) * Math.PI * 2;
     // Track
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 10; ctx.stroke();
-    // Progress
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = lw; ctx.stroke();
+    // Progress — design-system white glow
     if (frac < 1) {
-      const col = pomo.running ? 'rgba(107,159,212,0.95)' : pomo.remainSecs < pomo.totalSecs ? '#e4e4e4' : 'rgba(255,255,255,0.4)';
+      ctx.save();
       ctx.beginPath(); ctx.arc(cx, cy, R, sa, ea);
-      ctx.strokeStyle = col; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
+      ctx.strokeStyle = pomo.running ? '#ffffff' : pomo.remainSecs < pomo.totalSecs ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = lw; ctx.lineCap = 'round';
+      ctx.shadowColor = 'rgba(255,255,255,0.55)'; ctx.shadowBlur = pomo.running ? 16 : 6;
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -12758,7 +12795,7 @@ function renderAtkDetail() {
     <div class="atk-detail-head">
       <div class="atk-detail-topline">
         <span class="atk-catdot" style="${cat ? `background:${catClr};box-shadow:0 0 6px ${catClr}88` : 'background:transparent;border:1px solid rgba(255,255,255,.15)'}"></span>
-        <span class="atk-tel">${eyebrow}</span>
+        <span class="atk-tel atk-prio-click" data-atk-edit title="Click to edit category">${eyebrow}</span>
         <div style="flex:1"></div>
         <button class="atk-detail-x" data-atk-close>×</button>
       </div>
@@ -12770,8 +12807,8 @@ function renderAtkDetail() {
         <button class="atk-status-btn${task.done ? ' done' : ''}" data-atk-toggle>${task.done ? '✓ Done — reopen' : '● Mark done'}</button>
       </div>
       <div class="atk-detail-grid">
-        <div><div class="atk-eyebrow">DUE</div><div class="atk-detail-val">${escHtml(dueTxt)}</div></div>
-        <div><div class="atk-eyebrow">RECURRENCE</div><div class="atk-detail-val">↻ ${escHtml(recurTxt)}</div></div>
+        <div><div class="atk-eyebrow">DUE</div><div class="atk-detail-val atk-prio-click" data-atk-edit title="Click to edit">${escHtml(dueTxt)}</div></div>
+        <div><div class="atk-eyebrow">RECURRENCE</div><div class="atk-detail-val atk-prio-click" data-atk-edit title="Click to edit">↻ ${escHtml(recurTxt)}</div></div>
         <div><div class="atk-eyebrow">PRIORITY</div><div class="atk-detail-val atk-prio-click" data-atk-prio title="Click to cycle"><span class="atk-priocell inline">${_atkPrioDots(task.priority)}</span> ${prioTxt}</div></div>
         <div><div class="atk-eyebrow">CREATED</div><div class="atk-detail-val">${escHtml(created)}</div></div>
       </div>
@@ -12786,6 +12823,7 @@ function renderAtkDetail() {
       </div>
     </div>
     <div class="atk-detail-foot">
+      <button class="atk-foot-btn" data-atk-edit>✎ Edit</button>
       ${task.done ? '' : '<button class="atk-foot-btn" data-atk-focus>◉ Focus</button>'}
       <button class="atk-foot-btn" data-atk-sched>☷ Schedule</button>
       <div style="flex:1"></div>
@@ -12793,6 +12831,7 @@ function renderAtkDetail() {
     </div>`;
 
   el.querySelector('[data-atk-close]').onclick = () => { _atkSelectedId = null; renderAllTasksList(); renderAtkDetail(); };
+  el.querySelectorAll('[data-atk-edit]').forEach(b => b.onclick = () => openTaskEditModal(task.id));
   el.querySelector('[data-atk-toggle]').onclick = () => toggleTask(task.id);
   el.querySelector('[data-atk-prio]').onclick = () => {
     const order = ['high', 'med', 'low'];
@@ -12975,25 +13014,56 @@ function _dashRenderTodayLine() {
   });
 }
 
+// Cache of today's anchor from Planning › "The week, shaped"
+let _dashWeekAnchor = { key: null, text: '', loading: false };
+function _dashLoadWeekAnchor() {
+  if (typeof _planWeekKey !== 'function' || typeof _planLoadDoc !== 'function') return;
+  const key = _planWeekKey();
+  if (_dashWeekAnchor.key === key || _dashWeekAnchor.loading) return; // already have / fetching this week
+  _dashWeekAnchor.loading = true;
+  _planLoadDoc('weeklyPlans', key).then(d => {
+    const days = _planWeekDays();
+    const idx  = days.indexOf(localDateStr(new Date()));
+    _dashWeekAnchor = { key, text: (d.weekShaped && idx >= 0 ? (d.weekShaped[idx] || '') : '').trim(), loading: false };
+    if (_mainPanel === 'default') _dashRenderNonNeg();
+  }).catch(() => { _dashWeekAnchor.loading = false; });
+}
+// Force a re-fetch of today's anchor on next dashboard render (e.g. after editing Planning)
+window._dashInvalidateAnchor = () => { _dashWeekAnchor.key = null; };
+
+function _dashRenderNonNeg() {
+  const nnEl = document.getElementById('dash-nn');
+  if (!nnEl) return;
+  const today = localDateStr(new Date());
+  const anchor = _dashWeekAnchor.text;
+  if (anchor) {
+    nnEl.innerHTML = `<div class="dash-eyebrow">TODAY'S NON-NEGOTIABLE</div>
+      <div class="dash-nn-title">“${escHtml(anchor)}”</div>
+      <div class="dash-nn-meta">THIS WEEK, SHAPED · TODAY'S ANCHOR</div>`;
+    return;
+  }
+  // Fallback: highest-priority incomplete task due today or overdue
+  const pool = (TASKS || []).filter(t => !t.someday && !t.done && t.dueDate && t.dueDate <= today)
+    .sort((a, b) => (_dashPrioRank(b.priority) - _dashPrioRank(a.priority)) || (a.dueDate < b.dueDate ? -1 : 1));
+  const nn = pool[0];
+  nnEl.innerHTML = `<div class="dash-eyebrow">TODAY'S NON-NEGOTIABLE</div>` + (nn
+    ? `<div class="dash-nn-title" data-open="${escAttr(nn.id)}">“${escHtml(nn.title)}”</div>
+       <div class="dash-nn-meta">${nn.dueDate < today ? 'OVERDUE · ' : ''}${(nn.priority || 'med').toUpperCase()} PRIORITY</div>`
+    : `<div class="dash-nn-title muted">Set today's anchor.</div>
+       <div class="dash-nn-meta">Planning › This week › "The week, shaped"</div>`);
+  nn && nnEl.querySelector('[data-open]')?.addEventListener('click', () => {
+    showMainPanel('alltasks');
+    setTimeout(() => window.openAtkDetail?.(nn.id), 40);
+  });
+}
+
 function _dashRenderCards() {
   const today = localDateStr(new Date());
 
-  // ── Non-negotiable: highest-priority incomplete task due today or overdue ──
-  const nnEl = document.getElementById('dash-nn');
-  if (nnEl) {
-    const pool = (TASKS || []).filter(t => !t.someday && !t.done && t.dueDate && t.dueDate <= today)
-      .sort((a, b) => (_dashPrioRank(b.priority) - _dashPrioRank(a.priority)) || (a.dueDate < b.dueDate ? -1 : 1));
-    const nn = pool[0];
-    nnEl.innerHTML = `<div class="dash-eyebrow">TODAY'S NON-NEGOTIABLE</div>` + (nn
-      ? `<div class="dash-nn-title" data-open="${escAttr(nn.id)}">“${escHtml(nn.title)}”</div>
-         <div class="dash-nn-meta">${nn.dueDate < today ? 'OVERDUE · ' : ''}${(nn.priority || 'med').toUpperCase()} PRIORITY</div>`
-      : `<div class="dash-nn-title muted">Nothing pressing.</div>
-         <div class="dash-nn-meta">Your top-priority task appears here.</div>`);
-    nnEl.querySelector('[data-open]')?.addEventListener('click', () => {
-      showMainPanel('alltasks');
-      setTimeout(() => window.openAtkDetail?.(nn.id), 40);
-    });
-  }
+  // ── Non-negotiable: today's anchor from Planning › "The week, shaped",
+  //    falling back to the highest-priority task due today/overdue ──
+  _dashLoadWeekAnchor();
+  _dashRenderNonNeg();
 
   // ── Streak: consecutive days with a completed task + last-7 bar ──
   const stEl = document.getElementById('dash-streak');
@@ -13038,12 +13108,82 @@ function _dashRenderCards() {
   }
 }
 
+/* ── Today's rituals: habits + morning/evening routine steps ──
+   Reads the habits-module globals (_habits / _routines / _habitLogs), which are
+   already subscribed at boot by initHabitsPage(). Toggling reuses habitToggle().  */
+function _dashRoutineDone(ds) {
+  try { return JSON.parse(localStorage.getItem('hb-launcher-done-' + ds) || '{}'); } catch { return {}; }
+}
+function _dashRenderRituals() {
+  const el = document.getElementById('dash-rituals');
+  if (!el) return;
+  const ds = localDateStr(new Date());
+  const habits = (typeof _habits !== 'undefined' ? _habits : [])
+    .filter(h => h && h.status !== 'archived' && h.status !== 'graduated');
+  const routineDone = _dashRoutineDone(ds);
+  const morning = (typeof _routines !== 'undefined' ? _routines.morning : []) || [];
+  const evening = (typeof _routines !== 'undefined' ? _routines.evening : []) || [];
+  const logDone = id => !!(typeof _habitLogs !== 'undefined' && _habitLogs[ds]?.completions?.[id]);
+
+  if (!habits.length && !morning.length && !evening.length) {
+    el.innerHTML = `<div class="dash-eyebrow">TODAY'S RITUALS</div>
+      <div class="dash-nn-title muted" style="font-size:14px">No rituals yet.</div>
+      <div class="dash-nn-meta">Add habits &amp; routines in the Habits page.</div>`;
+    return;
+  }
+
+  const habitDone = habits.filter(h => logDone(h.id)).length;
+  const rows = [];
+  habits.forEach(h => {
+    const done = logDone(h.id);
+    const name = h.tinyBehavior || h.name || 'Habit';
+    rows.push(`<div class="dash-ritual-row${done ? ' done' : ''}" data-ritual-habit="${escAttr(h.id)}">
+      <span class="dash-ritual-check${done ? ' on' : ''}">${done ? '✓' : ''}</span>
+      <span class="dash-ritual-name">${escHtml(name)}</span>
+      <span class="dash-ritual-dot" style="--nc:${getCatColor(h.category)}"></span>
+    </div>`);
+  });
+  const routineBlock = (label, steps, kind) => {
+    if (!steps.length) return '';
+    return `<div class="dash-ritual-sub">${label}</div>` + steps.map((s, i) => {
+      const done = !!routineDone[kind === 'morning' ? i : 'e' + i];
+      return `<div class="dash-ritual-row${done ? ' done' : ''}" data-ritual-step="${kind}:${i}">
+        <span class="dash-ritual-check${done ? ' on' : ''}">${done ? '✓' : ''}</span>
+        <span class="dash-ritual-name">${escHtml(s.text || '')}</span>
+        ${s.time ? `<span class="dash-ritual-time">${escHtml(s.time)}</span>` : ''}
+      </div>`;
+    }).join('');
+  };
+
+  el.innerHTML =
+    `<div class="dash-eyebrow">TODAY'S RITUALS · ${habitDone}/${habits.length}</div>` +
+    (habits.length ? `<div class="dash-ritual-list">${rows.join('')}</div>` : '') +
+    routineBlock('MORNING', morning, 'morning') +
+    routineBlock('EVENING', evening, 'evening');
+
+  // Habit toggle (simple click on the dashboard)
+  el.querySelectorAll('[data-ritual-habit]').forEach(r => r.addEventListener('click', () => {
+    habitToggle(r.dataset.ritualHabit, ds).then(() => _dashRenderRituals());
+  }));
+  // Routine-step toggle (mirrors the Habits page localStorage flag)
+  el.querySelectorAll('[data-ritual-step]').forEach(r => r.addEventListener('click', () => {
+    const [kind, i] = r.dataset.ritualStep.split(':');
+    const key = kind === 'morning' ? +i : 'e' + i;
+    const map = _dashRoutineDone(ds);
+    map[key] = !map[key];
+    localStorage.setItem('hb-launcher-done-' + ds, JSON.stringify(map));
+    if (typeof _todayRenderMorningMode === 'function' && _habitsTab === 'today') _todayRenderMorningMode();
+    _dashRenderRituals();
+  }));
+}
+
 function renderDashboardBoard() {
   if (_mainPanel !== 'default') return;
   const titleEl = document.getElementById('dash-cal-title');
   if (titleEl) titleEl.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   _dashRenderTodayLine();
   _dashRenderCards();
+  _dashRenderRituals();
 }
 window.renderDashboardBoard = renderDashboardBoard;
 
@@ -14041,7 +14181,11 @@ let _drillScrub = null;
 document.addEventListener('pointerdown', e => {
   const el = e.target.closest?.('#drill-timer-display');
   if (!el) return;
-  _drillScrub = { x: e.clientX, left: Math.max(0, _drillTimerLeft) };
+  // If a countdown is live, pause it while scrubbing so the interval can't tick
+  // against the drag (the old code left it running, producing jumpy/2x countdowns).
+  const wasRunning = !!_drillTimerId;
+  if (_drillTimerId) { clearInterval(_drillTimerId); _drillTimerId = null; }
+  _drillScrub = { x: e.clientX, left: Math.max(0, _drillTimerLeft), wasRunning };
   el.classList.add('scrubbing');
 });
 document.addEventListener('pointermove', e => {
@@ -14053,7 +14197,8 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('pointerup', () => {
   if (!_drillScrub) return;
   document.getElementById('drill-timer-display')?.classList.remove('scrubbing');
-  // Scrubbed to a positive time with no countdown running → start one
+  // Resume the countdown if one was running before the scrub, or start one when the
+  // user scrubbed up from zero. The !_drillTimerId guard prevents a duplicate interval.
   if (_drillTimerLeft > 0 && !_drillTimerId) {
     _drillTimerTotal = Math.max(_drillTimerTotal || 0, _drillTimerLeft);
     _drillTimerId = setInterval(() => {
@@ -14117,16 +14262,22 @@ const DRILL_PROVIDERS = {
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true', // required or the CORS preflight is rejected
         },
+        // Structured output via tool use — the Messages API has no `output_config`
+        // json_schema param; forcing a tool call is the supported way to get JSON
+        // matching a schema back.
         body: JSON.stringify({
           model: 'claude-opus-4-8',
           max_tokens: 1024,
-          output_config: { format: { type: 'json_schema', schema: DRILL_GRADE_SCHEMA } },
+          tools: [{ name: 'submit_grade', description: 'Return the drill grade.', input_schema: DRILL_GRADE_SCHEMA }],
+          tool_choice: { type: 'tool', name: 'submit_grade' },
           messages: [{ role: 'user', content: promptText }],
         }),
       });
       if (!res.ok) throw new Error(`Claude API returned ${res.status}`);
       const data = await res.json();
-      return JSON.parse(data.content[0].text);
+      const toolUse = (data.content || []).find(b => b.type === 'tool_use');
+      if (!toolUse) throw new Error('Claude response had no tool_use block');
+      return toolUse.input;
     },
   },
   deepseek: {

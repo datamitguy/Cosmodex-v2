@@ -106,17 +106,18 @@ window.addEventListener('unhandledrejection', ev => {
 // Refresh the orb immediately when the tab becomes visible again (paired with the hidden-guard above).
 document.addEventListener('visibilitychange', () => { if (!document.hidden) drawCosmodex(); });
 
-// Double-submit guard: absorb rapid repeat clicks on any create/confirm/save/add button,
-// so double-clicking "Confirm" can't create two records. Capture phase + stopImmediatePropagation
-// blocks the second click before the button's own handler runs. 800ms cooldown per button.
+// Double-submit guard: absorb an accidental double-click on single-shot confirm/save
+// buttons so a record isn't created twice. Deliberately scoped to confirm/save only —
+// "add"/"create" controls (subtasks, list items, focus buckets) are meant to be clicked
+// rapidly, so guarding them made the app feel like it dropped clicks. 450ms cooldown.
 const _cdxClickGuard = new WeakMap();
 document.addEventListener('click', e => {
   const btn = e.target.closest('button, [data-confirm]');
   if (!btn) return;
   const cls = typeof btn.className === 'string' ? btn.className : '';
-  if (!/(?:^|[-_ ])(confirm|save|create|add)(?:[-_ ]|$)/i.test((btn.id || '') + ' ' + cls)) return;
+  if (!/(?:^|[-_ ])(confirm|save)(?:[-_ ]|$)/i.test((btn.id || '') + ' ' + cls)) return;
   const now = Date.now();
-  if (now - (_cdxClickGuard.get(btn) || 0) < 800) { e.stopImmediatePropagation(); e.preventDefault(); return; }
+  if (now - (_cdxClickGuard.get(btn) || 0) < 450) { e.stopImmediatePropagation(); e.preventDefault(); return; }
   _cdxClickGuard.set(btn, now);
 }, true);
 

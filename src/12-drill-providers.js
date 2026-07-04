@@ -51,16 +51,22 @@ const DRILL_PROVIDERS = {
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true', // required or the CORS preflight is rejected
         },
+        // Structured output via tool use — the Messages API has no `output_config`
+        // json_schema param; forcing a tool call is the supported way to get JSON
+        // matching a schema back.
         body: JSON.stringify({
           model: 'claude-opus-4-8',
           max_tokens: 1024,
-          output_config: { format: { type: 'json_schema', schema: DRILL_GRADE_SCHEMA } },
+          tools: [{ name: 'submit_grade', description: 'Return the drill grade.', input_schema: DRILL_GRADE_SCHEMA }],
+          tool_choice: { type: 'tool', name: 'submit_grade' },
           messages: [{ role: 'user', content: promptText }],
         }),
       });
       if (!res.ok) throw new Error(`Claude API returned ${res.status}`);
       const data = await res.json();
-      return JSON.parse(data.content[0].text);
+      const toolUse = (data.content || []).find(b => b.type === 'tool_use');
+      if (!toolUse) throw new Error('Claude response had no tool_use block');
+      return toolUse.input;
     },
   },
   deepseek: {

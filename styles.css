@@ -9,7 +9,7 @@
 
   /* Text — white transparency hierarchy */
   --cream:       rgba(255,255,255,0.88);   /* body text */
-  --muted:       rgba(255,255,255,0.62);   /* secondary / labels */
+  --muted:       rgba(255,255,255,0.66);   /* secondary / labels (nudged up for contrast) */
   --muted-readable: rgba(255,255,255,0.70); /* readable secondary */
   --ink:         #000000;
 
@@ -1370,7 +1370,7 @@ body::after {
 /* ── Floating Pomodoro Panel ── */
 #td-pomo-float {
   position: relative; z-index: 40;
-  width: 248px; border-radius: 20px; overflow: hidden;
+  width: 340px; border-radius: 24px; overflow: hidden;
   background: rgba(255,255,255,0.04);
   backdrop-filter: var(--glass-blur-deep);
   -webkit-backdrop-filter: var(--glass-blur-deep);
@@ -1474,23 +1474,25 @@ body::after {
   text-transform: uppercase; color: var(--muted-readable); text-align: center;
 }
 .pomo-ev-title-el {
-  font-family: var(--font-display); font-size: 16px; font-weight: 300;
-  color: var(--gold); text-align: center; width: 100%;
+  font-family: var(--font-display); font-size: 17px; font-weight: 300; font-style: italic;
+  color: #fff; text-align: center; width: 100%;
+  text-shadow: 0 0 12px rgba(255,255,255,0.25);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pomo-ring-wrap { position: relative; width: 130px; height: 130px; flex-shrink: 0; overflow: visible; }
+.pomo-ring-wrap { position: relative; width: 188px; height: 188px; flex-shrink: 0; overflow: visible; }
 #pomo-ring { position: absolute; inset: 0; }
 .pomo-center {
   position: absolute; inset: 0; display: flex; flex-direction: column;
   align-items: center; justify-content: center; pointer-events: none;
 }
 .pomo-time {
-  font-family: var(--font-display); font-size: 28px; font-weight: 300;
-  font-variant-numeric: tabular-nums; line-height: 1; color: var(--cream);
+  font-family: var(--font-mono); font-size: 40px; font-weight: 400;
+  font-variant-numeric: tabular-nums; line-height: 1; color: #fff;
+  text-shadow: 0 0 18px rgba(255,255,255,0.45);
 }
 .pomo-phase-label {
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em;
-  color: var(--muted); text-transform: uppercase; margin-top: 4px;
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em;
+  color: rgba(255,255,255,0.5); text-transform: uppercase; margin-top: 8px;
 }
 .pomo-swipe-section { width: 100%; }
 .pomo-swipe-ctrl {
@@ -1531,10 +1533,13 @@ body::after {
   border: 1px solid var(--border); background: none; color: var(--muted);
   cursor: pointer; border-radius: 6px; min-height: 44px; transition: var(--ease-fast);
 }
-.pomo-btn.pomo-primary { background: rgba(255,255,255,.1); border-color: var(--gold); color: var(--gold); }
-.pomo-btn.pomo-primary:hover { background: rgba(255,255,255,.2); }
-.pomo-btn.pomo-danger { border-color: var(--border); color: var(--muted); }
-.pomo-btn.pomo-danger:hover { background: rgba(255,255,255,.06); }
+.pomo-btn.pomo-primary {
+  background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.35); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 14px rgba(255,255,255,.08);
+}
+.pomo-btn.pomo-primary:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.5); }
+.pomo-btn.pomo-danger { border-color: rgba(196,92,42,.4); color: #c45c2a; }
+.pomo-btn.pomo-danger:hover { background: rgba(196,92,42,.10); border-color: rgba(196,92,42,.6); }
 .pomo-sess { display: flex; gap: 5px; }
 .pomo-sess-dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid rgba(255,255,255,.4); }
 .pomo-sess-dot.done { background: var(--gold); border-color: var(--gold); }
@@ -1620,14 +1625,17 @@ body::after {
   border-radius: 19px;
 }
 #pomo-lock-msg.show { display: flex; }
-.pomo-lock-text { font-size: 16px; color: var(--cream); text-align: center; line-height: 1.6; }
-.pomo-lock-withdraw {
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.10em; text-transform: uppercase;
-  padding: 9px 22px; border-radius: 6px; cursor: pointer;
-  border: 1px solid var(--gold); color: var(--gold); background: none; min-height: 36px;
-  transition: background .15s;
+.pomo-lock-text {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: rgba(255,255,255,0.55); text-align: center; line-height: 2;
 }
-.pomo-lock-withdraw:hover { background: rgba(212,162,78,.1); }
+.pomo-lock-withdraw {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 10px 22px; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgba(196,92,42,.4); color: #c45c2a; background: none; min-height: 36px;
+  transition: background .15s, border-color .15s;
+}
+.pomo-lock-withdraw:hover { background: rgba(196,92,42,.10); border-color: rgba(196,92,42,.6); }
 
 .task-add-cancel:hover { color: var(--gold); border-color: rgba(212,162,78,0.3); }
 
@@ -8277,3 +8285,40 @@ select.sched-input { background: #181818; }
 }
 .dash-quick-add-input::placeholder { color:rgba(255,255,255,0.4); }
 .dash-quick-add-input:focus { border-color:rgba(53,249,47,0.55); box-shadow:0 0 0 3px rgba(53,249,47,0.1); }
+
+/* ── Today's rituals card ─────────────────────────────── */
+.dash-ritual-list { display:flex; flex-direction:column; margin-top:12px; }
+.dash-ritual-sub {
+  font-family:var(--font-mono); font-size:9px; letter-spacing:0.14em; color:rgba(255,255,255,0.4);
+  margin:14px 0 6px; text-transform:uppercase;
+}
+.dash-ritual-row {
+  display:flex; align-items:center; gap:10px; padding:7px 0; cursor:pointer;
+  border-top:1px solid rgba(255,255,255,0.05);
+}
+.dash-ritual-list .dash-ritual-row:first-child { border-top:none; }
+.dash-ritual-check {
+  flex:none; width:18px; height:18px; border-radius:50%;
+  border:1.5px solid rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center;
+  font-size:10px; color:#0a0a0a; transition:all 0.18s var(--ease-glass);
+}
+.dash-ritual-check.on { background:rgb(53,249,47); border-color:rgb(53,249,47); box-shadow:0 0 8px rgba(53,249,47,0.5); }
+.dash-ritual-name {
+  flex:1; font-family:var(--font-display); font-weight:300; font-size:14px; color:rgba(255,255,255,0.88);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.dash-ritual-row.done .dash-ritual-name { color:rgba(255,255,255,0.4); text-decoration:line-through; }
+.dash-ritual-dot { flex:none; width:7px; height:7px; border-radius:50%; background:var(--nc,rgba(255,255,255,0.4)); }
+.dash-ritual-time { flex:none; font-family:var(--font-mono); font-size:9px; letter-spacing:0.08em; color:rgba(255,255,255,0.4); }
+
+/* ── Audit 5.4: mobile touch-target floor ──────────────
+   Expand small delete / icon controls to a ≥44px tap area on touch viewports
+   without changing their visual size (padding is transparent).  */
+@media (max-width: 600px) {
+  .list-item-del, .subtask-del, .people-del, .cat-del, .pf-close,
+  .overlay-close, .atk-detail-x, [data-del], [data-delsub] {
+    min-width: 44px; min-height: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .drawer-item { min-height: 44px; }
+}

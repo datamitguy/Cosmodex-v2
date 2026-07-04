@@ -603,7 +603,11 @@ let _drillScrub = null;
 document.addEventListener('pointerdown', e => {
   const el = e.target.closest?.('#drill-timer-display');
   if (!el) return;
-  _drillScrub = { x: e.clientX, left: Math.max(0, _drillTimerLeft) };
+  // If a countdown is live, pause it while scrubbing so the interval can't tick
+  // against the drag (the old code left it running, producing jumpy/2x countdowns).
+  const wasRunning = !!_drillTimerId;
+  if (_drillTimerId) { clearInterval(_drillTimerId); _drillTimerId = null; }
+  _drillScrub = { x: e.clientX, left: Math.max(0, _drillTimerLeft), wasRunning };
   el.classList.add('scrubbing');
 });
 document.addEventListener('pointermove', e => {
@@ -615,7 +619,8 @@ document.addEventListener('pointermove', e => {
 document.addEventListener('pointerup', () => {
   if (!_drillScrub) return;
   document.getElementById('drill-timer-display')?.classList.remove('scrubbing');
-  // Scrubbed to a positive time with no countdown running → start one
+  // Resume the countdown if one was running before the scrub, or start one when the
+  // user scrubbed up from zero. The !_drillTimerId guard prevents a duplicate interval.
   if (_drillTimerLeft > 0 && !_drillTimerId) {
     _drillTimerTotal = Math.max(_drillTimerTotal || 0, _drillTimerLeft);
     _drillTimerId = setInterval(() => {

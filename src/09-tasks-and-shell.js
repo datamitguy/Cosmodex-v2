@@ -546,6 +546,19 @@ function openTaskEditModal(taskId) {
       `<option value="${escAttr(k)}">${escHtml(v.label)}</option>`).join('');
   catSel.value = task.category || '';
 
+  // Recurrence select — preserve an existing custom:… value as its own option
+  const recSel = document.getElementById('te-recur');
+  if (recSel) {
+    const rv = task.recurrence || '';
+    recSel.querySelectorAll('option[data-custom]').forEach(o => o.remove());
+    if (rv && !Array.from(recSel.options).some(o => o.value === rv)) {
+      const o = document.createElement('option');
+      o.value = rv; o.dataset.custom = '1'; o.textContent = _recurLabel(rv);
+      recSel.appendChild(o);
+    }
+    recSel.value = rv;
+  }
+
   // Energy picker
   const picker = document.getElementById('te-energy-picker');
   picker.querySelectorAll('.energy-pill').forEach(p => {
@@ -562,12 +575,13 @@ async function confirmTaskEdit() {
   const dueDate  = document.getElementById('te-date').value || null;
   const priority = document.getElementById('te-priority').value;
   const category = document.getElementById('te-category').value || null;
+  const recurrence = document.getElementById('te-recur')?.value || '';
   const notes    = document.getElementById('te-notes').value.trim() || null;
   const energyType = document.getElementById('te-energy-picker')
     .querySelector('.energy-pill.active')?.dataset.energy || null;
 
   if (!title) { showToast('Title is required', 'error'); return; }
-  await updateTask(_editTaskId, { title, dueDate, priority, category, notes, energyType });
+  await updateTask(_editTaskId, { title, dueDate, priority, category, recurrence, notes, energyType });
   syncTaskTitleToMilestone(_editTaskId, title);
   closeOverlay('task-edit-modal');
   _editTaskId = null;
@@ -3943,9 +3957,10 @@ window.addEventListener('cdx-auth-ready', () => {
       _catUnsub = onSnapshot(doc(window.CDX_DB, 'users', _catUser.uid, 'config', 'categories'), snap => {
         if (snap.exists()) {
           const data = snap.data();
-          if (data?.categories && typeof data.categories === 'object') {
-            // Merge: Firestore wins for existing keys; preserve local-only keys
-            CATEGORIES = Object.assign({}, CATEGORIES, data.categories);
+          if (data?.categories && typeof data.categories === 'object' && Object.keys(data.categories).length) {
+            // Firestore is the single source of truth: overwrite so deletions on
+            // another device propagate here instead of resurrecting via merge.
+            CATEGORIES = data.categories;
             saveCategoriesLocal();
             renderSettingsCatList?.();
             renderSettingsCats?.();
@@ -3960,11 +3975,9 @@ window.addEventListener('cdx-auth-ready', () => {
         if (snap.exists()) {
           const data = snap.data();
           if (Array.isArray(data?.people)) {
-            // Merge: keep local-only people (by name) not yet in Firestore
-            const remotePeople = data.people;
-            const remoteNames = new Set(remotePeople.map(p => p.name));
-            const localOnly = PEOPLE.filter(p => !remoteNames.has(p.name));
-            PEOPLE = [...remotePeople, ...localOnly];
+            // Firestore is the single source of truth: overwrite so a person
+            // deleted on another device isn't resurrected by a local-only merge.
+            PEOPLE = data.people;
             localStorage.setItem('cdx_people', JSON.stringify(PEOPLE));
             renderSettingsPeople?.();
           }
@@ -4151,18 +4164,23 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
 
   function drawPomoRing() {
     const cv = document.getElementById('pomo-ring'); if (!cv) return;
-    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = 50;
+    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, cx = W / 2, cy = H / 2, R = W * 0.40;
+    const lw = Math.max(6, W * 0.045);
     ctx.clearRect(0, 0, W, H);
     const frac = pomo.totalSecs > 0 ? pomo.remainSecs / pomo.totalSecs : 1;
     const sa = -Math.PI / 2, ea = sa + (1 - frac) * Math.PI * 2;
     // Track
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.10)'; ctx.lineWidth = 10; ctx.stroke();
-    // Progress
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = lw; ctx.stroke();
+    // Progress — design-system white glow
     if (frac < 1) {
-      const col = pomo.running ? 'rgba(107,159,212,0.95)' : pomo.remainSecs < pomo.totalSecs ? '#e4e4e4' : 'rgba(255,255,255,0.4)';
+      ctx.save();
       ctx.beginPath(); ctx.arc(cx, cy, R, sa, ea);
-      ctx.strokeStyle = col; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
+      ctx.strokeStyle = pomo.running ? '#ffffff' : pomo.remainSecs < pomo.totalSecs ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = lw; ctx.lineCap = 'round';
+      ctx.shadowColor = 'rgba(255,255,255,0.55)'; ctx.shadowBlur = pomo.running ? 16 : 6;
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
@@ -4733,7 +4751,7 @@ function renderAtkDetail() {
     <div class="atk-detail-head">
       <div class="atk-detail-topline">
         <span class="atk-catdot" style="${cat ? `background:${catClr};box-shadow:0 0 6px ${catClr}88` : 'background:transparent;border:1px solid rgba(255,255,255,.15)'}"></span>
-        <span class="atk-tel">${eyebrow}</span>
+        <span class="atk-tel atk-prio-click" data-atk-edit title="Click to edit category">${eyebrow}</span>
         <div style="flex:1"></div>
         <button class="atk-detail-x" data-atk-close>×</button>
       </div>
@@ -4745,8 +4763,8 @@ function renderAtkDetail() {
         <button class="atk-status-btn${task.done ? ' done' : ''}" data-atk-toggle>${task.done ? '✓ Done — reopen' : '● Mark done'}</button>
       </div>
       <div class="atk-detail-grid">
-        <div><div class="atk-eyebrow">DUE</div><div class="atk-detail-val">${escHtml(dueTxt)}</div></div>
-        <div><div class="atk-eyebrow">RECURRENCE</div><div class="atk-detail-val">↻ ${escHtml(recurTxt)}</div></div>
+        <div><div class="atk-eyebrow">DUE</div><div class="atk-detail-val atk-prio-click" data-atk-edit title="Click to edit">${escHtml(dueTxt)}</div></div>
+        <div><div class="atk-eyebrow">RECURRENCE</div><div class="atk-detail-val atk-prio-click" data-atk-edit title="Click to edit">↻ ${escHtml(recurTxt)}</div></div>
         <div><div class="atk-eyebrow">PRIORITY</div><div class="atk-detail-val atk-prio-click" data-atk-prio title="Click to cycle"><span class="atk-priocell inline">${_atkPrioDots(task.priority)}</span> ${prioTxt}</div></div>
         <div><div class="atk-eyebrow">CREATED</div><div class="atk-detail-val">${escHtml(created)}</div></div>
       </div>
@@ -4761,6 +4779,7 @@ function renderAtkDetail() {
       </div>
     </div>
     <div class="atk-detail-foot">
+      <button class="atk-foot-btn" data-atk-edit>✎ Edit</button>
       ${task.done ? '' : '<button class="atk-foot-btn" data-atk-focus>◉ Focus</button>'}
       <button class="atk-foot-btn" data-atk-sched>☷ Schedule</button>
       <div style="flex:1"></div>
@@ -4768,6 +4787,7 @@ function renderAtkDetail() {
     </div>`;
 
   el.querySelector('[data-atk-close]').onclick = () => { _atkSelectedId = null; renderAllTasksList(); renderAtkDetail(); };
+  el.querySelectorAll('[data-atk-edit]').forEach(b => b.onclick = () => openTaskEditModal(task.id));
   el.querySelector('[data-atk-toggle]').onclick = () => toggleTask(task.id);
   el.querySelector('[data-atk-prio]').onclick = () => {
     const order = ['high', 'med', 'low'];
@@ -4950,25 +4970,56 @@ function _dashRenderTodayLine() {
   });
 }
 
+// Cache of today's anchor from Planning › "The week, shaped"
+let _dashWeekAnchor = { key: null, text: '', loading: false };
+function _dashLoadWeekAnchor() {
+  if (typeof _planWeekKey !== 'function' || typeof _planLoadDoc !== 'function') return;
+  const key = _planWeekKey();
+  if (_dashWeekAnchor.key === key || _dashWeekAnchor.loading) return; // already have / fetching this week
+  _dashWeekAnchor.loading = true;
+  _planLoadDoc('weeklyPlans', key).then(d => {
+    const days = _planWeekDays();
+    const idx  = days.indexOf(localDateStr(new Date()));
+    _dashWeekAnchor = { key, text: (d.weekShaped && idx >= 0 ? (d.weekShaped[idx] || '') : '').trim(), loading: false };
+    if (_mainPanel === 'default') _dashRenderNonNeg();
+  }).catch(() => { _dashWeekAnchor.loading = false; });
+}
+// Force a re-fetch of today's anchor on next dashboard render (e.g. after editing Planning)
+window._dashInvalidateAnchor = () => { _dashWeekAnchor.key = null; };
+
+function _dashRenderNonNeg() {
+  const nnEl = document.getElementById('dash-nn');
+  if (!nnEl) return;
+  const today = localDateStr(new Date());
+  const anchor = _dashWeekAnchor.text;
+  if (anchor) {
+    nnEl.innerHTML = `<div class="dash-eyebrow">TODAY'S NON-NEGOTIABLE</div>
+      <div class="dash-nn-title">“${escHtml(anchor)}”</div>
+      <div class="dash-nn-meta">THIS WEEK, SHAPED · TODAY'S ANCHOR</div>`;
+    return;
+  }
+  // Fallback: highest-priority incomplete task due today or overdue
+  const pool = (TASKS || []).filter(t => !t.someday && !t.done && t.dueDate && t.dueDate <= today)
+    .sort((a, b) => (_dashPrioRank(b.priority) - _dashPrioRank(a.priority)) || (a.dueDate < b.dueDate ? -1 : 1));
+  const nn = pool[0];
+  nnEl.innerHTML = `<div class="dash-eyebrow">TODAY'S NON-NEGOTIABLE</div>` + (nn
+    ? `<div class="dash-nn-title" data-open="${escAttr(nn.id)}">“${escHtml(nn.title)}”</div>
+       <div class="dash-nn-meta">${nn.dueDate < today ? 'OVERDUE · ' : ''}${(nn.priority || 'med').toUpperCase()} PRIORITY</div>`
+    : `<div class="dash-nn-title muted">Set today's anchor.</div>
+       <div class="dash-nn-meta">Planning › This week › "The week, shaped"</div>`);
+  nn && nnEl.querySelector('[data-open]')?.addEventListener('click', () => {
+    showMainPanel('alltasks');
+    setTimeout(() => window.openAtkDetail?.(nn.id), 40);
+  });
+}
+
 function _dashRenderCards() {
   const today = localDateStr(new Date());
 
-  // ── Non-negotiable: highest-priority incomplete task due today or overdue ──
-  const nnEl = document.getElementById('dash-nn');
-  if (nnEl) {
-    const pool = (TASKS || []).filter(t => !t.someday && !t.done && t.dueDate && t.dueDate <= today)
-      .sort((a, b) => (_dashPrioRank(b.priority) - _dashPrioRank(a.priority)) || (a.dueDate < b.dueDate ? -1 : 1));
-    const nn = pool[0];
-    nnEl.innerHTML = `<div class="dash-eyebrow">TODAY'S NON-NEGOTIABLE</div>` + (nn
-      ? `<div class="dash-nn-title" data-open="${escAttr(nn.id)}">“${escHtml(nn.title)}”</div>
-         <div class="dash-nn-meta">${nn.dueDate < today ? 'OVERDUE · ' : ''}${(nn.priority || 'med').toUpperCase()} PRIORITY</div>`
-      : `<div class="dash-nn-title muted">Nothing pressing.</div>
-         <div class="dash-nn-meta">Your top-priority task appears here.</div>`);
-    nnEl.querySelector('[data-open]')?.addEventListener('click', () => {
-      showMainPanel('alltasks');
-      setTimeout(() => window.openAtkDetail?.(nn.id), 40);
-    });
-  }
+  // ── Non-negotiable: today's anchor from Planning › "The week, shaped",
+  //    falling back to the highest-priority task due today/overdue ──
+  _dashLoadWeekAnchor();
+  _dashRenderNonNeg();
 
   // ── Streak: consecutive days with a completed task + last-7 bar ──
   const stEl = document.getElementById('dash-streak');
@@ -5013,12 +5064,82 @@ function _dashRenderCards() {
   }
 }
 
+/* ── Today's rituals: habits + morning/evening routine steps ──
+   Reads the habits-module globals (_habits / _routines / _habitLogs), which are
+   already subscribed at boot by initHabitsPage(). Toggling reuses habitToggle().  */
+function _dashRoutineDone(ds) {
+  try { return JSON.parse(localStorage.getItem('hb-launcher-done-' + ds) || '{}'); } catch { return {}; }
+}
+function _dashRenderRituals() {
+  const el = document.getElementById('dash-rituals');
+  if (!el) return;
+  const ds = localDateStr(new Date());
+  const habits = (typeof _habits !== 'undefined' ? _habits : [])
+    .filter(h => h && h.status !== 'archived' && h.status !== 'graduated');
+  const routineDone = _dashRoutineDone(ds);
+  const morning = (typeof _routines !== 'undefined' ? _routines.morning : []) || [];
+  const evening = (typeof _routines !== 'undefined' ? _routines.evening : []) || [];
+  const logDone = id => !!(typeof _habitLogs !== 'undefined' && _habitLogs[ds]?.completions?.[id]);
+
+  if (!habits.length && !morning.length && !evening.length) {
+    el.innerHTML = `<div class="dash-eyebrow">TODAY'S RITUALS</div>
+      <div class="dash-nn-title muted" style="font-size:14px">No rituals yet.</div>
+      <div class="dash-nn-meta">Add habits &amp; routines in the Habits page.</div>`;
+    return;
+  }
+
+  const habitDone = habits.filter(h => logDone(h.id)).length;
+  const rows = [];
+  habits.forEach(h => {
+    const done = logDone(h.id);
+    const name = h.tinyBehavior || h.name || 'Habit';
+    rows.push(`<div class="dash-ritual-row${done ? ' done' : ''}" data-ritual-habit="${escAttr(h.id)}">
+      <span class="dash-ritual-check${done ? ' on' : ''}">${done ? '✓' : ''}</span>
+      <span class="dash-ritual-name">${escHtml(name)}</span>
+      <span class="dash-ritual-dot" style="--nc:${getCatColor(h.category)}"></span>
+    </div>`);
+  });
+  const routineBlock = (label, steps, kind) => {
+    if (!steps.length) return '';
+    return `<div class="dash-ritual-sub">${label}</div>` + steps.map((s, i) => {
+      const done = !!routineDone[kind === 'morning' ? i : 'e' + i];
+      return `<div class="dash-ritual-row${done ? ' done' : ''}" data-ritual-step="${kind}:${i}">
+        <span class="dash-ritual-check${done ? ' on' : ''}">${done ? '✓' : ''}</span>
+        <span class="dash-ritual-name">${escHtml(s.text || '')}</span>
+        ${s.time ? `<span class="dash-ritual-time">${escHtml(s.time)}</span>` : ''}
+      </div>`;
+    }).join('');
+  };
+
+  el.innerHTML =
+    `<div class="dash-eyebrow">TODAY'S RITUALS · ${habitDone}/${habits.length}</div>` +
+    (habits.length ? `<div class="dash-ritual-list">${rows.join('')}</div>` : '') +
+    routineBlock('MORNING', morning, 'morning') +
+    routineBlock('EVENING', evening, 'evening');
+
+  // Habit toggle (simple click on the dashboard)
+  el.querySelectorAll('[data-ritual-habit]').forEach(r => r.addEventListener('click', () => {
+    habitToggle(r.dataset.ritualHabit, ds).then(() => _dashRenderRituals());
+  }));
+  // Routine-step toggle (mirrors the Habits page localStorage flag)
+  el.querySelectorAll('[data-ritual-step]').forEach(r => r.addEventListener('click', () => {
+    const [kind, i] = r.dataset.ritualStep.split(':');
+    const key = kind === 'morning' ? +i : 'e' + i;
+    const map = _dashRoutineDone(ds);
+    map[key] = !map[key];
+    localStorage.setItem('hb-launcher-done-' + ds, JSON.stringify(map));
+    if (typeof _todayRenderMorningMode === 'function' && _habitsTab === 'today') _todayRenderMorningMode();
+    _dashRenderRituals();
+  }));
+}
+
 function renderDashboardBoard() {
   if (_mainPanel !== 'default') return;
   const titleEl = document.getElementById('dash-cal-title');
   if (titleEl) titleEl.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   _dashRenderTodayLine();
   _dashRenderCards();
+  _dashRenderRituals();
 }
 window.renderDashboardBoard = renderDashboardBoard;
 

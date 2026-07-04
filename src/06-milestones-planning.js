@@ -23,7 +23,7 @@ async function updateMilestoneProject(id, data) {
 }
 
 async function deleteMilestoneProject(id) {
-  const { deleteDoc, updateDoc, getDocs, query, where } = window.CDX_FB;
+  const { getDocs, query, where, writeBatch } = window.CDX_FB;
   const [evSnap, listSnap] = await Promise.all([
     getDocs(query(_uc('milestoneEvents'), where('projectId', '==', id))),
     getDocs(query(_uc('milestone_lists'), where('projectId', '==', id))),
@@ -37,14 +37,16 @@ async function deleteMilestoneProject(id) {
   // Completed tasks are preserved (unlinked); incomplete ones are deleted with the commitment.
   const { del, keep } = _partitionLinkedTasks(taskIds);
   const calEventIds = _collectTaskCalEvents(del);
-  await Promise.all([
-    ...evSnap.docs.map(d => deleteDoc(d.ref)),
-    ...listSnap.docs.map(d => deleteDoc(d.ref)),
-    ...del.map(tid => deleteDoc(_ud('tasks', tid))),
-    ...keep.map(tid => updateDoc(_ud('tasks', tid), { projectId: null })),
-    ...calEventIds.map(cid => deleteDoc(_ud('calEvents', cid))),
-  ]);
-  await deleteDoc(_ud('milestoneProjects', id));
+  // Atomic cascade: one WriteBatch so a mid-flight failure can't leave orphaned
+  // events/lists/tasks/calEvents pointing at a deleted commitment.
+  const batch = writeBatch(window.CDX_DB);
+  evSnap.docs.forEach(d => batch.delete(d.ref));
+  listSnap.docs.forEach(d => batch.delete(d.ref));
+  del.forEach(tid => batch.delete(_ud('tasks', tid)));
+  keep.forEach(tid => batch.update(_ud('tasks', tid), { projectId: null }));
+  calEventIds.forEach(cid => batch.delete(_ud('calEvents', cid)));
+  batch.delete(_ud('milestoneProjects', id));
+  await batch.commit();
 }
 
 // Split linked task ids into those to delete (incomplete) vs keep (completed).

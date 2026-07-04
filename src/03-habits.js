@@ -12,11 +12,15 @@ function last7Days() {
 function habitsSubscribe() {
   const uid = getHabitsUid();
   if (!uid || !window.CDX_DB) return;
-  const { collection, query, where, onSnapshot } = window.CDX_FB;
-  const db = window.CDX_DB;
-
+  // Subscribe once. Switching Habits tabs used to tear down and re-establish these
+  // listeners on every click, re-downloading the full habits list + 91 days of logs
+  // each time. The snapshots stay live and update the in-memory arrays; callers just
+  // re-render from cache. cleanupAllListeners() nulls these on sign-out.
+  if (_habitsUnsub && _habitLogsUnsub) return;
   if (_habitsUnsub) { _habitsUnsub(); _habitsUnsub = null; }
   if (_habitLogsUnsub) { _habitLogsUnsub(); _habitLogsUnsub = null; }
+  const { collection, query, where, onSnapshot } = window.CDX_FB;
+  const db = window.CDX_DB;
 
   _habitsUnsub = onSnapshot(collection(db, 'users', uid, 'habits'), snap => {
     // Keep graduated habits in memory (Reflect + Habits tab need them)
@@ -27,6 +31,7 @@ function habitsSubscribe() {
     if (_habitsTab === 'habits') renderHabitsTab();
     if (_habitsTab === 'hinsights') renderHabitsInsights();
     if (_habitsTab === 'reflect') renderReflect();
+    window.renderDashboardBoard?.(); // dashboard rituals card (guards on _mainPanel)
   }, err => console.warn('habits onSnapshot:', err.message));
 
   // For 13-week heatmap we need 91 days of logs
@@ -39,6 +44,7 @@ function habitsSubscribe() {
       if (_habitsTab === 'habits') renderHabitsTab();
       if (_habitsTab === 'hinsights') renderHabitsInsights();
       if (_habitsTab === 'reflect') renderReflect();
+      window.renderDashboardBoard?.();
     }, err => console.warn('habitLogs onSnapshot:', err.message));
 }
 
@@ -49,6 +55,7 @@ function routinesSubscribe() {
   _routinesUnsub = onSnapshot(doc(window.CDX_DB, 'users', uid, 'routines', 'config'), snap => {
     if (snap.exists()) { const d = snap.data(); _routines = { morning: d.morning||[], evening: d.evening||[] }; }
     if (_habitsTab === 'today') _todayRenderMorningMode();
+    window.renderDashboardBoard?.();
   }, err => console.warn('routines onSnapshot:', err.message));
 }
 
@@ -675,7 +682,7 @@ async function habitDelete(habitId) {
   renderHabits();
   if (_habitsTab === 'habits') renderHabitsTab();
   if (_habitsTab === 'today') renderToday();
-  const { doc, deleteDoc, getDocs, collection, updateDoc, deleteField } = window.CDX_FB;
+  const { doc, deleteDoc, writeBatch, deleteField } = window.CDX_FB;
   try {
     await deleteDoc(doc(window.CDX_DB, 'users', uid, 'habits', habitId));
   } catch(e) {
@@ -684,12 +691,21 @@ async function habitDelete(habitId) {
     renderHabits();
     return;
   }
-  // Best-effort: purge this habit's entries from every habitLogs doc so stats don't count a ghost
+  // Purge this habit's completions from the *cached* logs only (≤91 days already in
+  // memory), in a single bounded WriteBatch. The old path did getDocs() over the whole
+  // habitLogs collection and fired one updateDoc per matching day — potentially hundreds
+  // of parallel writes that throttled Firestore. Older logs keep a harmless ghost key;
+  // stats iterate live _habits so a deleted habit never counts.
   try {
-    const snap = await getDocs(collection(window.CDX_DB, 'users', uid, 'habitLogs'));
-    await Promise.all(snap.docs
-      .filter(d => d.data()?.completions && Object.prototype.hasOwnProperty.call(d.data().completions, habitId))
-      .map(d => updateDoc(d.ref, { ['completions.' + habitId]: deleteField() })));
+    const dates = Object.keys(_habitLogs).filter(ds => _habitLogs[ds]?.completions
+      && Object.prototype.hasOwnProperty.call(_habitLogs[ds].completions, habitId));
+    dates.forEach(ds => { delete _habitLogs[ds].completions[habitId]; });
+    for (let i = 0; i < dates.length; i += 400) {
+      const batch = writeBatch(window.CDX_DB);
+      dates.slice(i, i + 400).forEach(ds =>
+        batch.update(doc(window.CDX_DB, 'users', uid, 'habitLogs', ds), { ['completions.' + habitId]: deleteField() }));
+      await batch.commit();
+    }
   } catch(e) { console.warn('habitLogs purge after habitDelete failed:', e.message); }
 }
 

@@ -380,6 +380,7 @@
           <div class="dash-card dash-glass" id="dash-nn"><!-- non-negotiable --></div>
           <div class="dash-card dash-glass" id="dash-streak"><!-- streak --></div>
           <div class="dash-card dash-glass" id="dash-commit"><!-- deep work / commit --></div>
+          <div class="dash-card dash-glass" id="dash-rituals"><!-- today's habits + routines --></div>
         </div>
 
       </div>
@@ -1320,7 +1321,7 @@
         <div class="pomo-ring-wrap">
           <div class="pf-breath-bg-outer"></div>
           <div class="pf-breath-bg-inner"></div>
-          <canvas id="pomo-ring" width="130" height="130"></canvas>
+          <canvas id="pomo-ring" width="188" height="188"></canvas>
           <div class="pomo-center">
             <div class="pomo-time" id="pomo-time">25:00</div>
             <div class="pomo-phase-label" id="pomo-phase">Ready</div>
@@ -1366,7 +1367,7 @@
         </div>
       </div>
       <div id="pomo-lock-msg">
-        <div class="pomo-lock-text">Session in progress.<br>Stop the timer to close.</div>
+        <div class="pomo-lock-text">Session locked · one focus that cannot slip</div>
         <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
       </div>
     </div>
@@ -1621,9 +1622,22 @@
           </select>
         </div>
       </div>
-      <div>
-        <label class="sched-label">Category</label>
-        <select id="te-category" class="sched-input"></select>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="sched-label">Category</label>
+          <select id="te-category" class="sched-input"></select>
+        </div>
+        <div>
+          <label class="sched-label">Recurrence</label>
+          <select id="te-recur" class="sched-input">
+            <option value="">One-time</option>
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
       </div>
       <div>
         <label class="sched-label">Energy Type</label>
@@ -1989,6 +2003,14 @@
      — UI interactions only (no data/auth logic yet)
      ═══════════════════════════════════════════════════════ -->
 <script src="app.js"></script>
+<!-- Audit 5.3: register service worker for offline shell load (relative path → /Cosmodex-v2/ scope) -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+</script>
 
 <!-- ── Toast notification container ─────────────────── -->
 <div id="cdx-toast-container"></div>
