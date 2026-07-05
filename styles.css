@@ -8796,3 +8796,28 @@ select.sched-input { background: #181818; }
   padding:5px 10px; border-radius:7px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.7);
   transition:all .18s var(--ease-glass); }
 .ptw-week-today:hover { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.35); color:#fff; }
+
+/* ── Commitment modal: linked tasks ── */
+.ms-proj-task-row { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:7px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); }
+.ms-proj-task-row.done .ms-proj-task-name { text-decoration:line-through; color:rgba(255,255,255,.4); }
+.ms-proj-task-dot { width:7px; height:7px; border-radius:50%; flex:none; }
+.ms-proj-task-name { flex:1; min-width:0; font-family:var(--font-body); font-size:13px; color:rgba(255,255,255,.9); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ms-proj-task-due { font-family:var(--font-mono); font-size:9px; letter-spacing:.06em; color:rgba(255,255,255,.45); flex:none; }
+.ms-proj-task-unlink { background:none; border:none; color:rgba(255,255,255,.35); cursor:pointer; font-size:12px; flex:none; padding:2px 4px; }
+.ms-proj-task-unlink:hover { color:#e05555; }
+.ms-proj-search-item { display:flex; align-items:center; gap:8px; padding:8px 10px; cursor:pointer; font-family:var(--font-body); font-size:13px; color:rgba(255,255,255,.85); border-bottom:1px solid rgba(255,255,255,.04); }
+.ms-proj-search-item:hover { background:rgba(255,255,255,.06); }
+
+/* ── Quarter tab: task rows (tasks-tab inspired) ── */
+.pq-task-list { display:flex; flex-direction:column; gap:2px; margin:10px 0 8px; }
+.pq-task-row { display:flex; align-items:center; gap:9px; padding:6px 2px; border-top:1px solid rgba(255,255,255,.05); }
+.pq-task-row:first-child { border-top:none; }
+.pq-task-check { width:15px; height:15px; border-radius:5px; border:1.5px solid rgba(255,255,255,.3); flex:none; cursor:pointer; background:#000; transition:all .18s var(--ease-glass); }
+.pq-task-check:hover { border-color:rgba(255,255,255,.6); }
+.pq-task-check.on { background:rgb(53,249,47); border-color:rgb(53,249,47); box-shadow:0 0 8px rgba(53,249,47,.5); }
+.pq-task-dot { width:7px; height:7px; border-radius:50%; flex:none; }
+.pq-task-name { flex:1; min-width:0; font-family:var(--font-body); font-size:13px; color:rgba(255,255,255,.88); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
+.pq-task-name:hover { color:#fff; }
+.pq-task-row.done .pq-task-name { text-decoration:line-through; color:rgba(255,255,255,.4); }
+.pq-task-due { font-family:var(--font-mono); font-size:9px; letter-spacing:.06em; color:rgba(255,255,255,.45); flex:none; }
+.pq-task-due.over { color:#e05555; }

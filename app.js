@@ -5156,7 +5156,88 @@ function openMsProjectModal(projId = null) {
   if (bigRockEl) bigRockEl.checked = proj ? !!proj.bigRock : false;
   const delBtn = document.getElementById('ms-proj-delete-btn');
   if (delBtn) delBtn.style.display = proj ? '' : 'none';
+  // Tasks section — link the work that delivers this commitment (item 4)
+  const tasksGroup = document.getElementById('ms-proj-tasks-group');
+  if (tasksGroup) {
+    tasksGroup.style.display = proj ? '' : 'none';
+    if (proj) { _renderMsProjTasks(projId); _wireMsProjTasks(projId); }
+  }
   openOverlay('ms-project-modal');
+}
+
+function _renderMsProjTasks(projId) {
+  const listEl = document.getElementById('ms-proj-tasks-list');
+  if (!listEl) return;
+  const tasks = TASKS.filter(t => t.projectId === projId)
+    .sort((a, b) => (a.done - b.done) || String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+  if (!tasks.length) {
+    listEl.innerHTML = `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:.06em;padding:3px 0">No tasks yet — add the work that delivers this.</div>`;
+    return;
+  }
+  listEl.innerHTML = tasks.map(t => {
+    const due = t.dueDate ? fmtDate(t.dueDate) : (t.someday ? 'Someday' : 'No date');
+    return `<div class="ms-proj-task-row${t.done ? ' done' : ''}">
+      <span class="ms-proj-task-dot" style="background:${getCatColor(t.category)}"></span>
+      <span class="ms-proj-task-name">${escHtml(t.title)}</span>
+      <span class="ms-proj-task-due">${escHtml(due)}</span>
+      <button class="ms-proj-task-unlink" data-unlink="${escAttr(t.id)}" title="Unlink from commitment">✕</button>
+    </div>`;
+  }).join('');
+  listEl.querySelectorAll('[data-unlink]').forEach(b => b.onclick = async () => {
+    await updateTask(b.dataset.unlink, { projectId: null });
+    _renderMsProjTasks(projId);
+  });
+}
+
+async function _addMsProjTask(projId) {
+  const titleEl = document.getElementById('ms-proj-task-title');
+  const dueEl   = document.getElementById('ms-proj-task-due');
+  const title = (titleEl?.value || '').trim();
+  const due   = dueEl?.value || '';
+  if (!title) return;
+  const existing = TASKS.find(t => t.title.toLowerCase() === title.toLowerCase() && t.projectId !== projId);
+  // Due date is mandatory on first input (item 12) — unless linking a task that already has one.
+  if (!due && !(existing && existing.dueDate)) { showToast('Due date is required', 'error'); dueEl?.focus(); return; }
+  try {
+    if (existing) {
+      await updateTask(existing.id, { projectId: projId, dueDate: existing.dueDate || due });
+    } else {
+      const { addDoc, serverTimestamp } = window.CDX_FB;
+      await addDoc(_uc('tasks'), { title, done: false, dueDate: due, projectId: projId, priority: 'med', createdAt: serverTimestamp() });
+    }
+    if (titleEl) titleEl.value = '';
+    if (dueEl) dueEl.value = '';
+    const sr = document.getElementById('ms-proj-task-search'); if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; }
+    setTimeout(() => _renderMsProjTasks(projId), 150);
+  } catch (e) { console.error('addMsProjTask', e); showToast('Could not add task', 'error'); }
+}
+
+function _wireMsProjTasks(projId) {
+  const addBtn = document.getElementById('ms-proj-task-add');
+  const titleEl = document.getElementById('ms-proj-task-title');
+  const searchEl = document.getElementById('ms-proj-task-search');
+  if (addBtn) addBtn.onclick = () => _addMsProjTask(projId);
+  if (titleEl) {
+    titleEl.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); _addMsProjTask(projId); } };
+    titleEl.oninput = () => {
+      const q = titleEl.value.trim().toLowerCase();
+      if (!searchEl) return;
+      if (!q) { searchEl.style.display = 'none'; searchEl.innerHTML = ''; return; }
+      const res = TASKS.filter(t => !t.done && t.projectId !== projId && t.title.toLowerCase().includes(q)).slice(0, 6);
+      if (!res.length) { searchEl.style.display = 'none'; searchEl.innerHTML = ''; return; }
+      searchEl.style.display = '';
+      searchEl.innerHTML = res.map(t =>
+        `<div class="ms-proj-search-item" data-link="${escAttr(t.id)}"><span class="ms-proj-task-dot" style="background:${getCatColor(t.category)}"></span>${escHtml(t.title)}<span class="ms-proj-task-due">${t.dueDate ? escHtml(fmtDate(t.dueDate)) : 'no date'}</span></div>`).join('');
+      searchEl.querySelectorAll('[data-link]').forEach(el => el.onclick = async () => {
+        const t = TASKS.find(x => x.id === el.dataset.link);
+        const due = document.getElementById('ms-proj-task-due')?.value || '';
+        if (!t.dueDate && !due) { showToast('Set a due date first', 'error'); return; }
+        await updateTask(t.id, { projectId: projId, dueDate: t.dueDate || due });
+        titleEl.value = ''; searchEl.style.display = 'none'; searchEl.innerHTML = '';
+        setTimeout(() => _renderMsProjTasks(projId), 150);
+      });
+    };
+  }
 }
 
 function openMsEventModal(projectId, eventId = null, prefilledDate = '') {
@@ -6559,35 +6640,39 @@ function renderPlanQuarter() {
   const commits = _activeCommitments('quarterly');
   const now = new Date();
   const qNum = Math.floor(now.getMonth() / 3) + 1;
-  const avg = commits.length ? commits.reduce((s, c) => s + _commitmentProgress(c.id), 0) / commits.length : 0;
-  const qPct = Math.round(avg * 100);
+  // Quarter progress = tasks done ÷ total tasks across every quarter commitment (item 11)
+  let _qTotT = 0, _qDoneT = 0;
+  commits.forEach(c => { const ts = _commitmentTasks(c.id); _qTotT += ts.length; _qDoneT += ts.filter(t => t.done).length; });
+  const qPct = _qTotT ? Math.round(_qDoneT / _qTotT * 100) : 0;
 
+  const qTodayStr = localDateStr(new Date());
   const cardsHtml = commits.map(c => {
     const pct = Math.round(_commitmentProgress(c.id) * 100);
     const cat = c.category ? CATEGORIES[c.category] : null;
-    const evs = MILESTONE_EVENTS.filter(e => e.projectId === c.id)
-      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-    const msHtml = evs.length ? evs.map(e => {
-      const acts = e.activities || [];
-      const allDone = acts.length && acts.every(a => a.done);
-      const someDone = acts.some(a => a.done);
-      const state = allDone ? 'done' : someDone ? 'wip' : 'todo';
-      return `<div class="plan-ms-row" data-msdetail="${escAttr(e.id)}">
-        <span class="plan-ms-box ${state}">${allDone ? '✓' : someDone ? '●' : ''}</span>
-        <span class="plan-ms-label ${allDone ? 'done' : ''}">${escHtml(e.title || 'Untitled')}</span>
+    // Tasks-tab-inspired list of the work under this commitment (item 10)
+    const cTasks = _commitmentTasks(c.id)
+      .sort((a, b) => (a.done - b.done) || String(a.dueDate || '~').localeCompare(String(b.dueDate || '~')));
+    const doneN = cTasks.filter(t => t.done).length;
+    const tasksHtml = cTasks.length ? cTasks.map(t => {
+      const over = t.dueDate && !t.done && t.dueDate < qTodayStr;
+      return `<div class="pq-task-row${t.done ? ' done' : ''}">
+        <span class="pq-task-check${t.done ? ' on' : ''}" data-pqcheck="${escAttr(t.id)}"></span>
+        <span class="pq-task-dot" style="background:${getCatColor(t.category)}"></span>
+        <span class="pq-task-name" data-pqopen="${escAttr(t.id)}">${escHtml(t.title)}</span>
+        <span class="pq-task-due${over ? ' over' : ''}">${t.dueDate ? escHtml(fmtDate(t.dueDate)) : '—'}</span>
       </div>`;
-    }).join('') : `<div class="plan-ms-empty">No milestones yet.</div>`;
+    }).join('') : `<div class="plan-ms-empty">No tasks yet — open to add the work.</div>`;
     return `<div class="plan-goal-card" style="--commit-clr:${c.color || 'rgba(255,255,255,.4)'}">
       <div class="plan-goal-top">
         <div style="display:flex;gap:6px;align-items:center">
           ${cat ? `<span class="plan-pill">${escHtml(cat.label.toUpperCase())}</span>` : ''}
         </div>
-        <span class="plan-commit-pct">${pct}%</span>
+        <span class="plan-commit-pct">${doneN}/${cTasks.length} · ${pct}%</span>
       </div>
       <div class="plan-goal-title" data-commit="${escAttr(c.id)}">${escHtml(c.title)}</div>
       <div class="plan-commit-track"><div class="plan-commit-fill" style="width:${pct}%"></div></div>
-      <div class="plan-ms-list">${msHtml}</div>
-      <button class="plan-ms-add" data-addms="${escAttr(c.id)}">＋ Milestone</button>
+      <div class="pq-task-list">${tasksHtml}</div>
+      <button class="plan-ms-add" data-commit="${escAttr(c.id)}">＋ Add / edit tasks</button>
     </div>`;
   }).join('');
 
@@ -6597,7 +6682,7 @@ function renderPlanQuarter() {
       `<button class="plan-liquid-btn" id="pq-add">＋ Add commitment</button>`)}
     <div class="plan-glass plan-quarter-bar">
       <div class="plan-glass-head"><span class="plan-glass-title">Quarter progress</span>
-        <span class="plan-tel">${commits.length} COMMITMENTS · ${qPct}% AVG</span></div>
+        <span class="plan-tel">${commits.length} COMMITMENTS · ${_qDoneT}/${_qTotT} TASKS · ${qPct}%</span></div>
       <div class="plan-commit-track big"><div class="plan-commit-fill neon" style="width:${qPct}%"></div></div>
     </div>
     <div class="plan-goal-grid">
@@ -6606,8 +6691,12 @@ function renderPlanQuarter() {
 
   document.getElementById('pq-add').onclick = () => _addCommitment('quarterly');
   body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => openMsProjectModal(el.dataset.commit));
-  body.querySelectorAll('[data-addms]').forEach(el => el.onclick = () => openMsEventModal(el.dataset.addms));
-  body.querySelectorAll('[data-msdetail]').forEach(el => el.onclick = () => openMsEventDetail(el.dataset.msdetail));
+  body.querySelectorAll('[data-pqopen]').forEach(el => el.onclick = e => { e.stopPropagation(); showMainPanel('alltasks'); setTimeout(() => window.openAtkDetail?.(el.dataset.pqopen), 40); });
+  body.querySelectorAll('[data-pqcheck]').forEach(el => el.onclick = e => {
+    e.stopPropagation();
+    const t = TASKS.find(x => x.id === el.dataset.pqcheck); if (!t) return;
+    if (t.done) toggleTask(t.id); else handleCheckClick(t.id, e);
+  });
 }
 
 /* ── WEEKLY REVIEW ────────────────────────────────────────────────────── */

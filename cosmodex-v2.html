@@ -1516,8 +1516,18 @@
         <label class="form-label">Anti-Goals <span style="font-size:10px;color:var(--muted);font-weight:400">(what we will NOT do)</span></label>
         <textarea id="ms-proj-antigoals" class="form-input" rows="2" placeholder="Scope boundaries and explicit non-goals…"></textarea>
       </div>
+      <div class="form-group" id="ms-proj-tasks-group" style="display:none">
+        <label class="form-label">Tasks <span style="font-size:10px;color:var(--muted);font-weight:400">(work that delivers this commitment)</span></label>
+        <div id="ms-proj-tasks-list" style="margin-bottom:8px;display:flex;flex-direction:column;gap:5px"></div>
+        <div style="display:grid;grid-template-columns:1fr 150px auto;gap:6px;align-items:center">
+          <input id="ms-proj-task-title" class="form-input" placeholder="New or existing task…" autocomplete="off">
+          <input id="ms-proj-task-due" type="date" class="form-input" title="Due date (required)">
+          <button id="ms-proj-task-add" class="btn-ghost" style="flex-shrink:0">Add</button>
+        </div>
+        <div id="ms-proj-task-search" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;margin-top:6px;max-height:160px;overflow-y:auto"></div>
+      </div>
       <div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">
-        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:var(--gold);display:none">Delete Commitment</button>
+        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:#e05555;border-color:rgba(224,85,85,.4);display:none">Delete Commitment</button>
         <div style="display:flex;gap:8px;margin-left:auto">
           <button data-close="ms-project-modal" class="btn-ghost">Cancel</button>
           <button id="ms-proj-confirm" class="btn-primary">Save Commitment</button>
@@ -1549,15 +1559,14 @@
         <label class="form-label">Description</label>
         <textarea id="ms-event-desc" class="form-input" rows="2" placeholder="What needs to happen…"></textarea>
       </div>
-      <div class="form-group">
-        <label class="form-label">Tasks</label>
-        <div id="ms-event-activities-list" style="margin-bottom:10px;min-height:24px"></div>
-        <div style="display:flex;gap:8px;margin-bottom:6px">
-          <input id="ms-activity-input" class="form-input" placeholder="Search or type new task…" autocomplete="off" style="flex:1">
-          <button id="ms-activity-add" class="btn-ghost" style="flex-shrink:0">Add</button>
-        </div>
-        <div id="ms-activity-search-results" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;max-height:160px;overflow-y:auto"></div>
+      <!-- Milestones are independent calendar markers now; tasks live on commitments. -->
+      <div class="form-group" style="display:none">
+        <div id="ms-event-activities-list"></div>
+        <input id="ms-activity-input" style="display:none">
+        <button id="ms-activity-add" style="display:none"></button>
+        <div id="ms-activity-search-results" style="display:none"></div>
       </div>
+      <div class="plan-dsn-sub" style="margin:-4px 0 4px">A milestone is a marker on the calendar. Link tasks to a <b>commitment</b> instead.</div>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px">
         <button id="ms-event-delete" class="btn-ghost" style="color:#e05555;border-color:rgba(224,85,85,.4);display:none">🗑 Delete milestone</button>
         <div style="display:flex;gap:8px;margin-left:auto">
