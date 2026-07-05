@@ -8821,3 +8821,35 @@ select.sched-input { background: #181818; }
 .pq-task-row.done .pq-task-name { text-decoration:line-through; color:rgba(255,255,255,.4); }
 .pq-task-due { font-family:var(--font-mono); font-size:9px; letter-spacing:.06em; color:rgba(255,255,255,.45); flex:none; }
 .pq-task-due.over { color:#e05555; }
+
+/* ── Commitments tab: one-liner commitment cards (item 5) ── */
+.ms-oneliner .ms-dash-card-inner { display:none; }
+.ms-oneliner .ms-ol-inner { position:relative; z-index:2; padding:11px 15px; }
+.ms-ol-row { display:flex; align-items:center; gap:8px; }
+.ms-ol-dot { width:9px; height:9px; border-radius:50%; flex:none; box-shadow:0 0 7px var(--commit-clr,#fff); }
+.ms-ol-title { font-family:var(--font-display); font-weight:300; font-size:15px; color:rgba(255,255,255,.92); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ms-ol-bau { font-family:var(--font-mono); font-size:8px; letter-spacing:.1em; color:rgba(255,255,255,.72); border:1px solid rgba(255,255,255,.28); border-radius:100px; padding:1px 6px; flex:none; }
+.ms-ol-pct { font-family:var(--font-mono); font-size:10px; color:rgba(255,255,255,.6); flex:none; font-variant-numeric:tabular-nums; }
+.ms-ol-archive { background:none; border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.5); border-radius:6px; width:24px; height:22px; cursor:pointer; flex:none; font-size:11px; line-height:1; }
+.ms-ol-archive:hover { border-color:rgba(53,249,47,.5); color:rgb(53,249,47); }
+.ms-ol-meta { font-family:var(--font-mono); font-size:9px; letter-spacing:.05em; color:rgba(255,255,255,.4); margin:5px 0 0 17px; }
+.ms-ol-track { height:3px; background:rgba(255,255,255,.07); border-radius:2px; margin:8px 0 0 17px; overflow:hidden; }
+.ms-ol-fill { height:100%; border-radius:2px; }
+
+/* ── Commitment summary ribbon below the calendar (item 5) ── */
+.plan-cal-ribbon { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:10px 14px 4px; padding:10px 14px;
+  border-radius:12px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); border-left:3px solid var(--commit-clr,#fff); }
+.plan-cal-ribbon .pcr-title { font-family:var(--font-display); font-weight:300; font-size:15px; color:#fff; }
+.plan-cal-ribbon .pcr-meta { font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; color:rgba(255,255,255,.55); }
+.plan-cal-ribbon .pcr-brief { font-family:var(--font-display); font-style:italic; font-size:13px; color:rgba(255,255,255,.6); flex:1 1 240px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.plan-cal-ribbon .pcr-pct { font-family:var(--font-mono); font-size:12px; color:#fff; }
+
+/* ── Calendar off-range dimming when a commitment is focused (item 9) ── */
+.cal-day.cal-outofrange { opacity:.32; }
+.cal-day.cal-inrange { box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
+.cal-event.cal-focus-ev, .cal-ms.cal-focus-ms { filter:none; opacity:1; }
+.cal-focus-dim .cal-event:not(.cal-focus-ev), .cal-focus-dim .cal-ms:not(.cal-focus-ms) { opacity:.3; }
+
+/* Correct selector for focused-commitment off-range dimming (item 9) */
+.pcal-cell.pcal-outrange { opacity:.3; }
+.pcal-cell.pcal-outrange .pcal-cell-body { filter:grayscale(.4); }

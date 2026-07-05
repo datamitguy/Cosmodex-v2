@@ -4652,59 +4652,36 @@ function renderMilestoneDashboard() {
   const grid = document.createElement('div');
   grid.className = 'ms-dash-grid';
 
-  activeProjs.forEach(proj => {
-    const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
-    const allActs = events.flatMap(e => e.activities || []);
-    const doneActs = allActs.filter(a => a.done).length;
-    const totalActs = allActs.length;
-    const pct = totalActs > 0 ? Math.round(doneActs / totalActs * 100) : 0;
-    const isComplete = pct === 100;
+  // Big rocks (BAU) pinned to the top of the commitments list (item 6)
+  const sortedProjs = [...activeProjs].sort((a, b) => (b.bigRock ? 1 : 0) - (a.bigRock ? 1 : 0));
+  sortedProjs.forEach(proj => {
+    const pr  = _commitmentProgress(proj.id);
+    const pct = Math.round(pr * 100);
+    const cTasks = _commitmentTasks(proj.id);
+    const doneN  = cTasks.filter(t => t.done).length;
     const cat = proj.category ? CATEGORIES[proj.category] : null;
+    const clr = proj.color || 'rgba(255,255,255,.5)';
+    const dates = (proj.startDate && proj.endDate)
+      ? `${fmtDate(proj.startDate)} – ${fmtDate(proj.endDate)}`
+      : (proj.bigRock ? 'Ongoing · BAU' : '');
 
     const outer = document.createElement('div');
-    outer.className = 'ms-dash-card-outer';
+    outer.className = 'ms-dash-card-outer ms-oneliner';
     outer.dataset.msDashCard = proj.id;
-    // Build milestone + task detail section
-    const visibleEvents = events.sort((a,b) => a.date.localeCompare(b.date)).slice(0, 4);
-    const msListHtml = visibleEvents.length ? `
-      <div class="ms-card-milestones">
-        ${visibleEvents.map(ev => {
-          const evDone = (ev.activities||[]).length > 0 && (ev.activities||[]).every(a => a.done);
-          const dotColor = evDone ? 'rgb(57,255,20)' : (new Date(ev.date) < new Date() ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)');
-          const linkedTasks = (ev.activities||[]).filter(a => a.taskId).slice(0,3)
-            .map(a => { const t = TASKS.find(t => t.id === a.taskId); return t ? { title: t.title, done: t.done } : { title: a.text, done: a.done }; });
-          return `<div>
-            <div class="ms-card-milestone-item">
-              <div class="ms-card-milestone-dot" style="background:${dotColor}"></div>
-              <span class="ms-card-milestone-name" style="${evDone ? 'text-decoration:line-through;opacity:0.5' : ''}">${escHtml(ev.title)}</span>
-              <span class="ms-card-milestone-date">${escHtml(fmtDate(ev.date))}</span>
-            </div>
-            ${linkedTasks.length ? `<div class="ms-card-tasks" style="margin-left:11px">
-              ${linkedTasks.map(t => `<span class="ms-card-task-chip${t.done?' done':''}" title="${escAttr(t.title)}">${escHtml(t.title)}</span>`).join('')}
-            </div>` : ''}
-          </div>`;
-        }).join('')}
-        ${events.length > 4 ? `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding-left:11px">+${events.length-4} more</div>` : ''}
-      </div>` : `<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em;opacity:0.6">no milestones charted yet</div>`;
-
+    outer.style.setProperty('--commit-clr', clr);
     outer.innerHTML = `
-      <div class="ms-dash-card-inner">
-        <div class="ms-dash-card-title">${escHtml(proj.title)}</div>
-        <div class="ms-dash-card-meta">
-          ${cat ? `<span style="background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;padding:1px 7px;border-radius:100px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.05em">${cat.label}</span>` : ''}
-          <span>${escHtml(fmtDate(proj.startDate))} – ${escHtml(fmtDate(proj.endDate))}</span>
+      <div class="ms-ol-inner">
+        <div class="ms-ol-row">
+          <span class="ms-ol-dot" style="background:${clr}"></span>
+          <span class="ms-ol-title">${escHtml(proj.title)}</span>
+          ${proj.bigRock ? `<span class="ms-ol-bau">⛰ BAU</span>` : ''}
+          ${cat ? `<span class="plan-pill">${escHtml(cat.label.toUpperCase())}</span>` : ''}
+          <span style="flex:1"></span>
+          <span class="ms-ol-pct">${cTasks.length ? `${doneN}/${cTasks.length} · ` : ''}${pct}%</span>
+          <button class="ms-ol-archive" data-ms-archive="${proj.id}" title="Mark done & archive">✓</button>
         </div>
-        ${msListHtml}
-        <div class="ms-dash-card-footer">
-          <div>
-            <div class="ms-dash-pct-label" style="color:${isComplete ? 'rgb(57,255,20)' : 'rgba(255,255,255,0.75)'}">${pct}%</div>
-            <div class="ms-dash-acts-label">${doneActs}/${totalActs} done</div>
-          </div>
-          <div style="text-align:right;display:flex;align-items:center;gap:8px">
-            <div class="ms-dash-milestones-count">${events.length} MILESTONE${events.length === 1 ? '' : 'S'}</div>
-            <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
-          </div>
-        </div>
+        ${dates ? `<div class="ms-ol-meta">${escHtml(dates)}</div>` : ''}
+        <div class="ms-ol-track"><div class="ms-ol-fill" style="width:${pct}%;background:${clr}"></div></div>
       </div>`;
     grid.appendChild(outer);
   });
@@ -6249,11 +6226,15 @@ function _pcalWeekDays(anchor) {
 function _pcalRenderMonth(byDate) {
   const cells = _pcalMonthCells(_pcalAnchor);
   const dow = _PCAL_DOW.map(d => `<div class="pcal-dow">${d}</div>`).join('');
+  // Dim dates outside the focused commitment's window (item 9)
+  const _fproj = _pcalProj ? MILESTONE_PROJECTS.find(p => p.id === _pcalProj) : null;
+  const _rs = _fproj?.startDate, _re = _fproj?.endDate;
+  const _outRange = ds => _rs && _re && (ds < _rs || ds > _re);
   const grid = cells.map(c => {
     const items = byDate[c.ds] || [];
     const chips = items.slice(0, 3).map(_pcalChip).join('');
     const more = items.length > 3 ? `<div class="pcal-more">+${items.length - 3} more</div>` : '';
-    return `<div class="pcal-cell${c.inMonth ? '' : ' out'}${c.isToday ? ' today' : ''}${c.weekend ? ' wknd' : ''}" data-pcal-day="${c.ds}">
+    return `<div class="pcal-cell${c.inMonth ? '' : ' out'}${c.isToday ? ' today' : ''}${c.weekend ? ' wknd' : ''}${_outRange(c.ds) ? ' pcal-outrange' : ''}" data-pcal-day="${c.ds}">
         <div class="pcal-cell-h">
           <span class="pcal-date">${c.date}</span>
           ${c.isToday ? '<span class="pcal-today-tag">TODAY</span>' : ''}
@@ -6335,7 +6316,22 @@ function renderPlanningCalendar(projId) {
   const anyItems = Object.keys(byDate).length > 0;
   const empty = anyItems ? '' :
     `<div class="pcal-empty">${_pcalProj ? 'No milestones or events for this initiative yet.' : 'No initiative milestones or events scheduled yet.'}</div>`;
-  body.innerHTML = `<div class="pcal">${_pcalToolbar()}${_pcalView === 'week' ? _pcalRenderWeek(byDate) : _pcalRenderMonth(byDate)}${empty}</div>`;
+  // Commitment summary ribbon below the calendar (item 5)
+  let ribbon = '';
+  const rproj = _pcalProj ? MILESTONE_PROJECTS.find(p => p.id === _pcalProj) : null;
+  if (rproj) {
+    const rt = _commitmentTasks(rproj.id);
+    const rpct = Math.round(_commitmentProgress(rproj.id) * 100);
+    const rdates = (rproj.startDate && rproj.endDate) ? `${fmtDate(rproj.startDate)} – ${fmtDate(rproj.endDate)}` : (rproj.bigRock ? 'Ongoing · BAU' : 'No dates');
+    const brief = (rproj.missionBrief || rproj.notes || '').trim();
+    ribbon = `<div class="plan-cal-ribbon" style="--commit-clr:${rproj.color || '#fff'}">
+      <span class="pcr-title">${escHtml(rproj.title)}</span>
+      <span class="pcr-meta">${escHtml(rdates)} · ${rt.length} TASK${rt.length === 1 ? '' : 'S'}${rproj.bigRock ? ' · ⛰ BAU' : ''}</span>
+      ${brief ? `<span class="pcr-brief">“${escHtml(brief)}”</span>` : '<span style="flex:1"></span>'}
+      <span class="pcr-pct">${rt.filter(t => t.done).length}/${rt.length} · ${rpct}%</span>
+    </div>`;
+  }
+  body.innerHTML = `<div class="pcal">${_pcalToolbar()}${_pcalView === 'week' ? _pcalRenderWeek(byDate) : _pcalRenderMonth(byDate)}${empty}</div>${ribbon}`;
 
   body.querySelectorAll('[data-pcal-view]').forEach(b =>
     b.onclick = () => { _pcalView = b.dataset.pcalView; renderPlanningCalendar(_pcalProj); });
