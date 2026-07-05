@@ -1731,9 +1731,6 @@
           <div class="settings-nav-item" data-settings-tab="categories">
             <span class="settings-nav-icon">◈</span> Categories
           </div>
-          <div class="settings-nav-item" data-settings-tab="habits">
-            <span class="settings-nav-icon">◉</span> Habits
-          </div>
           <div class="settings-nav-item" data-settings-tab="calendar">
             <span class="settings-nav-icon">◻</span> Calendar
           </div>
@@ -1787,55 +1784,6 @@
               <div class="settings-desc">Toggle which categories appear in your task list. To change a task's category, click its coloured badge directly on the task row — it cycles through all categories.</div>
               <div class="settings-cat-grid" id="settings-cat-filters"></div>
             </div>
-          </div>
-
-          <!-- ── Habits & Rituals ────────────── -->
-          <div class="settings-content-panel" id="st-pane-habits">
-            <div class="settings-section">
-              <div class="settings-section-title">Identity & Season</div>
-              <div class="settings-desc">These appear on the Habits Launcher and drive the dynamic content on the hero card.</div>
-              <div style="display:flex;flex-direction:column;gap:12px;">
-                <div>
-                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Identity Statement</div>
-                  <textarea class="hb-settings-textarea" id="hb-cfg-identity" rows="2" placeholder="I am someone who builds with intention…"></textarea>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                  <div>
-                    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Season / Life Chapter</div>
-                    <input class="hb-settings-input" id="hb-cfg-season" placeholder="e.g. The Rebuilding">
-                  </div>
-                  <div>
-                    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Season Start Date</div>
-                    <input class="hb-settings-input" id="hb-cfg-season-start" type="date">
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="settings-section">
-              <div class="settings-section-title">Daily Quote</div>
-              <div class="settings-desc">Shown on the Launcher hero card each day.</div>
-              <div style="display:flex;flex-direction:column;gap:10px;">
-                <div>
-                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Quote Text</div>
-                  <textarea class="hb-settings-textarea" id="hb-cfg-quote" rows="2" placeholder="Your daily quote…"></textarea>
-                </div>
-                <div>
-                  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Quote Author</div>
-                  <input class="hb-settings-input" id="hb-cfg-quote-author" placeholder="e.g. Aristotle">
-                </div>
-              </div>
-            </div>
-            <div class="settings-section">
-              <div class="settings-section-title">Default Non-Negotiable</div>
-              <div class="settings-desc">Pre-filled "If I do only one thing" shown on the Launcher. You can edit it live on the Launcher each day.</div>
-              <input class="hb-settings-input" id="hb-cfg-nonneg" placeholder="Your one thing for today…">
-            </div>
-            <div class="settings-section">
-              <div class="settings-section-title">Custom Habit Library</div>
-              <div class="settings-desc">One per line: emoji Name · Duration · Category</div>
-              <textarea class="hb-settings-textarea" id="hb-cfg-custom-habits" rows="5" placeholder="🧘 Breathwork · 5 min · mind&#10;💧 Cold plunge · 3 min · body"></textarea>
-            </div>
-            <button class="btn-primary" onclick="hbSaveSettings()" style="font-size:11px;padding:8px 18px;margin-bottom:8px;">Save Habit Settings</button>
           </div>
 
           <!-- ── Calendar ────────────────────── -->

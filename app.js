@@ -10370,7 +10370,6 @@ function initSettingsPanel() {
     renderSettingsCatList();
     renderSettingsDefaultCat();
     initNewCatColorPicker();
-    hbLoadSettingsPanel();
     renderSettingsPeople();
     // Update UID display
     const uid = window.CDX_USER?.uid;
