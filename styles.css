@@ -6618,7 +6618,7 @@ select.sched-input { background: #181818; }
   min-width: 28px; text-align: right;
 }
 .ins-hero-delta {
-  position: absolute; top: 14px; right: 20px; z-index: 3;
+  position: absolute; bottom: 16px; left: 24px; top: auto; right: auto; z-index: 3;
   font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
   color: rgba(255,255,255,0.4);
   padding: 4px 10px; border-radius: 100px;
@@ -7867,7 +7867,7 @@ select.sched-input { background: #181818; }
   font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
 }
 .atk-foot-btn:hover { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); }
-.atk-foot-btn.danger { color:#e05555; border-color:rgba(224,85,85,.4); background:transparent; }
+.atk-foot-btn.danger { color:#e05555; border-color:rgba(224,85,85,.4); background:transparent; flex:1 1 100%; text-align:center; margin-top:2px; }
 .atk-foot-btn.danger:hover { background:rgba(224,85,85,.12); }
 
 /* ══ LISTS — types (simple / task / rated) ══ */
@@ -8337,7 +8337,7 @@ select.sched-input { background: #181818; }
 
 /* ── Today = 30-minute drag-to-schedule grid (08:00–22:00) ── */
 .dash-cal-body { overflow-y:auto; }
-.dash-day-grid { display:grid; grid-template-columns:54px 1fr; position:relative; }
+.dash-day-grid { display:grid; grid-template-columns:54px 1fr; position:relative; padding-top:8px; }
 .dash-slot-railcol { display:flex; flex-direction:column; }
 .dash-slot-rail {
   font-family:var(--font-mono); font-size:9px; color:rgba(255,255,255,0.4);
@@ -8354,18 +8354,18 @@ select.sched-input { background: #181818; }
 .dash-chip-layer { position:absolute; inset:0; pointer-events:none; }
 .dash-chip {
   position:absolute; left:4px; right:6px; box-sizing:border-box; pointer-events:auto; cursor:grab;
-  border-left:3px solid var(--nc,#fff); border-radius:8px; padding:3px 9px; overflow:hidden;
+  border-left:3px solid var(--nc,#fff); border-radius:8px; padding:0 9px; overflow:hidden;
   background:linear-gradient(135deg, color-mix(in srgb, var(--nc,#fff) 16%, transparent), rgba(255,255,255,0.03) 70%);
-  box-shadow:0 4px 14px rgba(0,0,0,0.5); display:flex; flex-direction:column; gap:1px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.5); display:flex; flex-direction:row; align-items:center; gap:7px;
   transition:box-shadow .18s var(--ease-glass), transform .18s var(--ease-glass);
 }
 .dash-chip:hover { box-shadow:0 8px 22px rgba(0,0,0,0.7); transform:translateY(-1px); z-index:3; }
 .dash-chip.dragging { opacity:0.5; }
 .dash-chip.past { opacity:0.55; }
 .dash-chip.done .dash-chip-title { text-decoration:line-through; color:rgba(255,255,255,0.45); }
-.dash-chip-time { font-family:var(--font-mono); font-size:8px; letter-spacing:0.08em; color:rgba(255,255,255,0.6); }
+.dash-chip-time { flex:none; font-family:var(--font-mono); font-size:9px; letter-spacing:0.06em; color:rgba(255,255,255,0.6); font-variant-numeric:tabular-nums; }
 .dash-chip-title {
-  font-family:var(--font-display); font-weight:300; font-size:13px; color:rgba(255,255,255,0.92);
+  flex:1; min-width:0; font-family:var(--font-display); font-weight:300; font-size:13px; color:rgba(255,255,255,0.92);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .dash-drop-marker {
@@ -8716,11 +8716,12 @@ select.sched-input { background: #181818; }
 .focus-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
 @media (max-width: 900px) { .focus-cols { grid-template-columns: 1fr; } }
 
-.focus-card { position: relative; padding: 32px; display: flex; flex-direction: column; align-items: center;
-  background: rgba(255,255,255,.03); backdrop-filter: blur(32px) saturate(140%); -webkit-backdrop-filter: blur(32px) saturate(140%);
-  border: 1px solid rgba(255,255,255,.09); border-radius: 22px; box-shadow: 0 24px 60px rgba(0,0,0,.7); }
+.focus-card { position: relative; padding: 36px 32px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.045); backdrop-filter: blur(32px) saturate(140%); -webkit-backdrop-filter: blur(32px) saturate(140%);
+  border: 1px solid rgba(255,255,255,.14); border-radius: 22px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.03); }
 .focus-card::before { content: ''; position: absolute; top: 0; left: 20px; right: 20px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent); }
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); }
 
 .focus-ring-wrap { position: relative; width: 320px; height: 320px; max-width: 100%; display: grid; place-items: center; }
 .focus-ring-wrap canvas { position: relative; z-index: 2; width: 320px; height: 320px; max-width: 100%; }

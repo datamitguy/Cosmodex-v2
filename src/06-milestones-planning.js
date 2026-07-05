@@ -266,7 +266,7 @@ function renderMilestoneDashboard() {
             <div class="ms-dash-acts-label">${doneActs}/${totalActs} done</div>
           </div>
           <div style="text-align:right;display:flex;align-items:center;gap:8px">
-            <div class="ms-dash-milestones-count">${events.length} ms</div>
+            <div class="ms-dash-milestones-count">${events.length} MILESTONE${events.length === 1 ? '' : 'S'}</div>
             <button class="btn-ghost ms-archive-btn" data-ms-archive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)" title="Mark as done & archive">✓ Done</button>
           </div>
         </div>

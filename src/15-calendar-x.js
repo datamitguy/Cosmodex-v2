@@ -91,8 +91,34 @@ function _calxHeaderHtml() {
 }
 
 /* ── Time-grid column (shared by day & week) ───────────────────────────── */
+// Assign side-by-side lanes to overlapping events so they tile instead of
+// stacking. Mutates each event with _lane (0-based) and _lanes (cluster width).
+function _calxAssignLanes(events) {
+  let i = 0;
+  while (i < events.length) {
+    let clusterEnd = events[i]._eH;
+    const cluster = [events[i]];
+    let j = i + 1;
+    while (j < events.length && events[j]._sH < clusterEnd) {
+      cluster.push(events[j]);
+      clusterEnd = Math.max(clusterEnd, events[j]._eH);
+      j++;
+    }
+    const laneEnds = [];
+    cluster.forEach(e => {
+      let lane = 0;
+      while (lane < laneEnds.length && e._sH < laneEnds[lane]) lane++;
+      e._lane = lane;
+      laneEnds[lane] = e._eH;
+    });
+    cluster.forEach(e => { e._lanes = laneEnds.length; });
+    i = j;
+  }
+}
+
 function _calxColumnHtml(ds, rowH, isToday, nowH) {
   const timed = _calxTimed(ds);
+  _calxAssignLanes(timed);
   let html = '';
   for (let h = CALX_HR_START; h < CALX_HR_END; h++) {
     html += `<div class="calx-slot" data-calx-slot="${ds}|${String(h).padStart(2,'0')}:00" style="height:${rowH}px"></div>`;
@@ -105,8 +131,11 @@ function _calxColumnHtml(ds, rowH, isToday, nowH) {
     const top = (e._sH - CALX_HR_START) * rowH;
     const hgt = Math.max((e._eH - e._sH) * rowH - 3, 22);
     const clr = _calxEventColor(e);
+    const lanes = e._lanes || 1, lane = e._lane || 0;
+    const wPct = 100 / lanes;
+    const pos = `left:calc(${lane * wPct}% + 4px);width:calc(${wPct}% - 8px);right:auto;`;
     html += `<div class="calx-ev" draggable="true" data-calx-ev="${escAttr(e.taskId || '')}" data-ev-move="${escAttr(e.id)}" title="${escAttr(e.title)} — drag to reschedule"
-      style="top:${top}px;height:${hgt}px;--ec:${clr};background:linear-gradient(135deg, ${clr}22, rgba(255,255,255,.03) 70%);border-left-color:${clr}">
+      style="top:${top}px;height:${hgt}px;${pos}--ec:${clr};background:linear-gradient(135deg, ${clr}22, rgba(255,255,255,.03) 70%);border-left-color:${clr}">
       <div class="calx-ev-title">${escHtml(e.title)}</div>
       <div class="calx-ev-meta">${_calxFmtH(e._sH)}<span class="calx-ev-dot" style="background:${clr}"></span></div>
     </div>`;
