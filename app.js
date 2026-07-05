@@ -590,7 +590,7 @@ function renderLists() {
   const sidebar = document.getElementById('lists-sidebar-items');
   if (!sidebar) return;
   const q = (document.getElementById('lists-search')?.value || '').toLowerCase().trim();
-  const visible = q ? LISTS.filter(l => l.title.toLowerCase().includes(q)) : LISTS;
+  const visible = q ? LISTS.filter(l => (l.title || '').toLowerCase().includes(q)) : LISTS;
   if (!LISTS.length) {
     sidebar.innerHTML = '<div style="padding:16px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No lists yet</div>';
     return;
@@ -610,7 +610,7 @@ function renderLists() {
     return `
       <div class="list-sidebar-card ${isActive?'active':''}" data-list-id="${escAttr(l.id)}">
         <div class="list-sidebar-card-icon" style="color:${escAttr(l.color)};border-color:${escAttr(l.color)}44">${LIST_TYPE_META[type].icon}</div>
-        <span class="list-sidebar-card-name">${escHtml(l.title)}</span>
+        <span class="list-sidebar-card-name">${escHtml(l.title || 'Untitled')}</span>
         <span class="list-sidebar-card-count">${countLabel}</span>
       </div>`;
   }).join('');
@@ -4937,172 +4937,6 @@ function renderMilestoneListsPanel(projId) {
   });
 }
 
-/* ── Timeline: single-project alternating view ────────── */
-function renderMilestoneTimeline(projId) {
-  // Render into right panel timeline body (new two-panel layout)
-  const body = document.getElementById('plan-tl-body');
-  if (!body) return;
-  const proj = MILESTONE_PROJECTS.find(p => p.id === projId);
-  if (!proj) { _msView = 'dashboard'; renderMilestoneDashboard(); return; }
-
-  const events = MILESTONE_EVENTS.filter(e => e.projectId === projId)
-    .sort((a, b) => a.date.localeCompare(b.date));
-  const allActs = events.flatMap(e => e.activities || []);
-  const doneActs = allActs.filter(a => a.done).length;
-  const totalActs = allActs.length;
-  const pct = totalActs > 0 ? Math.round(doneActs / totalActs * 100) : 0;
-
-  const now = new Date();
-  const start = new Date(proj.startDate);
-  const end   = new Date(proj.endDate);
-  const totalMs = end - start;
-  const elapsedPct = totalMs > 0 ? Math.max(0, Math.min(100, ((now - start) / totalMs) * 100)) : 0;
-
-  // Alternating milestone rows
-  const rowsHtml = events.map((ev, idx) => {
-    const acts = ev.activities || [];
-    const doneCount = acts.filter(a => a.done).length;
-    const isPast = new Date(ev.date) < new Date();
-    const dotColor = doneCount === acts.length && acts.length > 0
-      ? 'rgb(57,255,20)' : (isPast ? proj.color : 'rgba(255,255,255,0.38)');
-
-    const actItems = acts.map(a => {
-      const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
-      const cat = task?.category ? CATEGORIES[task.category] : null;
-      const actCatClr = getCatColor(task?.category);
-      const catBadge = cat
-        ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${actCatClr}22;color:${actCatClr};border:1px solid ${actCatClr}44;font-family:var(--font-mono)">${cat.label}</span>`
-        : '';
-      return `<div class="ms-action-item">
-        <div class="ms-action-check ${a.done?'done':''}" data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">${a.done?'✓':''}</div>
-        <span style="flex:1;font-family:var(--font-body);font-size:12px;color:${a.done?'var(--muted)':'var(--cream)'};${a.done?'text-decoration:line-through':''}">${escHtml(a.text||a.title||'')}</span>
-        ${catBadge}
-        <button class="task-action-btn danger" style="opacity:0" data-rm-act="${escAttr(a.id)}" data-ev-id="${escAttr(ev.id)}">✕</button>
-      </div>`;
-    }).join('');
-
-    const card = `
-      <div class="ms-alt-milestone-card" style="animation-delay:${idx * 60}ms">
-        <div class="ms-alt-card-title">${escHtml(ev.title)}</div>
-        ${ev.description ? `<div class="ms-alt-card-desc">${escHtml(ev.description)}</div>` : ''}
-        <div class="ms-action-items-list" data-ev-id="${escAttr(ev.id)}" style="margin-bottom:10px">
-          ${actItems || '<div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);padding:4px 0">No tasks yet.</div>'}
-        </div>
-        <div class="ms-add-task-row" data-ev-id="${escAttr(ev.id)}" style="border-top:1px solid var(--border);padding-top:8px">
-          <div style="display:flex;gap:6px;margin-bottom:4px">
-            <input class="ms-task-search-input form-input" placeholder="Search or add task…" data-ev-id="${escAttr(ev.id)}" style="flex:1;font-size:12px;padding:5px 9px" autocomplete="off">
-            <button class="btn-primary" style="font-size:10px;padding:5px 10px;white-space:nowrap" data-add-task-ev="${escAttr(ev.id)}">Add</button>
-          </div>
-          <div class="ms-task-search-results" data-ev-id="${escAttr(ev.id)}" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;max-height:140px;overflow-y:auto"></div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
-          <button class="ms-edit-proj-btn" data-ms-edit-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--muted)">✎ Edit</button>
-          <button class="ms-edit-proj-btn" data-ms-del-ev="${escAttr(ev.id)}" style="font-size:11px;color:var(--gold)">✕ Delete</button>
-        </div>
-      </div>`;
-
-    const dotCol = `
-      <div class="ms-alt-dot-col">
-        <div class="ms-alt-dot" style="background:${dotColor}${doneCount===acts.length&&acts.length>0?';box-shadow:0 0 8px rgba(57,255,20,0.9),0 0 20px rgba(57,255,20,0.5)':''}"></div>
-        <div class="ms-alt-date-badge">${escHtml(fmtDate(ev.date))}</div>
-        ${acts.length ? `<div style="font-family:var(--font-mono);font-size:10px;color:${doneCount===acts.length?'rgb(57,255,20)':'var(--muted)'};margin-top:2px">${doneCount}/${acts.length}</div>` : ''}
-      </div>`;
-
-    // Alternate: even idx → card on left, odd → card on right
-    const isLeft = idx % 2 === 0;
-    return `<div class="ms-alt-row" style="animation-delay:${idx*40}ms">
-      ${isLeft ? `<div class="ms-alt-card-col">${card}</div>` : '<div></div>'}
-      ${dotCol}
-      ${isLeft ? '<div></div>' : `<div class="ms-alt-card-col">${card}</div>`}
-    </div>`;
-  }).join('');
-
-  // Build initiative metadata section (notes, mission, anti-goals) — always editable inline
-  const metaHtml = `
-    <div style="padding:16px 24px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02)">
-      <div style="margin-bottom:14px">
-        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Notes & Context</div>
-        <textarea id="ms-inline-notes" rows="2" placeholder="Add notes or context…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-body);font-size:12px;color:var(--cream);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
-      </div>
-      <div style="margin-bottom:14px">
-        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Mission Brief</div>
-        <textarea id="ms-inline-mission" rows="2" placeholder="Why this matters…" style="width:100%;background:transparent;border:none;border-left:2px solid rgba(255,255,255,0.12);outline:none;font-family:var(--font-body);font-size:12px;color:var(--cream);line-height:1.6;resize:none;padding-left:10px;transition:border-color 0.2s"></textarea>
-      </div>
-      <div>
-        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Anti-Goals</div>
-        <textarea id="ms-inline-antigoals" rows="2" placeholder="What we will NOT do…" style="width:100%;background:transparent;border:none;border-bottom:1px solid transparent;outline:none;font-family:var(--font-mono);font-size:10px;color:var(--gold);line-height:1.6;resize:none;transition:border-color 0.2s"></textarea>
-      </div>
-    </div>`;
-
-  body.innerHTML = `
-    <div class="ms-alt-timeline-wrap">
-      <div class="ms-alt-project-header">
-        <span class="ms-alt-project-title">${escHtml(proj.title)}</span>
-        <span class="ms-alt-project-sub">${escHtml(fmtDate(proj.startDate))} — ${escHtml(fmtDate(proj.endDate))}</span>
-      </div>
-      <div class="ms-alt-progress-wrap">
-        <div class="ms-alt-progress-bar" data-proj-bar="${escAttr(proj.id)}">
-          <div class="ms-alt-progress-fill" style="width:${elapsedPct.toFixed(1)}%;background:rgb(57,255,20);opacity:0.25"></div>
-          <div class="ms-alt-progress-fill" style="position:absolute;left:0;top:0;height:100%;width:${pct}%;background:rgb(57,255,20);opacity:0.85;transition:width 0.4s;border-radius:3px;box-shadow:0 0 8px rgba(57,255,20,0.7),0 0 20px rgba(57,255,20,0.3)"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">
-          <span>${pct}% complete · ${doneActs}/${totalActs} tasks</span>
-          <span>${Math.round(elapsedPct)}% elapsed</span>
-        </div>
-      </div>
-      ${metaHtml}
-      ${events.length ? `
-        <div class="ms-alt-entries">
-          <div class="ms-alt-center-line"></div>
-          <div class="ms-alt-center-elapsed" style="height:${elapsedPct.toFixed(1)}%;background:rgb(57,255,20)"></div>
-          <div class="ms-alt-cap">
-            <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
-            <div class="ms-alt-cap-label">Start · ${escHtml(fmtDate(proj.startDate))}</div>
-          </div>
-          ${rowsHtml}
-          <div class="ms-alt-cap">
-            <div class="ms-alt-cap-dot" style="border-color:${proj.color}"></div>
-            <div class="ms-alt-cap-label">End · ${escHtml(fmtDate(proj.endDate))}</div>
-          </div>
-        </div>`
-      : `<div style="text-align:center;color:var(--muted);font-family:var(--font-mono);font-size:11px;padding:40px 0">
-          no milestones on this trajectory yet. click "+ Milestone" above to plot one.
-        </div>`}
-    </div>`;
-
-  // Set textarea values and wire up blur-to-save for inline notes fields
-  const notesTA    = body.querySelector('#ms-inline-notes');
-  const missionTA  = body.querySelector('#ms-inline-mission');
-  const antiTA     = body.querySelector('#ms-inline-antigoals');
-  if (notesTA)   notesTA.value   = proj.notes       || '';
-  if (missionTA) missionTA.value = proj.missionBrief || '';
-  if (antiTA)    antiTA.value    = proj.antiGoals    || '';
-
-  const focusStyle = (el, isBorderLeft) => {
-    if (!el) return;
-    el.addEventListener('focus', () => {
-      if (isBorderLeft) el.style.borderLeftColor = 'rgba(255,255,255,0.4)';
-      else              el.style.borderBottomColor = 'rgba(255,255,255,0.25)';
-    });
-    el.addEventListener('blur', () => {
-      if (isBorderLeft) el.style.borderLeftColor = 'rgba(255,255,255,0.12)';
-      else              el.style.borderBottomColor = 'transparent';
-    });
-  };
-  focusStyle(notesTA,   false);
-  focusStyle(missionTA, true);
-  focusStyle(antiTA,    false);
-
-  const saveField = (el, field) => {
-    if (!el) return;
-    el.addEventListener('blur', () => {
-      updateMilestoneProject(proj.id, { [field]: el.value.trim() || null });
-    });
-  };
-  saveField(notesTA,   'notes');
-  saveField(missionTA, 'missionBrief');
-  saveField(antiTA,    'antiGoals');
-}
 
 function renderMsColorPicker(containerId, selectedColor) {
   const picker = document.getElementById(containerId);
@@ -8563,9 +8397,9 @@ function buildTaskRow(task, idx) {
     ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
     : '';
 
-  // Friction indicator
-  const frictionBadge = (task.deferrals >= 3 && !task.done)
-    ? `<span class="task-friction-badge" data-friction="${escAttr(task.id)}" title="Deferred ${task.deferrals} times — click to tag">⚠ Friction</span>`
+  // Friction indicator — a task placed on the calendar 3+ times and still open.
+  const frictionBadge = ((task.scheduleCount || 0) >= 3 && !task.done)
+    ? `<span class="task-friction-badge" data-friction="${escAttr(task.id)}" title="Scheduled ${task.scheduleCount} times — click to tag">⚠ Friction</span>`
     : '';
 
   // People badges
@@ -8943,7 +8777,7 @@ async function addTask(title, priority = 'med', dueDate = '', category = '', rec
       energyType: energyType || null,
       people: people.length ? people : null,
       calEventId: null, subtasks: [],
-      deferrals: 0,
+      scheduleCount: 0,
       createdAt: serverTimestamp()
     });
     showToast('Task added', 'success');
@@ -8956,7 +8790,7 @@ async function addTask(title, priority = 'med', dueDate = '', category = '', rec
 /* Duplicate an existing task into a fresh, not-done copy. Useful when a task is
    in-progress or already done but needs to be done again. Copies the shape/meta
    (priority, due, category, recurrence, energy, people, notes, subtasks) but
-   resets completion state and any single-use links (calendar event, deferrals). */
+   resets completion state and any single-use links (calendar event, schedule count). */
 async function duplicateTask(taskId) {
   const src = TASKS.find(t => t.id === taskId);
   if (!src) return;
@@ -8976,7 +8810,7 @@ async function duplicateTask(taskId) {
       // Fresh copy: subtasks reset to not-done, no calendar link, no time logged
       subtasks: (src.subtasks || []).map(s => ({ ...s, id: crypto.randomUUID(), done: false })),
       calEventId: null,
-      deferrals: 0,
+      scheduleCount: 0,
       createdAt: serverTimestamp()
     });
     showToast('Task duplicated', 'success');
@@ -12294,8 +12128,8 @@ function initFrictionModal() {
 
   document.getElementById('friction-keep-btn')?.addEventListener('click', async () => {
     if (!_frictionTaskId) return;
-    // Reset deferral count + tag reason
-    const updates = { deferrals: 0 };
+    // Reset the scheduling-attempt count (fresh start) + tag reason
+    const updates = { scheduleCount: 0 };
     if (_frictionReason) updates.frictionReason = _frictionReason;
     await updateTask(_frictionTaskId, updates);
     showToast('Friction tagged — you\'ve got this', 'success');

@@ -242,9 +242,9 @@ function buildTaskRow(task, idx) {
     ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);background:rgba(74,124,94,0.1);border:1px solid rgba(74,124,94,0.3);border-radius:100px;padding:1px 6px">⏱ ${task.timeSpentMinutes < 60 ? task.timeSpentMinutes + 'm' : Math.floor(task.timeSpentMinutes/60) + 'h' + (task.timeSpentMinutes%60 ? ' ' + task.timeSpentMinutes%60 + 'm' : '')}</span>`
     : '';
 
-  // Friction indicator
-  const frictionBadge = (task.deferrals >= 3 && !task.done)
-    ? `<span class="task-friction-badge" data-friction="${escAttr(task.id)}" title="Deferred ${task.deferrals} times — click to tag">⚠ Friction</span>`
+  // Friction indicator — a task placed on the calendar 3+ times and still open.
+  const frictionBadge = ((task.scheduleCount || 0) >= 3 && !task.done)
+    ? `<span class="task-friction-badge" data-friction="${escAttr(task.id)}" title="Scheduled ${task.scheduleCount} times — click to tag">⚠ Friction</span>`
     : '';
 
   // People badges
@@ -622,7 +622,7 @@ async function addTask(title, priority = 'med', dueDate = '', category = '', rec
       energyType: energyType || null,
       people: people.length ? people : null,
       calEventId: null, subtasks: [],
-      deferrals: 0,
+      scheduleCount: 0,
       createdAt: serverTimestamp()
     });
     showToast('Task added', 'success');
@@ -635,7 +635,7 @@ async function addTask(title, priority = 'med', dueDate = '', category = '', rec
 /* Duplicate an existing task into a fresh, not-done copy. Useful when a task is
    in-progress or already done but needs to be done again. Copies the shape/meta
    (priority, due, category, recurrence, energy, people, notes, subtasks) but
-   resets completion state and any single-use links (calendar event, deferrals). */
+   resets completion state and any single-use links (calendar event, schedule count). */
 async function duplicateTask(taskId) {
   const src = TASKS.find(t => t.id === taskId);
   if (!src) return;
@@ -655,7 +655,7 @@ async function duplicateTask(taskId) {
       // Fresh copy: subtasks reset to not-done, no calendar link, no time logged
       subtasks: (src.subtasks || []).map(s => ({ ...s, id: crypto.randomUUID(), done: false })),
       calEventId: null,
-      deferrals: 0,
+      scheduleCount: 0,
       createdAt: serverTimestamp()
     });
     showToast('Task duplicated', 'success');
@@ -3973,8 +3973,8 @@ function initFrictionModal() {
 
   document.getElementById('friction-keep-btn')?.addEventListener('click', async () => {
     if (!_frictionTaskId) return;
-    // Reset deferral count + tag reason
-    const updates = { deferrals: 0 };
+    // Reset the scheduling-attempt count (fresh start) + tag reason
+    const updates = { scheduleCount: 0 };
     if (_frictionReason) updates.frictionReason = _frictionReason;
     await updateTask(_frictionTaskId, updates);
     showToast('Friction tagged — you\'ve got this', 'success');

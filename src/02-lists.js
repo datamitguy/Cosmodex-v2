@@ -225,7 +225,7 @@ function renderLists() {
   const sidebar = document.getElementById('lists-sidebar-items');
   if (!sidebar) return;
   const q = (document.getElementById('lists-search')?.value || '').toLowerCase().trim();
-  const visible = q ? LISTS.filter(l => l.title.toLowerCase().includes(q)) : LISTS;
+  const visible = q ? LISTS.filter(l => (l.title || '').toLowerCase().includes(q)) : LISTS;
   if (!LISTS.length) {
     sidebar.innerHTML = '<div style="padding:16px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center">No lists yet</div>';
     return;
@@ -245,7 +245,7 @@ function renderLists() {
     return `
       <div class="list-sidebar-card ${isActive?'active':''}" data-list-id="${escAttr(l.id)}">
         <div class="list-sidebar-card-icon" style="color:${escAttr(l.color)};border-color:${escAttr(l.color)}44">${LIST_TYPE_META[type].icon}</div>
-        <span class="list-sidebar-card-name">${escHtml(l.title)}</span>
+        <span class="list-sidebar-card-name">${escHtml(l.title || 'Untitled')}</span>
         <span class="list-sidebar-card-count">${countLabel}</span>
       </div>`;
   }).join('');
