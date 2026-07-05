@@ -431,7 +431,29 @@ function renderMilestoneListsPanel(projId) {
 
   const items = ml.items || [];
   const doneCount = items.filter(i => i.done).length;
+
+  // Tasks linked to this commitment (projectId) — the real work with due dates,
+  // shown here so a task added to the commitment is visible in its detail view,
+  // not just in the edit modal.
+  const linkedTasks = (typeof TASKS !== 'undefined' ? TASKS : [])
+    .filter(t => t.projectId === projId)
+    .sort((a, b) => (a.done - b.done) || String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+  const tasksHtml = linkedTasks.length ? `
+    <div style="padding:6px 0 8px">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">LINKED TASKS · ${linkedTasks.filter(t => t.done).length}/${linkedTasks.length}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${linkedTasks.map(t => `
+          <div style="display:flex;align-items:center;gap:5px">
+            <input type="checkbox" data-plink-toggle="${escAttr(t.id)}" ${t.done ? 'checked' : ''} style="cursor:pointer;accent-color:var(--gold);flex-shrink:0">
+            <span style="font-size:11px;color:${t.done ? 'var(--muted)' : 'var(--cream)'};flex:1;${t.done ? 'text-decoration:line-through' : ''};line-height:1.4;word-break:break-word">${escHtml(t.title)}</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);flex-shrink:0">${t.dueDate ? escHtml(fmtDate(t.dueDate)) : (t.someday ? 'Someday' : '—')}</span>
+          </div>`).join('')}
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0 2px"></div>
+    </div>` : '';
+
   body.innerHTML = `
+    ${tasksHtml}
     <div style="padding:6px 0 8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${doneCount}/${items.length} done</span>
@@ -461,6 +483,14 @@ function renderMilestoneListsPanel(projId) {
 
   body.querySelectorAll('[data-ms-toggle]').forEach(cb => {
     cb.addEventListener('change', () => toggleMilestoneItem(projId, cb.dataset.msToggle));
+  });
+
+  // Linked-task completion — toggle the real task, then refresh this panel.
+  body.querySelectorAll('[data-plink-toggle]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const p = toggleTask(cb.dataset.plinkToggle);
+      (p && p.then ? p : Promise.resolve()).then(() => renderMilestoneListsPanel(projId));
+    });
   });
 
   body.querySelectorAll('[data-ms-del]').forEach(btn => {
@@ -1434,6 +1464,15 @@ function initMilestonesPanel() {
   }
 
   function refreshPlanTaskViews() {
+    // Keep the focused commitment's calendar + linked-task list live as tasks
+    // change (e.g. a task just added to it), so it shows without re-opening.
+    if (_msView === 'timeline' && _msFocusProj &&
+        document.getElementById('plan-ctx-content')?.style.display !== 'none') {
+      if (typeof renderPlanningCalendar === 'function') renderPlanningCalendar(_msFocusProj);
+      const ae = document.activeElement;
+      const typingInPanel = ae && ae.closest && ae.closest('#plan-tl-lists-body');
+      if (!typingInPanel && typeof renderMilestoneListsPanel === 'function') renderMilestoneListsPanel(_msFocusProj);
+    }
     const calView = document.getElementById('plan-view-calendar');
     if (!calView || calView.style.display === 'none') return;
     const weekEl = document.getElementById('plan-right-week');
@@ -1731,6 +1770,22 @@ function _pcalItems(projId) {
       title: ev.title || 'Event', color: pid ? _pcalProjColor(pid) : 'rgba(255,255,255,0.5)',
       startTime: ev.allDay ? null : (ev.startTime || null), duration: ev.duration || 60 });
   });
+
+  // Commitment-focused view: surface this commitment's linked tasks by their due
+  // date, even when they have no calendar event yet. Without this, a task added
+  // to a commitment (projectId set) with only a due date never appeared on the
+  // commitment's own calendar.
+  if (projId) {
+    (TASKS || []).forEach(t => {
+      if (t.projectId !== projId) return;
+      const ds = String(t.dueDate || '').slice(0, 10);
+      if (!ds) return;
+      // Skip if the task is already shown as its scheduled calendar event above.
+      if (t.calEventId && (CAL_EVENTS || []).some(e => e.id === t.calEventId && String(e.date || '').slice(0, 10) === ds)) return;
+      push(ds, { kind: 'task', id: t.id, projectId: projId,
+        title: t.title || 'Task', color: getCatColor(t.category), done: !!t.done, startTime: null });
+    });
+  }
 
   // Show-all mode (Week/Month tabs): also surface tasks by due date + holidays.
   if (_pcalShowAll && !projId) {

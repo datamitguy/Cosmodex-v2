@@ -7,12 +7,39 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 let _hxTab = 'today';
 let _hxBuilderStep = 1;
-let _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily' };
+let _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily', dow: [] };
 let _hxReflectDraft = { open: false, habit: '', body: '' };
 let _hxModal = null;          // { type:'habit', id } | { type:'routines' }
 let _hxHabitEdit = null;      // working copy of the habit being edited
 
-const HX_CADENCES = [['daily', 'Daily'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends'], ['custom', 'Custom']];
+const HX_CADENCES = [['daily', 'Daily'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends'], ['custom', 'Pick days']];
+// JS getDay() order: 0=Sun … 6=Sat. Labels for the weekday picker.
+const HX_DOW = [['1', 'M'], ['2', 'T'], ['3', 'W'], ['4', 'T'], ['5', 'F'], ['6', 'S'], ['0', 'S']];
+
+// Is this habit scheduled on the given date? Rituals only appear on their due
+// days. `schedule.days` is the cadence; for 'custom', `schedule.dow` is an array
+// of getDay() indices (0=Sun..6=Sat).
+function _hxIsDue(h, date) {
+  const sch = (h && h.schedule) || {};
+  const days = sch.days || 'daily';
+  const dow = date.getDay();
+  if (days === 'weekdays') return dow >= 1 && dow <= 5;
+  if (days === 'weekends') return dow === 0 || dow === 6;
+  if (days === 'custom') {
+    const list = Array.isArray(sch.dow) ? sch.dow.map(Number) : [];
+    return list.length ? list.includes(dow) : true; // none picked → behave as daily
+  }
+  return true; // daily
+}
+
+// Row of 7 weekday toggles. `sel` is an array of getDay() indices; `attr` is the
+// data-attribute the click wiring listens on.
+function _hxDowPicker(sel, attr) {
+  const set = new Set((sel || []).map(Number));
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+    ${HX_DOW.map(([v, l]) => `<button class="hx-chip${set.has(Number(v)) ? ' active' : ''}" ${attr}="${v}" style="min-width:34px;text-align:center">${l}</button>`).join('')}
+  </div>`;
+}
 
 const HX_CATS = [
   { name: 'Mind',   color: 'rgba(255,255,255,.6)' },
@@ -66,11 +93,14 @@ function _hxDot(color, size) { const s = size || 8; return `<span class="hx-dot"
 function _hxToday() {
   const ds = localDateStr(new Date());
   const active = _hxActive();
-  const kept = active.filter(h => _hxDone(h, ds)).length;
+  // Rituals only surface on the days they're scheduled for (daily / weekdays /
+  // weekends / picked days). The heatmap below stays on the full set.
+  const dueActive = active.filter(h => _hxIsDue(h, new Date()));
+  const kept = dueActive.filter(h => _hxDone(h, ds)).length;
   const dateLbl = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
   const identity = _hxIdentity();
 
-  const rows = active.length ? active.map(h => {
+  const rows = dueActive.length ? dueActive.map(h => {
     const done = _hxDone(h, ds), color = _hxColor(h);
     return `<div class="hx-hrow${done ? ' done' : ''}">
       <div class="hx-check${done ? ' on' : ''}" data-hx-toggle="${escAttr(h.id)}"></div>
@@ -82,7 +112,9 @@ function _hxToday() {
       <span class="hx-tel" style="font-size:11px;color:rgba(255,255,255,.65)">${_hxStreak(h.id)}d</span>
       <button class="hx-row-manage" data-hx-edit="${escAttr(h.id)}" title="Edit / delete / graduate" aria-label="Manage habit">⋯</button>
     </div>`;
-  }).join('') : `<div class="hx-empty">No habits yet — design one in the Builder tab.</div>`;
+  }).join('')
+    : (active.length ? `<div class="hx-empty">Nothing scheduled for today — enjoy the rest day.</div>`
+                     : `<div class="hx-empty">No habits yet — design one in the Builder tab.</div>`);
 
   // 35-day (5 week) completion heatmap
   const cells = [];
@@ -99,7 +131,7 @@ function _hxToday() {
     <div class="hx-grid-15">
       <div class="hx-card" style="padding:22px">
         <div class="hx-ritual-head"><span class="hx-ritual-title">Daily ritual</span>
-          <span class="hx-eyebrow">${kept} / ${active.length} KEPT</span></div>
+          <span class="hx-eyebrow">${kept} / ${dueActive.length} KEPT</span></div>
         ${rows}
       </div>
       <div class="hx-col">
@@ -162,7 +194,8 @@ function _hxBuilderPane() {
     <div style="margin-top:14px"><div class="hx-eyebrow" style="margin-bottom:8px">CADENCE</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${HX_CADENCES.map(([v, l]) => `<button class="hx-chip${f.cadence === v ? ' active' : ''}" data-hx-cadence="${v}">${l}</button>`).join('')}
-      </div></div>`;
+      </div>
+      ${f.cadence === 'custom' ? _hxDowPicker(f.dow, 'data-hx-dow') : ''}</div>`;
   else if (step === 3) body = `
     <div class="hx-eyebrow">STEP 03 · ANCHOR</div>
     <span class="hx-sechead-title" style="font-size:24px">After I … I will …</span>
@@ -462,6 +495,7 @@ function _hxHabitModalHtml() {
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           ${HX_CADENCES.map(([v, l]) => `<button class="hx-chip${cadence === v ? ' active' : ''}" data-hx-e-cadence="${v}">${l}</button>`).join('')}
         </div>
+        ${cadence === 'custom' ? _hxDowPicker((h.schedule && h.schedule.dow) || [], 'data-hx-e-dow') : ''}
       </div>
       <div class="hx-modal-foot">
         <button class="hx-btn-danger" data-hx-delete>Delete</button>
@@ -559,7 +593,9 @@ async function _hxCreateHabit() {
   doc0.cue = f.cue.trim();
   doc0.reward = f.reward.trim();
   doc0.fullBehavior = f.minimum.trim();
-  doc0.schedule = { days: f.cadence || 'daily', frequency: 1 };
+  const _schedule = { days: f.cadence || 'daily', frequency: 1 };
+  if (f.cadence === 'custom') _schedule.dow = (f.dow || []).map(Number);
+  doc0.schedule = _schedule;
   doc0.status = 'active';
   _habits.push(doc0);
   if (uid && window.CDX_FB && window.CDX_DB) {
@@ -569,14 +605,14 @@ async function _hxCreateHabit() {
         id, name: f.name.trim(), order: _habits.length - 1,
         identityTag: f.identity.trim(), valueTags: [], tinyBehavior: f.name.trim(), fullBehavior: f.minimum.trim(),
         anchor: doc0.anchor, cue: f.cue.trim(), reward: f.reward.trim(), category: f.cat,
-        schedule: { days: f.cadence || 'daily', frequency: 1 }, stackId: null,
+        schedule: _schedule, stackId: null,
         frictionTags: [], frictionFallbacks: {}, restDaysPlanned: [],
         status: 'active', graduatedAt: null, createdAt: serverTimestamp(), archivedAt: null,
       });
       showToast('Habit added to your daily ritual', 'success');
     } catch (e) { console.warn('hx create habit error:', e); _habits = _habits.filter(h => h.id !== id); showToast('Could not save habit', 'error'); }
   }
-  _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily' };
+  _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily', dow: [] };
   _hxBuilderStep = 1; _hxTab = 'today';
   renderHabitsX();
   window.renderDashboardBoard && window.renderDashboardBoard();
@@ -657,6 +693,13 @@ function _hxWire(panel) {
   panel.querySelectorAll('[data-hx-step]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilderStep = +el.dataset.hxStep; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-cat]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.cat = el.dataset.hxCat; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-cadence]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.cadence = el.dataset.hxCadence; renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-dow]').forEach(el => el.onclick = () => {
+    _hxSyncBuilder();
+    const d = Number(el.dataset.hxDow);
+    const cur = Array.isArray(_hxBuilder.dow) ? _hxBuilder.dow.map(Number) : [];
+    _hxBuilder.dow = cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d];
+    renderHabitsX();
+  });
   panel.querySelectorAll('[data-hx-seed-identity]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.identity = el.dataset.hxSeedIdentity; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-tmpl]').forEach(el => el.onclick = () => { const [n, a] = el.dataset.hxTmpl.split('|'); _hxSyncBuilder(); _hxBuilder.name = n; _hxBuilder.anchor = (a || '').replace(/^After I\s*/i, ''); _hxTab = 'builder'; _hxBuilderStep = 2; renderHabitsX(); });
   // keep recipe/loop preview live as the user types
@@ -684,7 +727,17 @@ function _hxWire(panel) {
   panel.querySelector('[data-hx-delete]') && (panel.querySelector('[data-hx-delete]').onclick = _hxDeleteHabit);
   panel.querySelector('[data-hx-graduate]') && (panel.querySelector('[data-hx-graduate]').onclick = _hxGraduateHabit);
   panel.querySelectorAll('[data-hx-e-cat]').forEach(el => el.onclick = () => { _hxSyncHabitEdit(); if (_hxHabitEdit) _hxHabitEdit.category = el.dataset.hxECat; renderHabitsX(); });
-  panel.querySelectorAll('[data-hx-e-cadence]').forEach(el => el.onclick = () => { _hxSyncHabitEdit(); if (_hxHabitEdit) _hxHabitEdit.schedule = { ...(_hxHabitEdit.schedule || {}), days: el.dataset.hxECadence, frequency: 1 }; renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-e-cadence]').forEach(el => el.onclick = () => { _hxSyncHabitEdit(); if (_hxHabitEdit) { const days = el.dataset.hxECadence; const sc = { ...(_hxHabitEdit.schedule || {}), days, frequency: 1 }; if (days !== 'custom') delete sc.dow; _hxHabitEdit.schedule = sc; } renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-e-dow]').forEach(el => el.onclick = () => {
+    _hxSyncHabitEdit();
+    if (!_hxHabitEdit) return;
+    const sc = { ...(_hxHabitEdit.schedule || {}), days: 'custom', frequency: 1 };
+    const d = Number(el.dataset.hxEDow);
+    const cur = Array.isArray(sc.dow) ? sc.dow.map(Number) : [];
+    sc.dow = cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d];
+    _hxHabitEdit.schedule = sc;
+    renderHabitsX();
+  });
 
   // ── Routine editor (B2) — reuses routineAdd/routineUpdate/routineDelete (Firestore) ──
   panel.querySelectorAll('[data-hx-rt-del]').forEach(el => el.onclick = () => { const [slot, i] = el.dataset.hxRtDel.split(':'); if (typeof routineDelete === 'function') routineDelete(slot, +i); renderHabitsX(); });

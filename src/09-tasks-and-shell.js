@@ -1022,7 +1022,8 @@ async function confirmSchedule() {
       title, taskId, date, startTime, endTime, duration, color,
       createdAt: serverTimestamp()
     });
-    await updateTask(taskId, { calEventId: ref.id });
+    // Count each placement as a scheduling attempt (productivity signal).
+    await updateTask(taskId, { calEventId: ref.id, scheduleCount: (task.scheduleCount || 0) + 1 });
     // Schedule checked subtasks
     const checkedBoxes = document.querySelectorAll('#sched-subtasks-list input[type="checkbox"]:checked');
     for (const cb of checkedBoxes) {
@@ -1067,7 +1068,8 @@ async function scheduleTaskAt(taskId, date, startTime, duration = 30) {
       color: getCatColor(task.category), createdAt: serverTimestamp()
     });
     // Anchor the task to this day so it stops showing as "anytime/unscheduled".
-    await updateTask(taskId, { calEventId: ref.id, dueDate: date, someday: false });
+    // Count each placement — a productivity signal (how many attempts to land it).
+    await updateTask(taskId, { calEventId: ref.id, dueDate: date, someday: false, scheduleCount: (task.scheduleCount || 0) + 1 });
     showToast(`Scheduled at ${_dashFmtTime(startTime)}`, 'success');
   } catch (e) { console.error('scheduleTaskAt', e); showToast('Could not schedule', 'error'); }
 }
@@ -1643,7 +1645,8 @@ async function scheduleTaskDirect(date, startTime, taskId, subId, duration = 30)
   if (sub) {
     await updateTask(taskId, { subtasks: task.subtasks.map(s => s.id === subId ? { ...s, calEventId: ref.id } : s) });
   } else {
-    await updateTask(taskId, { calEventId: ref.id });
+    // Count each placement as a scheduling attempt (productivity signal).
+    await updateTask(taskId, { calEventId: ref.id, scheduleCount: (task.scheduleCount || 0) + 1 });
   }
 
   showUndoToast(`${fmtTimeSched(startTime)} claimed. future you says thanks.`, async () => {
@@ -5300,7 +5303,9 @@ function _dashRenderRituals() {
   if (!el) return;
   const ds = localDateStr(new Date());
   const habits = (typeof _habits !== 'undefined' ? _habits : [])
-    .filter(h => h && h.status !== 'archived' && h.status !== 'graduated');
+    .filter(h => h && h.status !== 'archived' && h.status !== 'graduated')
+    // Only show rituals scheduled for today (daily / weekdays / weekends / picked days).
+    .filter(h => (typeof _hxIsDue === 'function') ? _hxIsDue(h, new Date()) : true);
   // Firestore-backed routine completion (synced across devices) instead of localStorage.
   const routineDone = (typeof _routineDoneMap === 'function') ? _routineDoneMap(ds) : {};
   const morning = (typeof _routines !== 'undefined' ? _routines.morning : []) || [];

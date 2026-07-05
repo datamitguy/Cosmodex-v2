@@ -4002,9 +4002,13 @@ function renderInsights() {
   let weekSecs = 0;
   const byCat = {};
   TASKS.forEach(task => {
+    // Focus time = logged time on COMPLETED tasks only (matches Insights-X).
+    // Previously this fell back to dueDate, so undone tasks with a due date and
+    // logged minutes inflated focus hours — the "4h while tasks undone" bug.
+    if (!task.done) return;
     const taskSecs = taskEffortSecs(task);
     if (taskSecs <= 0) return;
-    const dd = task.doneDate || task.dueDate || '';
+    const dd = task.doneDate || '';
     if (dd >= weekAgo) weekSecs += taskSecs;
     const cat = task.category || 'uncategorised';
     byCat[cat] = (byCat[cat] || 0) + taskSecs;
@@ -4866,7 +4870,29 @@ function renderMilestoneListsPanel(projId) {
 
   const items = ml.items || [];
   const doneCount = items.filter(i => i.done).length;
+
+  // Tasks linked to this commitment (projectId) — the real work with due dates,
+  // shown here so a task added to the commitment is visible in its detail view,
+  // not just in the edit modal.
+  const linkedTasks = (typeof TASKS !== 'undefined' ? TASKS : [])
+    .filter(t => t.projectId === projId)
+    .sort((a, b) => (a.done - b.done) || String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+  const tasksHtml = linkedTasks.length ? `
+    <div style="padding:6px 0 8px">
+      <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">LINKED TASKS · ${linkedTasks.filter(t => t.done).length}/${linkedTasks.length}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${linkedTasks.map(t => `
+          <div style="display:flex;align-items:center;gap:5px">
+            <input type="checkbox" data-plink-toggle="${escAttr(t.id)}" ${t.done ? 'checked' : ''} style="cursor:pointer;accent-color:var(--gold);flex-shrink:0">
+            <span style="font-size:11px;color:${t.done ? 'var(--muted)' : 'var(--cream)'};flex:1;${t.done ? 'text-decoration:line-through' : ''};line-height:1.4;word-break:break-word">${escHtml(t.title)}</span>
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);flex-shrink:0">${t.dueDate ? escHtml(fmtDate(t.dueDate)) : (t.someday ? 'Someday' : '—')}</span>
+          </div>`).join('')}
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0 2px"></div>
+    </div>` : '';
+
   body.innerHTML = `
+    ${tasksHtml}
     <div style="padding:6px 0 8px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">${doneCount}/${items.length} done</span>
@@ -4896,6 +4922,14 @@ function renderMilestoneListsPanel(projId) {
 
   body.querySelectorAll('[data-ms-toggle]').forEach(cb => {
     cb.addEventListener('change', () => toggleMilestoneItem(projId, cb.dataset.msToggle));
+  });
+
+  // Linked-task completion — toggle the real task, then refresh this panel.
+  body.querySelectorAll('[data-plink-toggle]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const p = toggleTask(cb.dataset.plinkToggle);
+      (p && p.then ? p : Promise.resolve()).then(() => renderMilestoneListsPanel(projId));
+    });
   });
 
   body.querySelectorAll('[data-ms-del]').forEach(btn => {
@@ -5869,6 +5903,15 @@ function initMilestonesPanel() {
   }
 
   function refreshPlanTaskViews() {
+    // Keep the focused commitment's calendar + linked-task list live as tasks
+    // change (e.g. a task just added to it), so it shows without re-opening.
+    if (_msView === 'timeline' && _msFocusProj &&
+        document.getElementById('plan-ctx-content')?.style.display !== 'none') {
+      if (typeof renderPlanningCalendar === 'function') renderPlanningCalendar(_msFocusProj);
+      const ae = document.activeElement;
+      const typingInPanel = ae && ae.closest && ae.closest('#plan-tl-lists-body');
+      if (!typingInPanel && typeof renderMilestoneListsPanel === 'function') renderMilestoneListsPanel(_msFocusProj);
+    }
     const calView = document.getElementById('plan-view-calendar');
     if (!calView || calView.style.display === 'none') return;
     const weekEl = document.getElementById('plan-right-week');
@@ -6166,6 +6209,22 @@ function _pcalItems(projId) {
       title: ev.title || 'Event', color: pid ? _pcalProjColor(pid) : 'rgba(255,255,255,0.5)',
       startTime: ev.allDay ? null : (ev.startTime || null), duration: ev.duration || 60 });
   });
+
+  // Commitment-focused view: surface this commitment's linked tasks by their due
+  // date, even when they have no calendar event yet. Without this, a task added
+  // to a commitment (projectId set) with only a due date never appeared on the
+  // commitment's own calendar.
+  if (projId) {
+    (TASKS || []).forEach(t => {
+      if (t.projectId !== projId) return;
+      const ds = String(t.dueDate || '').slice(0, 10);
+      if (!ds) return;
+      // Skip if the task is already shown as its scheduled calendar event above.
+      if (t.calEventId && (CAL_EVENTS || []).some(e => e.id === t.calEventId && String(e.date || '').slice(0, 10) === ds)) return;
+      push(ds, { kind: 'task', id: t.id, projectId: projId,
+        title: t.title || 'Task', color: getCatColor(t.category), done: !!t.done, startTime: null });
+    });
+  }
 
   // Show-all mode (Week/Month tabs): also surface tasks by due date + holidays.
   if (_pcalShowAll && !projId) {
@@ -9284,7 +9343,8 @@ async function confirmSchedule() {
       title, taskId, date, startTime, endTime, duration, color,
       createdAt: serverTimestamp()
     });
-    await updateTask(taskId, { calEventId: ref.id });
+    // Count each placement as a scheduling attempt (productivity signal).
+    await updateTask(taskId, { calEventId: ref.id, scheduleCount: (task.scheduleCount || 0) + 1 });
     // Schedule checked subtasks
     const checkedBoxes = document.querySelectorAll('#sched-subtasks-list input[type="checkbox"]:checked');
     for (const cb of checkedBoxes) {
@@ -9329,7 +9389,8 @@ async function scheduleTaskAt(taskId, date, startTime, duration = 30) {
       color: getCatColor(task.category), createdAt: serverTimestamp()
     });
     // Anchor the task to this day so it stops showing as "anytime/unscheduled".
-    await updateTask(taskId, { calEventId: ref.id, dueDate: date, someday: false });
+    // Count each placement — a productivity signal (how many attempts to land it).
+    await updateTask(taskId, { calEventId: ref.id, dueDate: date, someday: false, scheduleCount: (task.scheduleCount || 0) + 1 });
     showToast(`Scheduled at ${_dashFmtTime(startTime)}`, 'success');
   } catch (e) { console.error('scheduleTaskAt', e); showToast('Could not schedule', 'error'); }
 }
@@ -9905,7 +9966,8 @@ async function scheduleTaskDirect(date, startTime, taskId, subId, duration = 30)
   if (sub) {
     await updateTask(taskId, { subtasks: task.subtasks.map(s => s.id === subId ? { ...s, calEventId: ref.id } : s) });
   } else {
-    await updateTask(taskId, { calEventId: ref.id });
+    // Count each placement as a scheduling attempt (productivity signal).
+    await updateTask(taskId, { calEventId: ref.id, scheduleCount: (task.scheduleCount || 0) + 1 });
   }
 
   showUndoToast(`${fmtTimeSched(startTime)} claimed. future you says thanks.`, async () => {
@@ -13562,7 +13624,9 @@ function _dashRenderRituals() {
   if (!el) return;
   const ds = localDateStr(new Date());
   const habits = (typeof _habits !== 'undefined' ? _habits : [])
-    .filter(h => h && h.status !== 'archived' && h.status !== 'graduated');
+    .filter(h => h && h.status !== 'archived' && h.status !== 'graduated')
+    // Only show rituals scheduled for today (daily / weekdays / weekends / picked days).
+    .filter(h => (typeof _hxIsDue === 'function') ? _hxIsDue(h, new Date()) : true);
   // Firestore-backed routine completion (synced across devices) instead of localStorage.
   const routineDone = (typeof _routineDoneMap === 'function') ? _routineDoneMap(ds) : {};
   const morning = (typeof _routines !== 'undefined' ? _routines.morning : []) || [];
@@ -14985,12 +15049,39 @@ document.addEventListener('keydown', e => {
    ═══════════════════════════════════════════════════════════════════════════ */
 let _hxTab = 'today';
 let _hxBuilderStep = 1;
-let _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily' };
+let _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily', dow: [] };
 let _hxReflectDraft = { open: false, habit: '', body: '' };
 let _hxModal = null;          // { type:'habit', id } | { type:'routines' }
 let _hxHabitEdit = null;      // working copy of the habit being edited
 
-const HX_CADENCES = [['daily', 'Daily'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends'], ['custom', 'Custom']];
+const HX_CADENCES = [['daily', 'Daily'], ['weekdays', 'Weekdays'], ['weekends', 'Weekends'], ['custom', 'Pick days']];
+// JS getDay() order: 0=Sun … 6=Sat. Labels for the weekday picker.
+const HX_DOW = [['1', 'M'], ['2', 'T'], ['3', 'W'], ['4', 'T'], ['5', 'F'], ['6', 'S'], ['0', 'S']];
+
+// Is this habit scheduled on the given date? Rituals only appear on their due
+// days. `schedule.days` is the cadence; for 'custom', `schedule.dow` is an array
+// of getDay() indices (0=Sun..6=Sat).
+function _hxIsDue(h, date) {
+  const sch = (h && h.schedule) || {};
+  const days = sch.days || 'daily';
+  const dow = date.getDay();
+  if (days === 'weekdays') return dow >= 1 && dow <= 5;
+  if (days === 'weekends') return dow === 0 || dow === 6;
+  if (days === 'custom') {
+    const list = Array.isArray(sch.dow) ? sch.dow.map(Number) : [];
+    return list.length ? list.includes(dow) : true; // none picked → behave as daily
+  }
+  return true; // daily
+}
+
+// Row of 7 weekday toggles. `sel` is an array of getDay() indices; `attr` is the
+// data-attribute the click wiring listens on.
+function _hxDowPicker(sel, attr) {
+  const set = new Set((sel || []).map(Number));
+  return `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+    ${HX_DOW.map(([v, l]) => `<button class="hx-chip${set.has(Number(v)) ? ' active' : ''}" ${attr}="${v}" style="min-width:34px;text-align:center">${l}</button>`).join('')}
+  </div>`;
+}
 
 const HX_CATS = [
   { name: 'Mind',   color: 'rgba(255,255,255,.6)' },
@@ -15044,11 +15135,14 @@ function _hxDot(color, size) { const s = size || 8; return `<span class="hx-dot"
 function _hxToday() {
   const ds = localDateStr(new Date());
   const active = _hxActive();
-  const kept = active.filter(h => _hxDone(h, ds)).length;
+  // Rituals only surface on the days they're scheduled for (daily / weekdays /
+  // weekends / picked days). The heatmap below stays on the full set.
+  const dueActive = active.filter(h => _hxIsDue(h, new Date()));
+  const kept = dueActive.filter(h => _hxDone(h, ds)).length;
   const dateLbl = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
   const identity = _hxIdentity();
 
-  const rows = active.length ? active.map(h => {
+  const rows = dueActive.length ? dueActive.map(h => {
     const done = _hxDone(h, ds), color = _hxColor(h);
     return `<div class="hx-hrow${done ? ' done' : ''}">
       <div class="hx-check${done ? ' on' : ''}" data-hx-toggle="${escAttr(h.id)}"></div>
@@ -15060,7 +15154,9 @@ function _hxToday() {
       <span class="hx-tel" style="font-size:11px;color:rgba(255,255,255,.65)">${_hxStreak(h.id)}d</span>
       <button class="hx-row-manage" data-hx-edit="${escAttr(h.id)}" title="Edit / delete / graduate" aria-label="Manage habit">⋯</button>
     </div>`;
-  }).join('') : `<div class="hx-empty">No habits yet — design one in the Builder tab.</div>`;
+  }).join('')
+    : (active.length ? `<div class="hx-empty">Nothing scheduled for today — enjoy the rest day.</div>`
+                     : `<div class="hx-empty">No habits yet — design one in the Builder tab.</div>`);
 
   // 35-day (5 week) completion heatmap
   const cells = [];
@@ -15077,7 +15173,7 @@ function _hxToday() {
     <div class="hx-grid-15">
       <div class="hx-card" style="padding:22px">
         <div class="hx-ritual-head"><span class="hx-ritual-title">Daily ritual</span>
-          <span class="hx-eyebrow">${kept} / ${active.length} KEPT</span></div>
+          <span class="hx-eyebrow">${kept} / ${dueActive.length} KEPT</span></div>
         ${rows}
       </div>
       <div class="hx-col">
@@ -15140,7 +15236,8 @@ function _hxBuilderPane() {
     <div style="margin-top:14px"><div class="hx-eyebrow" style="margin-bottom:8px">CADENCE</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${HX_CADENCES.map(([v, l]) => `<button class="hx-chip${f.cadence === v ? ' active' : ''}" data-hx-cadence="${v}">${l}</button>`).join('')}
-      </div></div>`;
+      </div>
+      ${f.cadence === 'custom' ? _hxDowPicker(f.dow, 'data-hx-dow') : ''}</div>`;
   else if (step === 3) body = `
     <div class="hx-eyebrow">STEP 03 · ANCHOR</div>
     <span class="hx-sechead-title" style="font-size:24px">After I … I will …</span>
@@ -15440,6 +15537,7 @@ function _hxHabitModalHtml() {
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           ${HX_CADENCES.map(([v, l]) => `<button class="hx-chip${cadence === v ? ' active' : ''}" data-hx-e-cadence="${v}">${l}</button>`).join('')}
         </div>
+        ${cadence === 'custom' ? _hxDowPicker((h.schedule && h.schedule.dow) || [], 'data-hx-e-dow') : ''}
       </div>
       <div class="hx-modal-foot">
         <button class="hx-btn-danger" data-hx-delete>Delete</button>
@@ -15537,7 +15635,9 @@ async function _hxCreateHabit() {
   doc0.cue = f.cue.trim();
   doc0.reward = f.reward.trim();
   doc0.fullBehavior = f.minimum.trim();
-  doc0.schedule = { days: f.cadence || 'daily', frequency: 1 };
+  const _schedule = { days: f.cadence || 'daily', frequency: 1 };
+  if (f.cadence === 'custom') _schedule.dow = (f.dow || []).map(Number);
+  doc0.schedule = _schedule;
   doc0.status = 'active';
   _habits.push(doc0);
   if (uid && window.CDX_FB && window.CDX_DB) {
@@ -15547,14 +15647,14 @@ async function _hxCreateHabit() {
         id, name: f.name.trim(), order: _habits.length - 1,
         identityTag: f.identity.trim(), valueTags: [], tinyBehavior: f.name.trim(), fullBehavior: f.minimum.trim(),
         anchor: doc0.anchor, cue: f.cue.trim(), reward: f.reward.trim(), category: f.cat,
-        schedule: { days: f.cadence || 'daily', frequency: 1 }, stackId: null,
+        schedule: _schedule, stackId: null,
         frictionTags: [], frictionFallbacks: {}, restDaysPlanned: [],
         status: 'active', graduatedAt: null, createdAt: serverTimestamp(), archivedAt: null,
       });
       showToast('Habit added to your daily ritual', 'success');
     } catch (e) { console.warn('hx create habit error:', e); _habits = _habits.filter(h => h.id !== id); showToast('Could not save habit', 'error'); }
   }
-  _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily' };
+  _hxBuilder = { identity: '', name: '', anchor: '', cue: '', reward: '', minimum: '', cat: 'Craft', cadence: 'daily', dow: [] };
   _hxBuilderStep = 1; _hxTab = 'today';
   renderHabitsX();
   window.renderDashboardBoard && window.renderDashboardBoard();
@@ -15635,6 +15735,13 @@ function _hxWire(panel) {
   panel.querySelectorAll('[data-hx-step]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilderStep = +el.dataset.hxStep; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-cat]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.cat = el.dataset.hxCat; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-cadence]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.cadence = el.dataset.hxCadence; renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-dow]').forEach(el => el.onclick = () => {
+    _hxSyncBuilder();
+    const d = Number(el.dataset.hxDow);
+    const cur = Array.isArray(_hxBuilder.dow) ? _hxBuilder.dow.map(Number) : [];
+    _hxBuilder.dow = cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d];
+    renderHabitsX();
+  });
   panel.querySelectorAll('[data-hx-seed-identity]').forEach(el => el.onclick = () => { _hxSyncBuilder(); _hxBuilder.identity = el.dataset.hxSeedIdentity; renderHabitsX(); });
   panel.querySelectorAll('[data-hx-tmpl]').forEach(el => el.onclick = () => { const [n, a] = el.dataset.hxTmpl.split('|'); _hxSyncBuilder(); _hxBuilder.name = n; _hxBuilder.anchor = (a || '').replace(/^After I\s*/i, ''); _hxTab = 'builder'; _hxBuilderStep = 2; renderHabitsX(); });
   // keep recipe/loop preview live as the user types
@@ -15662,7 +15769,17 @@ function _hxWire(panel) {
   panel.querySelector('[data-hx-delete]') && (panel.querySelector('[data-hx-delete]').onclick = _hxDeleteHabit);
   panel.querySelector('[data-hx-graduate]') && (panel.querySelector('[data-hx-graduate]').onclick = _hxGraduateHabit);
   panel.querySelectorAll('[data-hx-e-cat]').forEach(el => el.onclick = () => { _hxSyncHabitEdit(); if (_hxHabitEdit) _hxHabitEdit.category = el.dataset.hxECat; renderHabitsX(); });
-  panel.querySelectorAll('[data-hx-e-cadence]').forEach(el => el.onclick = () => { _hxSyncHabitEdit(); if (_hxHabitEdit) _hxHabitEdit.schedule = { ...(_hxHabitEdit.schedule || {}), days: el.dataset.hxECadence, frequency: 1 }; renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-e-cadence]').forEach(el => el.onclick = () => { _hxSyncHabitEdit(); if (_hxHabitEdit) { const days = el.dataset.hxECadence; const sc = { ...(_hxHabitEdit.schedule || {}), days, frequency: 1 }; if (days !== 'custom') delete sc.dow; _hxHabitEdit.schedule = sc; } renderHabitsX(); });
+  panel.querySelectorAll('[data-hx-e-dow]').forEach(el => el.onclick = () => {
+    _hxSyncHabitEdit();
+    if (!_hxHabitEdit) return;
+    const sc = { ...(_hxHabitEdit.schedule || {}), days: 'custom', frequency: 1 };
+    const d = Number(el.dataset.hxEDow);
+    const cur = Array.isArray(sc.dow) ? sc.dow.map(Number) : [];
+    sc.dow = cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d];
+    _hxHabitEdit.schedule = sc;
+    renderHabitsX();
+  });
 
   // ── Routine editor (B2) — reuses routineAdd/routineUpdate/routineDelete (Firestore) ──
   panel.querySelectorAll('[data-hx-rt-del]').forEach(el => el.onclick = () => { const [slot, i] = el.dataset.hxRtDel.split(':'); if (typeof routineDelete === 'function') routineDelete(slot, +i); renderHabitsX(); });
@@ -16181,6 +16298,9 @@ function _insxOverview() {
   const deepRatio = focusSecs ? (deepSecs / focusSecs) : 0;
   const today = localDateStr(new Date());
   const overdue = TASKS.filter(t => !t.done && !t.someday && t.dueDate && t.dueDate < today).length;
+  // Rescheduled = still-open tasks placed on the calendar 2+ times. Each extra
+  // placement is an attempt that didn't land — a friction / productivity signal.
+  const rescheduled = TASKS.filter(t => !t.done && !t.someday && (t.scheduleCount || 0) >= 2).length;
 
   const rail = _insxStatRail([
     { label: 'FOCUS HOURS', value: _insxFmtHrs(focusSecs), delta: _insxDelta(focusSecs, prevFocus) },
@@ -16188,6 +16308,7 @@ function _insxOverview() {
     { label: 'DEEP WORK', value: Math.round(deepRatio * 100) + '%' },
     { label: 'TASKS SHIPPED', value: String(shipped), delta: _insxDelta(shipped, prevShipped) },
     { label: 'OVERDUE', value: String(overdue) },
+    { label: 'RESCHEDULED', value: String(rescheduled) },
   ]);
 
   // focus hours (per day) vs habit % (scaled) line chart
@@ -16422,6 +16543,10 @@ function _insxPatterns() {
   const today = localDateStr(new Date());
   const overdue = TASKS.filter(t => !t.done && !t.someday && t.dueDate && t.dueDate < today);
   if (overdue.length) patterns.push({ icon: '▲', color: _INSX_WARN, title: `${overdue.length} task${overdue.length === 1 ? '' : 's'} slipping`, body: `Overdue and unscheduled. Re-entry is one decision — pull the oldest two forward and the pile stops feeling heavy.` });
+  // most-rescheduled open task — repeated placements that never landed
+  const mostResched = TASKS.filter(t => !t.done && !t.someday && (t.scheduleCount || 0) >= 2)
+    .sort((a, b) => (b.scheduleCount || 0) - (a.scheduleCount || 0))[0];
+  if (mostResched) patterns.push({ icon: '↻', color: _INSX_WARN, title: `"${(mostResched.title || 'A task').slice(0, 40)}" keeps sliding`, body: `Scheduled ${mostResched.scheduleCount}× and still open. When a task resists this many attempts, the fix is usually to shrink it, not reschedule it again.` });
   // shipped trend
   const half = Math.floor(n / 2);
   const recent = dates.slice(half).reduce((s, ds) => s + _insxDoneOn(ds).length, 0);

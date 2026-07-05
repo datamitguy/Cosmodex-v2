@@ -670,9 +670,13 @@ function renderInsights() {
   let weekSecs = 0;
   const byCat = {};
   TASKS.forEach(task => {
+    // Focus time = logged time on COMPLETED tasks only (matches Insights-X).
+    // Previously this fell back to dueDate, so undone tasks with a due date and
+    // logged minutes inflated focus hours — the "4h while tasks undone" bug.
+    if (!task.done) return;
     const taskSecs = taskEffortSecs(task);
     if (taskSecs <= 0) return;
-    const dd = task.doneDate || task.dueDate || '';
+    const dd = task.doneDate || '';
     if (dd >= weekAgo) weekSecs += taskSecs;
     const cat = task.category || 'uncategorised';
     byCat[cat] = (byCat[cat] || 0) + taskSecs;

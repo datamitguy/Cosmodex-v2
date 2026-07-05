@@ -102,6 +102,9 @@ function _insxOverview() {
   const deepRatio = focusSecs ? (deepSecs / focusSecs) : 0;
   const today = localDateStr(new Date());
   const overdue = TASKS.filter(t => !t.done && !t.someday && t.dueDate && t.dueDate < today).length;
+  // Rescheduled = still-open tasks placed on the calendar 2+ times. Each extra
+  // placement is an attempt that didn't land — a friction / productivity signal.
+  const rescheduled = TASKS.filter(t => !t.done && !t.someday && (t.scheduleCount || 0) >= 2).length;
 
   const rail = _insxStatRail([
     { label: 'FOCUS HOURS', value: _insxFmtHrs(focusSecs), delta: _insxDelta(focusSecs, prevFocus) },
@@ -109,6 +112,7 @@ function _insxOverview() {
     { label: 'DEEP WORK', value: Math.round(deepRatio * 100) + '%' },
     { label: 'TASKS SHIPPED', value: String(shipped), delta: _insxDelta(shipped, prevShipped) },
     { label: 'OVERDUE', value: String(overdue) },
+    { label: 'RESCHEDULED', value: String(rescheduled) },
   ]);
 
   // focus hours (per day) vs habit % (scaled) line chart
@@ -343,6 +347,10 @@ function _insxPatterns() {
   const today = localDateStr(new Date());
   const overdue = TASKS.filter(t => !t.done && !t.someday && t.dueDate && t.dueDate < today);
   if (overdue.length) patterns.push({ icon: '▲', color: _INSX_WARN, title: `${overdue.length} task${overdue.length === 1 ? '' : 's'} slipping`, body: `Overdue and unscheduled. Re-entry is one decision — pull the oldest two forward and the pile stops feeling heavy.` });
+  // most-rescheduled open task — repeated placements that never landed
+  const mostResched = TASKS.filter(t => !t.done && !t.someday && (t.scheduleCount || 0) >= 2)
+    .sort((a, b) => (b.scheduleCount || 0) - (a.scheduleCount || 0))[0];
+  if (mostResched) patterns.push({ icon: '↻', color: _INSX_WARN, title: `"${(mostResched.title || 'A task').slice(0, 40)}" keeps sliding`, body: `Scheduled ${mostResched.scheduleCount}× and still open. When a task resists this many attempts, the fix is usually to shrink it, not reschedule it again.` });
   // shipped trend
   const half = Math.floor(n / 2);
   const recent = dates.slice(half).reduce((s, ds) => s + _insxDoneOn(ds).length, 0);
