@@ -934,8 +934,10 @@ function initMilestonesPanel() {
     const antiGoals   = document.getElementById('ms-proj-antigoals')?.value.trim() || '';
     const cadence     = document.getElementById('ms-proj-cadence')?.value || 'quarterly';
     const bigRock     = !!document.getElementById('ms-proj-bigrock')?.checked;
-    if (!title || !start || !end) { showToast('Title, Start Date, and End Date are required.', 'error'); return; }
-    if (end < start) { showToast('End date must be on or after start date.', 'error'); return; }
+    if (!title) { showToast('Title is required.', 'error'); return; }
+    // BAU big rocks are ongoing — no mandatory start/end (item 6).
+    if (!bigRock && (!start || !end)) { showToast('Start and End dates are required.', 'error'); return; }
+    if (start && end && end < start) { showToast('End date must be on or after start date.', 'error'); return; }
     try {
       if (_msProjEdit) {
         await updateMilestoneProject(_msProjEdit, { title, startDate: start, endDate: end, color, category: category||null, notes, missionBrief: missionBrief||null, antiGoals: antiGoals||null, cadence, bigRock });
@@ -2017,9 +2019,22 @@ function _commitmentProgress(projId) {
   return 0;
 }
 function _activeCommitments(cadence) {
+  // Big rocks are BAU — they live in their own pinned section, not weekly/quarterly (item 6).
   return MILESTONE_PROJECTS
-    .filter(p => !p.isArchived && commitmentCadence(p) === cadence)
-    .sort((a, b) => (b.bigRock ? 1 : 0) - (a.bigRock ? 1 : 0));
+    .filter(p => !p.isArchived && !p.bigRock && commitmentCadence(p) === cadence);
+}
+function _bauCommitments() {
+  return MILESTONE_PROJECTS.filter(p => !p.isArchived && p.bigRock);
+}
+// BAU (big-rock) pinned section for the This Week / Quarter tabs.
+function _bauSectionHtml() {
+  const bau = _bauCommitments();
+  if (!bau.length) return '';
+  return `<div class="plan-glass plan-bau">
+    <div class="plan-glass-head"><span class="plan-glass-title">⛰ BAU · Always on</span>
+      <span class="plan-tel">${bau.length} BIG ROCK${bau.length === 1 ? '' : 'S'}</span></div>
+    <div class="plan-commit-list">${bau.map(c => _commitmentRow(c)).join('')}</div>
+  </div>`;
 }
 function _addCommitment(cadence) {
   openMsProjectModal();
@@ -2087,7 +2102,7 @@ function _commitmentRow(c, opts) {
   const clr = c.color || 'rgba(255,255,255,.55)';
   return `<div class="plan-commit-row${c.bigRock ? ' bigrock' : ''}" data-commit="${escAttr(c.id)}" style="--commit-clr:${clr}">
     <div class="plan-commit-top">
-      ${c.bigRock ? `<span class="plan-commit-rock">◆ BIG ROCK</span>` : ''}
+      ${c.bigRock ? `<span class="plan-commit-rock">⛰ BAU</span>` : ''}
       <span class="plan-commit-name">${escHtml(c.title)}</span>
       <div style="flex:1"></div>
       ${cat ? `<span class="plan-pill">${escHtml(cat.label.toUpperCase())}</span>` : ''}
@@ -2128,8 +2143,9 @@ function renderPlanThisWeek() {
 
   body.innerHTML = `
     ${_planHeader('THIS WEEK · YOUR WEEKLY COMMITMENTS', 'Commitments you made. Watch them meet reality.',
-      'Weekly-cadence commitments live here. Big rocks first.',
+      'Weekly-cadence commitments live here. BAU big rocks are pinned above.',
       `<button class="plan-liquid-btn" id="ptw-add">＋ Add commitment</button>`)}
+    ${_bauSectionHtml()}
     <div class="plan-glass">
       <div class="plan-glass-head">
         <span class="plan-glass-title">This week's commitments</span>
@@ -2243,8 +2259,9 @@ function renderPlanQuarter() {
 
   body.innerHTML = `
     ${_planHeader(`Q${qNum} ${now.getFullYear()} · GOALS ACROSS THE QUARTER`, 'Goals long enough to change something.',
-      'Quarterly-cadence commitments and their milestones.',
+      'Quarterly-cadence commitments and their tasks. BAU big rocks are pinned above.',
       `<button class="plan-liquid-btn" id="pq-add">＋ Add commitment</button>`)}
+    ${_bauSectionHtml()}
     <div class="plan-glass plan-quarter-bar">
       <div class="plan-glass-head"><span class="plan-glass-title">Quarter progress</span>
         <span class="plan-tel">${commits.length} COMMITMENTS · ${_qDoneT}/${_qTotT} TASKS · ${qPct}%</span></div>
