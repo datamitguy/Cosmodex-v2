@@ -4635,7 +4635,7 @@ let _atkSort   = 'smart';
 let _atkQuery  = '';
 
 const _ATK_FILTERS = [
-  { id:'all',     label:'All',       match: () => true },
+  { id:'all',     label:'All',       match: (t) => !t.done },
   { id:'today',   label:'Today',     match: (t, today) => !t.done && !t.someday && t.dueDate === today },
   { id:'week',    label:'This week', match: (t, today, wk) => !t.done && !t.someday && t.dueDate && t.dueDate >= today && t.dueDate <= wk },
   { id:'overdue', label:'Overdue',   match: (t, today) => !t.done && !t.someday && t.dueDate && t.dueDate < today },

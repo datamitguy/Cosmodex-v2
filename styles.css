@@ -8376,8 +8376,8 @@ select.sched-input { background: #181818; }
   content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%;
   background:rgb(53,249,47); box-shadow:0 0 8px rgba(53,249,47,0.9);
 }
-.dash-nowline { position:absolute; left:0; right:0; height:1px; background:rgba(255,80,80,0.8); z-index:2; pointer-events:none; }
-.dash-nowline-dot { position:absolute; left:-3px; top:-3px; width:7px; height:7px; border-radius:50%; background:rgb(255,80,80); box-shadow:0 0 8px rgba(255,80,80,0.9); }
+.dash-nowline { position:absolute; left:0; right:0; height:1px; background:rgba(255,255,255,0.9); box-shadow:0 0 8px rgba(255,255,255,0.55); z-index:2; pointer-events:none; }
+.dash-nowline-dot { position:absolute; left:-3px; top:-3px; width:7px; height:7px; border-radius:50%; background:#fff; box-shadow:0 0 9px rgba(255,255,255,0.9); }
 
 /* Drag affordances on the "Due today" source rows */
 .dash-task-row[draggable] { cursor:grab; }
@@ -8655,8 +8655,8 @@ select.sched-input { background: #181818; }
 .calx-slot:first-child { border-top:none; }
 .calx-slot:hover { background:rgba(255,255,255,.03); }
 
-.calx-now { position:absolute; left:0; right:0; border-top:1px solid rgba(53,249,47,.6); box-shadow:0 0 12px rgba(53,249,47,.35); pointer-events:none; z-index:5; }
-.calx-now-dot { position:absolute; left:-4px; top:-4px; width:9px; height:9px; border-radius:50%; background:rgb(53,249,47); box-shadow:0 0 12px rgb(53,249,47); }
+.calx-now { position:absolute; left:0; right:0; border-top:1px solid rgba(255,255,255,.9); box-shadow:0 0 10px rgba(255,255,255,.5); pointer-events:none; z-index:5; }
+.calx-now-dot { position:absolute; left:-4px; top:-4px; width:9px; height:9px; border-radius:50%; background:#fff; box-shadow:0 0 11px rgba(255,255,255,.9); }
 
 .calx-ev { position:absolute; left:4px; right:4px; border:1px solid rgba(255,255,255,.1); border-left:3px solid var(--ec,#fff);
   border-radius:8px; padding:5px 8px; overflow:hidden; cursor:pointer; z-index:3;
