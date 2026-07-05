@@ -41,7 +41,7 @@ function showMainPanel(name) {
     habitsSubscribe?.(); routinesSubscribe?.(); behavSubscribe?.(); hbSettingsSubscribe?.();
     window.initHabitsX ? window.initHabitsX('today') : switchHabitsTab('today');
   }
-  if (name === 'insights') { habitsSubscribe(); requestAnimationFrame(() => { renderInsights(); loadDoneWall(); }); }
+  if (name === 'insights') { habitsSubscribe(); requestAnimationFrame(() => { window.renderInsightsX ? renderInsightsX() : renderInsights(); }); }
   if (name === 'drill') { renderDrill(); }
   const orbEl = document.getElementById('cosmodex-orb');
   if (orbEl) orbEl.style.display = name === 'timedrift' ? 'none' : '';

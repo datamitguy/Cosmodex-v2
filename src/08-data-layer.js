@@ -193,7 +193,7 @@ function initData() {
     TASKS = snap.docs.map(d => ({ id: d.id, subtasks: [], ...d.data() }));
     renderTasks(); renderCalendar(); updateNavCounts(); updateDashboardHero();
     drawCosmodex(); // immediate orb sync on task change
-    if (_mainPanel === 'insights') renderInsights();
+    if (_mainPanel === "insights") (window.renderInsightsX || renderInsights)();
     window._refreshPlanTaskViews?.();
   });
 
@@ -201,7 +201,7 @@ function initData() {
     CAL_EVENTS = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderTasks(); renderCalendar(); updateDashboardHero();
     drawCosmodex(); // immediate orb sync on calendar change
-    if (_mainPanel === 'insights') renderInsights();
+    if (_mainPanel === "insights") (window.renderInsightsX || renderInsights)();
     if (_mainPanel === 'calendarx') window._calxAutoRefresh?.();
   });
 
