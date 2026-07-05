@@ -1522,7 +1522,7 @@ function initEventModal() {
     if (!_eamEvent) return;
     const ev = _eamEvent;
     hideEventModal();
-    openOverlay('pomo-overlay');
+    showMainPanel('focus');
     const titleEl = document.getElementById('pomo-ev-title');
     if (titleEl) titleEl.textContent = ev.title;
     window.setPomoEvent?.(ev);
@@ -3032,7 +3032,11 @@ document.addEventListener('click', e => {
 
 // Header action buttons
 document.getElementById('btn-notes')?.addEventListener('click', () => openOverlay('notes-overlay'));
-document.getElementById('btn-focus')?.addEventListener('click', () => { openOverlay('pomo-overlay'); });
+document.getElementById('btn-focus')?.addEventListener('click', () => {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('btn-focus')?.classList.add('active');
+  showMainPanel('focus');
+});
 document.getElementById('btn-cosmodex-bubble')?.addEventListener('click', () => openOrb());
 document.getElementById('btn-cosmos')?.addEventListener('click', () => openOverlay('claude-panel'));
 
@@ -3320,6 +3324,8 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     const chart = document.getElementById('kb-chart');
     if (chart) { chart.remove(); return; }
+    // Focus is a page now — ESC leaves it back to the dashboard.
+    if (_mainPanel === 'focus') { showMainPanel('default'); return; }
     if (document.querySelector('.task-row.kb-selected')) { _kbSelect(null); return; }
     if (document.getElementById('cmd-palette').classList.contains('open')) {
       closeCmdPalette(); return;
@@ -4419,6 +4425,8 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     _pomoEvent = task ? { taskId: task.id, title: task.title, _taskOnly: true } : null;
     const titleEl = document.getElementById('pomo-ev-title');
     if (titleEl) titleEl.textContent = task ? task.title : '—';
+    const nameEl = document.getElementById('pomo-focusname');
+    if (nameEl) nameEl.textContent = task ? task.title : 'No task — free focus';
     const delBtn = document.getElementById('pomo-del-event-btn');
     if (delBtn) delBtn.style.display = 'none';
     _pomoRenderTaskList(document.getElementById('pomo-task-search')?.value || '');
@@ -4436,6 +4444,8 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     _pomoEvent = title ? { title, _taskOnly: true } : null;
     const titleEl = document.getElementById('pomo-ev-title');
     if (titleEl) titleEl.textContent = title || '—';
+    const nameEl = document.getElementById('pomo-focusname');
+    if (nameEl) nameEl.textContent = title || 'No task — free focus';
   };
 
   window.initPomoOverlay = function() {
@@ -4525,9 +4535,9 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     renderPomo();
   });
 
-  // Close button (overlay — pomo timer now lives in Timedrift panel)
+  // Leave — pomo is a page now; return to the dashboard.
   document.getElementById('pomo-close')?.addEventListener('click', () => {
-    stopBreathing(); closeOverlay('pomo-overlay');
+    stopBreathing(); showMainPanel('default');
   });
   // Withdraw: reset timer state without closing any overlay
   document.getElementById('pomo-withdraw')?.addEventListener('click', () => {
@@ -5028,7 +5038,7 @@ function openCommitRitual(preselectTaskId) {
       window.setPomoTask && window.setPomoTask(task || null, _ritualDur);
       if (!task && window.setPomoTitle) window.setPomoTitle(intent || null);
       close();
-      openOverlay('pomo-overlay');
+      showMainPanel('focus');
     });
   }
   ov.classList.add('open');

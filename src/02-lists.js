@@ -13,6 +13,8 @@ function showMainPanel(name) {
   document.getElementById('panel-alltasks').style.display    = name === 'alltasks' ? 'flex' : 'none';
   const calxPanel = document.getElementById('panel-calendarx');
   if (calxPanel) calxPanel.style.display = name === 'calendarx' ? 'flex' : 'none';
+  const focusPanel = document.getElementById('panel-focus');
+  if (focusPanel) focusPanel.style.display = name === 'focus' ? 'flex' : 'none';
   document.getElementById('panel-milestones').style.display  = name === 'milestones' ? 'flex' : 'none';
   document.getElementById('panel-archived').style.display    = name === 'archived' ? 'flex' : 'none';
   document.getElementById('panel-lists').style.display       = name === 'lists' ? 'flex' : 'none';
@@ -23,7 +25,7 @@ function showMainPanel(name) {
   document.getElementById('panel-getabstract').style.display = name === 'getabstract' ? 'flex' : 'none';
   document.getElementById('panel-mindmap').style.display     = name === 'mindmap' ? 'flex' : 'none';
   document.getElementById('panel-trial').style.display       = name === 'trial' ? 'flex' : 'none';
-  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', calendarx:'Calendar', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
+  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', calendarx:'Calendar', focus:'Focus', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
   if (name === 'default') { window._dashInvalidateAnchor?.(); window.renderDashboardBoard?.(); }
@@ -32,6 +34,7 @@ function showMainPanel(name) {
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
   if (name === 'alltasks') { renderTasksPage(); }
   if (name === 'calendarx') { window.renderCalendarX?.(); }
+  if (name === 'focus') { window.initPomoOverlay?.(); }
   if (name === 'habits') {
     // New design-system habits UI (14-habits-x.js). Ensure data subscriptions are
     // live (subscribe-once guards make these cheap), then render.

@@ -582,6 +582,81 @@
     <!-- Calendar Panel (design-system calendar — day/week/month, wired to calEvents + tasks) -->
     <div id="panel-calendarx" style="display:none;flex:1;min-height:0;flex-direction:column;overflow-y:auto;background:#000000"></div>
 
+    <!-- Focus Panel (design-system commit page — real page, not a modal) -->
+    <div id="panel-focus" style="display:none;flex:1;min-height:0;flex-direction:column;overflow-y:auto;background:#000000">
+      <div class="focus-page">
+        <div class="focus-eyebrow">FOCUS · COMMIT MODE</div>
+        <div class="focus-headline">One focus that cannot slip…</div>
+        <div class="focus-cols">
+          <!-- LEFT: ring + timer + controls -->
+          <div class="focus-card">
+            <div class="focus-ring-wrap">
+              <div class="focus-rings"></div>
+              <canvas id="pomo-ring" width="320" height="320"></canvas>
+              <div class="focus-center">
+                <div class="focus-elapsed" id="pomo-phase">Ready</div>
+                <div class="focus-time" id="pomo-time">25:00</div>
+                <div class="focus-focusname" id="pomo-focusname">—</div>
+              </div>
+            </div>
+            <div class="pomo-swipe-section">
+              <div class="pomo-swipe-ctrl">
+                <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
+                <div class="pomo-swipe-track" id="pomo-sw-track">
+                  <div class="pomo-swipe-inner">
+                    <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
+                      <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
+                      <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:10px;color:var(--muted)">min</div>
+                    </div>
+                    <div class="pomo-ticks" id="pomo-ticks"></div>
+                  </div>
+                </div>
+                <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
+              </div>
+            </div>
+            <div class="focus-btns">
+              <button class="focus-liquid focus-primary" id="pomo-start">Start</button>
+              <button class="focus-liquid" id="pomo-reset">Reset</button>
+              <button class="focus-leave" id="pomo-close">Leave</button>
+            </div>
+            <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:#fff;margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
+              <div style="display:flex;gap:8px;justify-content:center">
+                <button id="pomo-done-yes" style="background:rgba(255,255,255,0.9);color:#000;border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
+                <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
+              </div>
+            </div>
+            <div class="pomo-sess" id="pomo-sess">
+              <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+              <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
+            </div>
+            <div class="focus-lockline">SESSION LOCKED · ESC TO LEAVE</div>
+          </div>
+          <!-- RIGHT: task selector + session checklist -->
+          <div class="focus-side">
+            <div class="focus-side-head">
+              <div class="focus-side-title">Tasks</div>
+              <div class="focus-eyebrow" id="pomo-tasks-lbl">FOCUS TASK · TODAY</div>
+            </div>
+            <input id="pomo-task-search" class="focus-search" placeholder="⌕ search all tasks…" autocomplete="off">
+            <div class="pomo-task-list focus-task-list" id="pomo-task-list"></div>
+            <div class="focus-checklist">
+              <div class="focus-checklist-lbl">Session checklist</div>
+              <div class="pomo-check-items" id="pomo-check-items"></div>
+              <div class="pomo-check-add">
+                <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
+                <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- hidden helpers kept for the timer JS -->
+      <span id="pomo-ev-title" style="display:none">—</span>
+      <button id="pomo-del-event-btn" style="display:none"></button>
+      <div id="pomo-lock-msg" style="display:none"><span class="pomo-lock-text"></span><button id="pomo-withdraw"></button></div>
+    </div>
+
     <!-- Lists Panel (full page — design-kit composition) -->
     <div id="panel-lists" style="display:none;flex:1;flex-direction:column;overflow-y:auto;background:#000000">
       <div class="lists-page">
@@ -1057,8 +1132,23 @@
     <div id="panel-insights" style="display:none;flex:1;flex-direction:column;overflow:hidden">
       <div class="ins-page">
 
+        <!-- Design-system top chrome: title + tab bar -->
+        <div class="insx-chrome">
+          <div>
+            <div class="insx-eyebrow">INSIGHTS</div>
+            <div class="insx-headline">The receipt of your attention</div>
+          </div>
+          <div style="flex:1"></div>
+          <div class="insx-tabs" id="insx-tabs">
+            <button class="insx-tab active" data-ins-tab-btn="overview">Overview</button>
+            <button class="insx-tab" data-ins-tab-btn="time">Time</button>
+            <button class="insx-tab" data-ins-tab-btn="focus">Focus</button>
+            <button class="insx-tab" data-ins-tab-btn="patterns">Patterns</button>
+          </div>
+        </div>
+
         <!-- ROW 1: Ambient Constellation Hero -->
-        <div class="ins-hero">
+        <div class="ins-hero" data-ins-tab="overview">
           <canvas id="ins-hero-bg" class="ins-hero-bg"></canvas>
           <div class="ins-hero-zone ins-hero-left">
             <div class="ins-hero-score" id="ins-hero-score">0</div>
@@ -1072,7 +1162,7 @@
         </div>
 
         <!-- ROW 2: Three Key Stat Cards -->
-        <div class="ins-stats-row">
+        <div class="ins-stats-row" data-ins-tab="overview">
           <div class="ins-stat-card">
             <div class="ins-stat-number" id="ins-focus-time">—</div>
             <div class="ins-stat-label">Focus Time This Week</div>
@@ -1093,7 +1183,7 @@
         </div>
 
         <!-- ROW 3: Charts — Completion Trend | Time by Category -->
-        <div class="ins-charts-row">
+        <div class="ins-charts-row" data-ins-tab="time">
           <div class="ins-chart-card">
             <div class="ins-chart-label">Completion Trend — 28 Days</div>
             <canvas id="ins-trend-canvas" width="600" height="180"></canvas>
@@ -1105,7 +1195,7 @@
         </div>
 
         <!-- ROW 4: Tabbed Visualization Card -->
-        <div class="ins-viz-card">
+        <div class="ins-viz-card" data-ins-tab="focus">
           <div class="ins-viz-header">
             <div class="ins-viz-tabs">
               <button class="ins-viz-tab active" data-viz="pulse">Pulse Heatmap</button>
@@ -1121,7 +1211,7 @@
         </div>
 
         <!-- ROW 5: Week Debrief | Completed Tasks -->
-        <div class="ins-detail-row">
+        <div class="ins-detail-row" data-ins-tab="focus">
           <div class="ins-detail-card">
             <div class="ins-chart-label">Week Debrief</div>
             <div id="ins-week-debrief"></div>
@@ -1141,8 +1231,8 @@
           </div>
         </div>
 
-        <!-- ROW 5: Friction Detector + Context Patterns (preserved) -->
-        <div class="hb-insight-layout">
+        <!-- ROW 6: Friction Detector + Context Patterns (preserved) -->
+        <div class="hb-insight-layout" data-ins-tab="patterns">
           <div class="hb-insight-card">
             <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
             <div class="hb-friction-insight" id="ins-friction-list">
@@ -1302,96 +1392,6 @@
   </div>
 </div>
 
-<!-- Focus / Pomodoro overlay -->
-<!-- Focus Timer overlay — centered card opened from the Focus nav item -->
-<div class="overlay" id="pomo-overlay" style="z-index:800">
-  <div id="td-pomo-float">
-    <div class="pf-specular"></div>
-    <div class="pf-header">
-      <span class="pf-label">Focus Timer</span>
-      <div style="display:flex;align-items:center;gap:10px">
-        <button id="pomo-del-event-btn" style="display:none;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:10px;font-family:var(--font-mono);cursor:pointer" title="Delete calendar event">✕ Delete Event</button>
-        <button class="pf-dot" id="td-pomo-toggle" title="Collapse / expand"></button>
-        <button class="pf-close" id="pomo-close" title="Close">✕</button>
-      </div>
-    </div>
-    <div class="pf-body">
-      <div class="pomo-body-inner" style="padding:16px 16px 14px">
-        <div class="pomo-page-eyebrow">FOCUS · COMMIT MODE</div>
-        <div class="pomo-page-headline">One focus that cannot slip…</div>
-        <div class="pomo-page-cols">
-          <!-- LEFT: ring + timer + controls (design-system "commit" card) -->
-          <div class="pomo-col-focus">
-            <div class="pomo-ring-wrap">
-              <div class="pf-breath-bg-outer"></div>
-              <div class="pf-breath-bg-inner"></div>
-              <canvas id="pomo-ring" width="188" height="188"></canvas>
-              <div class="pomo-center">
-                <div class="pomo-time" id="pomo-time">25:00</div>
-                <div class="pomo-phase-label" id="pomo-phase">Ready</div>
-              </div>
-            </div>
-            <div class="pomo-swipe-section">
-              <div class="pomo-swipe-ctrl">
-                <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
-                <div class="pomo-swipe-track" id="pomo-sw-track">
-                  <div class="pomo-swipe-inner">
-                    <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
-                      <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
-                      <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:10px;color:var(--muted)">min</div>
-                    </div>
-                    <div class="pomo-ticks" id="pomo-ticks"></div>
-                  </div>
-                </div>
-                <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
-              </div>
-            </div>
-            <div class="pomo-btns">
-              <button class="pomo-btn pomo-danger" id="pomo-reset">Reset</button>
-              <button class="pomo-btn pomo-primary" id="pomo-start">Start</button>
-            </div>
-            <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
-              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:#fff;margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
-              <div style="display:flex;gap:8px;justify-content:center">
-                <button id="pomo-done-yes" style="background:rgba(255,255,255,0.9);color:#000;border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
-                <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
-              </div>
-            </div>
-            <div class="pomo-sess" id="pomo-sess">
-              <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-              <div class="pomo-sess-dot"></div><div class="pomo-sess-dot"></div>
-            </div>
-            <div class="pomo-page-lockline">SESSION LOCKED · ESC TO LEAVE</div>
-          </div>
-          <!-- RIGHT: focus task + session checklist (design-system "buckets") -->
-          <div class="pomo-col-side">
-            <div class="pomo-ev-label">Focus Session</div>
-            <div class="pomo-ev-title-el" id="pomo-ev-title">—</div>
-            <div class="pomo-tasks">
-              <div class="pomo-tasks-head">
-                <span class="pomo-tasks-lbl" id="pomo-tasks-lbl">FOCUS TASK · TODAY</span>
-                <input id="pomo-task-search" class="pomo-tasks-search" placeholder="⌕ search all tasks…" autocomplete="off">
-              </div>
-              <div class="pomo-task-list" id="pomo-task-list"></div>
-            </div>
-            <div class="pomo-checklist">
-              <div class="pomo-checklist-lbl">Session checklist</div>
-              <div class="pomo-check-items" id="pomo-check-items"></div>
-              <div class="pomo-check-add">
-                <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
-                <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div id="pomo-lock-msg">
-        <div class="pomo-lock-text">Session locked · one focus that cannot slip</div>
-        <button class="pomo-lock-withdraw" id="pomo-withdraw">Withdraw Session</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- Commit ritual overlay (design: "What is the one thing?") -->
 <div class="overlay commit-ritual-ov" id="commit-ritual-overlay" style="z-index:840">
@@ -1999,7 +1999,7 @@
       <span class="drawer-item-icon">◉</span>
       Life OS
     </div>
-    <div class="drawer-item" data-open="pomo-overlay">
+    <div class="drawer-item" data-mob-panel="focus">
       <span class="drawer-item-icon">◎</span>
       Focus
     </div>

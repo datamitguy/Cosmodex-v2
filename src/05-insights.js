@@ -582,10 +582,33 @@ function _insMomentumNudge(momentum, tasksDoneToday) {
   return `<div class="ins-nudge">✦ ${nudge}</div>${reentry}`;
 }
 
+/* ── Design-system tab chrome (Overview · Time · Focus · Patterns) ──────
+   Groups the existing real-data sections under DS-styled tabs. Switching a tab
+   toggles [data-ins-tab] section visibility and re-renders so canvases in the
+   now-visible tab size correctly. */
+let _insxTab = 'overview';
+function _insxApplyTab() {
+  document.querySelectorAll('#insx-tabs .insx-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.insTabBtn === _insxTab));
+  document.querySelectorAll('#panel-insights [data-ins-tab]').forEach(sec => {
+    sec.style.display = (sec.dataset.insTab === _insxTab) ? '' : 'none';
+  });
+}
+function _insxSetTab(tab) { _insxTab = tab; _insxApplyTab(); renderInsights(); }
+
 function renderInsights() {
   const logs = _habitLogs, habits = _habits;
   const today = localDateStr(new Date());
   const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  // Wire the DS tab bar once, then apply the active tab so the visible sections
+  // are laid out (non-zero canvas width) before we draw into them.
+  const tabsEl = document.getElementById('insx-tabs');
+  if (tabsEl && !tabsEl.dataset.wired) {
+    tabsEl.dataset.wired = '1';
+    tabsEl.querySelectorAll('[data-ins-tab-btn]').forEach(b =>
+      b.addEventListener('click', () => _insxSetTab(b.dataset.insTabBtn)));
+  }
+  _insxApplyTab();
   // Defer canvas drawing if panel not visible (clientWidth=0)
   const panelVisible = document.getElementById('panel-insights')?.offsetParent !== null;
 
