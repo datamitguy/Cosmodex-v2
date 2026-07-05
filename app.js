@@ -13041,8 +13041,7 @@ function renderAtkDetail() {
       ${task.done ? '' : '<button class="atk-foot-btn" data-atk-focus>◉ Focus</button>'}
       <button class="atk-foot-btn" data-atk-sched>☷ Schedule</button>
       <button class="atk-foot-btn" data-atk-dup title="Duplicate this task">⧉ Duplicate</button>
-      <div style="flex:1"></div>
-      <button class="atk-foot-btn danger" data-atk-del title="Delete task">🗑</button>
+      <button class="atk-foot-btn danger" data-atk-del title="Delete task">🗑 Delete</button>
     </div>`;
 
   el.querySelector('[data-atk-close]').onclick = () => { _atkSelectedId = null; renderAllTasksList(); renderAtkDetail(); };

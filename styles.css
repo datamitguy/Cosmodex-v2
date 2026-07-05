@@ -7860,11 +7860,11 @@ select.sched-input { background: #181818; }
 }
 .atk-subadd:focus { border-color:rgba(255,255,255,.18); }
 .atk-subadd::placeholder { color:rgba(255,255,255,.3); }
-.atk-detail-foot { padding:16px; border-top:1px solid rgba(255,255,255,.06); display:flex; gap:8px; align-items:center; }
+.atk-detail-foot { padding:16px; border-top:1px solid rgba(255,255,255,.06); display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 .atk-foot-btn {
   background:rgba(255,255,255,.04); color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.12);
-  border-radius:8px; padding:10px 14px; cursor:pointer;
-  font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  border-radius:8px; padding:10px 12px; cursor:pointer; white-space:nowrap;
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
 }
 .atk-foot-btn:hover { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); }
 .atk-foot-btn.danger { color:#e05555; border-color:rgba(224,85,85,.4); background:transparent; }
@@ -8669,7 +8669,8 @@ select.sched-input { background: #181818; }
 .calx-allday { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
 .calx-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:8px;
   background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-left:3px solid #fff; cursor:pointer;
-  font-family:var(--font-body); font-size:12px; color:rgba(255,255,255,.85); }
+  font-family:var(--font-body); font-size:12px; color:rgba(255,255,255,.85);
+  max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .calx-chip:hover { background:rgba(255,255,255,.07); }
 .calx-chip-tag { font-family:var(--font-mono); font-size:8px; letter-spacing:.1em; color:rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.15); border-radius:100px; padding:1px 5px; }
 
@@ -8730,10 +8731,11 @@ select.sched-input { background: #181818; }
 .focus-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; z-index: 3; pointer-events: none; }
 .focus-elapsed { font-family: var(--font-mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.5); }
 .focus-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 48px; color: #fff; text-shadow: 0 0 18px rgba(255,255,255,.45); margin-top: 6px; line-height: 1; }
-.focus-focusname { font-family: var(--font-display); font-weight: 300; font-style: italic; font-size: 15px; color: rgba(255,255,255,.65); margin-top: 8px; max-width: 220px; }
+.focus-focusname { font-family: var(--font-display); font-weight: 300; font-style: italic; font-size: 15px; color: rgba(255,255,255,.65); margin-top: 8px; max-width: 240px;
+  overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 .focus-card .pomo-swipe-section { margin-top: 20px; }
-.focus-btns { display: flex; gap: 10px; margin-top: 22px; }
+.focus-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
 .focus-liquid { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); color: #fff; border-radius: 8px;
   padding: 10px 20px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: all .2s var(--ease-glass); }
 .focus-liquid:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.4); }
