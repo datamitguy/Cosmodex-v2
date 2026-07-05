@@ -5166,15 +5166,13 @@ function _renderMsProjTasks(projId) {
   });
 }
 
-async function _addMsProjTask(projId) {
-  const titleEl = document.getElementById('ms-proj-task-title');
-  const dueEl   = document.getElementById('ms-proj-task-due');
-  const title = (titleEl?.value || '').trim();
-  const due   = dueEl?.value || '';
-  if (!title) return;
+// Shared: create a new task (or link an existing one) to a commitment.
+// Due date is mandatory on first input (item 12) unless linking a task that already has one.
+async function _commitmentAddTask(projId, title, due) {
+  title = (title || '').trim();
+  if (!title) return false;
   const existing = TASKS.find(t => t.title.toLowerCase() === title.toLowerCase() && t.projectId !== projId);
-  // Due date is mandatory on first input (item 12) — unless linking a task that already has one.
-  if (!due && !(existing && existing.dueDate)) { showToast('Due date is required', 'error'); dueEl?.focus(); return; }
+  if (!due && !(existing && existing.dueDate)) { showToast('Due date is required', 'error'); return false; }
   try {
     if (existing) {
       await updateTask(existing.id, { projectId: projId, dueDate: existing.dueDate || due });
@@ -5182,11 +5180,20 @@ async function _addMsProjTask(projId) {
       const { addDoc, serverTimestamp } = window.CDX_FB;
       await addDoc(_uc('tasks'), { title, done: false, dueDate: due, projectId: projId, priority: 'med', createdAt: serverTimestamp() });
     }
-    if (titleEl) titleEl.value = '';
-    if (dueEl) dueEl.value = '';
-    const sr = document.getElementById('ms-proj-task-search'); if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; }
-    setTimeout(() => _renderMsProjTasks(projId), 150);
-  } catch (e) { console.error('addMsProjTask', e); showToast('Could not add task', 'error'); }
+    showToast('Task added to commitment', 'success');
+    return true;
+  } catch (e) { console.error('commitmentAddTask', e); showToast('Could not add task', 'error'); return false; }
+}
+
+async function _addMsProjTask(projId) {
+  const titleEl = document.getElementById('ms-proj-task-title');
+  const dueEl   = document.getElementById('ms-proj-task-due');
+  const ok = await _commitmentAddTask(projId, titleEl?.value, dueEl?.value || '');
+  if (!ok) { dueEl?.focus(); return; }
+  if (titleEl) titleEl.value = '';
+  if (dueEl) dueEl.value = '';
+  const sr = document.getElementById('ms-proj-task-search'); if (sr) { sr.style.display = 'none'; sr.innerHTML = ''; }
+  setTimeout(() => _renderMsProjTasks(projId), 150);
 }
 
 function _wireMsProjTasks(projId) {
@@ -6329,6 +6336,11 @@ function renderPlanningCalendar(projId) {
       <span class="pcr-meta">${escHtml(rdates)} · ${rt.length} TASK${rt.length === 1 ? '' : 'S'}${rproj.bigRock ? ' · ⛰ BAU' : ''}</span>
       ${brief ? `<span class="pcr-brief">“${escHtml(brief)}”</span>` : '<span style="flex:1"></span>'}
       <span class="pcr-pct">${rt.filter(t => t.done).length}/${rt.length} · ${rpct}%</span>
+      <div class="pcr-addtask">
+        <input class="pcr-task-title" id="pcr-task-title" placeholder="＋ Add task…" autocomplete="off">
+        <input class="pcr-task-due" id="pcr-task-due" type="date" title="Due date (required)">
+        <button class="pcr-task-add" id="pcr-task-add">Add</button>
+      </div>
     </div>`;
   }
   body.innerHTML = `<div class="pcal">${_pcalToolbar()}${_pcalView === 'week' ? _pcalRenderWeek(byDate) : _pcalRenderMonth(byDate)}${empty}</div>${ribbon}`;
@@ -6361,6 +6373,18 @@ function renderPlanningCalendar(projId) {
     body.querySelectorAll('[data-pcal-day]').forEach(cell => cell.onclick = () => {
       if (typeof openMsEventModal === 'function') openMsEventModal(_pcalProj, null, cell.dataset.pcalDay);
     });
+  }
+  // Ribbon inline add-task (item: dedicated add-task in commitments, no edit modal needed)
+  const rTitle = document.getElementById('pcr-task-title');
+  const rDue   = document.getElementById('pcr-task-add');
+  if (rTitle && _pcalProj) {
+    const submit = async () => {
+      const ok = await _commitmentAddTask(_pcalProj, rTitle.value, document.getElementById('pcr-task-due')?.value || '');
+      if (ok) rTitle.value = '';
+      // onSnapshot re-render refreshes the ribbon count automatically
+    };
+    document.getElementById('pcr-task-add').onclick = submit;
+    rTitle.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } };
   }
 }
 

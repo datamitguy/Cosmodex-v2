@@ -8853,3 +8853,14 @@ select.sched-input { background: #181818; }
 /* Correct selector for focused-commitment off-range dimming (item 9) */
 .pcal-cell.pcal-outrange { opacity:.3; }
 .pcal-cell.pcal-outrange .pcal-cell-body { filter:grayscale(.4); }
+
+/* ── Ribbon inline add-task (add tasks to a commitment without the edit modal) ── */
+.pcr-addtask { display:flex; align-items:center; gap:6px; flex:1 1 100%; margin-top:8px; }
+.pcr-task-title { flex:1; min-width:120px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:7px;
+  padding:7px 10px; color:#fff; font-family:var(--font-body); font-size:12px; }
+.pcr-task-title:focus { outline:none; border-color:rgba(255,255,255,.35); }
+.pcr-task-due { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12); border-radius:7px; padding:6px 8px;
+  color:#fff; font-family:var(--font-mono); font-size:11px; width:140px; }
+.pcr-task-add { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.28); color:#fff; border-radius:7px;
+  padding:7px 14px; font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; flex:none; }
+.pcr-task-add:hover { background:rgba(255,255,255,.2); }
