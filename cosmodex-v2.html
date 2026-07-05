@@ -1558,9 +1558,12 @@
         </div>
         <div id="ms-activity-search-results" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;max-height:160px;overflow-y:auto"></div>
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px">
-        <button data-close="ms-event-modal" class="btn-ghost">Cancel</button>
-        <button id="ms-event-confirm" class="btn-primary">Save</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px">
+        <button id="ms-event-delete" class="btn-ghost" style="color:#e05555;border-color:rgba(224,85,85,.4);display:none">🗑 Delete milestone</button>
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <button data-close="ms-event-modal" class="btn-ghost">Cancel</button>
+          <button id="ms-event-confirm" class="btn-primary">Save</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2147,10 +2150,15 @@
       <button class="eam-save-btn" id="eam-save">Save</button>
     </div>
   </div>
+  <div id="eam-task-section" style="display:none;margin-top:14px">
+    <div class="eam-section-label">Theme</div>
+    <div class="eam-cat-row" id="eam-cats"></div>
+  </div>
   <div class="eam-actions">
+    <button class="eam-play-btn" id="eam-complete" style="display:none">✓ Complete task</button>
+    <button class="eam-play-btn" id="eam-play">▶ Focus</button>
     <button class="eam-delete-btn" id="eam-delete">✕ Delete</button>
     <button class="eam-delete-btn" id="eam-delete-task" style="display:none">✕ Delete event &amp; task</button>
-    <button class="eam-play-btn" id="eam-play">▶ Focus</button>
   </div>
 </div>
 </body>

@@ -5164,6 +5164,16 @@ function openMsEventModal(projectId, eventId = null, prefilledDate = '') {
   _msEventEdit = eventId || null;
   _msNewActivities = ev ? JSON.parse(JSON.stringify(ev.activities)) : [];
   document.getElementById('ms-event-modal-title').textContent = ev ? 'Edit Milestone' : 'New Milestone';
+  const _delBtn = document.getElementById('ms-event-delete');
+  if (_delBtn) {
+    _delBtn.style.display = ev ? '' : 'none';
+    _delBtn.onclick = async () => {
+      if (!await cdxConfirm(`Delete milestone "${ev.title}"?`)) return;
+      await deleteMilestoneEvent(ev.id);
+      closeOverlay('ms-event-modal');
+      showToast('Milestone deleted', 'success');
+    };
+  }
   document.getElementById('ms-event-project-id').value = projectId;
   document.getElementById('ms-event-id').value = eventId || '';
   document.getElementById('ms-event-title').value = ev ? ev.title : '';
@@ -6392,15 +6402,25 @@ function _planDebSave(coll, key, getPayload) {
   clearTimeout(_planDocSaveTimer);
   _planDocSaveTimer = setTimeout(() => _planSaveDoc(coll, key, getPayload()), 700);
 }
-function _planWeekKey() {
+let _ptwWeekOffset = 0; // 0 = current week; ± navigates "The week, shaped"
+function _planWeekMonday() {
   const now = new Date(); const dow = now.getDay();
-  const mon = new Date(now); mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1)); mon.setHours(0,0,0,0);
-  return localDateStr(mon);
+  const mon = new Date(now);
+  mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1) + _ptwWeekOffset * 7);
+  mon.setHours(0, 0, 0, 0);
+  return mon;
 }
+function _planWeekKey() { return localDateStr(_planWeekMonday()); }
 function _planWeekDays() {
-  const now = new Date(); const dow = now.getDay();
-  const mon = new Date(now); mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+  const mon = _planWeekMonday();
   return Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return localDateStr(d); });
+}
+function _ptwWeekLabel() {
+  const days = _planWeekDays();
+  const s = new Date(days[0] + 'T00:00'), e = new Date(days[6] + 'T00:00');
+  const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const rel = _ptwWeekOffset === 0 ? 'THIS WEEK' : _ptwWeekOffset === -1 ? 'LAST WEEK' : _ptwWeekOffset === 1 ? 'NEXT WEEK' : (_ptwWeekOffset < 0 ? `${-_ptwWeekOffset} WEEKS AGO` : `IN ${_ptwWeekOffset} WEEKS`);
+  return `${rel} · ${s.getDate()} ${mo[s.getMonth()]} – ${e.getDate()} ${mo[e.getMonth()]}`;
 }
 
 /* ── Shared bits ──────────────────────────────────────────────────────── */
@@ -6475,7 +6495,15 @@ function renderPlanThisWeek() {
       </div>
     </div>
     <div class="plan-glass">
-      <div class="plan-glass-head"><span class="plan-glass-title">The week, shaped</span></div>
+      <div class="plan-glass-head">
+        <span class="plan-glass-title">The week, shaped</span>
+        <div class="ptw-week-nav">
+          <button class="ptw-week-arrow" id="ptw-week-prev" title="Previous week">‹</button>
+          <span class="ptw-week-label" id="ptw-week-label">${escHtml(_ptwWeekLabel())}</span>
+          <button class="ptw-week-arrow" id="ptw-week-next" title="Next week">›</button>
+          <button class="ptw-week-today" id="ptw-week-today" title="Back to this week">◈ Today</button>
+        </div>
+      </div>
       <div class="plan-dsn-sub">Each day gets one anchor. One. Not three.</div>
       <div class="ptw-shape-grid">${shapedCells}</div>
     </div>
@@ -6495,6 +6523,9 @@ function renderPlanThisWeek() {
 
   document.getElementById('ptw-add').onclick = () => _addCommitment('weekly');
   body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => openMsProjectModal(el.dataset.commit));
+  document.getElementById('ptw-week-prev')?.addEventListener('click', () => { _ptwWeekOffset--; renderPlanThisWeek(); });
+  document.getElementById('ptw-week-next')?.addEventListener('click', () => { _ptwWeekOffset++; renderPlanThisWeek(); });
+  document.getElementById('ptw-week-today')?.addEventListener('click', () => { _ptwWeekOffset = 0; renderPlanThisWeek(); });
 
   const key = _planWeekKey();
   const EFILL = { high: 90, mid: 55, low: 30, '': 0 };
@@ -9557,9 +9588,33 @@ function showEventModal(ev, clientX, clientY) {
   document.getElementById('eam-title').textContent = ev.title;
   document.getElementById('eam-start').value = ev.startTime || '';
   document.getElementById('eam-dur').value   = ev.duration  || 60;
+
+  // Linked task → theme picker + complete button (edit/close from the dashboard)
+  const linkedTask = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : TASKS.find(t => t.calEventId === ev.id);
+  const taskSection = document.getElementById('eam-task-section');
+  const completeBtn = document.getElementById('eam-complete');
+  const catRow = document.getElementById('eam-cats');
+  if (linkedTask && catRow) {
+    taskSection.style.display = '';
+    completeBtn.style.display = linkedTask.done ? 'none' : '';
+    catRow.innerHTML = Object.keys(CATEGORIES).map(id => {
+      const c = CATEGORIES[id], active = id === linkedTask.category;
+      return `<button class="eam-cat-chip${active ? ' active' : ''}" data-eam-cat="${escAttr(id)}">
+        <span class="eam-cat-dot" style="background:${getCatColor(id)}"></span>${escHtml(c.label)}</button>`;
+    }).join('');
+    catRow.querySelectorAll('[data-eam-cat]').forEach(b => b.onclick = () => {
+      updateTask(linkedTask.id, { category: b.dataset.eamCat });
+      catRow.querySelectorAll('.eam-cat-chip').forEach(x => x.classList.toggle('active', x === b));
+    });
+    completeBtn.onclick = () => { hideEventModal(); handleCheckClick(linkedTask.id); };
+  } else if (taskSection) {
+    taskSection.style.display = 'none';
+    if (completeBtn) completeBtn.style.display = 'none';
+  }
+
   modal.classList.add('open');
   // Position near click, keep within viewport
-  const mW = 268, mH = 170;
+  const mW = 320, mH = linkedTask ? 340 : 200;
   const vW = window.innerWidth, vH = window.innerHeight;
   let x = clientX + 14, y = clientY - 14;
   if (x + mW > vW - 8) x = clientX - mW - 14;

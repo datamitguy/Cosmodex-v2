@@ -6891,16 +6891,25 @@ select.sched-input { background: #181818; }
   background: rgba(12,12,12,0.88);
   backdrop-filter: var(--glass-blur-panel);
   -webkit-backdrop-filter: var(--glass-blur-panel);
-  border: 1px solid rgba(255,255,255,0.13); border-radius: 12px;
-  padding: 14px 16px; min-width: 248px; max-width: 300px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06);
-  display: none; flex-direction: column; gap: 11px;
+  border: 1px solid rgba(255,255,255,0.16); border-radius: 14px;
+  padding: 18px 20px; min-width: 300px; max-width: 340px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.06);
+  display: none; flex-direction: column; gap: 14px;
 }
 #event-action-modal.open { display: flex; }
 .eam-title {
-  font-family: var(--font-display); font-size: 14px; font-weight: 300;
-  color: var(--gold); padding-right: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-family: var(--font-display); font-size: 17px; font-weight: 300;
+  color: #fff; padding-right: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.eam-cat-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.eam-cat-chip {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 100px; cursor: pointer;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7);
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; transition: all .15s var(--ease-glass);
+}
+.eam-cat-chip:hover { border-color: rgba(255,255,255,0.3); color: #fff; }
+.eam-cat-chip.active { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.4); color: #fff; }
+.eam-cat-dot { width: 8px; height: 8px; border-radius: 50%; }
 .eam-close {
   position: absolute; top: 8px; right: 10px;
   background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 2px;
@@ -6915,28 +6924,31 @@ select.sched-input { background: #181818; }
   background: var(--elevated); border: 1px solid var(--border); color: var(--cream);
   border-radius: 6px; padding: 5px 8px; font-family: var(--font-mono); font-size: 12px; outline: none;
 }
-.eam-time-input:focus, .eam-dur-input:focus { border-color: var(--gold); }
-.eam-time-input { width: 78px; } .eam-dur-input { width: 52px; }
+.eam-time-input:focus, .eam-dur-input:focus { border-color: rgba(255,255,255,0.4); }
+.eam-time-input { width: 92px; } .eam-dur-input { width: 60px; }
+.eam-time-input, .eam-dur-input { font-size: 13px; padding: 7px 9px; }
 .eam-dur-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
 .eam-save-btn {
-  background: rgba(255,255,255,.1); border: 1px solid var(--gold); color: var(--gold);
-  border-radius: 6px; padding: 5px 12px; font-family: var(--font-mono); font-size: 10px;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); color: #fff;
+  border-radius: 7px; padding: 7px 14px; font-family: var(--font-mono); font-size: 10px;
   letter-spacing: 0.08em; cursor: pointer; text-transform: uppercase; transition: background .15s;
 }
 .eam-save-btn:hover { background: rgba(255,255,255,.2); }
-.eam-actions { display: flex; gap: 7px; }
+.eam-actions { display: flex; flex-wrap: wrap; gap: 7px; }
 .eam-delete-btn {
-  flex: 1; background: none; border: 1px solid var(--gold); color: var(--gold);
-  border-radius: 6px; padding: 8px 0; font-family: var(--font-mono); font-size: 10px;
+  flex: 1 1 46%; background: none; border: 1px solid rgba(224,85,85,.4); color: #e05555;
+  border-radius: 7px; padding: 9px 0; font-family: var(--font-mono); font-size: 10px;
   letter-spacing: 0.08em; cursor: pointer; text-transform: uppercase; transition: background .15s;
 }
-.eam-delete-btn:hover { background: rgba(255,255,255,.1); }
+.eam-delete-btn:hover { background: rgba(224,85,85,.12); }
 .eam-play-btn {
-  flex: 2; background: rgba(255,255,255,.1); border: 1px solid var(--gold); color: var(--gold);
-  border-radius: 6px; padding: 8px 0; font-family: var(--font-mono); font-size: 10px;
+  flex: 1 1 46%; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.28); color: #fff;
+  border-radius: 7px; padding: 9px 0; font-family: var(--font-mono); font-size: 10px;
   letter-spacing: 0.08em; cursor: pointer; text-transform: uppercase; transition: background .15s;
 }
 .eam-play-btn:hover { background: rgba(255,255,255,.2); }
+#eam-complete { border-color: rgba(53,249,47,.5); color: rgb(53,249,47); }
+#eam-complete:hover { background: rgba(53,249,47,.12); }
 
 /* ── Mind Map ─────────────────────────────────────────── */
 .mm-tool-btn {
@@ -8772,3 +8784,15 @@ select.sched-input { background: #181818; }
 .insx-tab:hover { color: rgba(255,255,255,.8); }
 .insx-tab.active { background: rgba(255,255,255,.12); color: #fff; text-shadow: 0 0 10px rgba(255,255,255,.4); }
 @media (max-width: 640px) { .insx-headline { font-size: 24px; } .insx-tab { padding: 6px 12px; } }
+
+/* ── Planning: "The week, shaped" navigation ── */
+.ptw-week-nav { display:flex; align-items:center; gap:8px; }
+.ptw-week-arrow { width:26px; height:26px; border-radius:7px; cursor:pointer;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.8);
+  font-size:14px; line-height:1; display:flex; align-items:center; justify-content:center; transition:all .18s var(--ease-glass); }
+.ptw-week-arrow:hover { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.35); color:#fff; }
+.ptw-week-label { font-family:var(--font-mono); font-size:10px; letter-spacing:.1em; color:rgba(255,255,255,.6); min-width:150px; text-align:center; }
+.ptw-week-today { font-family:var(--font-mono); font-size:9px; letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+  padding:5px 10px; border-radius:7px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); color:rgba(255,255,255,.7);
+  transition:all .18s var(--ease-glass); }
+.ptw-week-today:hover { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.35); color:#fff; }

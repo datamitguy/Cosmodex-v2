@@ -1452,9 +1452,33 @@ function showEventModal(ev, clientX, clientY) {
   document.getElementById('eam-title').textContent = ev.title;
   document.getElementById('eam-start').value = ev.startTime || '';
   document.getElementById('eam-dur').value   = ev.duration  || 60;
+
+  // Linked task → theme picker + complete button (edit/close from the dashboard)
+  const linkedTask = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : TASKS.find(t => t.calEventId === ev.id);
+  const taskSection = document.getElementById('eam-task-section');
+  const completeBtn = document.getElementById('eam-complete');
+  const catRow = document.getElementById('eam-cats');
+  if (linkedTask && catRow) {
+    taskSection.style.display = '';
+    completeBtn.style.display = linkedTask.done ? 'none' : '';
+    catRow.innerHTML = Object.keys(CATEGORIES).map(id => {
+      const c = CATEGORIES[id], active = id === linkedTask.category;
+      return `<button class="eam-cat-chip${active ? ' active' : ''}" data-eam-cat="${escAttr(id)}">
+        <span class="eam-cat-dot" style="background:${getCatColor(id)}"></span>${escHtml(c.label)}</button>`;
+    }).join('');
+    catRow.querySelectorAll('[data-eam-cat]').forEach(b => b.onclick = () => {
+      updateTask(linkedTask.id, { category: b.dataset.eamCat });
+      catRow.querySelectorAll('.eam-cat-chip').forEach(x => x.classList.toggle('active', x === b));
+    });
+    completeBtn.onclick = () => { hideEventModal(); handleCheckClick(linkedTask.id); };
+  } else if (taskSection) {
+    taskSection.style.display = 'none';
+    if (completeBtn) completeBtn.style.display = 'none';
+  }
+
   modal.classList.add('open');
   // Position near click, keep within viewport
-  const mW = 268, mH = 170;
+  const mW = 320, mH = linkedTask ? 340 : 200;
   const vW = window.innerWidth, vH = window.innerHeight;
   let x = clientX + 14, y = clientY - 14;
   if (x + mW > vW - 8) x = clientX - mW - 14;
