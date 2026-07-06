@@ -9930,6 +9930,15 @@ function openQuickCalModal(date, startTime) {
     sel.innerHTML = '<option value="">No category</option>' + Object.entries(CATEGORIES).map(([k,v]) => `<option value="${escAttr(k)}">${escHtml(v.label)}</option>`).join('');
     if (_settings.defaultCategory) sel.value = _settings.defaultCategory;
   }
+  // Commitment link — attaches the created task to a commitment (shows on its page)
+  const csel = document.getElementById('qcal-commitment');
+  if (csel) {
+    const commits = (typeof MILESTONE_PROJECTS !== 'undefined' ? MILESTONE_PROJECTS : [])
+      .filter(p => !p.isArchived)
+      .sort((a, b) => (b.bigRock ? 1 : 0) - (a.bigRock ? 1 : 0));
+    csel.innerHTML = '<option value="">No commitment</option>' +
+      commits.map(p => `<option value="${escAttr(p.id)}">${escHtml(p.title || 'Untitled')}</option>`).join('');
+  }
   document.getElementById('quick-cal-modal')?.classList.add('open');
   setTimeout(() => titleEl?.focus(), 100);
 }
@@ -9941,28 +9950,29 @@ async function confirmQuickCalEvent() {
   const startTime= isAllDay ? null : document.getElementById('qcal-time')?.value;
   const duration = isAllDay ? null : (parseInt(document.getElementById('qcal-duration')?.value) || 60);
   const category = document.getElementById('qcal-category')?.value || null;
+  const projectId = document.getElementById('qcal-commitment')?.value || null;
   if (!title || !date) { showToast('Please fill in title and date', 'error'); return; }
   if (!isAllDay && !startTime) { showToast('Please fill in start time', 'error'); return; }
   const { addDoc, serverTimestamp } = window.CDX_FB;
   if (!window.CDX_USER?.uid) return;
   try {
-    const taskRef = await addDoc(_uc('tasks'), {
-      title, category, done: false, dueDate: date, createdAt: serverTimestamp()
-    });
+    const taskDoc = { title, category, done: false, dueDate: date, createdAt: serverTimestamp() };
+    if (projectId) taskDoc.projectId = projectId; // link the task to a commitment
+    const taskRef = await addDoc(_uc('tasks'), taskDoc);
     if (isAllDay) {
       await addDoc(_uc('calEvents'), {
-        title, date, allDay: true, taskId: taskRef.id,
+        title, date, allDay: true, taskId: taskRef.id, projectId,
         color: getCatColor(category), createdAt: serverTimestamp()
       });
     } else {
       const endTime = addMinutes(startTime, duration);
       await addDoc(_uc('calEvents'), {
-        title, date, startTime, endTime, duration, taskId: taskRef.id,
+        title, date, startTime, endTime, duration, taskId: taskRef.id, projectId,
         color: getCatColor(category), createdAt: serverTimestamp()
       });
     }
     document.getElementById('quick-cal-modal')?.classList.remove('open');
-    showToast(`Created "${title}"`, 'success');
+    showToast(projectId ? `Created "${title}" · linked to commitment` : `Created "${title}"`, 'success');
   } catch(e) { showToast('Error creating event', 'error'); console.error(e); }
 }
 
@@ -13272,16 +13282,20 @@ function _dashSlotTime(idx) {
   return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
 }
 
+// Which day the dashboard calendar is showing (defaults to today; ‹ › navigate it).
+let _dashCalDate = new Date();
+
 function _dashRenderTodayLine() {
   const body = document.getElementById('dash-cal-body');
   if (!body) return;
-  const today = localDateStr(new Date());
+  const viewDate = localDateStr(_dashCalDate);
+  const isToday = viewDate === localDateStr(new Date());
   const now = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
   const gridStart = DASH_H0 * 60, gridEnd = DASH_H1 * 60;
 
   // 1. Milestones — pinned above the grid (reuse the global flag banner)
-  const msHtml = (typeof _calMilestones === 'function') ? _calMilestones(today) : '';
+  const msHtml = (typeof _calMilestones === 'function') ? _calMilestones(viewDate) : '';
 
   // 2. Rail + drop-zone slots
   let rail = '', slots = '';
@@ -13293,7 +13307,7 @@ function _dashRenderTodayLine() {
   }
 
   // 3. Timed events → positioned chips (draggable to move)
-  const events = (CAL_EVENTS || []).filter(e => e.date === today && !e.allDay && e.startTime);
+  const events = (CAL_EVENTS || []).filter(e => e.date === viewDate && !e.allDay && e.startTime);
   let chips = '';
   events.forEach(ev => {
     const [h, m] = ev.startTime.split(':').map(Number);
@@ -13304,7 +13318,7 @@ function _dashRenderTodayLine() {
     const height = Math.max((dur / 30) * DASH_SLOT_H - 2, 22);
     const task = ev.taskId ? TASKS.find(t => t.id === ev.taskId) : null;
     const color = getCatColor(task?.category);
-    const past = startMins + dur <= nowMins;
+    const past = isToday && (startMins + dur <= nowMins);
     chips += `<div class="dash-chip${task?.done ? ' done' : ''}${past ? ' past' : ''}" draggable="true"
         data-ev-chip="${escAttr(ev.id)}" style="top:${top}px;height:${height}px;--nc:${color}">
         <span class="dash-chip-time">${escHtml(_dashFmtTime(ev.startTime))}</span>
@@ -13312,9 +13326,9 @@ function _dashRenderTodayLine() {
       </div>`;
   });
 
-  // 4. Now-line
+  // 4. Now-line — only when the calendar is actually showing today
   let nowLine = '';
-  if (nowMins >= gridStart && nowMins <= gridEnd) {
+  if (isToday && nowMins >= gridStart && nowMins <= gridEnd) {
     const top = ((nowMins - gridStart) / 30) * DASH_SLOT_H;
     nowLine = `<div class="dash-nowline" style="top:${top}px"><span class="dash-nowline-dot"></span></div>`;
   }
@@ -13330,7 +13344,7 @@ function _dashRenderTodayLine() {
      </div>`;
 
   if (typeof _wireCalMilestones === 'function') _wireCalMilestones(body);
-  _dashWireGrid(body, today);
+  _dashWireGrid(body, viewDate);
 }
 
 function _dashWireGrid(body, dateStr) {
@@ -13357,6 +13371,11 @@ function _dashWireGrid(body, dateStr) {
       const time = _dashSlotTime(slotIdxAt(e.clientY));
       if (p.kind === 'task') scheduleTaskAt(p.id, dateStr, time, 30);
       else if (p.kind === 'event') moveCalEventTo(p.id, dateStr, time);
+    });
+    // Click an empty slot → create an event at that time (chips handle their own click)
+    col.addEventListener('click', e => {
+      if (e.target.closest('[data-ev-chip]')) return;
+      openQuickCalModal(dateStr, _dashSlotTime(slotIdxAt(e.clientY)));
     });
   }
   // Placed event chips — drag to move, click to edit
@@ -13584,13 +13603,28 @@ function _dashRenderTasks() {
 function renderDashboardBoard() {
   if (_mainPanel !== 'default') return;
   const titleEl = document.getElementById('dash-cal-title');
-  if (titleEl) titleEl.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  if (titleEl) titleEl.textContent = _dashCalDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  // Eyebrow shows TODAY / TOMORROW / YESTERDAY / the day-of-week for other days
+  const eyebrowEl = document.getElementById('dash-cal-eyebrow');
+  if (eyebrowEl) {
+    const diff = Math.round((new Date(localDateStr(_dashCalDate)) - new Date(localDateStr(new Date()))) / 86400000);
+    eyebrowEl.textContent = diff === 0 ? 'TODAY' : diff === 1 ? 'TOMORROW' : diff === -1 ? 'YESTERDAY'
+      : _dashCalDate.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
+  }
   _dashRenderTodayLine();
   _dashRenderCards();
   _dashRenderRituals();
   _dashRenderTasks();
 }
 window.renderDashboardBoard = renderDashboardBoard;
+
+// Step the dashboard calendar day forward/back (or jump home) and re-render.
+function _dashShiftDay(delta) {
+  _dashCalDate = new Date(_dashCalDate.getTime());
+  _dashCalDate.setDate(_dashCalDate.getDate() + delta);
+  renderDashboardBoard();
+}
+function _dashGoToday() { _dashCalDate = new Date(); renderDashboardBoard(); }
 
 // Toolbar actions
 (function _wireDashQuickAdd() {
@@ -13606,20 +13640,24 @@ window.renderDashboardBoard = renderDashboardBoard;
   inp?.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       const v = inp.value.trim();
-      if (v) addTask(v, 'med', localDateStr(new Date()));
+      if (v) addTask(v, 'med', localDateStr(_dashCalDate));
       hide();
     } else if (e.key === 'Escape') { hide(); }
   });
   inp?.addEventListener('blur', () => setTimeout(hide, 120));
 })();
 document.getElementById('dash-add-event')?.addEventListener('click', () => {
-  openQuickCalModal(localDateStr(new Date()), '09:00');
+  openQuickCalModal(localDateStr(_dashCalDate), '09:00');
 });
 document.getElementById('dash-add-ms')?.addEventListener('click', () => {
   window._planMilestonePicker
-    ? window._planMilestonePicker(localDateStr(new Date()))
+    ? window._planMilestonePicker(localDateStr(_dashCalDate))
     : document.getElementById('cal-add-milestone')?.click();
 });
+// Day navigation (‹ today ›)
+document.getElementById('dash-cal-prev')?.addEventListener('click', () => _dashShiftDay(-1));
+document.getElementById('dash-cal-next')?.addEventListener('click', () => _dashShiftDay(1));
+document.getElementById('dash-cal-today')?.addEventListener('click', () => _dashGoToday());
 
 // Keep the running-commit timer live while the dashboard is visible
 setInterval(() => {

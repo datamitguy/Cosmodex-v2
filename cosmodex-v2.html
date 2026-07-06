@@ -357,10 +357,15 @@
         <div class="dash-cal dash-glass">
           <div class="dash-cal-head">
             <div>
-              <div class="dash-eyebrow">TODAY</div>
+              <div class="dash-eyebrow" id="dash-cal-eyebrow">TODAY</div>
               <div class="dash-cal-title" id="dash-cal-title">—</div>
             </div>
             <div class="dash-cal-actions">
+              <div class="dash-cal-nav">
+                <button class="dash-nav-btn" id="dash-cal-prev" title="Previous day">‹</button>
+                <button class="dash-nav-btn dash-nav-today" id="dash-cal-today" title="Jump to today">Today</button>
+                <button class="dash-nav-btn" id="dash-cal-next" title="Next day">›</button>
+              </div>
               <button class="dash-btn" id="dash-add-task" title="Add a task">◈ Task</button>
               <button class="dash-btn" id="dash-add-event" title="Add an event">＋ Event</button>
               <button class="dash-btn" id="dash-add-ms" title="Add a milestone">⚑ Milestone</button>
@@ -2092,6 +2097,10 @@
       <div>
         <label class="sched-label">Category</label>
         <select id="qcal-category" class="sched-input"></select>
+      </div>
+      <div>
+        <label class="sched-label">Link to commitment</label>
+        <select id="qcal-commitment" class="sched-input"></select>
       </div>
       <button class="sched-confirm-btn" id="qcal-confirm-btn">Create Event + Task</button>
     </div>
