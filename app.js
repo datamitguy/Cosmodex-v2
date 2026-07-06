@@ -313,13 +313,6 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       showMainPanel('milestones');
       return;
     }
-    // GetAbstract → full page
-    if (panel === 'getabstract') {
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-      showMainPanel('getabstract');
-      return;
-    }
     // Timedrift → full screen panel
     if (panel === 'timedrift') {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -332,13 +325,6 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       showMainPanel('mindmap');
-      return;
-    }
-    // Trial → full page
-    if (panel === 'trial') {
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-      showMainPanel('trial');
       return;
     }
     // Archived → full page
@@ -387,13 +373,11 @@ function showMainPanel(name) {
   document.getElementById('panel-insights').style.display    = name === 'insights' ? 'flex' : 'none';
   document.getElementById('panel-drill').style.display       = name === 'drill' ? 'flex' : 'none';
   document.getElementById('panel-timedrift').style.display   = name === 'timedrift' ? 'flex' : 'none';
-  document.getElementById('panel-getabstract').style.display = name === 'getabstract' ? 'flex' : 'none';
   document.getElementById('panel-mindmap').style.display     = name === 'mindmap' ? 'flex' : 'none';
-  document.getElementById('panel-trial').style.display       = name === 'trial' ? 'flex' : 'none';
-  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', calendarx:'Calendar', focus:'Focus', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
+  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', calendarx:'Calendar', focus:'Focus', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', mindmap:'Mind Map' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
-  if (name === 'default') { window._dashInvalidateAnchor?.(); window.renderDashboardBoard?.(); }
+  if (name === 'default') { window.renderDashboardBoard?.(); }
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }
@@ -6130,11 +6114,14 @@ function _pcalRenderMonth(byDate) {
   const _fproj = _pcalProj ? MILESTONE_PROJECTS.find(p => p.id === _pcalProj) : null;
   const _rs = _fproj?.startDate, _re = _fproj?.endDate;
   const _outRange = ds => _rs && _re && (ds < _rs || ds > _re);
+  // Mark days that fall within the focused commitment's window (month view only) —
+  // rendered as a green neon dot on the cell (item 10).
+  const _inRange = ds => _rs && _re && ds >= _rs && ds <= _re;
   const grid = cells.map(c => {
     const items = byDate[c.ds] || [];
     const chips = items.slice(0, 3).map(_pcalChip).join('');
     const more = items.length > 3 ? `<div class="pcal-more">+${items.length - 3} more</div>` : '';
-    return `<div class="pcal-cell${c.inMonth ? '' : ' out'}${c.isToday ? ' today' : ''}${c.weekend ? ' wknd' : ''}${_outRange(c.ds) ? ' pcal-outrange' : ''}" data-pcal-day="${c.ds}">
+    return `<div class="pcal-cell${c.inMonth ? '' : ' out'}${c.isToday ? ' today' : ''}${c.weekend ? ' wknd' : ''}${_outRange(c.ds) ? ' pcal-outrange' : ''}${(c.inMonth && _inRange(c.ds)) ? ' pcal-inrange' : ''}" data-pcal-day="${c.ds}">
         <div class="pcal-cell-h">
           <span class="pcal-date">${c.date}</span>
           ${c.isToday ? '<span class="pcal-today-tag">TODAY</span>' : ''}
@@ -6318,6 +6305,15 @@ function _planShowView(view) { // 'projects' | 'calendar' | 'design'
   if (d) d.style.display = view === 'design'   ? 'block' : 'none';
 }
 
+// Jump from a progress card to the Commitments tab with that commitment selected
+// (its timeline/calendar focused) — instead of popping the edit modal.
+window._planOpenCommitment = function(id) {
+  if (!id) return;
+  _msView = 'timeline';
+  _msFocusProj = id;
+  showPlanTab2('commitments');
+};
+
 window.showPlanTab2 = function(tab) {
   window._planTab2 = tab;
   document.querySelectorAll('#plan-tabs2 .plan-tab2').forEach(b =>
@@ -6404,7 +6400,16 @@ function _planSaveDoc(coll, key, payload) {
   if (!uid || !window.CDX_FB || !window.CDX_DB) return;
   const { doc, setDoc, collection, serverTimestamp } = window.CDX_FB;
   setDoc(doc(collection(window.CDX_DB, 'users', uid, coll), key),
-    { ...payload, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
+    { ...payload, updatedAt: serverTimestamp() }, { merge: true })
+    .then(() => {
+      // The dashboard's "Today's Non-Negotiable" caches this week's anchor; drop the
+      // cache so an edit here shows up immediately (no perceptible lag on return).
+      if (coll === 'weeklyPlans') {
+        window._dashInvalidateAnchor?.();
+        window.renderDashboardBoard?.(); // self-guards to the dashboard panel
+      }
+    })
+    .catch(() => {});
 }
 let _planDocSaveTimer;
 function _planDebSave(coll, key, getPayload) {
@@ -6532,7 +6537,7 @@ function renderPlanThisWeek() {
     </div>`;
 
   document.getElementById('ptw-add').onclick = () => _addCommitment('weekly');
-  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => openMsProjectModal(el.dataset.commit));
+  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => _planOpenCommitment(el.dataset.commit));
   document.getElementById('ptw-week-prev')?.addEventListener('click', () => { _ptwWeekOffset--; renderPlanThisWeek(); });
   document.getElementById('ptw-week-next')?.addEventListener('click', () => { _ptwWeekOffset++; renderPlanThisWeek(); });
   document.getElementById('ptw-week-today')?.addEventListener('click', () => { _ptwWeekOffset = 0; renderPlanThisWeek(); });
@@ -6601,7 +6606,7 @@ function renderPlanQuarter() {
       <div class="plan-goal-title" data-commit="${escAttr(c.id)}">${escHtml(c.title)}</div>
       <div class="plan-commit-track"><div class="plan-commit-fill" style="width:${pct}%"></div></div>
       <div class="pq-task-list">${tasksHtml}</div>
-      <button class="plan-ms-add" data-commit="${escAttr(c.id)}">＋ Add / edit tasks</button>
+      <button class="plan-ms-add" data-commit-edit="${escAttr(c.id)}">＋ Add / edit tasks</button>
     </div>`;
   }).join('');
 
@@ -6620,7 +6625,8 @@ function renderPlanQuarter() {
     </div>`;
 
   document.getElementById('pq-add').onclick = () => _addCommitment('quarterly');
-  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => openMsProjectModal(el.dataset.commit));
+  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => _planOpenCommitment(el.dataset.commit));
+  body.querySelectorAll('[data-commit-edit]').forEach(el => el.onclick = e => { e.stopPropagation(); openMsProjectModal(el.dataset.commitEdit); });
   body.querySelectorAll('[data-pqopen]').forEach(el => el.onclick = e => { e.stopPropagation(); showMainPanel('alltasks'); setTimeout(() => window.openAtkDetail?.(el.dataset.pqopen), 40); });
   body.querySelectorAll('[data-pqcheck]').forEach(el => el.onclick = e => {
     e.stopPropagation();
@@ -12474,6 +12480,18 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   const _breathPhases = ['Breathe in ↑', 'Hold', 'Breathe out ↓', 'Hold'];
   let _breathIdx = 0;
   let focusChecklist = [];
+  // Session checklist persists to the browser only (localStorage). Fine if it's
+  // cleared — it's a scratch list, never synced to Firestore.
+  const _FC_KEY = 'cosmodex_session_checklist';
+  function _saveFocusChecklist() {
+    try { localStorage.setItem(_FC_KEY, JSON.stringify(focusChecklist)); } catch (e) {}
+  }
+  function _loadFocusChecklist() {
+    try {
+      const raw = localStorage.getItem(_FC_KEY);
+      focusChecklist = raw ? (JSON.parse(raw) || []) : [];
+    } catch (e) { focusChecklist = []; }
+  }
 
   function clamp(v) { return Math.max(PMIN, Math.min(PMAX, Math.round(v))); }
 
@@ -12551,7 +12569,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
       div.className = 'pomo-check-item' + (item.done ? ' done' : '');
       div.innerHTML = `<div class="pomo-check-box">${item.done ? '✓' : ''}</div><span class="pomo-check-txt">${escHtml(item.text)}</span>`;
       div.querySelector('.pomo-check-box').addEventListener('click', () => {
-        focusChecklist[i].done = !focusChecklist[i].done; renderFocusChecklist();
+        focusChecklist[i].done = !focusChecklist[i].done; _saveFocusChecklist(); renderFocusChecklist();
       });
       el.appendChild(div);
     });
@@ -12630,6 +12648,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   };
 
   window.initPomoOverlay = function() {
+    _loadFocusChecklist();
     buildTicks(); renderPomo(); startBreathing(); renderFocusChecklist();
     // Focus-task picker: default to today's tasks; search picks other open tasks.
     _pomoRenderTaskList('');
@@ -12732,7 +12751,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   function addCheckItem() {
     const inp = document.getElementById('pomo-check-input'); if (!inp) return;
     const text = inp.value.trim(); if (!text) return;
-    focusChecklist.push({ text, done: false }); inp.value = ''; renderFocusChecklist();
+    focusChecklist.push({ text, done: false }); inp.value = ''; _saveFocusChecklist(); renderFocusChecklist();
   }
   document.getElementById('pomo-check-add-btn')?.addEventListener('click', addCheckItem);
   document.getElementById('pomo-check-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') addCheckItem(); });
@@ -13370,8 +13389,9 @@ function _dashLoadWeekAnchor() {
     if (_mainPanel === 'default') _dashRenderNonNeg();
   }).catch(() => { _dashWeekAnchor.loading = false; });
 }
-// Force a re-fetch of today's anchor on next dashboard render (e.g. after editing Planning)
-window._dashInvalidateAnchor = () => { _dashWeekAnchor.key = null; };
+// Force a re-fetch of today's anchor on next dashboard render (e.g. after editing Planning).
+// Also clears the cached text so a stale value never flashes before the fetch resolves.
+window._dashInvalidateAnchor = () => { _dashWeekAnchor = { key: null, text: '', loading: false }; };
 
 function _dashRenderNonNeg() {
   const nnEl = document.getElementById('dash-nn');

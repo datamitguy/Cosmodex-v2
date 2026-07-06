@@ -313,13 +313,6 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       showMainPanel('milestones');
       return;
     }
-    // GetAbstract → full page
-    if (panel === 'getabstract') {
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-      showMainPanel('getabstract');
-      return;
-    }
     // Timedrift → full screen panel
     if (panel === 'timedrift') {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -332,13 +325,6 @@ document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       showMainPanel('mindmap');
-      return;
-    }
-    // Trial → full page
-    if (panel === 'trial') {
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-      showMainPanel('trial');
       return;
     }
     // Archived → full page

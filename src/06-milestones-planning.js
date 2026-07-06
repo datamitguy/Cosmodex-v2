@@ -1691,11 +1691,14 @@ function _pcalRenderMonth(byDate) {
   const _fproj = _pcalProj ? MILESTONE_PROJECTS.find(p => p.id === _pcalProj) : null;
   const _rs = _fproj?.startDate, _re = _fproj?.endDate;
   const _outRange = ds => _rs && _re && (ds < _rs || ds > _re);
+  // Mark days that fall within the focused commitment's window (month view only) —
+  // rendered as a green neon dot on the cell (item 10).
+  const _inRange = ds => _rs && _re && ds >= _rs && ds <= _re;
   const grid = cells.map(c => {
     const items = byDate[c.ds] || [];
     const chips = items.slice(0, 3).map(_pcalChip).join('');
     const more = items.length > 3 ? `<div class="pcal-more">+${items.length - 3} more</div>` : '';
-    return `<div class="pcal-cell${c.inMonth ? '' : ' out'}${c.isToday ? ' today' : ''}${c.weekend ? ' wknd' : ''}${_outRange(c.ds) ? ' pcal-outrange' : ''}" data-pcal-day="${c.ds}">
+    return `<div class="pcal-cell${c.inMonth ? '' : ' out'}${c.isToday ? ' today' : ''}${c.weekend ? ' wknd' : ''}${_outRange(c.ds) ? ' pcal-outrange' : ''}${(c.inMonth && _inRange(c.ds)) ? ' pcal-inrange' : ''}" data-pcal-day="${c.ds}">
         <div class="pcal-cell-h">
           <span class="pcal-date">${c.date}</span>
           ${c.isToday ? '<span class="pcal-today-tag">TODAY</span>' : ''}
@@ -1879,6 +1882,15 @@ function _planShowView(view) { // 'projects' | 'calendar' | 'design'
   if (d) d.style.display = view === 'design'   ? 'block' : 'none';
 }
 
+// Jump from a progress card to the Commitments tab with that commitment selected
+// (its timeline/calendar focused) — instead of popping the edit modal.
+window._planOpenCommitment = function(id) {
+  if (!id) return;
+  _msView = 'timeline';
+  _msFocusProj = id;
+  showPlanTab2('commitments');
+};
+
 window.showPlanTab2 = function(tab) {
   window._planTab2 = tab;
   document.querySelectorAll('#plan-tabs2 .plan-tab2').forEach(b =>
@@ -1965,7 +1977,16 @@ function _planSaveDoc(coll, key, payload) {
   if (!uid || !window.CDX_FB || !window.CDX_DB) return;
   const { doc, setDoc, collection, serverTimestamp } = window.CDX_FB;
   setDoc(doc(collection(window.CDX_DB, 'users', uid, coll), key),
-    { ...payload, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
+    { ...payload, updatedAt: serverTimestamp() }, { merge: true })
+    .then(() => {
+      // The dashboard's "Today's Non-Negotiable" caches this week's anchor; drop the
+      // cache so an edit here shows up immediately (no perceptible lag on return).
+      if (coll === 'weeklyPlans') {
+        window._dashInvalidateAnchor?.();
+        window.renderDashboardBoard?.(); // self-guards to the dashboard panel
+      }
+    })
+    .catch(() => {});
 }
 let _planDocSaveTimer;
 function _planDebSave(coll, key, getPayload) {
@@ -2093,7 +2114,7 @@ function renderPlanThisWeek() {
     </div>`;
 
   document.getElementById('ptw-add').onclick = () => _addCommitment('weekly');
-  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => openMsProjectModal(el.dataset.commit));
+  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => _planOpenCommitment(el.dataset.commit));
   document.getElementById('ptw-week-prev')?.addEventListener('click', () => { _ptwWeekOffset--; renderPlanThisWeek(); });
   document.getElementById('ptw-week-next')?.addEventListener('click', () => { _ptwWeekOffset++; renderPlanThisWeek(); });
   document.getElementById('ptw-week-today')?.addEventListener('click', () => { _ptwWeekOffset = 0; renderPlanThisWeek(); });
@@ -2162,7 +2183,7 @@ function renderPlanQuarter() {
       <div class="plan-goal-title" data-commit="${escAttr(c.id)}">${escHtml(c.title)}</div>
       <div class="plan-commit-track"><div class="plan-commit-fill" style="width:${pct}%"></div></div>
       <div class="pq-task-list">${tasksHtml}</div>
-      <button class="plan-ms-add" data-commit="${escAttr(c.id)}">＋ Add / edit tasks</button>
+      <button class="plan-ms-add" data-commit-edit="${escAttr(c.id)}">＋ Add / edit tasks</button>
     </div>`;
   }).join('');
 
@@ -2181,7 +2202,8 @@ function renderPlanQuarter() {
     </div>`;
 
   document.getElementById('pq-add').onclick = () => _addCommitment('quarterly');
-  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => openMsProjectModal(el.dataset.commit));
+  body.querySelectorAll('[data-commit]').forEach(el => el.onclick = () => _planOpenCommitment(el.dataset.commit));
+  body.querySelectorAll('[data-commit-edit]').forEach(el => el.onclick = e => { e.stopPropagation(); openMsProjectModal(el.dataset.commitEdit); });
   body.querySelectorAll('[data-pqopen]').forEach(el => el.onclick = e => { e.stopPropagation(); showMainPanel('alltasks'); setTimeout(() => window.openAtkDetail?.(el.dataset.pqopen), 40); });
   body.querySelectorAll('[data-pqcheck]').forEach(el => el.onclick = e => {
     e.stopPropagation();

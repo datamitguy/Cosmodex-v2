@@ -22,13 +22,11 @@ function showMainPanel(name) {
   document.getElementById('panel-insights').style.display    = name === 'insights' ? 'flex' : 'none';
   document.getElementById('panel-drill').style.display       = name === 'drill' ? 'flex' : 'none';
   document.getElementById('panel-timedrift').style.display   = name === 'timedrift' ? 'flex' : 'none';
-  document.getElementById('panel-getabstract').style.display = name === 'getabstract' ? 'flex' : 'none';
   document.getElementById('panel-mindmap').style.display     = name === 'mindmap' ? 'flex' : 'none';
-  document.getElementById('panel-trial').style.display       = name === 'trial' ? 'flex' : 'none';
-  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', calendarx:'Calendar', focus:'Focus', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', getabstract:'GetAbstract', mindmap:'Mind Map', trial:'Trial' };
+  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', calendarx:'Calendar', focus:'Focus', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', mindmap:'Mind Map' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
-  if (name === 'default') { window._dashInvalidateAnchor?.(); window.renderDashboardBoard?.(); }
+  if (name === 'default') { window.renderDashboardBoard?.(); }
   if (name === 'milestones') { renderMilestones(); window.initPlanningWidgets?.(); }
   if (name === 'archived') { renderArchivedPage(); }
   if (name === 'lists') { renderLists(); if (!_listView && LISTS.length) openListDetail(LISTS[0].id); }

@@ -4319,6 +4319,18 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   const _breathPhases = ['Breathe in ↑', 'Hold', 'Breathe out ↓', 'Hold'];
   let _breathIdx = 0;
   let focusChecklist = [];
+  // Session checklist persists to the browser only (localStorage). Fine if it's
+  // cleared — it's a scratch list, never synced to Firestore.
+  const _FC_KEY = 'cosmodex_session_checklist';
+  function _saveFocusChecklist() {
+    try { localStorage.setItem(_FC_KEY, JSON.stringify(focusChecklist)); } catch (e) {}
+  }
+  function _loadFocusChecklist() {
+    try {
+      const raw = localStorage.getItem(_FC_KEY);
+      focusChecklist = raw ? (JSON.parse(raw) || []) : [];
+    } catch (e) { focusChecklist = []; }
+  }
 
   function clamp(v) { return Math.max(PMIN, Math.min(PMAX, Math.round(v))); }
 
@@ -4396,7 +4408,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
       div.className = 'pomo-check-item' + (item.done ? ' done' : '');
       div.innerHTML = `<div class="pomo-check-box">${item.done ? '✓' : ''}</div><span class="pomo-check-txt">${escHtml(item.text)}</span>`;
       div.querySelector('.pomo-check-box').addEventListener('click', () => {
-        focusChecklist[i].done = !focusChecklist[i].done; renderFocusChecklist();
+        focusChecklist[i].done = !focusChecklist[i].done; _saveFocusChecklist(); renderFocusChecklist();
       });
       el.appendChild(div);
     });
@@ -4475,6 +4487,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   };
 
   window.initPomoOverlay = function() {
+    _loadFocusChecklist();
     buildTicks(); renderPomo(); startBreathing(); renderFocusChecklist();
     // Focus-task picker: default to today's tasks; search picks other open tasks.
     _pomoRenderTaskList('');
@@ -4577,7 +4590,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   function addCheckItem() {
     const inp = document.getElementById('pomo-check-input'); if (!inp) return;
     const text = inp.value.trim(); if (!text) return;
-    focusChecklist.push({ text, done: false }); inp.value = ''; renderFocusChecklist();
+    focusChecklist.push({ text, done: false }); inp.value = ''; _saveFocusChecklist(); renderFocusChecklist();
   }
   document.getElementById('pomo-check-add-btn')?.addEventListener('click', addCheckItem);
   document.getElementById('pomo-check-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') addCheckItem(); });
@@ -5215,8 +5228,9 @@ function _dashLoadWeekAnchor() {
     if (_mainPanel === 'default') _dashRenderNonNeg();
   }).catch(() => { _dashWeekAnchor.loading = false; });
 }
-// Force a re-fetch of today's anchor on next dashboard render (e.g. after editing Planning)
-window._dashInvalidateAnchor = () => { _dashWeekAnchor.key = null; };
+// Force a re-fetch of today's anchor on next dashboard render (e.g. after editing Planning).
+// Also clears the cached text so a stale value never flashes before the fetch resolves.
+window._dashInvalidateAnchor = () => { _dashWeekAnchor = { key: null, text: '', loading: false }; };
 
 function _dashRenderNonNeg() {
   const nnEl = document.getElementById('dash-nn');

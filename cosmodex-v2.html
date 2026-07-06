@@ -177,13 +177,9 @@
     </div>
   </div>
 
-  <div class="nav-section nav-tools-section collapsed" style="padding:0 8px 4px;border-top:1px solid rgba(255,255,255,0.07)">
+  <div class="nav-section nav-tools-section" style="padding:0 8px 4px;border-top:1px solid rgba(255,255,255,0.07)">
     <div class="nav-section-label nav-tools-toggle" id="tools-toggle" title="Toggle tools">Tools <span class="tools-chevron">›</span></div>
     <div class="nav-tools-items">
-      <div class="nav-item" data-panel="getabstract" id="nav-getabstract">
-        <span class="nav-item-icon">⬡</span>
-        GetAbstract
-      </div>
       <div class="nav-item" id="btn-notes">
         <span class="nav-item-icon">✎</span>
         Notes
@@ -200,17 +196,14 @@
         <span class="nav-item-icon">◉</span>
         Bubble
       </div>
-      <div class="nav-item" id="btn-cosmos">
+      <!-- Ask Cosmos hidden until a free AI API is wired up; code/overlay kept intact -->
+      <div class="nav-item" id="btn-cosmos" style="display:none">
         <span class="nav-item-icon">✦</span>
         Ask Cosmos
       </div>
       <div class="nav-item" id="btn-mindmap" data-panel="mindmap">
         <span class="nav-item-icon">⬡</span>
         Mind Map
-      </div>
-      <div class="nav-item" id="btn-trial" data-panel="trial">
-        <span class="nav-item-icon">◫</span>
-        Trial
       </div>
       <div class="nav-item" id="btn-archived" data-panel="archived">
         <span class="nav-item-icon">⊡</span>
@@ -382,10 +375,14 @@
         <!-- RIGHT: telemetry cards -->
         <div class="dash-side">
           <div class="dash-card dash-glass" id="dash-nn"><!-- non-negotiable --></div>
-          <div class="dash-card dash-glass" id="dash-streak"><!-- streak --></div>
-          <div class="dash-card dash-glass" id="dash-commit"><!-- deep work / commit --></div>
-          <div class="dash-card dash-glass" id="dash-rituals"><!-- today's habits + routines --></div>
           <div class="dash-card dash-glass dash-tasks-card" id="dash-tasks"><!-- tasks due today · timebox --></div>
+          <div class="dash-card dash-glass" id="dash-rituals"><!-- today's habits + routines --></div>
+          <!-- merged deep-work + streak card, pinned to the bottom -->
+          <div class="dash-card dash-glass dash-focus-card" id="dash-focus">
+            <div id="dash-commit"><!-- deep work / commit --></div>
+            <div class="dash-focus-sep"></div>
+            <div id="dash-streak"><!-- streak --></div>
+          </div>
         </div>
 
       </div>
@@ -400,16 +397,15 @@
           <div class="plan-hero-title">The map above the day</div>
         </div>
         <div class="plan-tabs2" id="plan-tabs2">
-          <button class="plan-tab2 active" data-ptab2="thisweek">This Week</button>
-          <button class="plan-tab2" data-ptab2="month">Month</button>
-          <button class="plan-tab2" data-ptab2="week">Week</button>
+          <button class="plan-tab2" data-ptab2="commitments">Commitments</button>
+          <button class="plan-tab2" data-ptab2="buckets">Buckets</button>
           <span class="plan-tab2-sep"></span>
           <button class="plan-tab2" data-ptab2="review">Weekly Review</button>
+          <button class="plan-tab2 active" data-ptab2="thisweek">This Week</button>
+          <button class="plan-tab2" data-ptab2="week">Week</button>
+          <button class="plan-tab2" data-ptab2="month">Month</button>
           <button class="plan-tab2" data-ptab2="quarter">Quarter</button>
           <button class="plan-tab2" data-ptab2="north">North Star</button>
-          <span class="plan-tab2-sep"></span>
-          <button class="plan-tab2" data-ptab2="buckets">Buckets</button>
-          <button class="plan-tab2" data-ptab2="commitments">Commitments</button>
         </div>
       </div>
 
@@ -1257,15 +1253,6 @@
     <!-- Daily Business Communication Drill Panel -->
     <div id="panel-drill" style="display:none;flex:1;flex-direction:column;overflow:hidden"></div><!-- /panel-drill : content rendered by renderDrill() -->
 
-    <!-- Articles / Reading Panel -->
-    <div id="panel-getabstract" style="display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;gap:20px">
-      <div style="font-size:2.5rem;opacity:0.7">⬡</div>
-      <div style="color:var(--cream);font-family:var(--font-display);font-size:1.2rem;font-weight:300;letter-spacing:0.08em">GetAbstract</div>
-      <div style="color:var(--muted);font-size:.875rem;text-align:center;max-width:380px;line-height:1.6">GetAbstract blocks embedding in external apps. Open it in a companion window — your browser login session is shared automatically.</div>
-      <button onclick="window.open('https://www.getabstract.com/en/explore?u=hsbc','_blank')" class="btn-primary" style="margin-top:4px">Open GetAbstract ↗</button>
-      <div style="color:var(--muted);font-size:.75rem;opacity:0.6">The window stays open as you navigate Cosmodex</div>
-    </div>
-
     <!-- Mind Map Panel -->
     <div id="panel-mindmap" style="display:none;flex:1;flex-direction:column;overflow:hidden;background:#000000;position:relative">
       <!-- Toolbar -->
@@ -1285,41 +1272,6 @@
       <canvas id="mm-canvas" style="flex:1;display:block;cursor:default"></canvas>
     </div>
 
-
-    <!-- ══ TRIAL PANEL — Stitch Mesh + Liquid Glass ══ -->
-    <div id="panel-trial" style="display:none;flex:1;flex-direction:column;overflow:hidden;position:relative">
-      <div class="trial-bg">
-        <div class="trial-blob trial-blob-1"></div>
-        <div class="trial-blob trial-blob-2"></div>
-        <div class="trial-blob trial-blob-3"></div>
-        <div class="trial-blob trial-blob-4"></div>
-        <div class="trial-dot-grid"></div>
-      </div>
-      <div class="trial-content">
-        <div class="trial-heading">Trial Canvas</div>
-        <div class="trial-sub">Design experiments &amp; UI components</div>
-        <!-- Liquid Glass Card -->
-        <div class="liquid-glass-card">
-          <div class="lg-specular"></div>
-          <div class="lg-body">
-            <div class="lg-title">Liquid Glass</div>
-            <div class="lg-desc">A reusable glass surface component for Cosmodex. Combines backdrop blur with specular highlights and prismatic edge refraction — ready to copy into any new feature.</div>
-            <div class="lg-pills">
-              <span class="lg-pill">backdrop-filter</span>
-              <span class="lg-pill">specular highlight</span>
-              <span class="lg-pill">prismatic refraction</span>
-              <span class="lg-pill">dark glassmorphism</span>
-            </div>
-          </div>
-        </div>
-        <!-- Glass button row demo -->
-        <div style="display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;justify-content:center">
-          <button class="lg-btn">◈ Primary</button>
-          <button class="lg-btn lg-btn-ghost">◉ Ghost</button>
-          <button class="lg-btn lg-btn-accent">✦ Accent</button>
-        </div>
-      </div>
-    </div><!-- /panel-trial -->
 
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
