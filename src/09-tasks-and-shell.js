@@ -973,6 +973,18 @@ function openScheduleModal(date, startTime, taskId, subId) {
   document.getElementById('sched-date').value = date;
   document.getElementById('sched-time').value = startTime;
   document.getElementById('sched-duration').value = 30;
+  // Commitment link — only for the main task (a subtask inherits its parent's).
+  const commitRow = document.getElementById('sched-commitment-row');
+  const csel = document.getElementById('sched-commitment');
+  if (commitRow) commitRow.style.display = subId ? 'none' : '';
+  if (csel && !subId) {
+    const commits = (typeof MILESTONE_PROJECTS !== 'undefined' ? MILESTONE_PROJECTS : [])
+      .filter(p => !p.isArchived)
+      .sort((a, b) => (b.bigRock ? 1 : 0) - (a.bigRock ? 1 : 0));
+    csel.innerHTML = '<option value="">No commitment</option>' +
+      commits.map(p => `<option value="${escAttr(p.id)}">${escHtml(p.title || 'Untitled')}</option>`).join('');
+    csel.value = task.projectId || '';
+  }
   const subsSection = document.getElementById('sched-subtasks-section');
   const subsList    = document.getElementById('sched-subtasks-list');
   if (!subId && task.subtasks && task.subtasks.length > 0) {
@@ -1023,7 +1035,9 @@ async function confirmSchedule() {
       createdAt: serverTimestamp()
     });
     // Count each placement as a scheduling attempt (productivity signal).
-    await updateTask(taskId, { calEventId: ref.id, scheduleCount: (task.scheduleCount || 0) + 1 });
+    // Also persist the commitment link chosen in the modal (null = no commitment).
+    const projectId = document.getElementById('sched-commitment')?.value || null;
+    await updateTask(taskId, { calEventId: ref.id, scheduleCount: (task.scheduleCount || 0) + 1, projectId });
     // Schedule checked subtasks
     const checkedBoxes = document.querySelectorAll('#sched-subtasks-list input[type="checkbox"]:checked');
     for (const cb of checkedBoxes) {
@@ -1472,6 +1486,17 @@ function showEventModal(ev, clientX, clientY) {
       updateTask(linkedTask.id, { category: b.dataset.eamCat });
       catRow.querySelectorAll('.eam-cat-chip').forEach(x => x.classList.toggle('active', x === b));
     });
+    // Commitment link — change persists immediately to the linked task's projectId.
+    const eamCommit = document.getElementById('eam-commitment');
+    if (eamCommit) {
+      const commits = (typeof MILESTONE_PROJECTS !== 'undefined' ? MILESTONE_PROJECTS : [])
+        .filter(p => !p.isArchived)
+        .sort((a, b) => (b.bigRock ? 1 : 0) - (a.bigRock ? 1 : 0));
+      eamCommit.innerHTML = '<option value="">No commitment</option>' +
+        commits.map(p => `<option value="${escAttr(p.id)}">${escHtml(p.title || 'Untitled')}</option>`).join('');
+      eamCommit.value = linkedTask.projectId || '';
+      eamCommit.onchange = () => updateTask(linkedTask.id, { projectId: eamCommit.value || null });
+    }
     completeBtn.onclick = () => { hideEventModal(); handleCheckClick(linkedTask.id); };
   } else if (taskSection) {
     taskSection.style.display = 'none';
@@ -5444,9 +5469,10 @@ function _dashRenderTasks() {
       openScheduleModal(today, '09:00', r.dataset.dashTask, null);
     });
   });
-  // Complete a task in place (undo toast handled by toggleTask)
+  // Complete a task in place — opens the time-spent + category popover first
+  // (same close flow as the Tasks page), so nothing is logged as done blindly.
   el.querySelectorAll('[data-dash-done]').forEach(c => c.addEventListener('click', e => {
-    e.stopPropagation(); toggleTask(c.dataset.dashDone);
+    e.stopPropagation(); handleCheckClick(c.dataset.dashDone, e);
   }));
   // Delete a task in place (undo handled by deleteTask)
   el.querySelectorAll('[data-dash-del]').forEach(d => d.addEventListener('click', e => {

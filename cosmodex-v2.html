@@ -1679,6 +1679,10 @@
         <label class="sched-label">Duration (minutes)</label>
         <input id="sched-duration" type="number" class="sched-input" value="30" min="15" step="15" />
       </div>
+      <div class="sched-row" id="sched-commitment-row">
+        <label class="sched-label">Link to commitment</label>
+        <select id="sched-commitment" class="sched-input"></select>
+      </div>
       <div id="sched-subtasks-section" style="margin-top:14px;display:none">
         <label class="sched-label">Subtasks (will also be added after main task)</label>
         <div id="sched-subtasks-list" style="margin-top:6px"></div>
@@ -2129,6 +2133,8 @@
   <div id="eam-task-section" style="display:none;margin-top:14px">
     <div class="eam-section-label">Theme</div>
     <div class="eam-cat-row" id="eam-cats"></div>
+    <div class="eam-section-label" style="margin-top:12px">Commitment</div>
+    <select id="eam-commitment" class="eam-time-input" style="width:100%;box-sizing:border-box"></select>
   </div>
   <div class="eam-actions">
     <button class="eam-play-btn" id="eam-complete" style="display:none">✓ Complete task</button>
