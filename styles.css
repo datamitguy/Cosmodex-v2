@@ -1632,6 +1632,9 @@ body::after {
 }
 .pomo-check-item.done .pomo-check-box { background: rgba(255,255,255,.2); border-color: var(--gold); }
 .pomo-check-txt { font-family: var(--font-body); font-size: 12px; color: var(--cream); flex: 1; }
+.pomo-check-del { flex-shrink: 0; font-size: 11px; color: var(--muted); opacity: 0; transition: opacity .12s, color .12s; padding: 0 2px; }
+.pomo-check-item:hover .pomo-check-del { opacity: 1; }
+.pomo-check-del:hover { color: var(--danger, #e05555); }
 .pomo-check-add { display: flex; gap: 5px; align-items: center; }
 .pomo-check-add input {
   flex: 1; background: var(--elevated); border: 1px solid var(--border);
@@ -8765,10 +8768,10 @@ select.sched-input { background: #181818; }
 
 .focus-ring-wrap { position: relative; width: 320px; height: 320px; max-width: 100%; display: grid; place-items: center; }
 .focus-ring-wrap canvas { position: relative; z-index: 2; width: 320px; height: 320px; max-width: 100%; }
-.focus-rings { position: absolute; inset: 4px; border-radius: 50%; border: 1px dashed rgba(255,255,255,.14); }
-.focus-rings::before, .focus-rings::after { content: ''; position: absolute; border-radius: 50%; }
-.focus-rings::before { inset: 34px; border: 1px dashed rgba(255,255,255,.10); }
-.focus-rings::after { inset: 72px; border: 1px dotted rgba(255,255,255,.08); }
+.focus-rings { position: absolute; inset: 0; width: 320px; height: 320px; max-width: 100%; z-index: 1; pointer-events: none; }
+.focus-ring { transform-origin: center; transform-box: fill-box; }
+@keyframes focusSpinRev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+@media (prefers-reduced-motion: reduce) { .focus-ring { animation: none !important; } }
 .focus-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; z-index: 3; pointer-events: none; }
 .focus-elapsed { font-family: var(--font-mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: rgba(255,255,255,.5); }
 .focus-time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 48px; color: #fff; text-shadow: 0 0 18px rgba(255,255,255,.45); margin-top: 6px; line-height: 1; }

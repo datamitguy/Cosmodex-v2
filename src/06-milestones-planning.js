@@ -445,8 +445,9 @@ function renderMilestoneListsPanel(projId) {
         ${linkedTasks.map(t => `
           <div style="display:flex;align-items:center;gap:5px">
             <input type="checkbox" data-plink-toggle="${escAttr(t.id)}" ${t.done ? 'checked' : ''} style="cursor:pointer;accent-color:var(--gold);flex-shrink:0">
-            <span style="font-size:11px;color:${t.done ? 'var(--muted)' : 'var(--cream)'};flex:1;${t.done ? 'text-decoration:line-through' : ''};line-height:1.4;word-break:break-word">${escHtml(t.title)}</span>
+            <span data-plink-open="${escAttr(t.id)}" title="Open task" style="font-size:11px;color:${t.done ? 'var(--muted)' : 'var(--cream)'};flex:1;${t.done ? 'text-decoration:line-through' : ''};line-height:1.4;word-break:break-word;cursor:pointer">${escHtml(t.title)}</span>
             <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);flex-shrink:0">${t.dueDate ? escHtml(fmtDate(t.dueDate)) : (t.someday ? 'Someday' : '—')}</span>
+            <button data-plink-unlink="${escAttr(t.id)}" title="Remove from this commitment (keeps the task)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;flex-shrink:0">×</button>
           </div>`).join('')}
       </div>
       <div style="height:1px;background:var(--border);margin:10px 0 2px"></div>
@@ -490,6 +491,27 @@ function renderMilestoneListsPanel(projId) {
     cb.addEventListener('change', () => {
       const p = toggleTask(cb.dataset.plinkToggle);
       (p && p.then ? p : Promise.resolve()).then(() => renderMilestoneListsPanel(projId));
+    });
+  });
+
+  // Open a linked task in the Tasks page.
+  body.querySelectorAll('[data-plink-open]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.plinkOpen;
+      showMainPanel('alltasks');
+      setTimeout(() => window.openAtkDetail?.(id), 40);
+    });
+  });
+
+  // Unlink a task from this commitment (clears projectId; the task itself stays).
+  body.querySelectorAll('[data-plink-unlink]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.plinkUnlink;
+      const p = updateTask(id, { projectId: null });
+      (p && p.then ? p : Promise.resolve()).then(() => {
+        if (typeof showToast === 'function') showToast('Unlinked from commitment', 'success');
+        renderMilestoneListsPanel(projId);
+      });
     });
   });
 

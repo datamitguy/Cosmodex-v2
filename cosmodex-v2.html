@@ -592,7 +592,13 @@
           <!-- LEFT: ring + timer + controls -->
           <div class="focus-card">
             <div class="focus-ring-wrap">
-              <div class="focus-rings"></div>
+              <!-- Design-system timedrift rings: concentric dashed circles, spin/spinRev never in sync -->
+              <svg class="focus-rings" viewBox="0 0 320 320" aria-hidden="true">
+                <circle class="focus-ring" cx="160" cy="160" r="150" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="2 6"  style="animation:spin 60s linear infinite"/>
+                <circle class="focus-ring" cx="160" cy="160" r="120" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1" stroke-dasharray="1 4"  style="animation:focusSpinRev 40s linear infinite"/>
+                <circle class="focus-ring" cx="160" cy="160" r="90"  fill="none" stroke="rgba(255,255,255,.30)" stroke-width="1" stroke-dasharray="6 10" style="animation:spin 90s linear infinite"/>
+                <circle class="focus-ring" cx="160" cy="160" r="60"  fill="none" stroke="rgba(255,255,255,.50)" stroke-width="1" stroke-dasharray="3 3"  style="animation:focusSpinRev 20s linear infinite"/>
+              </svg>
               <canvas id="pomo-ring" width="320" height="320"></canvas>
               <div class="focus-center">
                 <div class="focus-elapsed" id="pomo-phase">Ready</div>

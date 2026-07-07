@@ -4868,8 +4868,9 @@ function renderMilestoneListsPanel(projId) {
         ${linkedTasks.map(t => `
           <div style="display:flex;align-items:center;gap:5px">
             <input type="checkbox" data-plink-toggle="${escAttr(t.id)}" ${t.done ? 'checked' : ''} style="cursor:pointer;accent-color:var(--gold);flex-shrink:0">
-            <span style="font-size:11px;color:${t.done ? 'var(--muted)' : 'var(--cream)'};flex:1;${t.done ? 'text-decoration:line-through' : ''};line-height:1.4;word-break:break-word">${escHtml(t.title)}</span>
+            <span data-plink-open="${escAttr(t.id)}" title="Open task" style="font-size:11px;color:${t.done ? 'var(--muted)' : 'var(--cream)'};flex:1;${t.done ? 'text-decoration:line-through' : ''};line-height:1.4;word-break:break-word;cursor:pointer">${escHtml(t.title)}</span>
             <span style="font-family:var(--font-mono);font-size:9px;color:var(--muted);flex-shrink:0">${t.dueDate ? escHtml(fmtDate(t.dueDate)) : (t.someday ? 'Someday' : '—')}</span>
+            <button data-plink-unlink="${escAttr(t.id)}" title="Remove from this commitment (keeps the task)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px;line-height:1;flex-shrink:0">×</button>
           </div>`).join('')}
       </div>
       <div style="height:1px;background:var(--border);margin:10px 0 2px"></div>
@@ -4913,6 +4914,27 @@ function renderMilestoneListsPanel(projId) {
     cb.addEventListener('change', () => {
       const p = toggleTask(cb.dataset.plinkToggle);
       (p && p.then ? p : Promise.resolve()).then(() => renderMilestoneListsPanel(projId));
+    });
+  });
+
+  // Open a linked task in the Tasks page.
+  body.querySelectorAll('[data-plink-open]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.plinkOpen;
+      showMainPanel('alltasks');
+      setTimeout(() => window.openAtkDetail?.(id), 40);
+    });
+  });
+
+  // Unlink a task from this commitment (clears projectId; the task itself stays).
+  body.querySelectorAll('[data-plink-unlink]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.plinkUnlink;
+      const p = updateTask(id, { projectId: null });
+      (p && p.then ? p : Promise.resolve()).then(() => {
+        if (typeof showToast === 'function') showToast('Unlinked from commitment', 'success');
+        renderMilestoneListsPanel(projId);
+      });
     });
   });
 
@@ -12577,9 +12599,12 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     focusChecklist.forEach((item, i) => {
       const div = document.createElement('div');
       div.className = 'pomo-check-item' + (item.done ? ' done' : '');
-      div.innerHTML = `<div class="pomo-check-box">${item.done ? '✓' : ''}</div><span class="pomo-check-txt">${escHtml(item.text)}</span>`;
+      div.innerHTML = `<div class="pomo-check-box">${item.done ? '✓' : ''}</div><span class="pomo-check-txt">${escHtml(item.text)}</span><span class="pomo-check-del" title="Remove">✕</span>`;
       div.querySelector('.pomo-check-box').addEventListener('click', () => {
         focusChecklist[i].done = !focusChecklist[i].done; _saveFocusChecklist(); renderFocusChecklist();
+      });
+      div.querySelector('.pomo-check-del').addEventListener('click', () => {
+        focusChecklist.splice(i, 1); _saveFocusChecklist(); renderFocusChecklist();
       });
       el.appendChild(div);
     });
@@ -16018,10 +16043,16 @@ function _calxWire(panel) {
       openQuickCalModal(ds, time || '09:00');
     }));
 
-  // Click an event/chip → jump to its linked task (non-destructive)
+  // Click a placed event → open the event modal (edit time / complete / delete);
+  // an unscheduled task chip (no event id) still jumps to its task.
   panel.querySelectorAll('[data-calx-ev]').forEach(ev =>
     ev.addEventListener('click', e => {
       e.stopPropagation();
+      const evId = ev.dataset.evMove;
+      if (evId && typeof showEventModal === 'function') {
+        const evObj = (CAL_EVENTS || []).find(x => x.id === evId);
+        if (evObj) { showEventModal(evObj, e.clientX, e.clientY); return; }
+      }
       const taskId = ev.dataset.calxEv;
       if (!taskId) return;
       if (typeof _atkSelectedId !== 'undefined') _atkSelectedId = taskId;

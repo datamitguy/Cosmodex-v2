@@ -4416,9 +4416,12 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     focusChecklist.forEach((item, i) => {
       const div = document.createElement('div');
       div.className = 'pomo-check-item' + (item.done ? ' done' : '');
-      div.innerHTML = `<div class="pomo-check-box">${item.done ? '✓' : ''}</div><span class="pomo-check-txt">${escHtml(item.text)}</span>`;
+      div.innerHTML = `<div class="pomo-check-box">${item.done ? '✓' : ''}</div><span class="pomo-check-txt">${escHtml(item.text)}</span><span class="pomo-check-del" title="Remove">✕</span>`;
       div.querySelector('.pomo-check-box').addEventListener('click', () => {
         focusChecklist[i].done = !focusChecklist[i].done; _saveFocusChecklist(); renderFocusChecklist();
+      });
+      div.querySelector('.pomo-check-del').addEventListener('click', () => {
+        focusChecklist.splice(i, 1); _saveFocusChecklist(); renderFocusChecklist();
       });
       el.appendChild(div);
     });

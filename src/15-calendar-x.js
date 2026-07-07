@@ -313,10 +313,16 @@ function _calxWire(panel) {
       openQuickCalModal(ds, time || '09:00');
     }));
 
-  // Click an event/chip → jump to its linked task (non-destructive)
+  // Click a placed event → open the event modal (edit time / complete / delete);
+  // an unscheduled task chip (no event id) still jumps to its task.
   panel.querySelectorAll('[data-calx-ev]').forEach(ev =>
     ev.addEventListener('click', e => {
       e.stopPropagation();
+      const evId = ev.dataset.evMove;
+      if (evId && typeof showEventModal === 'function') {
+        const evObj = (CAL_EVENTS || []).find(x => x.id === evId);
+        if (evObj) { showEventModal(evObj, e.clientX, e.clientY); return; }
+      }
       const taskId = ev.dataset.calxEv;
       if (!taskId) return;
       if (typeof _atkSelectedId !== 'undefined') _atkSelectedId = taskId;
