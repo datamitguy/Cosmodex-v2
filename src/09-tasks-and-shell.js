@@ -5414,11 +5414,12 @@ function _dashRenderTasks() {
   const rows = due.map(t => {
     const overdue = t.dueDate < today;
     return `<div class="dash-task-row" draggable="true" data-dash-task="${escAttr(t.id)}" title="Drag onto the timeline to place it — or click to pick a time">
-      <span class="dash-task-grip">⠿</span>
+      <span class="dash-task-check" data-dash-done="${escAttr(t.id)}" title="Mark complete"></span>
       <span class="dash-task-dot" style="--nc:${getCatColor(t.category)}"></span>
       <span class="dash-task-name">${escHtml(t.title)}</span>
       ${overdue ? '<span class="dash-task-over">OVERDUE</span>' : ''}
-      <span class="dash-task-box">◷ Timebox</span>
+      <span class="dash-task-box" data-dash-timebox="${escAttr(t.id)}">◷ Timebox</span>
+      <span class="dash-task-del" data-dash-del="${escAttr(t.id)}" title="Delete task">✕</span>
     </div>`;
   }).join('');
 
@@ -5434,9 +5435,24 @@ function _dashRenderTasks() {
       r.classList.add('dragging');
     });
     r.addEventListener('dragend', () => { _dashDragPayload = null; r.classList.remove('dragging'); });
-    // Plain click (no drag) → open the schedule modal to pick a time today
-    r.addEventListener('click', () => openScheduleModal(today, '09:00', r.dataset.dashTask, null));
+    // Plain click on the row (not on a control) → schedule modal to pick a time
+    r.addEventListener('click', e => {
+      if (e.target.closest('[data-dash-done],[data-dash-del],[data-dash-timebox]')) return;
+      openScheduleModal(today, '09:00', r.dataset.dashTask, null);
+    });
   });
+  // Complete a task in place (undo toast handled by toggleTask)
+  el.querySelectorAll('[data-dash-done]').forEach(c => c.addEventListener('click', e => {
+    e.stopPropagation(); toggleTask(c.dataset.dashDone);
+  }));
+  // Delete a task in place (undo handled by deleteTask)
+  el.querySelectorAll('[data-dash-del]').forEach(d => d.addEventListener('click', e => {
+    e.stopPropagation(); deleteTask(d.dataset.dashDel);
+  }));
+  // Explicit timebox button → same schedule modal
+  el.querySelectorAll('[data-dash-timebox]').forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation(); openScheduleModal(today, '09:00', b.dataset.dashTimebox, null);
+  }));
 }
 
 function renderDashboardBoard() {
