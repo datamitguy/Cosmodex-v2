@@ -1,3 +1,23 @@
+/* ── Desktop (Tauri) compatibility shims ──────────────────────────────────
+   Only active inside the Tauri desktop app (window.__TAURI__ present). The web
+   build is untouched — every guard is evaluated at event time and no-ops in a
+   normal browser, so this file is safe to ship everywhere. */
+(function _tauriShims() {
+  // Open external http(s) links in the system browser. Inside a webview an
+  // <a target="_blank"> or external href otherwise just does nothing.
+  document.addEventListener('click', function (e) {
+    var t = window.__TAURI__;
+    var invoke = t && t.core && t.core.invoke;
+    if (!invoke) return;
+    var a = e.target.closest && e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (/^https?:\/\//i.test(href)) {
+      e.preventDefault();
+      invoke('plugin:opener|open_url', { url: href }).catch(function () {});
+    }
+  }, true);
+})();
 'use strict';
 
 /* ══ CONSTANTS ══ */
@@ -234,6 +254,19 @@ document.getElementById('nav-expand-btn')?.addEventListener('click', () => {
 document.getElementById('hamburger')?.addEventListener('click', () => {
   document.getElementById('left-nav').classList.toggle('collapsed');
 });
+
+/* ── Mobile off-canvas nav drawer ──────────────────────── */
+(function mobileNavDrawer() {
+  const closeDrawer = () => document.body.classList.remove('nav-drawer-open');
+  document.getElementById('mob-hamburger')?.addEventListener('click', () => {
+    document.body.classList.toggle('nav-drawer-open');
+  });
+  document.getElementById('nav-backdrop')?.addEventListener('click', closeDrawer);
+  // Picking any destination or footer action dismisses the drawer.
+  document.getElementById('left-nav')?.addEventListener('click', (e) => {
+    if (e.target.closest('.nav-item, .nav-footer-btn')) closeDrawer();
+  });
+})();
 
 /* ── Tools section toggle ──────────────────────────────── */
 document.getElementById('tools-toggle')?.addEventListener('click', () => {
@@ -7141,17 +7174,8 @@ function updateDashboardHero() {
   // Stats
   const statsEl = document.getElementById('hero-stats');
   if (statsEl) {
-    const todayTasks = TASKS.filter(t => !t.someday && !t.done && t.dueDate === today).length;
-    const overdue = TASKS.filter(t => !t.someday && !t.done && t.dueDate && t.dueDate < today).length;
-    const todayEvents = CAL_EVENTS.filter(e => e.date === today).length;
     const momentum = typeof computeMomentumScore === 'function' ? computeMomentumScore().score : 0;
-    const pills = [
-      `<span class="hero-pill" style="animation-delay:0ms"><span class="hero-pill-val">${todayTasks}</span> today</span>`,
-      overdue > 0 ? `<span class="hero-pill overdue" style="animation-delay:80ms"><span class="hero-pill-val">${overdue}</span> overdue</span>` : '',
-      `<span class="hero-pill" style="animation-delay:160ms"><span class="hero-pill-val">${todayEvents}</span> events</span>`,
-      `<span class="hero-pill" style="animation-delay:240ms">momentum <span class="hero-pill-val">${momentum}</span></span>`,
-    ].filter(Boolean);
-    statsEl.innerHTML = pills.join('');
+    statsEl.innerHTML = `<span class="hero-pill" style="animation-delay:0ms">momentum <span class="hero-pill-val">${momentum}</span></span>`;
   }
 
   // Next event
@@ -11789,6 +11813,25 @@ document.getElementById('signin-btn')?.addEventListener('click', () => {
 
   waitForFirebaseAuth(() => {
     const provider = new window.CDX_FB.GoogleAuthProvider();
+
+    // Desktop (Tauri): the webview origin can't complete the popup flow, so run
+    // OAuth in the real browser via the native loopback command, then sign in
+    // with the returned Google id_token. The web build skips this entirely.
+    const tauriInvoke = window.__TAURI__?.core?.invoke;
+    if (tauriInvoke) {
+      tauriInvoke('google_sign_in')
+        .then(idToken => {
+          const cred = window.CDX_FB.GoogleAuthProvider.credential(idToken);
+          return window.CDX_FB.signInWithCredential(window.CDX_AUTH, cred);
+        })
+        .then(() => { /* onAuthStateChanged → cdx-auth-ready → dismiss overlay */ })
+        .catch(err => {
+          console.error('Desktop sign-in failed:', err);
+          resetBtn(`Sign-in failed: ${err?.message || err}`);
+        });
+      return;
+    }
+
     window.CDX_FB.signInWithPopup(window.CDX_AUTH, provider)
       .then(() => { /* onAuthStateChanged → cdx-auth-ready → dismiss overlay */ })
       .catch(err => {
@@ -13611,13 +13654,49 @@ function _dashRenderTasks() {
   const el = document.getElementById('dash-tasks');
   if (!el) return;
   const today = localDateStr(new Date());
+  const viewDate = localDateStr(_dashCalDate);
+
+  // ── Past day (e.g. Yesterday): show what was COMPLETED that day ──
+  if (viewDate < today) {
+    const done = (TASKS || [])
+      .filter(t => t.done && t.doneDate === viewDate)
+      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    if (!done.length) {
+      el.innerHTML = `<div class="dash-eyebrow">COMPLETED</div>
+        <div class="dash-nn-title muted" style="font-size:14px">Nothing logged as done.</div>
+        <div class="dash-nn-meta">A quiet day — or the work went untracked.</div>`;
+      return;
+    }
+    el.innerHTML =
+      `<div class="dash-eyebrow">COMPLETED · ${done.length}</div>
+       <div class="dash-task-list">${done.map(t => `
+        <div class="dash-task-row done" data-dash-task="${escAttr(t.id)}">
+          <span class="dash-task-check on" data-dash-done="${escAttr(t.id)}" title="Mark not done">✓</span>
+          <span class="dash-task-dot" style="--nc:${getCatColor(t.category)}"></span>
+          <span class="dash-task-name done">${escHtml(t.title)}</span>
+          <span class="dash-task-del" data-dash-del="${escAttr(t.id)}" title="Delete task">✕</span>
+        </div>`).join('')}</div>`;
+    el.querySelectorAll('[data-dash-done]').forEach(c => c.addEventListener('click', e => {
+      e.stopPropagation(); toggleTask(c.dataset.dashDone);
+    }));
+    el.querySelectorAll('[data-dash-del]').forEach(d => d.addEventListener('click', e => {
+      e.stopPropagation(); deleteTask(d.dataset.dashDel);
+    }));
+    return;
+  }
+
+  // ── Today or a future day (e.g. Tomorrow): open tasks due on/before that day ──
+  const diff = Math.round((new Date(viewDate) - new Date(today)) / 86400000);
+  const dayWord = diff === 0 ? 'TODAY' : diff === 1 ? 'TOMORROW'
+    : new Date(viewDate + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
+  const label = diff === 0 ? 'DUE TODAY' : `DUE BY ${dayWord}`;
   const due = (TASKS || [])
-    .filter(t => !t.done && t.dueDate && t.dueDate <= today)
+    .filter(t => !t.done && t.dueDate && t.dueDate <= viewDate)
     .sort((a, b) => (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0));
 
   if (!due.length) {
-    el.innerHTML = `<div class="dash-eyebrow">DUE TODAY · TIMEBOX</div>
-      <div class="dash-nn-title muted" style="font-size:14px">Nothing due today.</div>
+    el.innerHTML = `<div class="dash-eyebrow">${label} · TIMEBOX</div>
+      <div class="dash-nn-title muted" style="font-size:14px">Nothing due.</div>
       <div class="dash-nn-meta">Enjoy the open runway — or pull work forward.</div>`;
     return;
   }
@@ -13629,13 +13708,12 @@ function _dashRenderTasks() {
       <span class="dash-task-dot" style="--nc:${getCatColor(t.category)}"></span>
       <span class="dash-task-name">${escHtml(t.title)}</span>
       ${overdue ? '<span class="dash-task-over">OVERDUE</span>' : ''}
-      <span class="dash-task-box" data-dash-timebox="${escAttr(t.id)}">◷ Timebox</span>
       <span class="dash-task-del" data-dash-del="${escAttr(t.id)}" title="Delete task">✕</span>
     </div>`;
   }).join('');
 
   el.innerHTML =
-    `<div class="dash-eyebrow">DUE TODAY · ${due.length} · DRAG TO TIMEBOX</div>
+    `<div class="dash-eyebrow">${label} · ${due.length} · DRAG TO TIMEBOX</div>
      <div class="dash-task-list">${rows}</div>`;
 
   el.querySelectorAll('[data-dash-task]').forEach(r => {
@@ -13648,8 +13726,8 @@ function _dashRenderTasks() {
     r.addEventListener('dragend', () => { _dashDragPayload = null; r.classList.remove('dragging'); });
     // Plain click on the row (not on a control) → schedule modal to pick a time
     r.addEventListener('click', e => {
-      if (e.target.closest('[data-dash-done],[data-dash-del],[data-dash-timebox]')) return;
-      openScheduleModal(today, '09:00', r.dataset.dashTask, null);
+      if (e.target.closest('[data-dash-done],[data-dash-del]')) return;
+      openScheduleModal(viewDate, '09:00', r.dataset.dashTask, null);
     });
   });
   // Complete a task in place — opens the time-spent + category popover first
@@ -13661,10 +13739,6 @@ function _dashRenderTasks() {
   el.querySelectorAll('[data-dash-del]').forEach(d => d.addEventListener('click', e => {
     e.stopPropagation(); deleteTask(d.dataset.dashDel);
   }));
-  // Explicit timebox button → same schedule modal
-  el.querySelectorAll('[data-dash-timebox]').forEach(b => b.addEventListener('click', e => {
-    e.stopPropagation(); openScheduleModal(today, '09:00', b.dataset.dashTimebox, null);
-  }));
 }
 
 function renderDashboardBoard() {
@@ -13672,16 +13746,20 @@ function renderDashboardBoard() {
   const titleEl = document.getElementById('dash-cal-title');
   if (titleEl) titleEl.textContent = _dashCalDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   // Eyebrow shows TODAY / TOMORROW / YESTERDAY / the day-of-week for other days
+  const diff = Math.round((new Date(localDateStr(_dashCalDate)) - new Date(localDateStr(new Date()))) / 86400000);
   const eyebrowEl = document.getElementById('dash-cal-eyebrow');
   if (eyebrowEl) {
-    const diff = Math.round((new Date(localDateStr(_dashCalDate)) - new Date(localDateStr(new Date()))) / 86400000);
     eyebrowEl.textContent = diff === 0 ? 'TODAY' : diff === 1 ? 'TOMORROW' : diff === -1 ? 'YESTERDAY'
       : _dashCalDate.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
   }
+  // Highlight the matching Yesterday/Today/Tomorrow pill (none when further out).
+  document.querySelectorAll('#dash-daynav [data-dash-day]').forEach(b =>
+    b.classList.toggle('active', parseInt(b.dataset.dashDay, 10) === diff));
   _dashRenderTodayLine();
   _dashRenderCards();
   _dashRenderRituals();
   _dashRenderTasks();
+  window._dashRenderNote?.(); // Valerie daily note (desktop → iCloud vault)
 }
 window.renderDashboardBoard = renderDashboardBoard;
 
@@ -13692,6 +13770,15 @@ function _dashShiftDay(delta) {
   renderDashboardBoard();
 }
 function _dashGoToday() { _dashCalDate = new Date(); renderDashboardBoard(); }
+// Jump to today + delta days (used by the Yesterday/Today/Tomorrow pills).
+function _dashGoDay(delta) {
+  const d = new Date();
+  d.setDate(d.getDate() + delta);
+  _dashCalDate = d;
+  renderDashboardBoard();
+}
+document.querySelectorAll('#dash-daynav [data-dash-day]').forEach(b =>
+  b.addEventListener('click', () => _dashGoDay(parseInt(b.dataset.dashDay, 10) || 0)));
 
 // Toolbar actions
 (function _wireDashQuickAdd() {
@@ -16582,3 +16669,126 @@ function renderInsightsX() {
   panel.querySelectorAll('[data-insx-range]').forEach(b => b.onclick = () => { _ixRange = b.dataset.insxRange; renderInsightsX(); });
 }
 window.renderInsightsX = renderInsightsX;
+/* ── Valerie · daily note ─────────────────────────────────────────────────
+   A markdown diary shown at the bottom of the dashboard, bound to the day the
+   pills select (_dashCalDate). In the desktop app it reads/writes plain .md
+   files directly in the Obsidian iCloud vault (060 ▲ Star logs / Daily) via the
+   Rust commands — no Firebase, so Obsidian and Cosmodex share one file. On the
+   web (no filesystem) it shows a hint instead. A note is never auto-created;
+   the user creates it with a button, seeded from the Valerie daily template. */
+(function _dailyNoteModule() {
+  let _saveTimer = null;
+  let _preview = false;
+  let _content = '';
+
+  function _invoke() { const t = window.__TAURI__; return t && t.core && t.core.invoke; }
+
+  function _label(dateStr) {
+    const d = new Date(dateStr + 'T00:00');
+    const diff = Math.round((new Date(dateStr) - new Date(localDateStr(new Date()))) / 86400000);
+    const rel = diff === 0 ? 'TODAY' : diff === 1 ? 'TOMORROW' : diff === -1 ? 'YESTERDAY' : '';
+    const nice = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    return (rel ? rel + ' · ' : '') + nice;
+  }
+
+  function _status(t) { const s = document.getElementById('dash-note-status'); if (s) s.textContent = t; }
+
+  // Minimal, safe markdown → HTML for the preview (headings, bold/italic/code,
+  // lists, task checkboxes, blockquotes, rules, links).
+  function _md(src) {
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const inline = s => s
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*(?!\s)([^*]+?)\*/g, '$1<em>$2</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    let html = '', inList = false;
+    const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
+    esc(src).split('\n').forEach(raw => {
+      const l = raw.replace(/\s+$/, '');
+      if (/^#{1,6}\s/.test(l)) { closeList(); const lvl = l.match(/^#+/)[0].length; html += `<h${lvl}>${inline(l.replace(/^#+\s/, ''))}</h${lvl}>`; }
+      else if (/^\s*[-*]\s+\[[ xX]\]\s/.test(l)) { if (!inList) { html += '<ul class="md-tasks">'; inList = true; } const done = /\[[xX]\]/.test(l); html += `<li class="${done ? 'done' : ''}">${done ? '☑' : '☐'} ${inline(l.replace(/^\s*[-*]\s+\[[ xX]\]\s/, ''))}</li>`; }
+      else if (/^\s*[-*]\s+/.test(l)) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`; }
+      else if (/^>\s?/.test(l)) { closeList(); html += `<blockquote>${inline(l.replace(/^>\s?/, ''))}</blockquote>`; }
+      else if (/^(-{3,}|\*{3,})$/.test(l)) { closeList(); html += '<hr>'; }
+      else if (l.trim() === '') { closeList(); }
+      else { closeList(); html += `<p>${inline(l)}</p>`; }
+    });
+    closeList();
+    return html;
+  }
+
+  async function _save(dateStr) {
+    const invoke = _invoke(); if (!invoke) return;
+    try { await invoke('write_daily_note', { date: dateStr, content: _content }); _status('Saved'); }
+    catch (e) { _status('Save failed'); console.warn('daily note save:', e); }
+  }
+
+  function _renderBody(dateStr) {
+    const body = document.getElementById('dash-note-body'); if (!body) return;
+    if (_preview) {
+      body.innerHTML = `<div class="dash-note-preview">${_md(_content)}</div>`;
+    } else {
+      body.innerHTML = `<textarea class="dash-note-textarea" id="dash-note-text" spellcheck="true" placeholder="Dear Amit, it’s Valerie…"></textarea>`;
+      const ta = body.querySelector('#dash-note-text');
+      ta.value = _content;
+      ta.addEventListener('input', () => {
+        _content = ta.value; _status('Saving…');
+        clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(() => _save(dateStr), 600);
+      });
+    }
+  }
+
+  window._dashRenderNote = async function () {
+    const el = document.getElementById('dash-note-panel'); if (!el) return;
+    const dateStr = localDateStr(_dashCalDate);
+    const invoke = _invoke();
+    const label = _label(dateStr);
+    const head = `<div class="dash-note-head"><span class="dash-eyebrow">✒ VALERIE · ${escHtml(label)}</span>`;
+
+    // Web (no filesystem): the diary lives in iCloud, reachable only from the Mac app.
+    if (!invoke) {
+      el.innerHTML = head + `</div>
+        <div class="dash-note-empty">Your diary lives in your iCloud vault. Open Cosmodex on your Mac to read or write this day’s entry.</div>`;
+      return;
+    }
+
+    let content = null;
+    try { content = await invoke('read_daily_note', { date: dateStr }); } catch (e) { content = null; }
+
+    // No file yet — never auto-create; offer a button.
+    if (content == null) {
+      el.innerHTML = head + `</div>
+        <div class="dash-note-empty">
+          <div class="dash-note-empty-t">No entry for this day.</div>
+          <button class="dash-note-create" id="dash-note-create" type="button">＋ Create note</button>
+        </div>`;
+      el.querySelector('#dash-note-create').onclick = async () => {
+        let seed = '';
+        try { seed = await invoke('read_daily_template'); } catch (e) {}
+        if (!seed || !seed.trim()) seed = `# ${label}\n\n`;
+        try { await invoke('write_daily_note', { date: dateStr, content: seed }); }
+        catch (e) { if (typeof showToast === 'function') showToast('Could not create the note', 'error'); return; }
+        _preview = false;
+        window._dashRenderNote();
+      };
+      return;
+    }
+
+    // Editor + preview toggle.
+    _content = content;
+    el.innerHTML = head +
+      `<div class="dash-note-actions">
+         <span class="dash-note-status" id="dash-note-status">Saved</span>
+         <button class="dash-note-toggle" id="dash-note-toggle" type="button">${_preview ? 'Edit' : 'Preview'}</button>
+       </div></div>
+       <div class="dash-note-body" id="dash-note-body"></div>`;
+    el.querySelector('#dash-note-toggle').onclick = () => {
+      _preview = !_preview;
+      el.querySelector('#dash-note-toggle').textContent = _preview ? 'Edit' : 'Preview';
+      _renderBody(dateStr);
+    };
+    _renderBody(dateStr);
+  };
+})();

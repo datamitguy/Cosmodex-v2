@@ -3606,6 +3606,25 @@ document.getElementById('signin-btn')?.addEventListener('click', () => {
 
   waitForFirebaseAuth(() => {
     const provider = new window.CDX_FB.GoogleAuthProvider();
+
+    // Desktop (Tauri): the webview origin can't complete the popup flow, so run
+    // OAuth in the real browser via the native loopback command, then sign in
+    // with the returned Google id_token. The web build skips this entirely.
+    const tauriInvoke = window.__TAURI__?.core?.invoke;
+    if (tauriInvoke) {
+      tauriInvoke('google_sign_in')
+        .then(idToken => {
+          const cred = window.CDX_FB.GoogleAuthProvider.credential(idToken);
+          return window.CDX_FB.signInWithCredential(window.CDX_AUTH, cred);
+        })
+        .then(() => { /* onAuthStateChanged → cdx-auth-ready → dismiss overlay */ })
+        .catch(err => {
+          console.error('Desktop sign-in failed:', err);
+          resetBtn(`Sign-in failed: ${err?.message || err}`);
+        });
+      return;
+    }
+
     window.CDX_FB.signInWithPopup(window.CDX_AUTH, provider)
       .then(() => { /* onAuthStateChanged → cdx-auth-ready → dismiss overlay */ })
       .catch(err => {
@@ -5428,13 +5447,49 @@ function _dashRenderTasks() {
   const el = document.getElementById('dash-tasks');
   if (!el) return;
   const today = localDateStr(new Date());
+  const viewDate = localDateStr(_dashCalDate);
+
+  // ── Past day (e.g. Yesterday): show what was COMPLETED that day ──
+  if (viewDate < today) {
+    const done = (TASKS || [])
+      .filter(t => t.done && t.doneDate === viewDate)
+      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    if (!done.length) {
+      el.innerHTML = `<div class="dash-eyebrow">COMPLETED</div>
+        <div class="dash-nn-title muted" style="font-size:14px">Nothing logged as done.</div>
+        <div class="dash-nn-meta">A quiet day — or the work went untracked.</div>`;
+      return;
+    }
+    el.innerHTML =
+      `<div class="dash-eyebrow">COMPLETED · ${done.length}</div>
+       <div class="dash-task-list">${done.map(t => `
+        <div class="dash-task-row done" data-dash-task="${escAttr(t.id)}">
+          <span class="dash-task-check on" data-dash-done="${escAttr(t.id)}" title="Mark not done">✓</span>
+          <span class="dash-task-dot" style="--nc:${getCatColor(t.category)}"></span>
+          <span class="dash-task-name done">${escHtml(t.title)}</span>
+          <span class="dash-task-del" data-dash-del="${escAttr(t.id)}" title="Delete task">✕</span>
+        </div>`).join('')}</div>`;
+    el.querySelectorAll('[data-dash-done]').forEach(c => c.addEventListener('click', e => {
+      e.stopPropagation(); toggleTask(c.dataset.dashDone);
+    }));
+    el.querySelectorAll('[data-dash-del]').forEach(d => d.addEventListener('click', e => {
+      e.stopPropagation(); deleteTask(d.dataset.dashDel);
+    }));
+    return;
+  }
+
+  // ── Today or a future day (e.g. Tomorrow): open tasks due on/before that day ──
+  const diff = Math.round((new Date(viewDate) - new Date(today)) / 86400000);
+  const dayWord = diff === 0 ? 'TODAY' : diff === 1 ? 'TOMORROW'
+    : new Date(viewDate + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
+  const label = diff === 0 ? 'DUE TODAY' : `DUE BY ${dayWord}`;
   const due = (TASKS || [])
-    .filter(t => !t.done && t.dueDate && t.dueDate <= today)
+    .filter(t => !t.done && t.dueDate && t.dueDate <= viewDate)
     .sort((a, b) => (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0));
 
   if (!due.length) {
-    el.innerHTML = `<div class="dash-eyebrow">DUE TODAY · TIMEBOX</div>
-      <div class="dash-nn-title muted" style="font-size:14px">Nothing due today.</div>
+    el.innerHTML = `<div class="dash-eyebrow">${label} · TIMEBOX</div>
+      <div class="dash-nn-title muted" style="font-size:14px">Nothing due.</div>
       <div class="dash-nn-meta">Enjoy the open runway — or pull work forward.</div>`;
     return;
   }
@@ -5446,13 +5501,12 @@ function _dashRenderTasks() {
       <span class="dash-task-dot" style="--nc:${getCatColor(t.category)}"></span>
       <span class="dash-task-name">${escHtml(t.title)}</span>
       ${overdue ? '<span class="dash-task-over">OVERDUE</span>' : ''}
-      <span class="dash-task-box" data-dash-timebox="${escAttr(t.id)}">◷ Timebox</span>
       <span class="dash-task-del" data-dash-del="${escAttr(t.id)}" title="Delete task">✕</span>
     </div>`;
   }).join('');
 
   el.innerHTML =
-    `<div class="dash-eyebrow">DUE TODAY · ${due.length} · DRAG TO TIMEBOX</div>
+    `<div class="dash-eyebrow">${label} · ${due.length} · DRAG TO TIMEBOX</div>
      <div class="dash-task-list">${rows}</div>`;
 
   el.querySelectorAll('[data-dash-task]').forEach(r => {
@@ -5465,8 +5519,8 @@ function _dashRenderTasks() {
     r.addEventListener('dragend', () => { _dashDragPayload = null; r.classList.remove('dragging'); });
     // Plain click on the row (not on a control) → schedule modal to pick a time
     r.addEventListener('click', e => {
-      if (e.target.closest('[data-dash-done],[data-dash-del],[data-dash-timebox]')) return;
-      openScheduleModal(today, '09:00', r.dataset.dashTask, null);
+      if (e.target.closest('[data-dash-done],[data-dash-del]')) return;
+      openScheduleModal(viewDate, '09:00', r.dataset.dashTask, null);
     });
   });
   // Complete a task in place — opens the time-spent + category popover first
@@ -5478,10 +5532,6 @@ function _dashRenderTasks() {
   el.querySelectorAll('[data-dash-del]').forEach(d => d.addEventListener('click', e => {
     e.stopPropagation(); deleteTask(d.dataset.dashDel);
   }));
-  // Explicit timebox button → same schedule modal
-  el.querySelectorAll('[data-dash-timebox]').forEach(b => b.addEventListener('click', e => {
-    e.stopPropagation(); openScheduleModal(today, '09:00', b.dataset.dashTimebox, null);
-  }));
 }
 
 function renderDashboardBoard() {
@@ -5489,16 +5539,20 @@ function renderDashboardBoard() {
   const titleEl = document.getElementById('dash-cal-title');
   if (titleEl) titleEl.textContent = _dashCalDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   // Eyebrow shows TODAY / TOMORROW / YESTERDAY / the day-of-week for other days
+  const diff = Math.round((new Date(localDateStr(_dashCalDate)) - new Date(localDateStr(new Date()))) / 86400000);
   const eyebrowEl = document.getElementById('dash-cal-eyebrow');
   if (eyebrowEl) {
-    const diff = Math.round((new Date(localDateStr(_dashCalDate)) - new Date(localDateStr(new Date()))) / 86400000);
     eyebrowEl.textContent = diff === 0 ? 'TODAY' : diff === 1 ? 'TOMORROW' : diff === -1 ? 'YESTERDAY'
       : _dashCalDate.toLocaleDateString('en-GB', { weekday: 'long' }).toUpperCase();
   }
+  // Highlight the matching Yesterday/Today/Tomorrow pill (none when further out).
+  document.querySelectorAll('#dash-daynav [data-dash-day]').forEach(b =>
+    b.classList.toggle('active', parseInt(b.dataset.dashDay, 10) === diff));
   _dashRenderTodayLine();
   _dashRenderCards();
   _dashRenderRituals();
   _dashRenderTasks();
+  window._dashRenderNote?.(); // Valerie daily note (desktop → iCloud vault)
 }
 window.renderDashboardBoard = renderDashboardBoard;
 
@@ -5509,6 +5563,15 @@ function _dashShiftDay(delta) {
   renderDashboardBoard();
 }
 function _dashGoToday() { _dashCalDate = new Date(); renderDashboardBoard(); }
+// Jump to today + delta days (used by the Yesterday/Today/Tomorrow pills).
+function _dashGoDay(delta) {
+  const d = new Date();
+  d.setDate(d.getDate() + delta);
+  _dashCalDate = d;
+  renderDashboardBoard();
+}
+document.querySelectorAll('#dash-daynav [data-dash-day]').forEach(b =>
+  b.addEventListener('click', () => _dashGoDay(parseInt(b.dataset.dashDay, 10) || 0)));
 
 // Toolbar actions
 (function _wireDashQuickAdd() {

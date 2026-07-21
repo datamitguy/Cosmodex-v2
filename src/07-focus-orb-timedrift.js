@@ -319,17 +319,8 @@ function updateDashboardHero() {
   // Stats
   const statsEl = document.getElementById('hero-stats');
   if (statsEl) {
-    const todayTasks = TASKS.filter(t => !t.someday && !t.done && t.dueDate === today).length;
-    const overdue = TASKS.filter(t => !t.someday && !t.done && t.dueDate && t.dueDate < today).length;
-    const todayEvents = CAL_EVENTS.filter(e => e.date === today).length;
     const momentum = typeof computeMomentumScore === 'function' ? computeMomentumScore().score : 0;
-    const pills = [
-      `<span class="hero-pill" style="animation-delay:0ms"><span class="hero-pill-val">${todayTasks}</span> today</span>`,
-      overdue > 0 ? `<span class="hero-pill overdue" style="animation-delay:80ms"><span class="hero-pill-val">${overdue}</span> overdue</span>` : '',
-      `<span class="hero-pill" style="animation-delay:160ms"><span class="hero-pill-val">${todayEvents}</span> events</span>`,
-      `<span class="hero-pill" style="animation-delay:240ms">momentum <span class="hero-pill-val">${momentum}</span></span>`,
-    ].filter(Boolean);
-    statsEl.innerHTML = pills.join('');
+    statsEl.innerHTML = `<span class="hero-pill" style="animation-delay:0ms">momentum <span class="hero-pill-val">${momentum}</span></span>`;
   }
 
   // Next event

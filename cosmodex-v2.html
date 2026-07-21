@@ -2,11 +2,19 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <meta name="referrer" content="origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com wss://*.firebaseio.com https://*.firebaseapp.com; img-src 'self' data:; frame-src https://cosmodex-fffbe.firebaseapp.com; object-src 'none';" />
   <title>Cosmodex v2</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23000' stroke='%23fff' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%23fff' stroke-width='0.8' opacity='0.4'/%3E%3Ccircle cx='16' cy='8' r='1.5' fill='%23fff'/%3E%3Cline x1='16' y1='16' x2='16' y2='9' stroke='%23fff' stroke-width='0.8' opacity='0.6'/%3E%3C/svg%3E" />
+  <!-- PWA / iOS home-screen install -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cosmodex" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -15,7 +23,7 @@
 <script type="module">
   import { initializeApp }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged }
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signInWithCredential }
     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
   import {
     initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
@@ -52,7 +60,7 @@
     doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
     onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
     deleteField, arrayUnion, arrayRemove, runTransaction,
-    GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
+    GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, signInWithCredential
   };
   Object.freeze(window.CDX_FB);
 
@@ -226,6 +234,9 @@
   </div>
 </nav>
 
+<!-- Backdrop for the mobile off-canvas nav drawer -->
+<div id="nav-backdrop"></div>
+
 <!-- ══ APP SHELL ══ -->
 <div id="app-shell">
 
@@ -234,16 +245,19 @@
 
     <!-- Hero Summary Strip -->
     <div id="dashboard-hero" class="dashboard-hero">
+      <button id="mob-hamburger" type="button" aria-label="Open menu">☰</button>
       <div class="hero-time-block">
         <span class="hero-time" id="hero-time">--:--</span>
         <span class="hero-date" id="hero-date">Loading…</span>
       </div>
-      <div class="hero-stats" id="hero-stats"></div>
-      <div class="hero-next" id="hero-next">
-        <span class="hero-next-label">Next</span>
-        <span class="hero-next-event" id="hero-next-event">—</span>
-        <span class="hero-next-countdown" id="hero-next-countdown"></span>
+      <div class="hero-center">
+        <div class="dash-daynav-inner" id="dash-daynav">
+          <button class="dash-pill" data-dash-day="-1" type="button">Yesterday</button>
+          <button class="dash-pill active" data-dash-day="0" type="button">Today</button>
+          <button class="dash-pill" data-dash-day="1" type="button">Tomorrow</button>
+        </div>
       </div>
+      <div class="hero-stats" id="hero-stats"></div>
     </div>
 
     <!-- Retired from the dashboard (replaced by #dash-board); kept in the DOM,
@@ -361,11 +375,6 @@
               <div class="dash-cal-title" id="dash-cal-title">—</div>
             </div>
             <div class="dash-cal-actions">
-              <div class="dash-cal-nav">
-                <button class="dash-nav-btn" id="dash-cal-prev" title="Previous day">‹</button>
-                <button class="dash-nav-btn dash-nav-today" id="dash-cal-today" title="Jump to today">Today</button>
-                <button class="dash-nav-btn" id="dash-cal-next" title="Next day">›</button>
-              </div>
               <button class="dash-btn" id="dash-add-task" title="Add a task">◈ Task</button>
               <button class="dash-btn" id="dash-add-event" title="Add an event">＋ Event</button>
               <button class="dash-btn" id="dash-add-ms" title="Add a milestone">⚑ Milestone</button>
@@ -391,6 +400,8 @@
         </div>
 
       </div>
+      <!-- Valerie — daily note (desktop app writes markdown to the iCloud vault) -->
+      <div class="dash-note-panel dash-glass" id="dash-note-panel"></div>
     </div>
 
     <!-- Milestones Panel (shown via Planning nav item) -->

@@ -600,12 +600,13 @@ body::after {
   text-transform: uppercase;
   color: var(--muted);
 }
+.hero-center { flex: 1; display: flex; justify-content: center; }
 .hero-stats {
   display: flex;
   gap: 8px;
-  flex: 1;
-  justify-content: center;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 100px;
 }
 .hero-pill {
   font-family: var(--font-mono);
@@ -2436,10 +2437,40 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
 #mobile-nav, #mob-fab, #mob-more-drawer { display: none !important; }
 
 /* ══ RESPONSIVE — MOBILE (≤720px) ══ */
+/* Hamburger (mobile only) + off-canvas nav backdrop — hidden on desktop */
+#mob-hamburger {
+  display: none;
+  width: 36px; height: 36px; flex: none;
+  align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px; color: var(--cream); font-size: 16px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+#mob-hamburger:active { background: rgba(255,255,255,0.1); }
+#nav-backdrop { display: none; }
+
 @media (max-width: 720px) {
   body { flex-direction: column; }
 
-  #left-nav { display: none; }
+  /* Left nav becomes an off-canvas drawer, revealed by the hamburger */
+  #left-nav {
+    position: fixed; top: 0; left: 0; bottom: 0; height: 100dvh;
+    z-index: 300;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94);
+    box-shadow: 0 0 48px rgba(0,0,0,0.7);
+    overflow-y: auto;
+  }
+  body.nav-drawer-open #left-nav { transform: none; }
+
+  #nav-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 290;
+    background: rgba(0,0,0,0.55); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity 0.28s ease;
+  }
+  body.nav-drawer-open #nav-backdrop { opacity: 1; pointer-events: auto; }
+
+  #mob-hamburger { display: flex; }
 
   #app-shell { height: 100dvh; }
 
@@ -8257,14 +8288,14 @@ select.sched-input { background: #181818; }
 /* ── Due-today tasks · timebox list ── */
 .dash-task-list { display:flex; flex-direction:column; margin-top:12px; overflow-y:auto; flex:1 1 auto; min-height:0; }
 .dash-task-row {
-  display:flex; align-items:center; gap:10px; padding:9px 2px; cursor:pointer;
+  display:flex; align-items:center; gap:8px; padding:6px 2px; cursor:pointer;
   border-top:1px solid rgba(255,255,255,0.06); transition:all .18s var(--ease-glass);
 }
 .dash-task-list .dash-task-row:first-child { border-top:none; }
 .dash-task-row:hover { padding-left:6px; }
-.dash-task-dot { width:8px; height:8px; border-radius:50%; flex:none; background:var(--nc,#fff); box-shadow:0 0 7px var(--nc,#fff); }
+.dash-task-dot { width:7px; height:7px; border-radius:50%; flex:none; background:var(--nc,#fff); box-shadow:0 0 7px var(--nc,#fff); }
 .dash-task-name {
-  flex:1; min-width:0; font-family:var(--font-display); font-weight:300; font-size:15px; color:rgba(255,255,255,0.9);
+  flex:1; min-width:0; font-family:var(--font-display); font-weight:300; font-size:13px; color:rgba(255,255,255,0.9);
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .dash-task-over {
@@ -8282,6 +8313,41 @@ select.sched-input { background: #181818; }
   border:1.5px solid rgba(255,255,255,0.3); transition:all .18s var(--ease-glass);
 }
 .dash-task-check:hover { border-color:rgb(53,249,47); box-shadow:0 0 8px rgba(53,249,47,0.5); background:rgba(53,249,47,0.15); }
+.dash-task-check.on { display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; border-color:rgb(53,249,47); background:rgba(53,249,47,0.18); }
+.dash-task-name.done { text-decoration:line-through; color:rgba(255,255,255,0.42); }
+/* Yesterday / Today / Tomorrow day pills */
+.dash-daynav { display:flex; justify-content:center; max-width:1240px; margin:0 auto; padding:18px 32px 0; }
+.dash-daynav-inner { display:flex; gap:2px; padding:3px; border-radius:100px; background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+.dash-pill { font-family:var(--font-mono); font-size:10px; letter-spacing:0.14em; text-transform:uppercase;
+  padding:7px 18px; border-radius:100px; border:none; background:transparent; color:rgba(255,255,255,0.55);
+  cursor:pointer; transition:all .25s var(--ease-glass); }
+.dash-pill:hover { color:#fff; }
+.dash-pill.active { background:rgba(53,249,47,0.12); color:#fff; box-shadow:inset 0 0 0 1px rgba(53,249,47,0.35); }
+/* Valerie — daily note panel at the bottom of the dashboard */
+.dash-note-panel { box-sizing:border-box; max-width:1176px; margin:0 auto 40px; padding:20px 24px; border-radius:16px; }
+.dash-note-panel:empty { display:none; }
+.dash-note-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.dash-note-actions { display:flex; align-items:center; gap:12px; }
+.dash-note-status { font-family:var(--font-mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.35); }
+.dash-note-toggle { font-family:var(--font-mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; padding:5px 12px; border-radius:100px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); cursor:pointer; transition:all .2s var(--ease-glass); }
+.dash-note-toggle:hover { color:#fff; border-color:rgba(255,255,255,0.3); }
+.dash-note-empty { display:flex; align-items:center; gap:16px; padding:4px 0 2px; font-family:var(--font-display); font-style:italic; font-size:14px; color:rgba(255,255,255,0.5); }
+.dash-note-empty-t { flex:1; }
+.dash-note-create { font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; padding:8px 16px; border-radius:100px; background:rgba(53,249,47,0.1); border:1px solid rgba(53,249,47,0.3); color:#fff; cursor:pointer; white-space:nowrap; transition:all .2s var(--ease-glass); }
+.dash-note-create:hover { background:rgba(53,249,47,0.18); box-shadow:0 0 12px rgba(53,249,47,0.25); }
+.dash-note-textarea { width:100%; min-height:220px; resize:vertical; box-sizing:border-box; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px 16px; color:rgba(244,241,234,0.9); font-family:var(--font-mono); font-size:13px; line-height:1.7; outline:none; }
+.dash-note-textarea:focus { border-color:rgba(255,255,255,0.2); }
+.dash-note-preview { min-height:220px; padding:6px 2px; font-family:var(--font-display); font-size:15px; line-height:1.7; color:rgba(244,241,234,0.85); }
+.dash-note-preview h1, .dash-note-preview h2, .dash-note-preview h3, .dash-note-preview h4 { font-family:var(--font-display); font-weight:400; color:#fff; margin:14px 0 8px; }
+.dash-note-preview h1 { font-size:22px; } .dash-note-preview h2 { font-size:18px; } .dash-note-preview h3 { font-size:16px; }
+.dash-note-preview p { margin:0 0 10px; }
+.dash-note-preview ul { margin:0 0 10px; padding-left:20px; }
+.dash-note-preview .md-tasks { list-style:none; padding-left:4px; }
+.dash-note-preview blockquote { border-left:2px solid rgba(255,255,255,0.2); padding-left:12px; margin:0 0 10px; color:rgba(255,255,255,0.6); font-style:italic; }
+.dash-note-preview code { font-family:var(--font-mono); font-size:12px; background:rgba(255,255,255,0.06); padding:1px 5px; border-radius:4px; }
+.dash-note-preview a { color:#7fd1ff; }
+.dash-note-preview hr { border:none; border-top:1px solid rgba(255,255,255,0.1); margin:14px 0; }
 .dash-task-del {
   font-family:var(--font-mono); font-size:11px; color:rgba(255,255,255,0.3); flex:none; cursor:pointer;
   opacity:0; transition:all .18s var(--ease-glass); padding:0 2px;
@@ -8494,6 +8560,47 @@ select.sched-input { background: #181818; }
     display: inline-flex; align-items: center; justify-content: center;
   }
   .drawer-item { min-height: 44px; }
+}
+
+/* ══ Dashboard — phone layout (mobile-first PWA) ══════════════════════════
+   The dashboard is the primary surface on iPhone. Reflow the hero into two
+   rows, tighten padding, stack the split cards, and respect the notch/home
+   indicator safe areas when installed to the home screen. */
+@media (max-width: 640px) {
+  /* Hero: row 1 = [☰ · clock · momentum], row 2 = full-width day pills */
+  .dashboard-hero {
+    flex-wrap: wrap; gap: 10px 12px;
+    padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+    min-height: 0;
+  }
+  .hero-time-block { min-width: 0; flex: 1 1 auto; }
+  .hero-time { font-size: 22px; }
+  .hero-stats { min-width: 0; flex: 0 0 auto; }
+  .hero-center { order: 3; flex-basis: 100%; }
+  .dash-daynav-inner { width: 100%; }
+  .dash-pill { flex: 1; padding: 9px 4px; text-align: center; letter-spacing: 0.08em; }
+
+  /* Board: single column (already < 900px) with tighter gutters + safe bottom */
+  .dash-grid { padding: 14px 12px calc(24px + env(safe-area-inset-bottom)); gap: 14px; }
+  .dash-cal { padding: 16px; }
+  .dash-card { padding: 16px; }
+  .dash-cal-title { font-size: 20px; }
+  .dash-cal-head { margin-bottom: 14px; }
+  .dash-cal-actions { gap: 5px; }
+  .dash-btn { padding: 8px 11px; }
+
+  /* Deep-work + streak split stacks vertically on a narrow screen */
+  .dash-focus-card { flex-direction: column; }
+  .dash-focus-sep { width: auto; height: 1px; align-self: stretch; margin: 16px 0; }
+
+  /* Valerie note panel */
+  .dash-note-panel { padding: 16px; margin: 0 12px calc(24px + env(safe-area-inset-bottom)); }
+  .dash-note-empty { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .dash-note-textarea { min-height: 160px; }
+
+  /* Comfortable tap targets */
+  .dash-task-check { width: 20px; height: 20px; }
+  .dash-node-check { width: 20px; height: 20px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════

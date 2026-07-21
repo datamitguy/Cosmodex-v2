@@ -235,6 +235,19 @@ document.getElementById('hamburger')?.addEventListener('click', () => {
   document.getElementById('left-nav').classList.toggle('collapsed');
 });
 
+/* ── Mobile off-canvas nav drawer ──────────────────────── */
+(function mobileNavDrawer() {
+  const closeDrawer = () => document.body.classList.remove('nav-drawer-open');
+  document.getElementById('mob-hamburger')?.addEventListener('click', () => {
+    document.body.classList.toggle('nav-drawer-open');
+  });
+  document.getElementById('nav-backdrop')?.addEventListener('click', closeDrawer);
+  // Picking any destination or footer action dismisses the drawer.
+  document.getElementById('left-nav')?.addEventListener('click', (e) => {
+    if (e.target.closest('.nav-item, .nav-footer-btn')) closeDrawer();
+  });
+})();
+
 /* ── Tools section toggle ──────────────────────────────── */
 document.getElementById('tools-toggle')?.addEventListener('click', () => {
   document.querySelector('.nav-tools-section')?.classList.toggle('collapsed');
