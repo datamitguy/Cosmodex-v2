@@ -243,9 +243,14 @@
   <!-- Main Content -->
   <div id="main-content">
 
+    <!-- Persistent mobile top bar (menu + current page) — hidden on desktop -->
+    <header id="mobile-topbar">
+      <button id="mob-hamburger" type="button" aria-label="Open menu">☰</button>
+      <span id="page-title">Today</span>
+    </header>
+
     <!-- Hero Summary Strip -->
     <div id="dashboard-hero" class="dashboard-hero">
-      <button id="mob-hamburger" type="button" aria-label="Open menu">☰</button>
       <div class="hero-time-block">
         <span class="hero-time" id="hero-time">--:--</span>
         <span class="hero-date" id="hero-date">Loading…</span>

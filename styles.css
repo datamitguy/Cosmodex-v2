@@ -2437,9 +2437,11 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
 #mobile-nav, #mob-fab, #mob-more-drawer { display: none !important; }
 
 /* ══ RESPONSIVE — MOBILE (≤720px) ══ */
-/* Hamburger (mobile only) + off-canvas nav backdrop — hidden on desktop */
+/* Persistent mobile top bar (menu + page title) — hidden on desktop.
+   Lives above every panel so navigation is always reachable. */
+#mobile-topbar { display: none; }
 #mob-hamburger {
-  display: none;
+  display: flex;
   width: 36px; height: 36px; flex: none;
   align-items: center; justify-content: center;
   background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
@@ -2470,7 +2472,19 @@ select option { background: #181818; color: rgba(255,255,255,0.88); }
   }
   body.nav-drawer-open #nav-backdrop { opacity: 1; pointer-events: auto; }
 
-  #mob-hamburger { display: flex; }
+  /* Persistent top bar above all panels */
+  #mobile-topbar {
+    display: flex; align-items: center; gap: 12px;
+    flex: none; padding: max(8px, env(safe-area-inset-top)) 14px 8px;
+    background: rgba(10,10,10,0.9);
+    -webkit-backdrop-filter: var(--glass-blur-nav); backdrop-filter: var(--glass-blur-nav);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    position: sticky; top: 0; z-index: 40;
+  }
+  #mobile-topbar #page-title {
+    font-family: var(--font-display); font-weight: 300; font-size: 17px;
+    color: var(--cream); letter-spacing: 0.02em;
+  }
 
   #app-shell { height: 100dvh; }
 
@@ -9103,3 +9117,29 @@ select.sched-input { background: #181818; }
 .insx2-trend-lbl { font-family:var(--font-display); font-weight:300; font-size:14px; color:rgba(255,255,255,.9); }
 .insx2-trend-now { font-family:var(--font-display); font-weight:300; font-size:18px; color:#fff; }
 @media (max-width:820px){ .insx2-trend { grid-template-columns:1fr 40px 1fr 50px; } .insx2-trend-spark { display:none; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PHONE POLISH — placed last so it wins over the base component rules above
+   (media queries add no specificity, so source order decides). Applies to the
+   inner pages the dashboard links to via the mobile menu.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Pill tab bars: one sideways-scrolling row instead of ragged wrap */
+  .plan-tabs2, .hx-tabs, .insx-tabs, .insx2-tabs {
+    flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+    width: 100%; max-width: 100%; margin-left: 0; border-radius: 12px;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .plan-tabs2::-webkit-scrollbar, .hx-tabs::-webkit-scrollbar,
+  .insx-tabs::-webkit-scrollbar, .insx2-tabs::-webkit-scrollbar { display: none; }
+  .plan-tabs2 > *, .hx-tabs > *, .insx-tabs > *, .insx2-tabs > * { flex: none; }
+
+  /* Insights stat rail: 6 metrics wrap into 2 columns instead of clipping.
+     Columns are set inline by the renderer, so override with !important. */
+  .insx2-rail { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+  /* Page scroll roots: clearance for the sticky top bar + home indicator */
+  .plan-hero, .hx-root, .insx-root, #panel-drill, #panel-lists, #panel-alltasks {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+}
