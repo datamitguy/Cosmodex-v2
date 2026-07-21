@@ -4,7 +4,7 @@
    fresh deploy is never masked by a stale styles.css/app.js — the previous
    version silently served post-deploy stale assets. Cross-origin (Firebase,
    Google auth, fonts) and non-GET requests pass straight through. */
-const CACHE = 'cosmodex-shell-v10';
+const CACHE = 'cosmodex-shell-v11';
 const CORE = ['./', './cosmodex-v2.html', './app.js', './styles.css',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 

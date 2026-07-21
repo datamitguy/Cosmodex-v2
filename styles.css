@@ -9138,6 +9138,14 @@ select.sched-input { background: #181818; }
      Columns are set inline by the renderer, so override with !important. */
   .insx2-rail { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 
+  /* Timedrift: give the ring-dial more of the screen on a phone */
+  #td-top { height: 58% !important; }
+
+  /* Lists: stack the index over the detail instead of a 264px + sliver split */
+  .lists-grid { grid-template-columns: 1fr; gap: 16px; }
+  .lists-page { padding: 20px 16px 90px; }
+  .lists-empty { min-height: 200px; }
+
   /* Page scroll roots: clearance for the sticky top bar + home indicator */
   .plan-hero, .hx-root, .insx-root, #panel-drill, #panel-lists, #panel-alltasks {
     padding-bottom: calc(24px + env(safe-area-inset-bottom));

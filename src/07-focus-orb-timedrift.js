@@ -876,8 +876,11 @@ function _tdLayout(){
   const container=document.getElementById('td-top');
   if(!container||!_tdSvg) return;
   const vw=container.clientWidth||window.innerWidth;
-  const scale=vw/1000*1.28;
-  const CROP=530, VBH=845-CROP;
+  // On a phone the dial would otherwise shrink to a thin band at the top, so
+  // scale it up and reveal a taller slice of the rings to fill the space.
+  const narrow=vw<640;
+  const scale=vw/1000*(narrow?2.35:1.28);
+  const CROP=narrow?430:530, VBH=845-CROP;
   const pw=Math.round(1000*scale), ph=Math.round(VBH*scale);
   _tdSvg.setAttribute('viewBox',`0 ${CROP} 1000 ${VBH}`);
   _tdSvg.style.width=pw+'px'; _tdSvg.style.height=ph+'px';
