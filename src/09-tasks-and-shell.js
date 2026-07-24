@@ -1541,26 +1541,31 @@ function initEventModal() {
   });
 
   document.getElementById('eam-delete')?.addEventListener('click', async () => {
-    if (!_eamEvent || !deleteDoc) return;
-    if (!await cdxConfirm(`Delete "${_eamEvent.title}"?`)) return;
+    // Capture the event before awaiting — the confirm dialog's click triggers
+    // the outside-click handler below, which calls hideEventModal() and nulls
+    // the shared _eamEvent underneath us.
+    const ev = _eamEvent;
+    if (!ev || !deleteDoc) return;
+    if (!await cdxConfirm(`Delete "${ev.title}"?`)) return;
     try {
-      await deleteDoc(_ud('calEvents', _eamEvent.id));
+      await deleteDoc(_ud('calEvents', ev.id));
       // Clear calEventId on linked task
-      const linkedTask = _eamEvent.taskId
-        ? TASKS.find(t => t.id === _eamEvent.taskId)
-        : TASKS.find(t => t.calEventId === _eamEvent.id);
+      const linkedTask = ev.taskId
+        ? TASKS.find(t => t.id === ev.taskId)
+        : TASKS.find(t => t.calEventId === ev.id);
       if (linkedTask) await updateTask(linkedTask.id, { calEventId: null });
       hideEventModal();
       showToast('Event deleted', 'success');
-    } catch(e) { showToast('Could not delete event', 'error'); }
+    } catch(e) { console.error('delete event failed:', e); showToast('Could not delete event', 'error'); }
   });
 
   // Delete the event AND its linked task (deleteTask cascades the calEvent + subtask events)
   document.getElementById('eam-delete-task')?.addEventListener('click', async () => {
-    if (!_eamEvent) return;
-    const linkedTask = _eamEvent.taskId
-      ? TASKS.find(t => t.id === _eamEvent.taskId)
-      : TASKS.find(t => t.calEventId === _eamEvent.id);
+    const ev = _eamEvent;                 // capture before awaiting (see note above)
+    if (!ev) return;
+    const linkedTask = ev.taskId
+      ? TASKS.find(t => t.id === ev.taskId)
+      : TASKS.find(t => t.calEventId === ev.id);
     if (!linkedTask) { document.getElementById('eam-delete')?.click(); return; }
     if (!await cdxConfirm(`Delete the event AND the task "${linkedTask.title}"? This removes the task entirely.`)) return;
     try {
@@ -1579,10 +1584,13 @@ function initEventModal() {
     window.setPomoEvent?.(ev);
   });
 
-  // Close on outside click
+  // Close on outside click — but ignore clicks inside the confirm dialog that
+  // opens on top of this modal (its buttons live outside #event-action-modal).
   document.addEventListener('click', e => {
     const modal = document.getElementById('event-action-modal');
     if (!modal || !modal.classList.contains('open')) return;
+    const confirmOverlay = document.getElementById('cdx-confirm-overlay');
+    if (confirmOverlay && confirmOverlay.contains(e.target)) return;
     if (!modal.contains(e.target)) hideEventModal();
   }, true);
 }

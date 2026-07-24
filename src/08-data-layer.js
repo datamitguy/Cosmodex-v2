@@ -203,6 +203,7 @@ function initData() {
     drawCosmodex(); // immediate orb sync on calendar change
     if (_mainPanel === "insights") (window.renderInsightsX || renderInsights)();
     if (_mainPanel === 'calendarx') window._calxAutoRefresh?.();
+    window._calMirrorSchedule?.(); // mirror to Apple Calendar (desktop app)
   });
 
   _holidaysUnsub = onSnapshot(_uc('holidays'), snap => {
@@ -234,6 +235,7 @@ function initData() {
     renderMilestones();
     renderTasks(); // re-render task panel so initiative grouping updates
     renderCalendar(); // milestones are a global calendar layer
+    window._calMirrorSchedule?.(); // mirror to Apple Calendar (desktop app)
   });
 
   _msListsUnsub = onSnapshot(_uc('milestone_lists'), snap => {

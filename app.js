@@ -8123,6 +8123,7 @@ function initData() {
     drawCosmodex(); // immediate orb sync on calendar change
     if (_mainPanel === "insights") (window.renderInsightsX || renderInsights)();
     if (_mainPanel === 'calendarx') window._calxAutoRefresh?.();
+    window._calMirrorSchedule?.(); // mirror to Apple Calendar (desktop app)
   });
 
   _holidaysUnsub = onSnapshot(_uc('holidays'), snap => {
@@ -8154,6 +8155,7 @@ function initData() {
     renderMilestones();
     renderTasks(); // re-render task panel so initiative grouping updates
     renderCalendar(); // milestones are a global calendar layer
+    window._calMirrorSchedule?.(); // mirror to Apple Calendar (desktop app)
   });
 
   _msListsUnsub = onSnapshot(_uc('milestone_lists'), snap => {
@@ -9751,26 +9753,31 @@ function initEventModal() {
   });
 
   document.getElementById('eam-delete')?.addEventListener('click', async () => {
-    if (!_eamEvent || !deleteDoc) return;
-    if (!await cdxConfirm(`Delete "${_eamEvent.title}"?`)) return;
+    // Capture the event before awaiting — the confirm dialog's click triggers
+    // the outside-click handler below, which calls hideEventModal() and nulls
+    // the shared _eamEvent underneath us.
+    const ev = _eamEvent;
+    if (!ev || !deleteDoc) return;
+    if (!await cdxConfirm(`Delete "${ev.title}"?`)) return;
     try {
-      await deleteDoc(_ud('calEvents', _eamEvent.id));
+      await deleteDoc(_ud('calEvents', ev.id));
       // Clear calEventId on linked task
-      const linkedTask = _eamEvent.taskId
-        ? TASKS.find(t => t.id === _eamEvent.taskId)
-        : TASKS.find(t => t.calEventId === _eamEvent.id);
+      const linkedTask = ev.taskId
+        ? TASKS.find(t => t.id === ev.taskId)
+        : TASKS.find(t => t.calEventId === ev.id);
       if (linkedTask) await updateTask(linkedTask.id, { calEventId: null });
       hideEventModal();
       showToast('Event deleted', 'success');
-    } catch(e) { showToast('Could not delete event', 'error'); }
+    } catch(e) { console.error('delete event failed:', e); showToast('Could not delete event', 'error'); }
   });
 
   // Delete the event AND its linked task (deleteTask cascades the calEvent + subtask events)
   document.getElementById('eam-delete-task')?.addEventListener('click', async () => {
-    if (!_eamEvent) return;
-    const linkedTask = _eamEvent.taskId
-      ? TASKS.find(t => t.id === _eamEvent.taskId)
-      : TASKS.find(t => t.calEventId === _eamEvent.id);
+    const ev = _eamEvent;                 // capture before awaiting (see note above)
+    if (!ev) return;
+    const linkedTask = ev.taskId
+      ? TASKS.find(t => t.id === ev.taskId)
+      : TASKS.find(t => t.calEventId === ev.id);
     if (!linkedTask) { document.getElementById('eam-delete')?.click(); return; }
     if (!await cdxConfirm(`Delete the event AND the task "${linkedTask.title}"? This removes the task entirely.`)) return;
     try {
@@ -9789,10 +9796,13 @@ function initEventModal() {
     window.setPomoEvent?.(ev);
   });
 
-  // Close on outside click
+  // Close on outside click — but ignore clicks inside the confirm dialog that
+  // opens on top of this modal (its buttons live outside #event-action-modal).
   document.addEventListener('click', e => {
     const modal = document.getElementById('event-action-modal');
     if (!modal || !modal.classList.contains('open')) return;
+    const confirmOverlay = document.getElementById('cdx-confirm-overlay');
+    if (confirmOverlay && confirmOverlay.contains(e.target)) return;
     if (!modal.contains(e.target)) hideEventModal();
   }, true);
 }
@@ -16794,4 +16804,84 @@ window.renderInsightsX = renderInsightsX;
     };
     _renderBody(dateStr);
   };
+})();
+/* ── Calendar mirror (desktop only) ───────────────────────────────────────
+   One-way push: whatever is on the Cosmodex calendar (timed events + timeboxed
+   tasks, which are both CAL_EVENTS, plus milestones as all-day) is mirrored into
+   a dedicated "Cosmodex" calendar in Apple Calendar via the bundled EventKit
+   helper. Cosmodex is the source of truth — the helper reconciles the full set
+   each run (create / update / delete), so deletions and edits propagate too.
+   Runs only inside the Tauri app; the web build has no filesystem/EventKit. */
+(function calendarMirror() {
+  const invoke = () => window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
+  let timer = null;
+  let running = false;
+  let dirtyWhileRunning = false;
+
+  // Local wall-clock date+time → epoch seconds (Apple events are absolute times).
+  function epochLocal(dateStr, hhmm) {
+    const [y, m, d] = String(dateStr || '').split('-').map(Number);
+    const [hh, mm] = String(hhmm || '00:00').split(':').map(Number);
+    if (!y || !m || !d) return null;
+    return Math.floor(new Date(y, m - 1, d, hh || 0, mm || 0, 0, 0).getTime() / 1000);
+  }
+
+  function buildDesired() {
+    const items = [];
+    // CAL_EVENTS / MILESTONE_EVENTS are top-level `let` globals in the shared
+    // app.js scope — reachable by bare name here (same script), NOT via window.
+    const calEvents = (typeof CAL_EVENTS !== 'undefined' && CAL_EVENTS) || [];
+    const msEvents = (typeof MILESTONE_EVENTS !== 'undefined' && MILESTONE_EVENTS) || [];
+    // CAL_EVENTS = plain calendar events AND tasks timeboxed onto the calendar.
+    calEvents.forEach(ev => {
+      if (!ev.id || !ev.date) return;
+      const title = (String(ev.title || '').trim()) || 'Untitled';
+      if (ev.allDay) {
+        const s = epochLocal(ev.date, '00:00'); if (s == null) return;
+        items.push({ id: 'ev_' + ev.id, title, start: s, end: s + 86400, allDay: true });
+      } else if (ev.startTime) {
+        const s = epochLocal(ev.date, ev.startTime); if (s == null) return;
+        const dur = (Number(ev.duration) || 60) * 60;
+        items.push({ id: 'ev_' + ev.id, title, start: s, end: s + dur, allDay: false });
+      }
+    });
+    // Milestones → all-day markers.
+    msEvents.forEach(ms => {
+      const d = ms.date || ms.dueDate;
+      if (!ms.id || !d) return;
+      const s = epochLocal(d, '00:00'); if (s == null) return;
+      const title = '⚑ ' + ((String(ms.title || ms.name || '').trim()) || 'Milestone');
+      items.push({ id: 'ms_' + ms.id, title, start: s, end: s + 86400, allDay: true });
+    });
+    return items;
+  }
+
+  async function run() {
+    const inv = invoke(); if (!inv) return;
+    if (running) { dirtyWhileRunning = true; return; }
+    running = true;
+    try {
+      const items = buildDesired();
+      const res = await inv('calendar_sync', { payload: JSON.stringify({ items }) });
+      console.debug('calendar mirror:', res);
+      if (/"error"/.test(String(res)) && typeof showToast === 'function') {
+        showToast('Calendar sync: ' + res, 'error');
+      }
+    } catch (e) {
+      console.warn('calendar mirror failed:', e);
+      if (typeof showToast === 'function') showToast('Calendar sync failed: ' + e, 'error');
+    } finally {
+      running = false;
+      if (dirtyWhileRunning) { dirtyWhileRunning = false; window._calMirrorSchedule(); }
+    }
+  }
+
+  // Debounced trigger — called from the calEvents / milestoneEvents snapshots.
+  window._calMirrorSchedule = function () {
+    if (!invoke()) return;
+    clearTimeout(timer);
+    timer = setTimeout(run, 1500);
+  };
+  // Manual trigger (e.g. from the console) for testing.
+  window._calMirrorNow = run;
 })();
