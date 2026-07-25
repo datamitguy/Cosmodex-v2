@@ -8358,32 +8358,43 @@ select.atk-inline option { background:#141414; color:#fff; }
 .dash-note-empty-t { flex:1; }
 .dash-note-create { font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; padding:8px 16px; border-radius:100px; background:rgba(53,249,47,0.1); border:1px solid rgba(53,249,47,0.3); color:#fff; cursor:pointer; white-space:nowrap; transition:all .2s var(--ease-glass); }
 .dash-note-create:hover { background:rgba(53,249,47,0.18); box-shadow:0 0 12px rgba(53,249,47,0.25); }
-.dash-note-textarea { width:100%; min-height:220px; resize:vertical; box-sizing:border-box; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:14px 16px; color:rgba(244,241,234,0.9); font-family:var(--font-mono); font-size:13px; line-height:1.7; outline:none; }
-.dash-note-textarea:focus { border-color:rgba(255,255,255,0.2); }
-.dash-note-preview { min-height:220px; padding:6px 2px; font-family:var(--font-display); font-size:15px; line-height:1.7; color:rgba(244,241,234,0.85); }
-.dash-note-preview h1, .dash-note-preview h2, .dash-note-preview h3, .dash-note-preview h4 { font-family:var(--font-display); font-weight:400; color:#fff; margin:14px 0 8px; }
-.dash-note-preview h1 { font-size:22px; } .dash-note-preview h2 { font-size:18px; } .dash-note-preview h3 { font-size:16px; }
-.dash-note-preview p { margin:0 0 10px; }
-.dash-note-preview ul { margin:0 0 10px; padding-left:20px; }
-.dash-note-preview .md-tasks { list-style:none; padding-left:4px; }
-.dash-note-preview blockquote { border-left:2px solid rgba(255,255,255,0.2); padding-left:12px; margin:0 0 10px; color:rgba(255,255,255,0.6); font-style:italic; }
-.dash-note-preview code { font-family:var(--font-mono); font-size:12px; background:rgba(255,255,255,0.06); padding:1px 5px; border-radius:4px; }
-.dash-note-preview a { color:#7fd1ff; }
-.dash-note-preview hr { border:none; border-top:1px solid rgba(255,255,255,0.1); margin:14px 0; }
+/* Edit surface: reads like a journal (serif, roomy) — not code. Same font,
+   size, colour and rhythm as the rendered view so the two barely differ. */
+.dash-note-textarea { width:100%; min-height:340px; resize:vertical; box-sizing:border-box; background:rgba(255,255,255,0.015); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:20px 24px; color:var(--cream); font-family:var(--font-display); font-size:16px; line-height:1.8; outline:none; transition:border-color .18s var(--ease-glass), box-shadow .18s var(--ease-glass); }
+.dash-note-textarea:focus { border-color:var(--neon-dim); box-shadow:0 0 18px var(--neon-glow); }
+.dash-note-textarea::placeholder { color:rgba(255,255,255,0.25); font-style:italic; }
+/* Reading view — Cosmodex palette: neon-green accents over white-transparency */
+.dash-note-preview { min-height:340px; padding:6px 2px; font-family:var(--font-display); font-size:16px; line-height:1.8; color:var(--cream); }
+.dash-note-preview h1, .dash-note-preview h2, .dash-note-preview h3, .dash-note-preview h4 { font-family:var(--font-display); font-weight:500; color:#fff; margin:18px 0 10px; line-height:1.25; }
+.dash-note-preview h1 { font-size:26px; letter-spacing:-0.01em; padding-bottom:8px; border-bottom:1px solid var(--neon-dim); }
+.dash-note-preview h2 { font-size:20px; } .dash-note-preview h3 { font-size:17px; color:rgba(255,255,255,0.92); }
+.dash-note-preview p { margin:0 0 12px; }
+.dash-note-preview strong { color:#fff; font-weight:600; }
+.dash-note-preview em { color:var(--cream); font-style:italic; }
+.dash-note-preview ul { margin:0 0 12px; padding-left:22px; }
+.dash-note-preview li::marker { color:var(--neon); }
+.dash-note-preview .md-tasks { list-style:none; padding-left:2px; }
+.dash-note-preview .md-tasks li.done { color:rgba(255,255,255,0.4); text-decoration:line-through; }
+.dash-note-preview .md-check { color:var(--neon); margin-right:2px; }
+.dash-note-preview blockquote { border-left:2px solid var(--neon-dim); padding-left:14px; margin:0 0 12px; color:rgba(255,255,255,0.7); font-style:italic; }
+.dash-note-preview code { font-family:var(--font-mono); font-size:13px; color:var(--neon); background:rgba(57,255,20,0.08); padding:1px 6px; border-radius:5px; }
+.dash-note-preview a { color:var(--neon); text-decoration:none; border-bottom:1px solid var(--neon-dim); transition:text-shadow .15s, border-color .15s; }
+.dash-note-preview a:hover { border-bottom-color:var(--neon); text-shadow:0 0 8px var(--neon-glow); }
+.dash-note-preview hr { border:none; border-top:1px solid rgba(255,255,255,0.12); margin:18px 0; }
 /* Daily note: one pane, Edit/Read pills, formatting toolbar */
 .dash-note-pills { display:inline-flex; gap:2px; padding:2px; border-radius:100px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
 .dash-note-pills button { font-family:var(--font-mono); font-size:9px; letter-spacing:0.1em; text-transform:uppercase; padding:5px 13px; border-radius:100px; background:transparent; border:none; color:rgba(255,255,255,0.5); cursor:pointer; transition:all .18s var(--ease-glass); }
 .dash-note-pills button:hover { color:rgba(255,255,255,0.85); }
-.dash-note-pills button.active { background:rgba(255,255,255,0.1); color:#fff; }
-.dash-note-toolbar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+.dash-note-pills button.active { background:rgba(57,255,20,0.12); color:var(--neon); box-shadow:inset 0 0 0 1px var(--neon-dim); }
+.dash-note-toolbar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
 .dash-note-toolbar button { font-family:var(--font-mono); font-size:11px; line-height:1; min-width:30px; height:28px; padding:0 9px; border-radius:7px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); cursor:pointer; transition:all .15s var(--ease-glass); }
-.dash-note-toolbar button:hover { color:#fff; border-color:rgba(255,255,255,0.28); background:rgba(255,255,255,0.08); }
+.dash-note-toolbar button:hover { color:var(--neon); border-color:var(--neon-dim); background:rgba(57,255,20,0.06); }
 .dash-note-edit { min-height:340px; margin:0; }
 .dash-note-read { min-height:340px; }
-.dash-note-preview .md-callout { border:1px solid rgba(255,255,255,0.1); border-left:3px solid rgba(127,209,255,0.6); border-radius:8px; padding:8px 12px; margin:0 0 10px; background:rgba(127,209,255,0.05); }
-.dash-note-preview .md-callout-t { font-family:var(--font-mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(127,209,255,0.85); margin-bottom:4px; }
+.dash-note-preview .md-callout { border:1px solid rgba(57,255,20,0.16); border-left:3px solid var(--neon); border-radius:10px; padding:10px 14px; margin:0 0 12px; background:rgba(57,255,20,0.04); }
+.dash-note-preview .md-callout-t { font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--neon); margin-bottom:5px; }
 .dash-note-preview .md-callout .md-task { margin:2px 0; }
-.dash-note-preview .md-wl { color:#b9a7ff; }
+.dash-note-preview .md-wl { color:var(--neon); border-bottom:1px dotted var(--neon-dim); }
 .dash-task-del {
   font-family:var(--font-mono); font-size:11px; color:rgba(255,255,255,0.3); flex:none; cursor:pointer;
   opacity:0; transition:all .18s var(--ease-glass); padding:0 2px;

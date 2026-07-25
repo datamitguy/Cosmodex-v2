@@ -273,7 +273,7 @@ function buildTaskRow(task, idx) {
     ? `<span class="task-inline-due ${isOverdue ? 'overdue' : ''}">${fmtDate(task.dueDate)}</span>`
     : '';
   const inlineCatDot = cat
-    ? `<span class="task-inline-cat-dot" style="background:${catClr}" title="${cat.label}"></span>`
+    ? `<span class="task-inline-cat-dot" style="background:${catClr}" title="${escAttr(cat.label)}"></span>`
     : '';
   const inlineDecay = decay
     ? `<span class="task-inline-decay ${decay.state}">${decay.label}</span>`

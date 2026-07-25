@@ -16,6 +16,7 @@
   let _saveTimer = null;
   let _content = '';        // in-memory source of truth (raw markdown)
   let _focusHooked = false; // window focus/visibility listener attached once
+  let _keysHooked = false;  // Cmd/Ctrl+E toggle listener attached once
   let _mode = 'edit';       // 'edit' (textarea) | 'read' (rendered, locked)
 
   function _invoke() { const t = window.__TAURI__; return t && t.core && t.core.invoke; }
@@ -51,7 +52,7 @@
     const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
     const taskLine = cl => {
       const done = /\[[xX]\]/.test(cl);
-      return `${done ? '☑' : '☐'} ${inline(cl.replace(/^\s*[-*]\s+\[[ xX]\]\s/, ''))}`;
+      return `<span class="md-check">${done ? '☑' : '☐'}</span> ${inline(cl.replace(/^\s*[-*]\s+\[[ xX]\]\s/, ''))}`;
     };
     while (i < lines.length) {
       const l = lines[i].replace(/\s+$/, '');
@@ -146,6 +147,30 @@
     });
   }
 
+  // Flip Edit ⇄ Read in place (used by the pills and the Cmd/Ctrl+E shortcut).
+  // No-ops unless a note is actually loaded (the body exists on the dashboard).
+  function _toggleMode() {
+    const el = document.getElementById('dash-note-panel');
+    if (!el || !el.querySelector('#dash-note-body')) return;
+    _mode = _mode === 'edit' ? 'read' : 'edit';
+    el.querySelectorAll('#dash-note-pills button').forEach(b => b.classList.toggle('active', b.dataset.mode === _mode));
+    _renderBody(localDateStr(_dashCalDate));
+  }
+
+  // Cmd+E (mac) / Ctrl+E toggles read ⇄ edit whenever the day's note is on screen.
+  function _hookKeys() {
+    if (_keysHooked) return;
+    _keysHooked = true;
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === 'e' || e.key === 'E')) {
+        const el = document.getElementById('dash-note-panel');
+        if (!el || !el.querySelector('#dash-note-body')) return;
+        e.preventDefault();
+        _toggleMode();
+      }
+    });
+  }
+
   // Re-read from disk when the window regains focus, so an edit made in Obsidian
   // shows here instead of being overwritten by our cached copy. Skipped while the
   // textarea is focused (we're the active editor) to avoid discarding live edits.
@@ -176,6 +201,7 @@
       return;
     }
     _hookFocusReload();
+    _hookKeys();
 
     let content = null;
     try { content = await invoke('read_daily_note', { date: dateStr }); } catch (e) { content = null; }
@@ -202,7 +228,7 @@
     el.innerHTML = head +
       `<div class="dash-note-actions">
          <span class="dash-note-status" id="dash-note-status">Saved</span>
-         <div class="dash-note-pills" id="dash-note-pills">
+         <div class="dash-note-pills" id="dash-note-pills" title="Toggle with ⌘E / Ctrl+E">
            <button type="button" data-mode="edit"${_mode === 'edit' ? ' class="active"' : ''}>Edit</button>
            <button type="button" data-mode="read"${_mode === 'read' ? ' class="active"' : ''}>Read</button>
          </div>

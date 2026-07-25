@@ -1326,7 +1326,7 @@ function _todayRenderHabits(todayDs, isRestDay) {
     return `<div class="today-anchor-group">
       <div class="today-anchor-header">
         <span class="today-anchor-icon">${g.icon}</span>
-        <span class="today-anchor-title">${g.label}</span>
+        <span class="today-anchor-title">${escHtml(g.label)}</span>
         <span class="today-anchor-count">${groups[g.id].filter(h => _habitLogs[todayDs]?.completions?.[h.id]).length}/${groups[g.id].length}</span>
       </div>
       <div class="today-anchor-body">${rows}</div>
@@ -3430,7 +3430,7 @@ function _insDrawRings(canvasId, rings) {
   if (legendEl) {
     legendEl.innerHTML = rings.map(r =>
       `<div style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.04em">` +
-      `<span style="width:8px;height:8px;border-radius:50%;background:${r.color};box-shadow:0 0 6px ${r.color}60"></span>${r.label}</div>`
+      `<span style="width:8px;height:8px;border-radius:50%;background:${r.color};box-shadow:0 0 6px ${r.color}60"></span>${escHtml(r.label)}</div>`
     ).join('');
   }
 }
@@ -4162,7 +4162,7 @@ function renderInsights() {
       if (statsEl) {
         if (matrixData.length) {
           statsEl.innerHTML = matrixData.sort((a, b) => b.totalSecs - a.totalSecs).slice(0, 6).map(c =>
-            `<div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c.color};margin-right:6px"></span>${c.label} <span class="val">${_insFmtHrs(c.totalSecs)}</span></div>`
+            `<div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c.color};margin-right:6px"></span>${escHtml(c.label)} <span class="val">${_insFmtHrs(c.totalSecs)}</span></div>`
           ).join('');
         } else {
           statsEl.innerHTML = '<div class="ins-viz-stat">Set priority and energy type on tasks to see your distribution</div>';
@@ -5000,7 +5000,7 @@ function renderMsActivityList() {
     const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
     const cat  = task?.category ? CATEGORIES[task.category] : null;
     const modCatClr = getCatColor(task?.category);
-    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${escHtml(cat.label)}</span>` : '';
     const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
@@ -5217,7 +5217,7 @@ function showMsTaskSearchResults(query, evId, containerEl) {
   containerEl.style.display = 'block';
   containerEl.innerHTML = results.map(t => {
     const cat = t.category ? CATEGORIES[t.category] : null;
-    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${escHtml(cat.label)}</span>` : '';
     const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(255,255,255,0.55)':'var(--muted)'};flex-shrink:0"></div>`;
     return `<div class="ms-task-search-result" data-task-id="${escAttr(t.id)}" data-ev-id="${escAttr(evId)}">${dot}<span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
   }).join('');
@@ -5460,7 +5460,7 @@ function initMilestonesPanel() {
         modalSearchRes.style.display = 'block';
         modalSearchRes.innerHTML = results.map(t => {
           const cat = t.category ? CATEGORIES[t.category] : null;
-          const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+          const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${escHtml(cat.label)}</span>` : '';
           return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(255,255,255,0.55)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
         }).join('');
       }
@@ -8488,7 +8488,7 @@ function buildTaskRow(task, idx) {
     ? `<span class="task-inline-due ${isOverdue ? 'overdue' : ''}">${fmtDate(task.dueDate)}</span>`
     : '';
   const inlineCatDot = cat
-    ? `<span class="task-inline-cat-dot" style="background:${catClr}" title="${cat.label}"></span>`
+    ? `<span class="task-inline-cat-dot" style="background:${catClr}" title="${escAttr(cat.label)}"></span>`
     : '';
   const inlineDecay = decay
     ? `<span class="task-inline-decay ${decay.state}">${decay.label}</span>`
@@ -16664,7 +16664,7 @@ function _insxPatterns() {
       <div class="insx2-pat-glow" style="background:radial-gradient(circle, ${p.color}26, transparent 70%)"></div>
       <div class="insx2-pat-head"><div class="insx2-pat-icon" style="background:${p.color}1f;border-color:${p.color}55;color:${p.color}">${p.icon}</div>
         <div><div class="insx2-eyebrow">PATTERN 0${i + 1}</div><div class="insx2-pat-title">${escHtml(p.title)}</div></div></div>
-      <div class="insx2-pat-body">${p.body}</div></div>`).join('')
+      <div class="insx2-pat-body">${escHtml(p.body)}</div></div>`).join('')
     : '<div class="insx2-empty">Not enough history yet — keep logging and Cosmodex will surface patterns.</div>';
 
   // 90-day-ish trends (weekly sparklines, real)
@@ -16741,6 +16741,7 @@ window.renderInsightsX = renderInsightsX;
   let _saveTimer = null;
   let _content = '';        // in-memory source of truth (raw markdown)
   let _focusHooked = false; // window focus/visibility listener attached once
+  let _keysHooked = false;  // Cmd/Ctrl+E toggle listener attached once
   let _mode = 'edit';       // 'edit' (textarea) | 'read' (rendered, locked)
 
   function _invoke() { const t = window.__TAURI__; return t && t.core && t.core.invoke; }
@@ -16776,7 +16777,7 @@ window.renderInsightsX = renderInsightsX;
     const closeList = () => { if (inList) { html += '</ul>'; inList = false; } };
     const taskLine = cl => {
       const done = /\[[xX]\]/.test(cl);
-      return `${done ? '☑' : '☐'} ${inline(cl.replace(/^\s*[-*]\s+\[[ xX]\]\s/, ''))}`;
+      return `<span class="md-check">${done ? '☑' : '☐'}</span> ${inline(cl.replace(/^\s*[-*]\s+\[[ xX]\]\s/, ''))}`;
     };
     while (i < lines.length) {
       const l = lines[i].replace(/\s+$/, '');
@@ -16871,6 +16872,30 @@ window.renderInsightsX = renderInsightsX;
     });
   }
 
+  // Flip Edit ⇄ Read in place (used by the pills and the Cmd/Ctrl+E shortcut).
+  // No-ops unless a note is actually loaded (the body exists on the dashboard).
+  function _toggleMode() {
+    const el = document.getElementById('dash-note-panel');
+    if (!el || !el.querySelector('#dash-note-body')) return;
+    _mode = _mode === 'edit' ? 'read' : 'edit';
+    el.querySelectorAll('#dash-note-pills button').forEach(b => b.classList.toggle('active', b.dataset.mode === _mode));
+    _renderBody(localDateStr(_dashCalDate));
+  }
+
+  // Cmd+E (mac) / Ctrl+E toggles read ⇄ edit whenever the day's note is on screen.
+  function _hookKeys() {
+    if (_keysHooked) return;
+    _keysHooked = true;
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && (e.key === 'e' || e.key === 'E')) {
+        const el = document.getElementById('dash-note-panel');
+        if (!el || !el.querySelector('#dash-note-body')) return;
+        e.preventDefault();
+        _toggleMode();
+      }
+    });
+  }
+
   // Re-read from disk when the window regains focus, so an edit made in Obsidian
   // shows here instead of being overwritten by our cached copy. Skipped while the
   // textarea is focused (we're the active editor) to avoid discarding live edits.
@@ -16901,6 +16926,7 @@ window.renderInsightsX = renderInsightsX;
       return;
     }
     _hookFocusReload();
+    _hookKeys();
 
     let content = null;
     try { content = await invoke('read_daily_note', { date: dateStr }); } catch (e) { content = null; }
@@ -16927,7 +16953,7 @@ window.renderInsightsX = renderInsightsX;
     el.innerHTML = head +
       `<div class="dash-note-actions">
          <span class="dash-note-status" id="dash-note-status">Saved</span>
-         <div class="dash-note-pills" id="dash-note-pills">
+         <div class="dash-note-pills" id="dash-note-pills" title="Toggle with ⌘E / Ctrl+E">
            <button type="button" data-mode="edit"${_mode === 'edit' ? ' class="active"' : ''}>Edit</button>
            <button type="button" data-mode="read"${_mode === 'read' ? ' class="active"' : ''}>Read</button>
          </div>

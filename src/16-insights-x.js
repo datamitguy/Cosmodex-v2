@@ -362,7 +362,7 @@ function _insxPatterns() {
       <div class="insx2-pat-glow" style="background:radial-gradient(circle, ${p.color}26, transparent 70%)"></div>
       <div class="insx2-pat-head"><div class="insx2-pat-icon" style="background:${p.color}1f;border-color:${p.color}55;color:${p.color}">${p.icon}</div>
         <div><div class="insx2-eyebrow">PATTERN 0${i + 1}</div><div class="insx2-pat-title">${escHtml(p.title)}</div></div></div>
-      <div class="insx2-pat-body">${p.body}</div></div>`).join('')
+      <div class="insx2-pat-body">${escHtml(p.body)}</div></div>`).join('')
     : '<div class="insx2-empty">Not enough history yet — keep logging and Cosmodex will surface patterns.</div>';
 
   // 90-day-ish trends (weekly sparklines, real)

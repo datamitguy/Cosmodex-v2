@@ -78,7 +78,7 @@ function _insDrawRings(canvasId, rings) {
   if (legendEl) {
     legendEl.innerHTML = rings.map(r =>
       `<div style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.04em">` +
-      `<span style="width:8px;height:8px;border-radius:50%;background:${r.color};box-shadow:0 0 6px ${r.color}60"></span>${r.label}</div>`
+      `<span style="width:8px;height:8px;border-radius:50%;background:${r.color};box-shadow:0 0 6px ${r.color}60"></span>${escHtml(r.label)}</div>`
     ).join('');
   }
 }
@@ -810,7 +810,7 @@ function renderInsights() {
       if (statsEl) {
         if (matrixData.length) {
           statsEl.innerHTML = matrixData.sort((a, b) => b.totalSecs - a.totalSecs).slice(0, 6).map(c =>
-            `<div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c.color};margin-right:6px"></span>${c.label} <span class="val">${_insFmtHrs(c.totalSecs)}</span></div>`
+            `<div class="ins-viz-stat"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c.color};margin-right:6px"></span>${escHtml(c.label)} <span class="val">${_insFmtHrs(c.totalSecs)}</span></div>`
           ).join('');
         } else {
           statsEl.innerHTML = '<div class="ins-viz-stat">Set priority and energy type on tasks to see your distribution</div>';

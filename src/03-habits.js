@@ -362,7 +362,7 @@ function _todayRenderHabits(todayDs, isRestDay) {
     return `<div class="today-anchor-group">
       <div class="today-anchor-header">
         <span class="today-anchor-icon">${g.icon}</span>
-        <span class="today-anchor-title">${g.label}</span>
+        <span class="today-anchor-title">${escHtml(g.label)}</span>
         <span class="today-anchor-count">${groups[g.id].filter(h => _habitLogs[todayDs]?.completions?.[h.id]).length}/${groups[g.id].length}</span>
       </div>
       <div class="today-anchor-body">${rows}</div>

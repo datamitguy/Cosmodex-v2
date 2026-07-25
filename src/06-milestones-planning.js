@@ -541,7 +541,7 @@ function renderMsActivityList() {
     const task = a.taskId ? TASKS.find(t => t.id === a.taskId) : null;
     const cat  = task?.category ? CATEGORIES[task.category] : null;
     const modCatClr = getCatColor(task?.category);
-    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${modCatClr}22;color:${modCatClr};border:1px solid ${modCatClr}44;font-family:var(--font-mono)">${escHtml(cat.label)}</span>` : '';
     const linkedBadge = a.taskId ? `<span style="font-family:var(--font-mono);font-size:10px;color:var(--neon);padding:1px 5px;border-radius:4px;background:rgba(74,124,94,0.1)">linked</span>` : '';
     return `
       <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
@@ -758,7 +758,7 @@ function showMsTaskSearchResults(query, evId, containerEl) {
   containerEl.style.display = 'block';
   containerEl.innerHTML = results.map(t => {
     const cat = t.category ? CATEGORIES[t.category] : null;
-    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+    const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${escHtml(cat.label)}</span>` : '';
     const dot = `<div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(255,255,255,0.55)':'var(--muted)'};flex-shrink:0"></div>`;
     return `<div class="ms-task-search-result" data-task-id="${escAttr(t.id)}" data-ev-id="${escAttr(evId)}">${dot}<span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
   }).join('');
@@ -1001,7 +1001,7 @@ function initMilestonesPanel() {
         modalSearchRes.style.display = 'block';
         modalSearchRes.innerHTML = results.map(t => {
           const cat = t.category ? CATEGORIES[t.category] : null;
-          const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${cat.label}</span>` : '';
+          const catBadge = cat ? `<span style="font-size:10px;padding:1px 5px;border-radius:100px;background:${cat.color}22;color:${cat.color};border:1px solid ${cat.color}44;font-family:var(--font-mono)">${escHtml(cat.label)}</span>` : '';
           return `<div class="ms-task-search-result" data-modal-task-id="${escAttr(t.id)}" style="cursor:pointer"><div style="width:6px;height:6px;border-radius:50%;background:${t.priority==='high'?'var(--gold)':t.priority==='med'?'rgba(255,255,255,0.55)':'var(--muted)'};flex-shrink:0"></div><span style="flex:1">${escHtml(t.title)}</span>${catBadge}</div>`;
         }).join('');
       }
