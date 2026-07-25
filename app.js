@@ -13212,8 +13212,6 @@ function renderAtkDetail() {
   const cat     = task.category ? CATEGORIES[task.category] : null;
   const catClr  = getCatColor(task.category);
   const proj    = _buildTaskToProjectMap()[task.id];
-  const dueTxt  = task.dueDate ? fmtDate(task.dueDate) : (task.someday ? 'Someday' : '—');
-  const recurTxt= task.recurrence ? _recurLabel(task.recurrence) : '—';
   const created = _atkCreatedMs(task) ? _atkRelTime(task) : '—';
   const prioTxt = task.priority ? task.priority.toUpperCase() : '—';
 
@@ -16742,7 +16740,6 @@ window.renderInsightsX = renderInsightsX;
 (function _dailyNoteModule() {
   let _saveTimer = null;
   let _content = '';        // in-memory source of truth (raw markdown)
-  let _loadedDate = null;   // which day _content was read for
   let _focusHooked = false; // window focus/visibility listener attached once
   let _mode = 'edit';       // 'edit' (textarea) | 'read' (rendered, locked)
 
@@ -16927,7 +16924,6 @@ window.renderInsightsX = renderInsightsX;
     }
 
     _content = content;
-    _loadedDate = dateStr;
     el.innerHTML = head +
       `<div class="dash-note-actions">
          <span class="dash-note-status" id="dash-note-status">Saved</span>

@@ -4997,8 +4997,6 @@ function renderAtkDetail() {
   const cat     = task.category ? CATEGORIES[task.category] : null;
   const catClr  = getCatColor(task.category);
   const proj    = _buildTaskToProjectMap()[task.id];
-  const dueTxt  = task.dueDate ? fmtDate(task.dueDate) : (task.someday ? 'Someday' : '—');
-  const recurTxt= task.recurrence ? _recurLabel(task.recurrence) : '—';
   const created = _atkCreatedMs(task) ? _atkRelTime(task) : '—';
   const prioTxt = task.priority ? task.priority.toUpperCase() : '—';
 
