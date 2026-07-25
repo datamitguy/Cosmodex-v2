@@ -750,10 +750,6 @@ async function habitReactivate(habitId) {
 let _hbWizard = { open: false, step: 1, editId: null, data: null };
 const HABITS_WIZARD_TOTAL_STEPS = 6;
 
-function _habitsSubscribeWithTabRender(origSub) {
-  // Helper no-op — we trigger render via _habitsUnsub already
-}
-
 function _habitsCompletionRate30d(habitId) {
   let done = 0, total = 0;
   for (let i = 0; i < 30; i++) {

@@ -171,14 +171,6 @@ async function addMilestoneActivity(eventId, text, taskId=null) {
 }
 
 /* ══ MILESTONES — RENDER ══ */
-function msDateToPercent(dateStr, startDate, endDate) {
-  const d = new Date(dateStr).getTime();
-  const s = new Date(startDate).getTime();
-  const e = new Date(endDate).getTime();
-  if (e === s) return 0;
-  return Math.min(100, Math.max(0, ((d - s) / (e - s)) * 100));
-}
-
 function renderMilestones() {
   // Keep the design-kit tabs live when commitments/milestones change.
   window._refreshPlanDesign && window._refreshPlanDesign();
@@ -265,61 +257,6 @@ function renderMilestoneDashboard() {
 }
 
 /* ── Archived projects overlay ────────────────────────── */
-function showArchivedProjectsOverlay() {
-  const existing = document.getElementById('ms-archived-overlay');
-  if (existing) { existing.remove(); return; }
-
-  const archivedProjs = MILESTONE_PROJECTS.filter(p => p.isArchived);
-  const overlay = document.createElement('div');
-  overlay.id = 'ms-archived-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:flex-start;justify-content:flex-end;padding:56px 16px 0';
-  overlay.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:420px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
-      <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:8px">
-        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);flex:1">Archived Commitments</span>
-        <button id="ms-arch-overlay-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px">×</button>
-      </div>
-      <div style="overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
-        ${archivedProjs.length === 0
-          ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:24px">No archived commitments</div>`
-          : archivedProjs.map(proj => {
-              const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
-              const allActs = events.flatMap(e => e.activities || []);
-              const doneActs = allActs.filter(a => a.done).length;
-              return `<div class="ms-arch-item" data-arch-proj="${proj.id}" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:background 150ms">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <div style="flex:1;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.7)">${escHtml(proj.title)}</div>
-                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--neon)">✓ done</span>
-                  <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
-                </div>
-                <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
-              </div>`;
-            }).join('')}
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-
-  overlay.querySelector('#ms-arch-overlay-close')?.addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  overlay.querySelectorAll('.ms-arch-item').forEach(item => {
-    item.addEventListener('click', async e => {
-      const restoreBtn = e.target.closest('[data-ms-unarchive]');
-      if (restoreBtn) {
-        const projId = restoreBtn.dataset.msUnarchive;
-        await window.CDX_FB.updateDoc(_ud('milestoneProjects', projId), { isArchived: false });
-        overlay.remove();
-        return;
-      }
-      overlay.remove();
-      _msView = 'timeline';
-      _msFocusProj = item.dataset.archProj;
-      showPlanningTimeline(_msFocusProj);
-    });
-    item.addEventListener('mouseenter', () => { item.style.background = 'rgba(255,255,255,0.08)'; });
-    item.addEventListener('mouseleave', () => { item.style.background = 'rgba(255,255,255,0.04)'; });
-  });
-}
-
 /* ── Archived page (full panel) ────────────────────────── */
 function renderArchivedPage() {
   const body  = document.getElementById('archived-page-body');
@@ -706,30 +643,6 @@ function openMsEventModal(projectId, eventId = null, prefilledDate = '') {
   if (searchRes) { searchRes.style.display = 'none'; searchRes.innerHTML = ''; }
   renderMsActivityList();
   openOverlay('ms-event-modal');
-}
-
-function openMsEventDetail(eventId) {
-  const ev = MILESTONE_EVENTS.find(e => e.id === eventId);
-  if (!ev) return;
-  const proj = MILESTONE_PROJECTS.find(p => p.id === ev.projectId);
-  document.getElementById('ms-detail-title').textContent = ev.title;
-  document.getElementById('ms-detail-meta').textContent =
-    fmtDate(ev.date) + (proj ? ' · ' + proj.title : '');
-  document.getElementById('ms-detail-desc').textContent = ev.description || '';
-  const acts = document.getElementById('ms-detail-activities');
-  if (!ev.activities.length) {
-    acts.innerHTML = '<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em">No activities.</p>';
-  } else {
-    acts.innerHTML = ev.activities.map(a => `
-      <div class="ms-activity-row">
-        <div class="ms-activity-check ${a.done ? 'done' : ''}"
-             data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(eventId)}"></div>
-        <span class="ms-activity-text ${a.done ? 'done' : ''}">${escHtml(a.text)}</span>
-      </div>`).join('');
-  }
-  document.getElementById('ms-detail-edit-btn').dataset.editEvId   = eventId;
-  document.getElementById('ms-detail-delete-btn').dataset.delEvId  = eventId;
-  openOverlay('ms-event-detail');
 }
 
 /* ── Helper: calculate date from progress bar click ───── */

@@ -1714,10 +1714,6 @@ async function habitReactivate(habitId) {
 let _hbWizard = { open: false, step: 1, editId: null, data: null };
 const HABITS_WIZARD_TOTAL_STEPS = 6;
 
-function _habitsSubscribeWithTabRender(origSub) {
-  // Helper no-op — we trigger render via _habitsUnsub already
-}
-
 function _habitsCompletionRate30d(habitId) {
   let done = 0, total = 0;
   for (let i = 0; i < 30; i++) {
@@ -3054,62 +3050,8 @@ function hbSelectHabit(h, el) {
   if (reward) reward.value = '';
 }
 
-function hbFilterHabits(v) { _hbCurrentSearch = v.toLowerCase(); hbRenderLibrary(); }
-
-function hbPickCat(el, cat) {
-  document.querySelectorAll('.hb-cat-chip').forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-  _hbCurrentCat = cat;
-  hbRenderLibrary();
-}
-
-function hbPickRamp(el) {
-  document.querySelectorAll('.hb-ramp-step').forEach(r => {
-    r.classList.remove('active');
-    r.querySelector('.hb-rs-dose')?.classList.remove('active');
-  });
-  el.classList.add('active');
-  el.querySelector('.hb-rs-dose')?.classList.add('active');
-}
-
-function hbAddToTracker() {
-  if (!_hbSelectedHabit) return;
-  const inp = document.getElementById('habit-new-inp');
-  if (inp) { inp.value = _hbSelectedHabit.icon + ' ' + _hbSelectedHabit.name; habitsAddNew(); }
-  // Switch to today tab
-  switchHabitsTab('today');
-  document.querySelector('.habits-v2-tab[data-htab="today"]')?.click();
-  showToast('Habit added to Today →');
-}
-
-function hbSaveDraft() { showToast('Draft saved'); }
-
 /* ── LAUNCHER ────────────────────────────────────────── */
 let _hbClockInterval = null;
-
-function hbInitLauncher() {
-  // Start live clock
-  if (_hbClockInterval) clearInterval(_hbClockInterval);
-  hbTickClock();
-  _hbClockInterval = setInterval(hbTickClock, 1000);
-  hbLoadLauncherFromRoutines();
-  hbUpdateLauncherDynamic();
-  // Non-negotiable save on blur
-  const nonnegEl = document.getElementById('hb-nonneg-text');
-  if (nonnegEl && !nonnegEl._cdxBound) {
-    nonnegEl._cdxBound = true;
-    nonnegEl.addEventListener('blur', () => {
-      const val = nonnegEl.textContent.trim();
-      _hbSettings.nonNegotiable = val;
-      const uid = window.CDX_USER?.uid;
-      if (uid) {
-        const { doc, setDoc, serverTimestamp } = window.CDX_FB;
-        setDoc(doc(window.CDX_DB, 'users', uid, 'hbSettings', 'config'),
-          { nonNegotiable: val, updatedAt: serverTimestamp() }, { merge: true });
-      }
-    });
-  }
-}
 
 function hbTickClock() {
   const n = new Date();
@@ -3266,32 +3208,6 @@ function hbUpdateLauncherProgress() {
   if (sub) sub.textContent = _hbTotalSteps + ' steps · ' + (pct < 100 ? (100 - pct) + '% remaining' : 'Routine complete ✓');
 }
 
-function hbPickEnergy(el) {
-  document.querySelectorAll('.hb-energy-chip').forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-  const mode = el.querySelector('.hb-ec-name')?.textContent || '';
-  const sub = document.getElementById('hb-lb-sub');
-  if (sub) sub.textContent = _hbTotalSteps + ' steps · ' + mode + ' mode';
-}
-
-function hbLaunchDay() {
-  const btn = document.getElementById('hb-launch-btn');
-  if (!btn) return;
-  btn.style.background = 'linear-gradient(135deg,var(--neon) 0%,#2d5a3d 100%)';
-  btn.innerHTML = 'Day started ✓<span class="hb-lb-sub">Routine launched — good luck today</span>';
-  setTimeout(() => {
-    btn.style.background = 'linear-gradient(135deg,var(--gold) 0%,#ffffff 100%)';
-    btn.innerHTML = 'Begin the day<span class="hb-lb-sub">' + _hbTotalSteps + ' steps ready</span>';
-    // re-fetch the ID'd element that got overwritten
-    const restoredSub = btn.querySelector('.hb-lb-sub');
-    if (restoredSub) restoredSub.id = 'hb-lb-sub';
-  }, 2500);
-}
-
-function hbLoadIdentityFromSettings() {
-  hbUpdateLauncherDynamic();
-}
-
 async function hbSaveSettings() {
   const identity       = document.getElementById('hb-cfg-identity')?.value || '';
   const season         = document.getElementById('hb-cfg-season')?.value || '';
@@ -3321,119 +3237,10 @@ async function hbSaveSettings() {
   showToast('Habit settings saved');
 }
 
-function hbLoadSettingsPanel() {
-  const setVal = (id, val) => { const e = document.getElementById(id); if (e && val != null) e.value = val; };
-  setVal('hb-cfg-identity',      _hbSettings.identity || _behav.identity || '');
-  setVal('hb-cfg-season',        _hbSettings.season);
-  setVal('hb-cfg-season-start',  _hbSettings.seasonStartDate);
-  setVal('hb-cfg-quote',         _hbSettings.quote);
-  setVal('hb-cfg-quote-author',  _hbSettings.quoteAuthor);
-  setVal('hb-cfg-custom-habits', _hbSettings.customHabits);
-  setVal('hb-cfg-nonneg',        _hbSettings.nonNegotiable);
-}
-
-function hbLoadSavedSettings() {
-  // Legacy: now handled by hbSettingsSubscribe(). No-op kept for safety.
-}
-
 /* ── PROGRESS HEATMAP ───────────────────────────────── */
-function hbBuildHeatmap() {
-  const hm = document.getElementById('hb-heatmap');
-  if (!hm || hm.children.length > 0) return; // already built
-  for (let i = 0; i < 91; i++) {
-    const cell = document.createElement('div');
-    const r = Math.random();
-    const l = r > .75 ? 'l4' : r > .5 ? 'l3' : r > .3 ? 'l2' : r > .15 ? 'l1' : '';
-    cell.className = 'hb-hm-cell' + (l ? ' ' + l : '');
-    cell.title = 'Day ' + (i + 1);
-    hm.appendChild(cell);
-  }
-}
-
 /* ══ INSIGHTS — RENDER ══ */
 // → future file: cosmodex-insights.js
 function _insFmtHrs(s) { return s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s/60)}m` : `${(s/3600).toFixed(1)}h`; }
-
-function _insDrawSparkline(canvasId, data, color) {
-  const cvs = document.getElementById(canvasId); if (!cvs) return;
-  const ctx = cvs.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const W = cvs.clientWidth || 200, H = cvs.clientHeight || 60;
-  cvs.width = W * dpr; cvs.height = H * dpr;
-  cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, W, H);
-  if (!data.length) return;
-  const max = Math.max(...data, 1), pad = 8;
-  const stepX = (W - pad * 2) / Math.max(data.length - 1, 1);
-  const pts = data.map((v, i) => [pad + i * stepX, H - pad - (v / max) * (H - pad * 2)]);
-  // Fill area
-  ctx.beginPath(); ctx.moveTo(pts[0][0], H);
-  pts.forEach(p => ctx.lineTo(p[0], p[1]));
-  ctx.lineTo(pts[pts.length - 1][0], H); ctx.closePath();
-  ctx.fillStyle = color.replace(')', ',0.08)').replace('rgb', 'rgba');
-  ctx.fill();
-  // Stroke line
-  ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p[0], p[1]) : ctx.lineTo(p[0], p[1]));
-  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke();
-  // Glow dot on last point
-  const last = pts[pts.length - 1];
-  ctx.beginPath(); ctx.arc(last[0], last[1], 4, 0, Math.PI * 2);
-  ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 10; ctx.fill(); ctx.shadowBlur = 0;
-}
-
-function _insDrawRings(canvasId, rings) {
-  // rings = [{ label, pct, color, max }] — up to 3
-  const cvs = document.getElementById(canvasId); if (!cvs) return;
-  const ctx = cvs.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const W = cvs.clientWidth || 260, H = cvs.clientHeight || 260;
-  cvs.width = W * dpr; cvs.height = H * dpr;
-  cvs.style.width = W + 'px'; cvs.style.height = H + 'px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, W, H);
-  const cx = W / 2, cy = H / 2;
-  const startAngle = -Math.PI / 2; // 12 o'clock
-  const ringWidth = 14, gap = 6;
-  rings.forEach((ring, i) => {
-    const r = (W / 2) - 20 - i * (ringWidth + gap);
-    const pct = Math.min(ring.pct / (ring.max || 100), 1);
-    const endAngle = startAngle + pct * Math.PI * 2;
-    // Track (background)
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = ringWidth; ctx.lineCap = 'round'; ctx.stroke();
-    // Fill arc
-    if (pct > 0) {
-      ctx.beginPath(); ctx.arc(cx, cy, r, startAngle, endAngle);
-      ctx.strokeStyle = ring.color; ctx.lineWidth = ringWidth; ctx.lineCap = 'round';
-      ctx.shadowColor = ring.color; ctx.shadowBlur = 12; ctx.stroke(); ctx.shadowBlur = 0;
-    }
-    // Percentage text at end of arc
-    if (pct > 0.05) {
-      const labelAngle = endAngle;
-      const lx = cx + (r) * Math.cos(labelAngle);
-      const ly = cy + (r) * Math.sin(labelAngle);
-      ctx.font = "500 9px 'DM Mono',monospace";
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = ring.color; ctx.shadowColor = ring.color; ctx.shadowBlur = 6;
-      ctx.fillText(Math.round(ring.pct) + '%', lx, ly);
-      ctx.shadowBlur = 0;
-    }
-  });
-  // Center text
-  ctx.font = "300 11px 'DM Mono',monospace";
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  ctx.fillText('THIS WEEK', cx, cy);
-  // Legend
-  const legendEl = document.getElementById('ins-rings-legend');
-  if (legendEl) {
-    legendEl.innerHTML = rings.map(r =>
-      `<div style="display:flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.04em">` +
-      `<span style="width:8px;height:8px;border-radius:50%;background:${r.color};box-shadow:0 0 6px ${r.color}60"></span>${escHtml(r.label)}</div>`
-    ).join('');
-  }
-}
 
 /* ── Insights creative visualizations ── */
 let _insHeroBgParticles = null;
@@ -4630,14 +4437,6 @@ async function addMilestoneActivity(eventId, text, taskId=null) {
 }
 
 /* ══ MILESTONES — RENDER ══ */
-function msDateToPercent(dateStr, startDate, endDate) {
-  const d = new Date(dateStr).getTime();
-  const s = new Date(startDate).getTime();
-  const e = new Date(endDate).getTime();
-  if (e === s) return 0;
-  return Math.min(100, Math.max(0, ((d - s) / (e - s)) * 100));
-}
-
 function renderMilestones() {
   // Keep the design-kit tabs live when commitments/milestones change.
   window._refreshPlanDesign && window._refreshPlanDesign();
@@ -4724,61 +4523,6 @@ function renderMilestoneDashboard() {
 }
 
 /* ── Archived projects overlay ────────────────────────── */
-function showArchivedProjectsOverlay() {
-  const existing = document.getElementById('ms-archived-overlay');
-  if (existing) { existing.remove(); return; }
-
-  const archivedProjs = MILESTONE_PROJECTS.filter(p => p.isArchived);
-  const overlay = document.createElement('div');
-  overlay.id = 'ms-archived-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:900;display:flex;align-items:flex-start;justify-content:flex-end;padding:56px 16px 0';
-  overlay.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;width:420px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
-      <div style="display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:8px">
-        <span style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);flex:1">Archived Commitments</span>
-        <button id="ms-arch-overlay-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px">×</button>
-      </div>
-      <div style="overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px">
-        ${archivedProjs.length === 0
-          ? `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:center;padding:24px">No archived commitments</div>`
-          : archivedProjs.map(proj => {
-              const events = MILESTONE_EVENTS.filter(e => e.projectId === proj.id);
-              const allActs = events.flatMap(e => e.activities || []);
-              const doneActs = allActs.filter(a => a.done).length;
-              return `<div class="ms-arch-item" data-arch-proj="${proj.id}" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;cursor:pointer;transition:background 150ms">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <div style="flex:1;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,0.7)">${escHtml(proj.title)}</div>
-                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--neon)">✓ done</span>
-                  <button class="btn-ghost ms-unarchive-btn" data-ms-unarchive="${proj.id}" style="font-size:10px;padding:3px 8px;color:var(--muted);border-color:var(--border)">Restore</button>
-                </div>
-                <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px">${doneActs}/${allActs.length} tasks · ${events.length} milestone${events.length !== 1 ? 's' : ''}</div>
-              </div>`;
-            }).join('')}
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-
-  overlay.querySelector('#ms-arch-overlay-close')?.addEventListener('click', () => overlay.remove());
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  overlay.querySelectorAll('.ms-arch-item').forEach(item => {
-    item.addEventListener('click', async e => {
-      const restoreBtn = e.target.closest('[data-ms-unarchive]');
-      if (restoreBtn) {
-        const projId = restoreBtn.dataset.msUnarchive;
-        await window.CDX_FB.updateDoc(_ud('milestoneProjects', projId), { isArchived: false });
-        overlay.remove();
-        return;
-      }
-      overlay.remove();
-      _msView = 'timeline';
-      _msFocusProj = item.dataset.archProj;
-      showPlanningTimeline(_msFocusProj);
-    });
-    item.addEventListener('mouseenter', () => { item.style.background = 'rgba(255,255,255,0.08)'; });
-    item.addEventListener('mouseleave', () => { item.style.background = 'rgba(255,255,255,0.04)'; });
-  });
-}
-
 /* ── Archived page (full panel) ────────────────────────── */
 function renderArchivedPage() {
   const body  = document.getElementById('archived-page-body');
@@ -5165,30 +4909,6 @@ function openMsEventModal(projectId, eventId = null, prefilledDate = '') {
   if (searchRes) { searchRes.style.display = 'none'; searchRes.innerHTML = ''; }
   renderMsActivityList();
   openOverlay('ms-event-modal');
-}
-
-function openMsEventDetail(eventId) {
-  const ev = MILESTONE_EVENTS.find(e => e.id === eventId);
-  if (!ev) return;
-  const proj = MILESTONE_PROJECTS.find(p => p.id === ev.projectId);
-  document.getElementById('ms-detail-title').textContent = ev.title;
-  document.getElementById('ms-detail-meta').textContent =
-    fmtDate(ev.date) + (proj ? ' · ' + proj.title : '');
-  document.getElementById('ms-detail-desc').textContent = ev.description || '';
-  const acts = document.getElementById('ms-detail-activities');
-  if (!ev.activities.length) {
-    acts.innerHTML = '<p style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.06em">No activities.</p>';
-  } else {
-    acts.innerHTML = ev.activities.map(a => `
-      <div class="ms-activity-row">
-        <div class="ms-activity-check ${a.done ? 'done' : ''}"
-             data-toggle-act="${escAttr(a.id)}" data-ev-id="${escAttr(eventId)}"></div>
-        <span class="ms-activity-text ${a.done ? 'done' : ''}">${escHtml(a.text)}</span>
-      </div>`).join('');
-  }
-  document.getElementById('ms-detail-edit-btn').dataset.editEvId   = eventId;
-  document.getElementById('ms-detail-delete-btn').dataset.delEvId  = eventId;
-  openOverlay('ms-event-detail');
 }
 
 /* ── Helper: calculate date from progress bar click ───── */
@@ -11970,44 +11690,6 @@ function computeMomentumScore() {
   return { score, habitPts, taskPts, overduePenalty };
 }
 
-function openDailyRitual() {
-  if (new Date().getHours() >= 11) return; // only show before 11 AM
-  const today = localDateStr(new Date());
-  const last = localStorage.getItem('cdx_ritual_date');
-  if (last === today) return; // already shown today
-  if (document.querySelector('.overlay.open')) return; // don't bury active modals
-
-  const overlay = document.getElementById('ritual-overlay');
-  if (!overlay) return;
-
-  // Set date label
-  const dateLabel = document.getElementById('ritual-date-label');
-  if (dateLabel) {
-    const d = new Date();
-    dateLabel.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  }
-
-  // Show momentum score
-  const { score, habitPts, taskPts, overduePenalty } = computeMomentumScore();
-  const mWrap = document.getElementById('ritual-momentum-wrap');
-  const mScore = document.getElementById('ritual-momentum-score');
-  const mSub = document.getElementById('ritual-momentum-sub');
-  if (mWrap && score > 0) {
-    mWrap.style.display = '';
-    if (mScore) mScore.textContent = score;
-    if (mSub) {
-      const parts = [];
-      if (habitPts > 0) parts.push(`+${habitPts} habits`);
-      if (taskPts > 0)  parts.push(`+${taskPts} tasks`);
-      if (overduePenalty > 0) parts.push(`−${overduePenalty} overdue`);
-      mSub.textContent = parts.join('  ·  ');
-    }
-  }
-
-  overlay.classList.add('open');
-  setTimeout(() => document.getElementById('ritual-focus-input')?.focus(), 300);
-}
-
 function initDailyRitual() {
   const overlay = document.getElementById('ritual-overlay');
   if (!overlay) return;
@@ -12108,46 +11790,6 @@ let _commitTaskId = null;
 let _commitInterval = null;
 let _commitElapsed = 0;
 let _commitSnapshotShown = false;
-
-function openCommitMode(taskId) {
-  const task = TASKS.find(t => t.id === taskId);
-  if (!task) return;
-
-  _commitTaskId = taskId;
-  _commitElapsed = 0;
-  _commitSnapshotShown = false;
-
-  const overlay = document.getElementById('commit-overlay');
-  if (!overlay) return;
-
-  const titleEl = document.getElementById('commit-task-title');
-  if (titleEl) titleEl.textContent = task.title;
-
-  const timerEl = document.getElementById('commit-timer');
-  if (timerEl) timerEl.textContent = '00:00';
-
-  const promptEl = document.getElementById('commit-snapshot-prompt');
-  if (promptEl) promptEl.style.display = 'none';
-
-  const snapshotInput = document.getElementById('commit-snapshot-input');
-  if (snapshotInput) snapshotInput.value = '';
-
-  overlay.classList.add('open');
-
-  clearInterval(_commitInterval);
-  _commitInterval = setInterval(() => {
-    _commitElapsed++;
-    const m = Math.floor(_commitElapsed / 60);
-    const s = _commitElapsed % 60;
-    if (timerEl) timerEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-
-    // Show snapshot prompt at 10 minutes
-    if (_commitElapsed === 600 && !_commitSnapshotShown) {
-      _commitSnapshotShown = true;
-      if (promptEl) promptEl.style.display = '';
-    }
-  }, 1000);
-}
 
 function closeCommitMode() {
   clearInterval(_commitInterval);
@@ -12270,12 +11912,6 @@ function initFrictionModal() {
    DONE WALL
 ═══════════════════════════════════════════════════════════ */
 let _doneWallFilter = 'all';
-
-function loadDoneWall() {
-  _doneWallFilter = 'all';
-  document.querySelectorAll('.done-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
-  renderDoneWall();
-}
 
 function renderDoneWall() {
   const today = localDateStr(new Date());

@@ -77,62 +77,8 @@ function hbSelectHabit(h, el) {
   if (reward) reward.value = '';
 }
 
-function hbFilterHabits(v) { _hbCurrentSearch = v.toLowerCase(); hbRenderLibrary(); }
-
-function hbPickCat(el, cat) {
-  document.querySelectorAll('.hb-cat-chip').forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-  _hbCurrentCat = cat;
-  hbRenderLibrary();
-}
-
-function hbPickRamp(el) {
-  document.querySelectorAll('.hb-ramp-step').forEach(r => {
-    r.classList.remove('active');
-    r.querySelector('.hb-rs-dose')?.classList.remove('active');
-  });
-  el.classList.add('active');
-  el.querySelector('.hb-rs-dose')?.classList.add('active');
-}
-
-function hbAddToTracker() {
-  if (!_hbSelectedHabit) return;
-  const inp = document.getElementById('habit-new-inp');
-  if (inp) { inp.value = _hbSelectedHabit.icon + ' ' + _hbSelectedHabit.name; habitsAddNew(); }
-  // Switch to today tab
-  switchHabitsTab('today');
-  document.querySelector('.habits-v2-tab[data-htab="today"]')?.click();
-  showToast('Habit added to Today →');
-}
-
-function hbSaveDraft() { showToast('Draft saved'); }
-
 /* ── LAUNCHER ────────────────────────────────────────── */
 let _hbClockInterval = null;
-
-function hbInitLauncher() {
-  // Start live clock
-  if (_hbClockInterval) clearInterval(_hbClockInterval);
-  hbTickClock();
-  _hbClockInterval = setInterval(hbTickClock, 1000);
-  hbLoadLauncherFromRoutines();
-  hbUpdateLauncherDynamic();
-  // Non-negotiable save on blur
-  const nonnegEl = document.getElementById('hb-nonneg-text');
-  if (nonnegEl && !nonnegEl._cdxBound) {
-    nonnegEl._cdxBound = true;
-    nonnegEl.addEventListener('blur', () => {
-      const val = nonnegEl.textContent.trim();
-      _hbSettings.nonNegotiable = val;
-      const uid = window.CDX_USER?.uid;
-      if (uid) {
-        const { doc, setDoc, serverTimestamp } = window.CDX_FB;
-        setDoc(doc(window.CDX_DB, 'users', uid, 'hbSettings', 'config'),
-          { nonNegotiable: val, updatedAt: serverTimestamp() }, { merge: true });
-      }
-    });
-  }
-}
 
 function hbTickClock() {
   const n = new Date();
@@ -289,32 +235,6 @@ function hbUpdateLauncherProgress() {
   if (sub) sub.textContent = _hbTotalSteps + ' steps · ' + (pct < 100 ? (100 - pct) + '% remaining' : 'Routine complete ✓');
 }
 
-function hbPickEnergy(el) {
-  document.querySelectorAll('.hb-energy-chip').forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-  const mode = el.querySelector('.hb-ec-name')?.textContent || '';
-  const sub = document.getElementById('hb-lb-sub');
-  if (sub) sub.textContent = _hbTotalSteps + ' steps · ' + mode + ' mode';
-}
-
-function hbLaunchDay() {
-  const btn = document.getElementById('hb-launch-btn');
-  if (!btn) return;
-  btn.style.background = 'linear-gradient(135deg,var(--neon) 0%,#2d5a3d 100%)';
-  btn.innerHTML = 'Day started ✓<span class="hb-lb-sub">Routine launched — good luck today</span>';
-  setTimeout(() => {
-    btn.style.background = 'linear-gradient(135deg,var(--gold) 0%,#ffffff 100%)';
-    btn.innerHTML = 'Begin the day<span class="hb-lb-sub">' + _hbTotalSteps + ' steps ready</span>';
-    // re-fetch the ID'd element that got overwritten
-    const restoredSub = btn.querySelector('.hb-lb-sub');
-    if (restoredSub) restoredSub.id = 'hb-lb-sub';
-  }, 2500);
-}
-
-function hbLoadIdentityFromSettings() {
-  hbUpdateLauncherDynamic();
-}
-
 async function hbSaveSettings() {
   const identity       = document.getElementById('hb-cfg-identity')?.value || '';
   const season         = document.getElementById('hb-cfg-season')?.value || '';
@@ -344,32 +264,4 @@ async function hbSaveSettings() {
   showToast('Habit settings saved');
 }
 
-function hbLoadSettingsPanel() {
-  const setVal = (id, val) => { const e = document.getElementById(id); if (e && val != null) e.value = val; };
-  setVal('hb-cfg-identity',      _hbSettings.identity || _behav.identity || '');
-  setVal('hb-cfg-season',        _hbSettings.season);
-  setVal('hb-cfg-season-start',  _hbSettings.seasonStartDate);
-  setVal('hb-cfg-quote',         _hbSettings.quote);
-  setVal('hb-cfg-quote-author',  _hbSettings.quoteAuthor);
-  setVal('hb-cfg-custom-habits', _hbSettings.customHabits);
-  setVal('hb-cfg-nonneg',        _hbSettings.nonNegotiable);
-}
-
-function hbLoadSavedSettings() {
-  // Legacy: now handled by hbSettingsSubscribe(). No-op kept for safety.
-}
-
 /* ── PROGRESS HEATMAP ───────────────────────────────── */
-function hbBuildHeatmap() {
-  const hm = document.getElementById('hb-heatmap');
-  if (!hm || hm.children.length > 0) return; // already built
-  for (let i = 0; i < 91; i++) {
-    const cell = document.createElement('div');
-    const r = Math.random();
-    const l = r > .75 ? 'l4' : r > .5 ? 'l3' : r > .3 ? 'l2' : r > .15 ? 'l1' : '';
-    cell.className = 'hb-hm-cell' + (l ? ' ' + l : '');
-    cell.title = 'Day ' + (i + 1);
-    hm.appendChild(cell);
-  }
-}
-

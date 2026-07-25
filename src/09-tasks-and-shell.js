@@ -3755,44 +3755,6 @@ function computeMomentumScore() {
   return { score, habitPts, taskPts, overduePenalty };
 }
 
-function openDailyRitual() {
-  if (new Date().getHours() >= 11) return; // only show before 11 AM
-  const today = localDateStr(new Date());
-  const last = localStorage.getItem('cdx_ritual_date');
-  if (last === today) return; // already shown today
-  if (document.querySelector('.overlay.open')) return; // don't bury active modals
-
-  const overlay = document.getElementById('ritual-overlay');
-  if (!overlay) return;
-
-  // Set date label
-  const dateLabel = document.getElementById('ritual-date-label');
-  if (dateLabel) {
-    const d = new Date();
-    dateLabel.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  }
-
-  // Show momentum score
-  const { score, habitPts, taskPts, overduePenalty } = computeMomentumScore();
-  const mWrap = document.getElementById('ritual-momentum-wrap');
-  const mScore = document.getElementById('ritual-momentum-score');
-  const mSub = document.getElementById('ritual-momentum-sub');
-  if (mWrap && score > 0) {
-    mWrap.style.display = '';
-    if (mScore) mScore.textContent = score;
-    if (mSub) {
-      const parts = [];
-      if (habitPts > 0) parts.push(`+${habitPts} habits`);
-      if (taskPts > 0)  parts.push(`+${taskPts} tasks`);
-      if (overduePenalty > 0) parts.push(`−${overduePenalty} overdue`);
-      mSub.textContent = parts.join('  ·  ');
-    }
-  }
-
-  overlay.classList.add('open');
-  setTimeout(() => document.getElementById('ritual-focus-input')?.focus(), 300);
-}
-
 function initDailyRitual() {
   const overlay = document.getElementById('ritual-overlay');
   if (!overlay) return;
@@ -3893,46 +3855,6 @@ let _commitTaskId = null;
 let _commitInterval = null;
 let _commitElapsed = 0;
 let _commitSnapshotShown = false;
-
-function openCommitMode(taskId) {
-  const task = TASKS.find(t => t.id === taskId);
-  if (!task) return;
-
-  _commitTaskId = taskId;
-  _commitElapsed = 0;
-  _commitSnapshotShown = false;
-
-  const overlay = document.getElementById('commit-overlay');
-  if (!overlay) return;
-
-  const titleEl = document.getElementById('commit-task-title');
-  if (titleEl) titleEl.textContent = task.title;
-
-  const timerEl = document.getElementById('commit-timer');
-  if (timerEl) timerEl.textContent = '00:00';
-
-  const promptEl = document.getElementById('commit-snapshot-prompt');
-  if (promptEl) promptEl.style.display = 'none';
-
-  const snapshotInput = document.getElementById('commit-snapshot-input');
-  if (snapshotInput) snapshotInput.value = '';
-
-  overlay.classList.add('open');
-
-  clearInterval(_commitInterval);
-  _commitInterval = setInterval(() => {
-    _commitElapsed++;
-    const m = Math.floor(_commitElapsed / 60);
-    const s = _commitElapsed % 60;
-    if (timerEl) timerEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-
-    // Show snapshot prompt at 10 minutes
-    if (_commitElapsed === 600 && !_commitSnapshotShown) {
-      _commitSnapshotShown = true;
-      if (promptEl) promptEl.style.display = '';
-    }
-  }, 1000);
-}
 
 function closeCommitMode() {
   clearInterval(_commitInterval);
@@ -4055,12 +3977,6 @@ function initFrictionModal() {
    DONE WALL
 ═══════════════════════════════════════════════════════════ */
 let _doneWallFilter = 'all';
-
-function loadDoneWall() {
-  _doneWallFilter = 'all';
-  document.querySelectorAll('.done-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'all'));
-  renderDoneWall();
-}
 
 function renderDoneWall() {
   const today = localDateStr(new Date());
