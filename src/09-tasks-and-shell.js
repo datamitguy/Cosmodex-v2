@@ -3005,7 +3005,6 @@ function openOverlay(id) {
     el.classList.add('open');
     _attachFocusTrap(el);
   }
-  if (id === 'notes-overlay') initNotesCanvas();
   if (id === 'pomo-overlay') window.initPomoOverlay?.();
 }
 
@@ -3068,10 +3067,13 @@ function closeOverlay(id) {
 // exit explicitly via the overlay's own controls.
 const LOCKED_OVERLAYS = new Set(['pomo-overlay', 'commit-overlay']);
 
-let _overlayMousedownInsidePanel = false;
-document.addEventListener('mousedown', e => {
-  _overlayMousedownInsidePanel = !!e.target.closest?.('.overlay-panel, #td-pomo-float');
-}, true);
+// Track where the press began so we can require a *genuine* backdrop click to
+// dismiss: both mousedown and click must land on the overlay backdrop itself.
+// This stops a modal closing when an interaction merely ends on the backdrop —
+// e.g. a drag/text-selection that starts inside the panel, or a control that
+// re-renders under the cursor (the "click inside and it just closes" bug).
+let _overlayMousedownEl = null;
+document.addEventListener('mousedown', e => { _overlayMousedownEl = e.target; }, true);
 
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-close]');
@@ -3082,15 +3084,14 @@ document.addEventListener('click', e => {
   if (e.ctrlKey || e.metaKey || e.altKey) {
     return;
   }
-  // If the click started inside a panel, never close (protects inputs, spinners, text selection)
-  if (_overlayMousedownInsidePanel) {
-    _overlayMousedownInsidePanel = false;
-    return;
-  }
-  // Only close if the click target is an open overlay itself AND not inside its panel
   const overlay = e.target.closest?.('.overlay.open');
-  if (overlay && !e.target.closest('.overlay-panel, #td-pomo-float')) {
-    if (LOCKED_OVERLAYS.has(overlay.id)) return; // focus/commit mode — no click-outside dismiss
+  const downEl = _overlayMousedownEl; _overlayMousedownEl = null;
+  if (!overlay) return;
+  if (LOCKED_OVERLAYS.has(overlay.id)) return; // focus/commit mode — no click-outside dismiss
+  // Close only when the press AND the release are both on the bare backdrop
+  // (the overlay element itself), not the panel or anything inside it.
+  const isBackdrop = el => el === overlay && !el.closest?.('#td-pomo-float');
+  if (isBackdrop(e.target) && isBackdrop(downEl)) {
     if (overlay.id === 'pomo-overlay') {
       document.getElementById('pomo-close')?.click();
     } else {
@@ -3100,7 +3101,13 @@ document.addEventListener('click', e => {
 });
 
 // Header action buttons
-document.getElementById('btn-notes')?.addEventListener('click', () => openOverlay('notes-overlay'));
+function openNotesPage() {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('btn-notes')?.classList.add('active');
+  showMainPanel('notes');
+}
+window.openNotesPage = openNotesPage;
+document.getElementById('btn-notes')?.addEventListener('click', openNotesPage);
 document.getElementById('btn-focus')?.addEventListener('click', () => {
   document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
   document.getElementById('btn-focus')?.classList.add('active');
@@ -3118,7 +3125,7 @@ const CMD_COMMANDS_BASE = [
   { label: 'Open Calendar',    icon: '◻', action: () => {}, keys: '' },
   { label: 'New Task',         icon: '+', action: () => {}, keys: 'N' },
   { label: 'Focus — Timedrift', icon: '◎', action: () => { showMainPanel('timedrift'); document.getElementById('left-nav')?.classList.add('collapsed'); }, keys: 'F' },
-  { label: 'Open Notes',       icon: '✎', action: () => openOverlay('notes-overlay'), keys: '' },
+  { label: 'Open Notes',       icon: '✎', action: () => openNotesPage(), keys: '' },
   { label: 'Ask Cosmos',       icon: '✦', action: () => openOverlay('claude-panel'), keys: '' },
   { label: 'Insights',         icon: '◈', action: () => showMainPanel('insights'), keys: '' },
   { label: 'Habits',           icon: '◎', action: () => showMainPanel('habits'), keys: '' },
@@ -5004,15 +5011,27 @@ function renderAtkDetail() {
 
   const eyebrow = `${cat ? escHtml(cat.label.toUpperCase()) : 'NO CATEGORY'}${proj ? ' · ' + escHtml(proj.projectTitle.toUpperCase()) : ''}`;
 
+  // Inline-edit option lists (this panel edits every field in place — no modal).
+  const catOptions = '<option value="">No category</option>' +
+    Object.entries(CATEGORIES).map(([k, v]) =>
+      `<option value="${escAttr(k)}"${task.category === k ? ' selected' : ''}>${escHtml(v.label)}</option>`).join('');
+  const RECURS = [['', 'One-time'], ['daily', 'Daily'], ['weekdays', 'Weekdays'], ['weekly', 'Weekly'], ['monthly', 'Monthly'], ['yearly', 'Yearly']];
+  const recurVal = task.recurrence || '';
+  const recurCustom = recurVal && !RECURS.some(([v]) => v === recurVal)
+    ? `<option value="${escAttr(recurVal)}" selected>${escHtml(_recurLabel(recurVal))}</option>` : '';
+  const recurOptions = RECURS.map(([v, l]) => `<option value="${v}"${recurVal === v ? ' selected' : ''}>${l}</option>`).join('') + recurCustom;
+  const ENERGIES = [['', '— None'], ['quick', '⚡ Quick'], ['deep', '🧠 Deep'], ['shallow', '💬 Shallow'], ['admin', '📅 Meeting'], ['creative', '🎨 Creative']];
+  const energyOptions = ENERGIES.map(([v, l]) => `<option value="${v}"${(task.energyType || '') === v ? ' selected' : ''}>${l}</option>`).join('');
+
   el.innerHTML = `
     <div class="atk-detail-head">
       <div class="atk-detail-topline">
         <span class="atk-catdot" style="${cat ? `background:${catClr};box-shadow:0 0 6px ${catClr}88` : 'background:transparent;border:1px solid rgba(255,255,255,.15)'}"></span>
-        <span class="atk-tel atk-prio-click" data-atk-edit title="Click to edit category">${eyebrow}</span>
+        <span class="atk-tel">${eyebrow}</span>
         <div style="flex:1"></div>
         <button class="atk-detail-x" data-atk-close>×</button>
       </div>
-      <div class="atk-detail-title${task.done ? ' done' : ''}">${escHtml(task.title)}</div>
+      <div class="atk-detail-title${task.done ? ' done' : ''}" data-atk-title title="Click to rename">${escHtml(task.title)}</div>
     </div>
     <div class="atk-detail-body">
       <div>
@@ -5020,9 +5039,11 @@ function renderAtkDetail() {
         <button class="atk-status-btn${task.done ? ' done' : ''}" data-atk-toggle>${task.done ? '✓ Done — reopen' : '● Mark done'}</button>
       </div>
       <div class="atk-detail-grid">
-        <div><div class="atk-eyebrow">DUE</div><div class="atk-detail-val atk-prio-click" data-atk-edit title="Click to edit">${escHtml(dueTxt)}</div></div>
-        <div><div class="atk-eyebrow">RECURRENCE</div><div class="atk-detail-val atk-prio-click" data-atk-edit title="Click to edit">↻ ${escHtml(recurTxt)}</div></div>
+        <div><div class="atk-eyebrow">DUE</div><input type="date" class="atk-inline atk-inline-date" data-atk-due value="${escAttr(task.dueDate || '')}"></div>
         <div><div class="atk-eyebrow">PRIORITY</div><div class="atk-detail-val atk-prio-click" data-atk-prio title="Click to cycle"><span class="atk-priocell inline">${_atkPrioDots(task.priority)}</span> ${prioTxt}</div></div>
+        <div><div class="atk-eyebrow">CATEGORY</div><select class="atk-inline" data-atk-cat>${catOptions}</select></div>
+        <div><div class="atk-eyebrow">RECURRENCE</div><select class="atk-inline" data-atk-recur>${recurOptions}</select></div>
+        <div><div class="atk-eyebrow">ENERGY</div><select class="atk-inline" data-atk-energy>${energyOptions}</select></div>
         <div><div class="atk-eyebrow">CREATED</div><div class="atk-detail-val">${escHtml(created)}</div></div>
       </div>
       <div>
@@ -5036,7 +5057,6 @@ function renderAtkDetail() {
       </div>
     </div>
     <div class="atk-detail-foot">
-      <button class="atk-foot-btn" data-atk-edit>✎ Edit</button>
       ${task.done ? '' : '<button class="atk-foot-btn" data-atk-focus>◉ Focus</button>'}
       <button class="atk-foot-btn" data-atk-sched>☷ Schedule</button>
       <button class="atk-foot-btn" data-atk-dup title="Duplicate this task">⧉ Duplicate</button>
@@ -5044,7 +5064,27 @@ function renderAtkDetail() {
     </div>`;
 
   el.querySelector('[data-atk-close]').onclick = () => { _atkSelectedId = null; renderAllTasksList(); renderAtkDetail(); };
-  el.querySelectorAll('[data-atk-edit]').forEach(b => b.onclick = () => openTaskEditModal(task.id));
+  // Inline rename: click the title → input; Enter/blur saves, Esc cancels.
+  el.querySelector('[data-atk-title]').onclick = function () {
+    if (this.querySelector('input')) return;
+    const cur = task.title || '';
+    this.innerHTML = `<input class="atk-title-input" value="${escAttr(cur)}">`;
+    const inp = this.querySelector('input'); inp.focus(); inp.select();
+    const save = () => {
+      const v = inp.value.trim();
+      if (v && v !== cur) { updateTask(task.id, { title: v }); syncTaskTitleToMilestone(task.id, v); }
+      else renderAtkDetail();
+    };
+    inp.addEventListener('blur', save);
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+      else if (e.key === 'Escape') { inp.removeEventListener('blur', save); renderAtkDetail(); }
+    });
+  };
+  el.querySelector('[data-atk-due]').addEventListener('change', e => updateTask(task.id, { dueDate: e.target.value || null }));
+  el.querySelector('[data-atk-cat]').addEventListener('change', e => updateTask(task.id, { category: e.target.value || null }));
+  el.querySelector('[data-atk-recur]').addEventListener('change', e => updateTask(task.id, { recurrence: e.target.value || null }));
+  el.querySelector('[data-atk-energy]').addEventListener('change', e => updateTask(task.id, { energyType: e.target.value || null }));
   el.querySelector('[data-atk-toggle]').onclick = (e) => {
     // Reopening skips the prompt; completing routes through the theme/time popover
     if (task.done) toggleTask(task.id); else handleCheckClick(task.id, e);

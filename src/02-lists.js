@@ -23,7 +23,9 @@ function showMainPanel(name) {
   document.getElementById('panel-drill').style.display       = name === 'drill' ? 'flex' : 'none';
   document.getElementById('panel-timedrift').style.display   = name === 'timedrift' ? 'flex' : 'none';
   document.getElementById('panel-mindmap').style.display     = name === 'mindmap' ? 'flex' : 'none';
-  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', calendarx:'Calendar', focus:'Focus', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', mindmap:'Mind Map' };
+  const notesPanel = document.getElementById('panel-notes');
+  if (notesPanel) notesPanel.style.display = name === 'notes' ? 'flex' : 'none';
+  const titles = { default:'Today', milestones:'Planning', archived:'Archived', lists:'Lists', alltasks:'Tasks', calendarx:'Calendar', focus:'Focus', habits:'Habits & Routines', insights:'Insights', drill:'Drill', timedrift:'Timedrift', mindmap:'Mind Map', notes:'Notes' };
   const titleEl = document.getElementById('page-title');
   if (titleEl) titleEl.textContent = titles[name] || 'Today';
   if (name === 'default') { window.renderDashboardBoard?.(); }
@@ -46,6 +48,7 @@ function showMainPanel(name) {
   if (name === 'timedrift') { startTimedrift(); }
   else { stopTimedrift(); }
   if (name === 'mindmap') { window.initMindMap?.(); }
+  if (name === 'notes') { window.initNotesCanvas?.(); }
 }
 
 /* ══ LISTS — FIRESTORE CRUD ══ */

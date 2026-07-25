@@ -1299,6 +1299,18 @@
       <canvas id="mm-canvas" style="flex:1;display:block;cursor:default"></canvas>
     </div>
 
+    <!-- Notes Panel (scribble canvas — its own page) -->
+    <div id="panel-notes" style="display:none;flex:1;flex-direction:column;overflow:hidden;background:#000000">
+      <div class="overlay-header" style="padding:10px 16px;gap:8px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <span class="overlay-title" style="font-size:15px;flex:none">✎ Notes</span>
+        <div id="notes-pen-bar" style="display:flex;gap:3px;align-items:center"></div>
+        <div id="notes-color-bar" style="display:flex;gap:5px;align-items:center"></div>
+        <button class="scribble-btn" id="notes-eraser-btn">Erase</button>
+        <button class="scribble-btn" id="notes-clear-btn">Clear</button>
+        <button class="scribble-btn" id="notes-save-btn">↓ Save</button>
+      </div>
+      <canvas id="notes-canvas" style="width:100%;flex:1;background:var(--ink)"></canvas>
+    </div>
 
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
@@ -1354,23 +1366,6 @@
   </button>
   <div id="signin-error" style="display:none;margin-top:18px;font-family:var(--font-body);font-size:12px;color:var(--gold);text-align:center;max-width:280px;line-height:1.5"></div>
 </div>
-
-<!-- Notes overlay -->
-<div class="overlay" id="notes-overlay">
-  <div class="overlay-panel" style="width:min(1200px,98vw);height:96dvh;max-height:96dvh;display:flex;flex-direction:column">
-    <div class="overlay-header" style="padding:10px 16px;gap:8px;flex-wrap:wrap;flex-shrink:0">
-      <span class="overlay-title" style="font-size:15px;flex:none">✎ Notes</span>
-      <div id="notes-pen-bar" style="display:flex;gap:3px;align-items:center"></div>
-      <div id="notes-color-bar" style="display:flex;gap:5px;align-items:center"></div>
-      <button class="scribble-btn" id="notes-eraser-btn">Erase</button>
-      <button class="scribble-btn" id="notes-clear-btn">Clear</button>
-      <button class="scribble-btn" id="notes-save-btn">↓ Save</button>
-      <button class="overlay-close" style="margin-left:auto" data-close="notes-overlay">✕</button>
-    </div>
-    <canvas id="notes-canvas" style="width:100%;flex:1;background:var(--ink)"></canvas>
-  </div>
-</div>
-
 
 <!-- Commit ritual overlay (design: "What is the one thing?") -->
 <div class="overlay commit-ritual-ov" id="commit-ritual-overlay" style="z-index:840">
@@ -1946,7 +1941,7 @@
       <span class="drawer-item-icon">◎</span>
       Focus
     </div>
-    <div class="drawer-item" data-open="notes-overlay">
+    <div class="drawer-item" data-panel-nav="notes">
       <span class="drawer-item-icon">✎</span>
       Notes
     </div>
