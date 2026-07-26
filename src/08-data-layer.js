@@ -195,6 +195,7 @@ function initData() {
     drawCosmodex(); // immediate orb sync on task change
     if (_mainPanel === "insights") (window.renderInsightsX || renderInsights)();
     window._refreshPlanTaskViews?.();
+    window._remindMirrorSchedule?.(); // mirror tasks to Apple Reminders (desktop app)
   });
 
   _calEventsUnsub = onSnapshot(query(_uc('calEvents'), orderBy('date', 'asc')), snap => {

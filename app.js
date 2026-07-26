@@ -7838,6 +7838,7 @@ function initData() {
     drawCosmodex(); // immediate orb sync on task change
     if (_mainPanel === "insights") (window.renderInsightsX || renderInsights)();
     window._refreshPlanTaskViews?.();
+    window._remindMirrorSchedule?.(); // mirror tasks to Apple Reminders (desktop app)
   });
 
   _calEventsUnsub = onSnapshot(query(_uc('calEvents'), orderBy('date', 'asc')), snap => {
@@ -9439,15 +9440,30 @@ function showEventModal(ev, clientX, clientY) {
   }
 
   modal.classList.add('open');
-  // Position near click, keep within viewport
-  const mW = 320, mH = linkedTask ? 340 : 200;
+  // Position near click, clamped to the viewport. Measure the REAL rendered size
+  // (theme chips + commitment + action buttons make this far taller than a fixed
+  // guess) so the modal never spills below the screen.
   const vW = window.innerWidth, vH = window.innerHeight;
+  const margin = 10;
+  const mW = modal.offsetWidth || 320;
+  const mH = modal.offsetHeight || 340;
   let x = clientX + 14, y = clientY - 14;
-  if (x + mW > vW - 8) x = clientX - mW - 14;
-  if (y + mH > vH - 8) y = vH - mH - 8;
-  if (y < 8) y = 8;
+  if (x + mW > vW - margin) x = clientX - mW - 14;
+  if (x < margin) x = margin;
+  // Prefer sitting above the click if it would otherwise overflow the bottom.
+  if (y + mH > vH - margin) y = vH - mH - margin;
+  if (y < margin) y = margin;
   modal.style.left = x + 'px';
   modal.style.top  = y + 'px';
+  // If the modal is taller than the viewport, cap it and let it scroll.
+  if (mH > vH - margin * 2) {
+    modal.style.top = margin + 'px';
+    modal.style.maxHeight = (vH - margin * 2) + 'px';
+    modal.style.overflowY = 'auto';
+  } else {
+    modal.style.maxHeight = '';
+    modal.style.overflowY = '';
+  }
 }
 
 function hideEventModal() {
@@ -9512,11 +9528,20 @@ function initEventModal() {
   document.getElementById('eam-play')?.addEventListener('click', () => {
     if (!_eamEvent) return;
     const ev = _eamEvent;
+    // Resolve the task this event is linked to (either direction of the link).
+    const linkedTask = ev.taskId ? TASKS.find(t => t.id === ev.taskId)
+                                 : TASKS.find(t => t.calEventId === ev.id);
+    const dur = Math.max(1, Math.round(ev.duration || 60));
     hideEventModal();
-    showMainPanel('focus');
-    const titleEl = document.getElementById('pomo-ev-title');
-    if (titleEl) titleEl.textContent = ev.title;
-    window.setPomoEvent?.(ev);
+    showMainPanel('focus');            // builds/opens the focus overlay
+    if (linkedTask) {
+      // Selects the task (highlights it in the list, sets the focus name) AND
+      // carries the event's duration into the timer.
+      window.setPomoTask?.(linkedTask, dur);
+    } else {
+      window.setPomoEvent?.(ev);       // event-only focus — still carries duration
+      window.setPomoTitle?.(ev.title); // show the event title as the focus name
+    }
   });
 
   // Close on outside click — but ignore clicks inside the confirm dialog that
@@ -12231,7 +12256,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
    FOCUS / POMODORO
 ───────────────────────────────────────────────────────────── */
 (function() {
-  const PMIN = 1, PMAX = 90;
+  const PMIN = 1, PMAX = 180;
 
   let pomoDur = 25;
   const pomo = { running: false, totalSecs: 25 * 60, remainSecs: 25 * 60, interval: null, sessions: 0, _endTarget: 0 };
@@ -12258,6 +12283,8 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     pomoDur = clamp(v);
     if (!pomo.running) { pomo.totalSecs = pomoDur * 60; pomo.remainSecs = pomoDur * 60; }
     const el = document.getElementById('pomo-sw-val'); if (el) el.textContent = String(pomoDur);
+    document.querySelectorAll('#pomo-presets .pomo-preset').forEach(b =>
+      b.classList.toggle('active', +b.dataset.preset === pomoDur));
     buildTicks(); renderPomo();
   }
 
@@ -12452,6 +12479,10 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   }
   document.getElementById('pomo-sw-minus')?.addEventListener('click', () => setDuration(pomoDur - 1));
   document.getElementById('pomo-sw-plus')?.addEventListener('click',  () => setDuration(pomoDur + 1));
+  // Quick-select duration pills (30 / 45 / 90).
+  document.getElementById('pomo-presets')?.addEventListener('click', e => {
+    const b = e.target.closest('.pomo-preset'); if (b) setDuration(+b.dataset.preset);
+  });
 
   // Start / Pause
   document.getElementById('pomo-start')?.addEventListener('click', () => {
@@ -12614,6 +12645,29 @@ const _ATK_SORTS = [
 ];
 const _ATK_PRIO_RANK = { high: 0, med: 1, low: 2 };
 
+// Collapsible groups for the default "All" view — so a big backlog stays
+// manageable. No-due-date sits on top and open; Overdue/Someday fold by default.
+// `open` is the first-run default; the user's toggles persist in localStorage.
+const _ATK_GROUPS = [
+  { id:'nodue',    label:'No due date', open:true,  test:(t, today)=> !t.someday && !t.dueDate },
+  { id:'today',    label:'Today',       open:true,  test:(t, today)=> !t.someday && t.dueDate === today },
+  { id:'upcoming', label:'Upcoming',    open:true,  test:(t, today)=> !t.someday && t.dueDate && t.dueDate > today },
+  { id:'overdue',  label:'Overdue',     open:false, test:(t, today)=> !t.someday && t.dueDate && t.dueDate < today },
+  { id:'someday',  label:'Someday',     open:false, test:(t)=> !!t.someday },
+];
+let _atkGroupState = null;
+function _atkGroupCollapsed(id, defOpen) {
+  if (!_atkGroupState) { try { _atkGroupState = JSON.parse(localStorage.getItem('cdx_atk_groups') || '{}'); } catch (e) { _atkGroupState = {}; } }
+  // Stored value is the "collapsed" boolean; fall back to the group's default.
+  return _atkGroupState[id] !== undefined ? _atkGroupState[id] : !defOpen;
+}
+function _atkToggleGroup(id, defOpen) {
+  const cur = _atkGroupCollapsed(id, defOpen);
+  _atkGroupState[id] = !cur;
+  try { localStorage.setItem('cdx_atk_groups', JSON.stringify(_atkGroupState)); } catch (e) {}
+  renderAllTasksList();
+}
+
 function _atkCreatedMs(t) {
   if (!t.createdAt) return 0;
   return t.createdAt.toDate ? t.createdAt.toDate().getTime() : new Date(t.createdAt).getTime();
@@ -12745,6 +12799,28 @@ function renderAllTasksList() {
     body.innerHTML = `<div class="atk-empty">— None —<br><span>Nothing matches this filter</span></div>`;
     return;
   }
+
+  // Grouped view only on the default "All" tab with no search — that's where a
+  // large backlog gets unwieldy. Any explicit filter/search stays a flat list so
+  // narrowing always shows every match (never hidden inside a collapsed group).
+  if (_atkFilter === 'all' && !q) {
+    _ATK_GROUPS.forEach(g => {
+      const groupRows = rows.filter(t => g.test(t, today));
+      if (!groupRows.length) return;
+      const collapsed = _atkGroupCollapsed(g.id, g.open);
+      const head = document.createElement('div');
+      head.className = 'atk-group-head' + (collapsed ? ' collapsed' : '') + (g.id === 'overdue' ? ' overdue' : '');
+      head.innerHTML =
+        `<span class="atk-group-chev">${collapsed ? '▸' : '▾'}</span>` +
+        `<span class="atk-group-label">${g.label}</span>` +
+        `<span class="atk-group-count">${groupRows.length}</span>`;
+      head.onclick = () => _atkToggleGroup(g.id, g.open);
+      body.appendChild(head);
+      if (!collapsed) groupRows.forEach(task => body.appendChild(buildAtkRow(task, projMap, today)));
+    });
+    return;
+  }
+
   rows.forEach(task => body.appendChild(buildAtkRow(task, projMap, today)));
 }
 
@@ -12871,6 +12947,13 @@ function renderAtkDetail() {
   const recurOptions = RECURS.map(([v, l]) => `<option value="${v}"${recurVal === v ? ' selected' : ''}>${l}</option>`).join('') + recurCustom;
   const ENERGIES = [['', '— None'], ['quick', '⚡ Quick'], ['deep', '🧠 Deep'], ['shallow', '💬 Shallow'], ['admin', '📅 Meeting'], ['creative', '🎨 Creative']];
   const energyOptions = ENERGIES.map(([v, l]) => `<option value="${v}"${(task.energyType || '') === v ? ' selected' : ''}>${l}</option>`).join('');
+  // Commitment (project) link — same source the event modal uses, so a task's
+  // lineage is editable from here too.
+  const commits = (typeof MILESTONE_PROJECTS !== 'undefined' ? MILESTONE_PROJECTS : [])
+    .filter(p => !p.isArchived)
+    .sort((a, b) => (b.bigRock ? 1 : 0) - (a.bigRock ? 1 : 0));
+  const commitOptions = '<option value="">No commitment</option>' +
+    commits.map(p => `<option value="${escAttr(p.id)}"${task.projectId === p.id ? ' selected' : ''}>${escHtml(p.title || 'Untitled')}</option>`).join('');
 
   el.innerHTML = `
     <div class="atk-detail-head">
@@ -12894,6 +12977,10 @@ function renderAtkDetail() {
         <div><div class="atk-eyebrow">RECURRENCE</div><select class="atk-inline" data-atk-recur>${recurOptions}</select></div>
         <div><div class="atk-eyebrow">ENERGY</div><select class="atk-inline" data-atk-energy>${energyOptions}</select></div>
         <div><div class="atk-eyebrow">CREATED</div><div class="atk-detail-val">${escHtml(created)}</div></div>
+      </div>
+      <div>
+        <div class="atk-eyebrow" style="margin-bottom:8px">COMMITMENT</div>
+        <select class="atk-inline" data-atk-commit>${commitOptions}</select>
       </div>
       <div>
         <div class="atk-eyebrow" style="margin-bottom:8px">NOTES</div>
@@ -12932,6 +13019,7 @@ function renderAtkDetail() {
   };
   el.querySelector('[data-atk-due]').addEventListener('change', e => updateTask(task.id, { dueDate: e.target.value || null }));
   el.querySelector('[data-atk-cat]').addEventListener('change', e => updateTask(task.id, { category: e.target.value || null }));
+  el.querySelector('[data-atk-commit]').addEventListener('change', e => updateTask(task.id, { projectId: e.target.value || null }));
   el.querySelector('[data-atk-recur]').addEventListener('change', e => updateTask(task.id, { recurrence: e.target.value || null }));
   el.querySelector('[data-atk-energy]').addEventListener('change', e => updateTask(task.id, { energyType: e.target.value || null }));
   el.querySelector('[data-atk-toggle]').onclick = (e) => {
@@ -13498,6 +13586,8 @@ document.getElementById('dash-add-ms')?.addEventListener('click', () => {
     ? window._planMilestonePicker(localDateStr(_dashCalDate))
     : document.getElementById('cal-add-milestone')?.click();
 });
+// Commit → the "one focus that cannot slip" ritual (same as the nav Commit).
+document.getElementById('dash-add-commit')?.addEventListener('click', () => openCommitRitual());
 // Day navigation (‹ today ›)
 document.getElementById('dash-cal-prev')?.addEventListener('click', () => _dashShiftDay(-1));
 document.getElementById('dash-cal-next')?.addEventListener('click', () => _dashShiftDay(1));
@@ -16683,4 +16773,77 @@ window.renderInsightsX = renderInsightsX;
   };
   // Manual trigger (e.g. from the console) for testing.
   window._calMirrorNow = run;
+})();
+/* ── Reminders mirror (desktop only) ──────────────────────────────────────
+   One-way push: open Cosmodex tasks are mirrored into a dedicated "Cosmodex"
+   list in Apple Reminders via the bundled EventKit helper, so they show up on
+   iPhone / Mac / Watch. Cosmodex is the source of truth — the helper reconciles
+   the full set each run (create / update / delete), so completing or deleting a
+   task removes it from the Reminders list. Only key fields are mirrored: task
+   name, due date, and subtasks (as a ☐/☑ checklist in the reminder's notes —
+   EventKit has no public API for real Reminders subtasks). Runs only inside the
+   Tauri app; the web build has no EventKit. */
+(function remindersMirror() {
+  const invoke = () => window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
+  let timer = null;
+  let running = false;
+  let dirtyWhileRunning = false;
+
+  // Local wall-clock date → epoch seconds at local midnight (all-day due).
+  function epochLocal(dateStr) {
+    const [y, m, d] = String(dateStr || '').split('-').map(Number);
+    if (!y || !m || !d) return null;
+    return Math.floor(new Date(y, m - 1, d, 0, 0, 0, 0).getTime() / 1000);
+  }
+
+  function buildDesired() {
+    const items = [];
+    // TASKS is a top-level `let` in the shared app.js scope — reachable by bare
+    // name here (same script), NOT via window.
+    const tasks = (typeof TASKS !== 'undefined' && TASKS) || [];
+    tasks.forEach(t => {
+      if (!t.id || t.done) return;                // mirror only open tasks
+      const title = (String(t.title || '').trim()) || 'Untitled';
+      const item = { id: t.id, title };
+      const due = t.dueDate ? epochLocal(t.dueDate) : null;
+      if (due != null) item.due = due;
+      const subs = t.subtasks || [];
+      if (subs.length) {
+        item.notes = subs
+          .map(s => `${s.done ? '☑' : '☐'} ${String(s.title || '').trim()}`)
+          .join('\n');
+      }
+      items.push(item);
+    });
+    return items;
+  }
+
+  async function run() {
+    const inv = invoke(); if (!inv) return;
+    if (running) { dirtyWhileRunning = true; return; }
+    running = true;
+    try {
+      const items = buildDesired();
+      const res = await inv('reminders_sync', { payload: JSON.stringify({ items }) });
+      console.debug('reminders mirror:', res);
+      if (/"error"/.test(String(res)) && typeof showToast === 'function') {
+        showToast('Reminders sync: ' + res, 'error');
+      }
+    } catch (e) {
+      console.warn('reminders mirror failed:', e);
+      if (typeof showToast === 'function') showToast('Reminders sync failed: ' + e, 'error');
+    } finally {
+      running = false;
+      if (dirtyWhileRunning) { dirtyWhileRunning = false; window._remindMirrorSchedule(); }
+    }
+  }
+
+  // Debounced trigger — called from the tasks snapshot handler.
+  window._remindMirrorSchedule = function () {
+    if (!invoke()) return;
+    clearTimeout(timer);
+    timer = setTimeout(run, 1800);
+  };
+  // Manual trigger (e.g. from the console) for testing.
+  window._remindMirrorNow = run;
 })();

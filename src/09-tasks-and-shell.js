@@ -5011,6 +5011,13 @@ function renderAtkDetail() {
   const recurOptions = RECURS.map(([v, l]) => `<option value="${v}"${recurVal === v ? ' selected' : ''}>${l}</option>`).join('') + recurCustom;
   const ENERGIES = [['', '— None'], ['quick', '⚡ Quick'], ['deep', '🧠 Deep'], ['shallow', '💬 Shallow'], ['admin', '📅 Meeting'], ['creative', '🎨 Creative']];
   const energyOptions = ENERGIES.map(([v, l]) => `<option value="${v}"${(task.energyType || '') === v ? ' selected' : ''}>${l}</option>`).join('');
+  // Commitment (project) link — same source the event modal uses, so a task's
+  // lineage is editable from here too.
+  const commits = (typeof MILESTONE_PROJECTS !== 'undefined' ? MILESTONE_PROJECTS : [])
+    .filter(p => !p.isArchived)
+    .sort((a, b) => (b.bigRock ? 1 : 0) - (a.bigRock ? 1 : 0));
+  const commitOptions = '<option value="">No commitment</option>' +
+    commits.map(p => `<option value="${escAttr(p.id)}"${task.projectId === p.id ? ' selected' : ''}>${escHtml(p.title || 'Untitled')}</option>`).join('');
 
   el.innerHTML = `
     <div class="atk-detail-head">
@@ -5034,6 +5041,10 @@ function renderAtkDetail() {
         <div><div class="atk-eyebrow">RECURRENCE</div><select class="atk-inline" data-atk-recur>${recurOptions}</select></div>
         <div><div class="atk-eyebrow">ENERGY</div><select class="atk-inline" data-atk-energy>${energyOptions}</select></div>
         <div><div class="atk-eyebrow">CREATED</div><div class="atk-detail-val">${escHtml(created)}</div></div>
+      </div>
+      <div>
+        <div class="atk-eyebrow" style="margin-bottom:8px">COMMITMENT</div>
+        <select class="atk-inline" data-atk-commit>${commitOptions}</select>
       </div>
       <div>
         <div class="atk-eyebrow" style="margin-bottom:8px">NOTES</div>
@@ -5072,6 +5083,7 @@ function renderAtkDetail() {
   };
   el.querySelector('[data-atk-due]').addEventListener('change', e => updateTask(task.id, { dueDate: e.target.value || null }));
   el.querySelector('[data-atk-cat]').addEventListener('change', e => updateTask(task.id, { category: e.target.value || null }));
+  el.querySelector('[data-atk-commit]').addEventListener('change', e => updateTask(task.id, { projectId: e.target.value || null }));
   el.querySelector('[data-atk-recur]').addEventListener('change', e => updateTask(task.id, { recurrence: e.target.value || null }));
   el.querySelector('[data-atk-energy]').addEventListener('change', e => updateTask(task.id, { energyType: e.target.value || null }));
   el.querySelector('[data-atk-toggle]').onclick = (e) => {
