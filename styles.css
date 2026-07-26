@@ -8430,6 +8430,9 @@ select.atk-inline option { background:#141414; color:#fff; }
   transition:all .25s var(--ease-glass);
 }
 .dash-btn:hover { border-color:rgba(255,255,255,0.32); color:#fff; transform:translateY(-1px); }
+/* Commit pill — neon accent to stand out among the add actions */
+.dash-btn-commit { background:rgba(57,255,20,0.08); border-color:var(--neon-dim); color:var(--neon); }
+.dash-btn-commit:hover { background:rgba(57,255,20,0.16); border-color:var(--neon); color:#fff; box-shadow:0 0 12px var(--neon-glow); }
 /* Day navigation ( ‹ Today › ) */
 .dash-cal-nav { display:flex; align-items:center; gap:2px; margin-right:4px;
   background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:2px; }
@@ -8933,6 +8936,11 @@ select.atk-inline option { background:#141414; color:#fff; }
   overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
 
 .focus-card .pomo-swipe-section { margin-top: 20px; }
+/* Focus duration preset pills (quick 30 / 45 / 90) */
+.pomo-presets { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+.pomo-preset { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.05em; padding: 6px 14px; border-radius: 100px; cursor: pointer; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); transition: all .18s var(--ease-glass); }
+.pomo-preset:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
+.pomo-preset.active { background: rgba(57,255,20,0.12); border-color: var(--neon-dim); color: var(--neon); }
 .focus-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
 .focus-liquid { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); color: #fff; border-radius: 8px;
   padding: 10px 20px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: all .2s var(--ease-glass); }

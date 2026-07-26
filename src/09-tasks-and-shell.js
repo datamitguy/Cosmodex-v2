@@ -1504,15 +1504,30 @@ function showEventModal(ev, clientX, clientY) {
   }
 
   modal.classList.add('open');
-  // Position near click, keep within viewport
-  const mW = 320, mH = linkedTask ? 340 : 200;
+  // Position near click, clamped to the viewport. Measure the REAL rendered size
+  // (theme chips + commitment + action buttons make this far taller than a fixed
+  // guess) so the modal never spills below the screen.
   const vW = window.innerWidth, vH = window.innerHeight;
+  const margin = 10;
+  const mW = modal.offsetWidth || 320;
+  const mH = modal.offsetHeight || 340;
   let x = clientX + 14, y = clientY - 14;
-  if (x + mW > vW - 8) x = clientX - mW - 14;
-  if (y + mH > vH - 8) y = vH - mH - 8;
-  if (y < 8) y = 8;
+  if (x + mW > vW - margin) x = clientX - mW - 14;
+  if (x < margin) x = margin;
+  // Prefer sitting above the click if it would otherwise overflow the bottom.
+  if (y + mH > vH - margin) y = vH - mH - margin;
+  if (y < margin) y = margin;
   modal.style.left = x + 'px';
   modal.style.top  = y + 'px';
+  // If the modal is taller than the viewport, cap it and let it scroll.
+  if (mH > vH - margin * 2) {
+    modal.style.top = margin + 'px';
+    modal.style.maxHeight = (vH - margin * 2) + 'px';
+    modal.style.overflowY = 'auto';
+  } else {
+    modal.style.maxHeight = '';
+    modal.style.overflowY = '';
+  }
 }
 
 function hideEventModal() {
@@ -1577,11 +1592,20 @@ function initEventModal() {
   document.getElementById('eam-play')?.addEventListener('click', () => {
     if (!_eamEvent) return;
     const ev = _eamEvent;
+    // Resolve the task this event is linked to (either direction of the link).
+    const linkedTask = ev.taskId ? TASKS.find(t => t.id === ev.taskId)
+                                 : TASKS.find(t => t.calEventId === ev.id);
+    const dur = Math.max(1, Math.round(ev.duration || 60));
     hideEventModal();
-    showMainPanel('focus');
-    const titleEl = document.getElementById('pomo-ev-title');
-    if (titleEl) titleEl.textContent = ev.title;
-    window.setPomoEvent?.(ev);
+    showMainPanel('focus');            // builds/opens the focus overlay
+    if (linkedTask) {
+      // Selects the task (highlights it in the list, sets the focus name) AND
+      // carries the event's duration into the timer.
+      window.setPomoTask?.(linkedTask, dur);
+    } else {
+      window.setPomoEvent?.(ev);       // event-only focus — still carries duration
+      window.setPomoTitle?.(ev.title); // show the event title as the focus name
+    }
   });
 
   // Close on outside click — but ignore clicks inside the confirm dialog that
@@ -4296,7 +4320,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
    FOCUS / POMODORO
 ───────────────────────────────────────────────────────────── */
 (function() {
-  const PMIN = 1, PMAX = 90;
+  const PMIN = 1, PMAX = 180;
 
   let pomoDur = 25;
   const pomo = { running: false, totalSecs: 25 * 60, remainSecs: 25 * 60, interval: null, sessions: 0, _endTarget: 0 };
@@ -4323,6 +4347,8 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     pomoDur = clamp(v);
     if (!pomo.running) { pomo.totalSecs = pomoDur * 60; pomo.remainSecs = pomoDur * 60; }
     const el = document.getElementById('pomo-sw-val'); if (el) el.textContent = String(pomoDur);
+    document.querySelectorAll('#pomo-presets .pomo-preset').forEach(b =>
+      b.classList.toggle('active', +b.dataset.preset === pomoDur));
     buildTicks(); renderPomo();
   }
 
@@ -4517,6 +4543,10 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
   }
   document.getElementById('pomo-sw-minus')?.addEventListener('click', () => setDuration(pomoDur - 1));
   document.getElementById('pomo-sw-plus')?.addEventListener('click',  () => setDuration(pomoDur + 1));
+  // Quick-select duration pills (30 / 45 / 90).
+  document.getElementById('pomo-presets')?.addEventListener('click', e => {
+    const b = e.target.closest('.pomo-preset'); if (b) setDuration(+b.dataset.preset);
+  });
 
   // Start / Pause
   document.getElementById('pomo-start')?.addEventListener('click', () => {
@@ -5563,6 +5593,8 @@ document.getElementById('dash-add-ms')?.addEventListener('click', () => {
     ? window._planMilestonePicker(localDateStr(_dashCalDate))
     : document.getElementById('cal-add-milestone')?.click();
 });
+// Commit → the "one focus that cannot slip" ritual (same as the nav Commit).
+document.getElementById('dash-add-commit')?.addEventListener('click', () => openCommitRitual());
 // Day navigation (‹ today ›)
 document.getElementById('dash-cal-prev')?.addEventListener('click', () => _dashShiftDay(-1));
 document.getElementById('dash-cal-next')?.addEventListener('click', () => _dashShiftDay(1));
