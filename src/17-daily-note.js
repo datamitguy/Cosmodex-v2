@@ -206,6 +206,29 @@
     let content = null;
     try { content = await invoke('read_daily_note', { date: dateStr }); } catch (e) { content = null; }
 
+    // Fold any iPhone quick-captures (Action Button → Shortcut → vault inbox)
+    // into TODAY's note under a "📥 Captured" section, then clear the inbox.
+    // Only touches today so past days are never rewritten by stray captures.
+    if (dateStr === localDateStr(new Date())) {
+      try {
+        const inbox = await invoke('read_capture_inbox');
+        if (inbox && inbox.trim()) {
+          if (content == null) {                       // no note yet → seed it first
+            let seed = '';
+            try { seed = await invoke('read_daily_template'); } catch (e) {}
+            content = (seed && seed.trim()) ? seed : `# ${label}\n\n`;
+          }
+          const cap = inbox.trim();
+          content = /^##\s*📥?\s*Captured/m.test(content)
+            ? content.replace(/\s*$/, '') + '\n' + cap + '\n'
+            : content.replace(/\s*$/, '') + '\n\n## 📥 Captured\n' + cap + '\n';
+          await invoke('write_daily_note', { date: dateStr, content });
+          await invoke('clear_capture_inbox');
+          if (typeof showToast === 'function') showToast('Captured notes folded into today', 'success');
+        }
+      } catch (e) { console.warn('capture flush failed:', e); }
+    }
+
     // No file yet — never auto-create; offer a button seeded from the template.
     if (content == null) {
       el.innerHTML = head + `</div>
