@@ -7804,6 +7804,15 @@ select.sched-input { background: #181818; }
 .atk-add input { flex:1; background:transparent; border:none; outline:none; font-family:var(--font-display); font-weight:300; font-size:16px; color:#fff; }
 .atk-add input::placeholder { color:rgba(255,255,255,.32); }
 .atk-list { border-top:none; }
+/* Collapsible task groups (No due date / Today / Upcoming / Overdue / Someday) */
+.atk-group-head { display:flex; align-items:center; gap:9px; padding:11px 6px 7px; cursor:pointer; user-select:none; border-bottom:1px solid rgba(255,255,255,.05); position:sticky; top:0; background:var(--ink,#000); z-index:2; }
+.atk-group-head:hover .atk-group-label { color:#fff; }
+.atk-group-chev { font-size:10px; color:rgba(255,255,255,.5); width:12px; text-align:center; transition:color .15s; }
+.atk-group-label { font-family:var(--font-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.72); transition:color .15s; }
+.atk-group-count { font-family:var(--font-mono); font-size:10px; color:rgba(255,255,255,.4); background:rgba(255,255,255,.05); border-radius:100px; padding:1px 8px; }
+.atk-group-head.collapsed .atk-group-label { color:rgba(255,255,255,.5); }
+.atk-group-head.overdue .atk-group-chev, .atk-group-head.overdue .atk-group-label { color:rgba(255,183,92,.9); }
+.atk-group-head.overdue .atk-group-count { background:rgba(255,183,92,.12); color:rgba(255,183,92,.95); }
 .atk-empty { padding:70px 0; text-align:center; font-family:var(--font-display); font-style:italic; font-size:17px; color:rgba(255,255,255,.4); }
 .atk-empty span { display:block; margin-top:8px; font-family:var(--font-mono); font-style:normal; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.3); }
 

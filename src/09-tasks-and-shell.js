@@ -4709,6 +4709,29 @@ const _ATK_SORTS = [
 ];
 const _ATK_PRIO_RANK = { high: 0, med: 1, low: 2 };
 
+// Collapsible groups for the default "All" view — so a big backlog stays
+// manageable. No-due-date sits on top and open; Overdue/Someday fold by default.
+// `open` is the first-run default; the user's toggles persist in localStorage.
+const _ATK_GROUPS = [
+  { id:'nodue',    label:'No due date', open:true,  test:(t, today)=> !t.someday && !t.dueDate },
+  { id:'today',    label:'Today',       open:true,  test:(t, today)=> !t.someday && t.dueDate === today },
+  { id:'upcoming', label:'Upcoming',    open:true,  test:(t, today)=> !t.someday && t.dueDate && t.dueDate > today },
+  { id:'overdue',  label:'Overdue',     open:false, test:(t, today)=> !t.someday && t.dueDate && t.dueDate < today },
+  { id:'someday',  label:'Someday',     open:false, test:(t)=> !!t.someday },
+];
+let _atkGroupState = null;
+function _atkGroupCollapsed(id, defOpen) {
+  if (!_atkGroupState) { try { _atkGroupState = JSON.parse(localStorage.getItem('cdx_atk_groups') || '{}'); } catch (e) { _atkGroupState = {}; } }
+  // Stored value is the "collapsed" boolean; fall back to the group's default.
+  return _atkGroupState[id] !== undefined ? _atkGroupState[id] : !defOpen;
+}
+function _atkToggleGroup(id, defOpen) {
+  const cur = _atkGroupCollapsed(id, defOpen);
+  _atkGroupState[id] = !cur;
+  try { localStorage.setItem('cdx_atk_groups', JSON.stringify(_atkGroupState)); } catch (e) {}
+  renderAllTasksList();
+}
+
 function _atkCreatedMs(t) {
   if (!t.createdAt) return 0;
   return t.createdAt.toDate ? t.createdAt.toDate().getTime() : new Date(t.createdAt).getTime();
@@ -4840,6 +4863,28 @@ function renderAllTasksList() {
     body.innerHTML = `<div class="atk-empty">— None —<br><span>Nothing matches this filter</span></div>`;
     return;
   }
+
+  // Grouped view only on the default "All" tab with no search — that's where a
+  // large backlog gets unwieldy. Any explicit filter/search stays a flat list so
+  // narrowing always shows every match (never hidden inside a collapsed group).
+  if (_atkFilter === 'all' && !q) {
+    _ATK_GROUPS.forEach(g => {
+      const groupRows = rows.filter(t => g.test(t, today));
+      if (!groupRows.length) return;
+      const collapsed = _atkGroupCollapsed(g.id, g.open);
+      const head = document.createElement('div');
+      head.className = 'atk-group-head' + (collapsed ? ' collapsed' : '') + (g.id === 'overdue' ? ' overdue' : '');
+      head.innerHTML =
+        `<span class="atk-group-chev">${collapsed ? '▸' : '▾'}</span>` +
+        `<span class="atk-group-label">${g.label}</span>` +
+        `<span class="atk-group-count">${groupRows.length}</span>`;
+      head.onclick = () => _atkToggleGroup(g.id, g.open);
+      body.appendChild(head);
+      if (!collapsed) groupRows.forEach(task => body.appendChild(buildAtkRow(task, projMap, today)));
+    });
+    return;
+  }
+
   rows.forEach(task => body.appendChild(buildAtkRow(task, projMap, today)));
 }
 
