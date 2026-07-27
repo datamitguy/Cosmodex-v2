@@ -8400,6 +8400,8 @@ select.atk-inline option { background:#141414; color:#fff; }
 .dash-note-toolbar button:hover { color:var(--neon); border-color:var(--neon-dim); background:rgba(57,255,20,0.06); }
 .dash-note-edit { min-height:340px; margin:0; }
 .dash-note-read { min-height:340px; }
+.dash-note-caps-hint { font-family:var(--font-mono); font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:10px; }
+.dash-note-caps { min-height:340px; margin:0; }
 .dash-note-preview .md-callout { border:1px solid rgba(57,255,20,0.16); border-left:3px solid var(--neon); border-radius:10px; padding:10px 14px; margin:0 0 12px; background:rgba(57,255,20,0.04); }
 .dash-note-preview .md-callout-t { font-family:var(--font-mono); font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--neon); margin-bottom:5px; }
 .dash-note-preview .md-callout .md-task { margin:2px 0; }

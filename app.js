@@ -16465,10 +16465,13 @@ window.renderInsightsX = renderInsightsX;
    so an edit made in Obsidian is picked up instead of being clobbered. */
 (function _dailyNoteModule() {
   let _saveTimer = null;
-  let _content = '';        // in-memory source of truth (raw markdown)
+  let _content = '';        // in-memory daily-note markdown
+  let _noteExists = false;  // does today's daily note file exist yet
+  let _capContent = '';     // in-memory capture-inbox markdown
+  let _capSaveTimer = null;
   let _focusHooked = false; // window focus/visibility listener attached once
   let _keysHooked = false;  // Cmd/Ctrl+E toggle listener attached once
-  let _mode = 'edit';       // 'edit' (textarea) | 'read' (rendered, locked)
+  let _mode = 'edit';       // 'edit' | 'read' (daily note) | 'captures' (inbox file)
 
   function _invoke() { const t = window.__TAURI__; return t && t.core && t.core.invoke; }
 
@@ -16566,14 +16569,39 @@ window.renderInsightsX = renderInsightsX;
     ta.dispatchEvent(new Event('input'));
   }
 
-  // One pane, two modes: Edit (raw-markdown textarea + toolbar) and Read (the
-  // rendered reading view, locked). The pills up top toggle between them.
+  // Body renderer for the current pill mode:
+  //   read     → rendered daily note (locked)
+  //   captures → the single running capture inbox (own file), editable
+  //   edit     → raw daily-note textarea + toolbar (or a create prompt if no note)
   function _renderBody(dateStr) {
     const body = document.getElementById('dash-note-body'); if (!body) return;
+
+    if (_mode === 'captures') { _renderCaptures(body); return; }
+
+    if (!_noteExists) {
+      // No daily note for this day yet — offer to create it (Edit/Read need one).
+      body.innerHTML =
+        `<div class="dash-note-empty">
+           <div class="dash-note-empty-t">No entry for this day.</div>
+           <button class="dash-note-create" id="dash-note-create" type="button">＋ Create note</button>
+         </div>`;
+      body.querySelector('#dash-note-create').onclick = async () => {
+        const invoke = _invoke(); if (!invoke) return;
+        let seed = '';
+        try { seed = await invoke('read_daily_template'); } catch (e) {}
+        if (!seed || !seed.trim()) seed = `# ${_label(dateStr)}\n\n`;
+        try { await invoke('write_daily_note', { date: dateStr, content: seed }); }
+        catch (e) { if (typeof showToast === 'function') showToast('Could not create the note', 'error'); return; }
+        window._dashRenderNote();
+      };
+      return;
+    }
+
     if (_mode === 'read') {
       body.innerHTML = `<div class="dash-note-preview dash-note-read">${_md(_content)}</div>`;
       return;
     }
+
     body.innerHTML =
       `<div class="dash-note-toolbar" id="dash-note-tb">
          <button type="button" data-md="h" title="Heading">H</button>
@@ -16598,13 +16626,42 @@ window.renderInsightsX = renderInsightsX;
     });
   }
 
-  // Flip Edit ⇄ Read in place (used by the pills and the Cmd/Ctrl+E shortcut).
-  // No-ops unless a note is actually loaded (the body exists on the dashboard).
+  // Captures view: the single "Capture Inbox" file (all iPhone captures land
+  // here and stay — no daily fold). Editable so it can be triaged/cleaned; saves
+  // straight back to that one file.
+  async function _renderCaptures(body) {
+    const invoke = _invoke();
+    body.innerHTML =
+      `<div class="dash-note-caps-hint">One running inbox for every capture — clean it out as you go.</div>
+       <textarea class="dash-note-textarea dash-note-caps" id="dash-cap-text" spellcheck="true" placeholder="Nothing captured yet. Use the iPhone Action Button to add here."></textarea>`;
+    const ta = body.querySelector('#dash-cap-text');
+    let content = '';
+    try { content = (await invoke('read_capture_file')) || ''; } catch (e) {}
+    _capContent = content;
+    ta.value = content;
+    ta.addEventListener('input', () => {
+      _capContent = ta.value; _status('Saving…');
+      clearTimeout(_capSaveTimer);
+      _capSaveTimer = setTimeout(async () => {
+        try { await invoke('write_capture_file', { content: _capContent }); _status('Saved'); }
+        catch (e) { _status('Save failed'); console.warn('capture save:', e); }
+      }, 600);
+    });
+  }
+
+  function _setEyebrow(label) {
+    const eb = document.getElementById('dash-note-eyebrow');
+    if (eb) eb.innerHTML = _mode === 'captures' ? '📥 CAPTURES · running inbox' : `✒ VALERIE · ${escHtml(label)}`;
+  }
+
+  // Cmd+E / the pills flip Edit ⇄ Read on the daily note. From Captures it
+  // returns to Edit. No-ops unless the note panel is on screen.
   function _toggleMode() {
     const el = document.getElementById('dash-note-panel');
     if (!el || !el.querySelector('#dash-note-body')) return;
     _mode = _mode === 'edit' ? 'read' : 'edit';
     el.querySelectorAll('#dash-note-pills button').forEach(b => b.classList.toggle('active', b.dataset.mode === _mode));
+    _setEyebrow(_label(localDateStr(_dashCalDate)));
     _renderBody(localDateStr(_dashCalDate));
   }
 
@@ -16631,7 +16688,8 @@ window.renderInsightsX = renderInsightsX;
     const reload = () => {
       if (document.hidden) return;
       if (!document.getElementById('dash-note-panel')) return;      // not on dashboard
-      if (document.activeElement && document.activeElement.id === 'dash-note-text') return; // editing here
+      const ae = document.activeElement;
+      if (ae && (ae.id === 'dash-note-text' || ae.id === 'dash-cap-text')) return; // editing here
       window._dashRenderNote && window._dashRenderNote();
     };
     window.addEventListener('focus', reload);
@@ -16643,11 +16701,10 @@ window.renderInsightsX = renderInsightsX;
     const dateStr = localDateStr(_dashCalDate);
     const invoke = _invoke();
     const label = _label(dateStr);
-    const head = `<div class="dash-note-head"><span class="dash-eyebrow">✒ VALERIE · ${escHtml(label)}</span>`;
 
     // Web (no filesystem): the diary lives in iCloud, reachable only from the Mac app.
     if (!invoke) {
-      el.innerHTML = head + `</div>
+      el.innerHTML = `<div class="dash-note-head"><span class="dash-eyebrow">✒ VALERIE · ${escHtml(label)}</span></div>
         <div class="dash-note-empty">Your diary lives in your iCloud vault. Open Cosmodex on your Mac to read or write this day’s entry.</div>`;
       return;
     }
@@ -16656,62 +16713,29 @@ window.renderInsightsX = renderInsightsX;
 
     let content = null;
     try { content = await invoke('read_daily_note', { date: dateStr }); } catch (e) { content = null; }
+    _noteExists = content != null;
+    _content = content || '';
 
-    // Fold any iPhone quick-captures (Action Button → Shortcut → vault inbox)
-    // into TODAY's note under a "📥 Captured" section, then clear the inbox.
-    // Only touches today so past days are never rewritten by stray captures.
-    if (dateStr === localDateStr(new Date())) {
-      try {
-        const inbox = await invoke('read_capture_inbox');
-        if (inbox && inbox.trim()) {
-          if (content == null) {                       // no note yet → seed it first
-            let seed = '';
-            try { seed = await invoke('read_daily_template'); } catch (e) {}
-            content = (seed && seed.trim()) ? seed : `# ${label}\n\n`;
-          }
-          const cap = inbox.trim();
-          content = /^##\s*📥?\s*Captured/m.test(content)
-            ? content.replace(/\s*$/, '') + '\n' + cap + '\n'
-            : content.replace(/\s*$/, '') + '\n\n## 📥 Captured\n' + cap + '\n';
-          await invoke('write_daily_note', { date: dateStr, content });
-          await invoke('clear_capture_inbox');
-          if (typeof showToast === 'function') showToast('Captured notes folded into today', 'success');
-        }
-      } catch (e) { console.warn('capture flush failed:', e); }
-    }
-
-    // No file yet — never auto-create; offer a button seeded from the template.
-    if (content == null) {
-      el.innerHTML = head + `</div>
-        <div class="dash-note-empty">
-          <div class="dash-note-empty-t">No entry for this day.</div>
-          <button class="dash-note-create" id="dash-note-create" type="button">＋ Create note</button>
-        </div>`;
-      el.querySelector('#dash-note-create').onclick = async () => {
-        let seed = '';
-        try { seed = await invoke('read_daily_template'); } catch (e) {}
-        if (!seed || !seed.trim()) seed = `# ${label}\n\n`;
-        try { await invoke('write_daily_note', { date: dateStr, content: seed }); }
-        catch (e) { if (typeof showToast === 'function') showToast('Could not create the note', 'error'); return; }
-        window._dashRenderNote();
-      };
-      return;
-    }
-
-    _content = content;
-    el.innerHTML = head +
-      `<div class="dash-note-actions">
-         <span class="dash-note-status" id="dash-note-status">Saved</span>
-         <div class="dash-note-pills" id="dash-note-pills" title="Toggle with ⌘E / Ctrl+E">
-           <button type="button" data-mode="edit"${_mode === 'edit' ? ' class="active"' : ''}>Edit</button>
-           <button type="button" data-mode="read"${_mode === 'read' ? ' class="active"' : ''}>Read</button>
+    // Pills always render (so Captures is reachable even before today's note
+    // exists). Body switches on the active mode.
+    const eyebrow = _mode === 'captures' ? '📥 CAPTURES · running inbox' : `✒ VALERIE · ${escHtml(label)}`;
+    el.innerHTML =
+      `<div class="dash-note-head"><span class="dash-eyebrow" id="dash-note-eyebrow">${eyebrow}</span>
+         <div class="dash-note-actions">
+           <span class="dash-note-status" id="dash-note-status">Saved</span>
+           <div class="dash-note-pills" id="dash-note-pills" title="⌘E toggles Edit / Read">
+             <button type="button" data-mode="edit"${_mode === 'edit' ? ' class="active"' : ''}>Edit</button>
+             <button type="button" data-mode="read"${_mode === 'read' ? ' class="active"' : ''}>Read</button>
+             <button type="button" data-mode="captures"${_mode === 'captures' ? ' class="active"' : ''}>📥 Captures</button>
+           </div>
          </div>
-       </div></div>
+       </div>
        <div class="dash-note-body" id="dash-note-body"></div>`;
     el.querySelector('#dash-note-pills').addEventListener('click', e => {
       const btn = e.target.closest('button[data-mode]'); if (!btn || btn.dataset.mode === _mode) return;
       _mode = btn.dataset.mode;
       el.querySelectorAll('#dash-note-pills button').forEach(b => b.classList.toggle('active', b.dataset.mode === _mode));
+      _setEyebrow(label);
       _renderBody(dateStr);
     });
     _renderBody(dateStr);
