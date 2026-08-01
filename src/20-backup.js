@@ -35,7 +35,7 @@ function _bkTable(headers, rows) {
 function buildBackupMarkdown() {
   const now = new Date();
   const stamp = localDateStr(now);
-  const projName = id => (MILESTONE_PROJECTS.find(p => p.id === id) || {}).name || '';
+  const projName = id => (MILESTONE_PROJECTS.find(p => p.id === id) || {}).title || '';
   const catName = k => (CATEGORIES[k] && (CATEGORIES[k].label || CATEGORIES[k].name)) || k || '';
 
   const tasks = (TASKS || []).map(t => [
@@ -52,7 +52,7 @@ function buildBackupMarkdown() {
   const commitments = (MILESTONE_PROJECTS || []).map(p => {
     const linked = (TASKS || []).filter(t => t.projectId === p.id);
     const done = linked.filter(t => t.done).length;
-    return [p.name, _bkDate(p.startDate), _bkDate(p.endDate), p.status,
+    return [p.title, _bkDate(p.startDate), _bkDate(p.endDate), p.isArchived ? 'archived' : 'active',
       linked.length, done, linked.length ? Math.round(done / linked.length * 100) + '%' : '—'];
   });
 

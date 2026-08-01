@@ -5682,18 +5682,6 @@ document.getElementById('dash-add-ms')?.addEventListener('click', () => {
 // Commit → the "one focus that cannot slip" ritual (same as the nav Commit).
 document.getElementById('dash-add-commit')?.addEventListener('click', () => openCommitRitual());
 
-/* Focus lens widget toggle — desktop only, so the pill stays hidden on the web. */
-(function _lensToggle() {
-  const btn = document.getElementById('dash-lens-toggle');
-  const invoke = window.__TAURI__?.core?.invoke;
-  if (!btn || !invoke) return;
-  btn.style.display = '';
-  const paint = open => btn.classList.toggle('active', !!open);
-  invoke('widget_is_open').then(paint).catch(() => {});
-  btn.addEventListener('click', () => {
-    invoke('widget_toggle').then(paint).catch(() => {});
-  });
-})();
 // Day navigation (‹ today ›)
 document.getElementById('dash-cal-prev')?.addEventListener('click', () => _dashShiftDay(-1));
 document.getElementById('dash-cal-next')?.addEventListener('click', () => _dashShiftDay(1));

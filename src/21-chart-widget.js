@@ -40,9 +40,9 @@
         // Streak is derived from the logs, not stored on the habit.
         .map(h => ({ id: h.id, title: h.name, done: !!comp[h.id], streak: _todayStreakDays(h.id) })),
       commit: (MILESTONE_PROJECTS || [])
-        .filter(p => p.status !== 'done' && p.status !== 'archived')
+        .filter(p => !p.isArchived)
         .map(p => ({
-          id: p.id, title: p.name, pct: projPct(p),
+          id: p.id, title: p.title, pct: projPct(p),
           // Carried so an orbit can be expanded to its tasks in place.
           tasks: (TASKS || []).filter(t => t.projectId === p.id).map(row)
         }))

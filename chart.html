@@ -23,8 +23,9 @@
 
   #top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
   #grip { font-size: 7px; letter-spacing: 1.4px; color: rgba(255,255,255,.30); }
-  #x { font-size: 9px; color: rgba(255,255,255,.35); cursor: pointer; padding: 0 2px; }
-  #x:hover { color: #39ff14; }
+  #chrome { display: flex; gap: 7px; }
+  #chrome span { font-size: 9px; color: rgba(255,255,255,.35); cursor: pointer; }
+  #chrome span:hover { color: #39ff14; }
 
   /* View toggle — the four catalogues this log can show. */
   #tabs { display: flex; gap: 3px; margin-bottom: 6px; }
@@ -69,19 +70,56 @@
   .ent.kid { padding-left: 12px; }
   .ent.kid .tx { font-size: 9px; color: rgba(255,255,255,.72); }
   .empty.kid { text-align: left; padding: 3px 0 3px 45px; font-size: 7.5px; }
+
+  /* Focus lens, folded into the log as a footer so there is one widget, not two. */
+  #lens {
+    display: flex; align-items: center; gap: 8px; margin-top: 6px; padding-top: 7px;
+    border-top: 1px solid rgba(255,255,255,.09); transition: opacity .25s ease;
+  }
+  #lens.idle { opacity: .62; }
+  #slab:hover #lens.idle { opacity: 1; }
+  #lc { flex: none; display: block; width: 46px; height: 46px; }
+  #lmid { flex: 1; min-width: 0; }
+  #ltime { font-size: 15px; letter-spacing: .5px; color: #fff; line-height: 1.1; }
+  #ltask { font-size: 6.5px; letter-spacing: 1.2px; color: rgba(255,255,255,.4);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #go {
+    flex: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    font-size: 9px; line-height: 20px; text-align: center; letter-spacing: -1px;
+    background: rgba(57,255,20,.14); border: 1px solid #39ff14; color: #39ff14;
+    box-shadow: 0 0 8px rgba(57,255,20,.22);
+  }
+  #go:hover { background: #39ff14; color: #06090c; }
+  #pills { display: flex; gap: 4px; justify-content: center; margin-top: 5px; }
+  #pills.hide { display: none; }
+  #pills b {
+    font-weight: 400; font-size: 8px; padding: 2px 8px; border-radius: 999px; cursor: pointer;
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.13); color: rgba(255,255,255,.6);
+  }
+  #pills b:hover { color: #fff; }
+  #pills b.on { background: #39ff14; border-color: #39ff14; color: #06090c; }
 </style>
 </head>
 <body>
 <div id="slab" data-tauri-drag-region>
   <div id="top" data-tauri-drag-region>
     <span id="grip" data-tauri-drag-region>⋮⋮ OBSERVATION LOG</span>
-    <span id="x" title="Close">✕</span>
+    <span id="chrome"><span id="mute" title="Mute">♪</span><span id="x" title="Close">✕</span></span>
   </div>
   <div id="tabs">
     <b data-v="habits">HABITS</b><b data-v="tasks">TODAY</b><b data-v="overdue">SLIPPED</b><b data-v="commit">ORBITS</b>
   </div>
   <div id="hdr">—</div>
   <div id="rows"></div>
+  <div id="lens">
+    <canvas id="lc" width="46" height="46"></canvas>
+    <div id="lmid">
+      <div id="ltime">30:00</div>
+      <div id="ltask">DEEP WORK</div>
+    </div>
+    <span id="go" title="Start">▶</span>
+  </div>
+  <div id="pills"><b data-d="30">30</b><b data-d="45">45</b><b data-d="90">90</b></div>
 </div>
 
 <script>
@@ -210,11 +248,146 @@
     if (T && T.core) T.core.invoke('chart_close').catch(function () {});
   });
 
+  /* ── Focus lens ─────────────────────────────────────────────────────────
+     Same gravitational-lens countdown as before, reduced to a 46px footer so
+     the log is the only widget on screen. The main window stays authoritative;
+     this mirrors it over the same events. */
+  var TAU = Math.PI * 2, NEON = '57,255,20';
+  var LW = 46, LX = 23, LY = 23, RE = 15.5, RH = 6.5, LFADE = 19, LEDGE = 22.5;
+  var lc = document.getElementById('lc');
+  var ldpr = Math.min(window.devicePixelRatio || 1, 2);
+  lc.width = LW * ldpr; lc.height = LW * ldpr;
+  var lx = lc.getContext('2d'); lx.scale(ldpr, ldpr);
+
+  var st = { running: false, endTarget: 0, totalSecs: 1800, remainSecs: 1800, dur: 30, title: '' };
+  function remain() {
+    return st.running ? Math.max(0, Math.round((st.endTarget - Date.now()) / 1000)) : st.remainSecs;
+  }
+  function prog() { return st.totalSecs > 0 ? Math.min(1, Math.max(0, 1 - remain() / st.totalSecs)) : 0; }
+  function fmt(s) {
+    var m = Math.floor(s / 60), q = Math.floor(s % 60);
+    return (m < 10 ? '0' : '') + m + ':' + (q < 10 ? '0' : '') + q;
+  }
+
+  var muted = localStorage.getItem('cdx_widget_muted') === '1', ac = null;
+  function audio() {
+    if (ac === null) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = false; } }
+    return ac || null;
+  }
+  function tick() {
+    if (muted) return; var a = audio(); if (!a) return;
+    var o = a.createOscillator(), g = a.createGain();
+    o.connect(g); g.connect(a.destination);
+    o.frequency.value = 1180; o.type = 'sine';
+    g.gain.setValueAtTime(0.035, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + 0.05);
+    o.start(); o.stop(a.currentTime + 0.06);
+  }
+  function chime() {
+    if (muted) return; var a = audio(); if (!a) return;
+    [528, 660, 792].forEach(function (f, i) {
+      var o = a.createOscillator(), g = a.createGain();
+      o.connect(g); g.connect(a.destination);
+      o.frequency.value = f; g.gain.value = 0.16;
+      o.start(a.currentTime + i * 0.35);
+      g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + i * 0.35 + 0.9);
+      o.stop(a.currentTime + i * 0.35 + 0.95);
+    });
+  }
+  var mu = document.getElementById('mute');
+  function paintMute() { mu.style.color = muted ? 'rgba(255,255,255,.2)' : ''; mu.title = muted ? 'Unmute' : 'Mute'; }
+  mu.addEventListener('click', function () {
+    muted = !muted; localStorage.setItem('cdx_widget_muted', muted ? '1' : '0'); paintMute();
+  });
+  paintMute();
+
+  function rnd(i) { var x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+  function smooth(a, b, x) { var t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+
+  function drawLens(p, t) {
+    lx.clearRect(0, 0, LW, LW);
+    var spin = t * 0.04 * (1 + 2.6 * p);
+    for (var i = 0; i < 22; i++) {
+      var r = 3 + rnd(i) * 20;
+      var ba = rnd(i + 7) * TAU + spin * (0.55 + rnd(i + 3) * 0.9);
+      var rp = (r + Math.sqrt(r * r + 4 * RE * RE)) / 2;
+      if (rp > LEDGE) continue;
+      var mg = Math.min(1, (RE / Math.max(r, 2.2)) * 0.5);
+      var stretch = Math.min(0.5, (RE * RE) / (rp * rp) * 1.25);
+      var band = smooth(0, 2.2, Math.abs(rp - RE));
+      var edge = 1 - smooth(LFADE, LEDGE, rp);
+      var al = (0.16 + 0.44 * mg) * (0.65 + 0.35 * Math.sin(t * 1.8 + i * 2.1)) * (0.35 + 0.65 * band) * edge;
+      if (al < 0.03) continue;
+      lx.beginPath(); lx.arc(LX, LY, rp, ba - stretch, ba + stretch);
+      lx.strokeStyle = 'rgba(255,255,255,' + al.toFixed(3) + ')';
+      lx.lineWidth = 0.6 + mg * 0.7; lx.lineCap = 'round'; lx.stroke();
+    }
+    lx.beginPath(); lx.arc(LX, LY, RE, 0, TAU);
+    lx.strokeStyle = 'rgba(255,255,255,0.08)'; lx.lineWidth = 1.6; lx.stroke();
+    if (p > 0.001) {
+      lx.beginPath(); lx.arc(LX, LY, RE, -Math.PI / 2, -Math.PI / 2 + p * TAU);
+      lx.strokeStyle = 'rgba(' + NEON + ',' + (0.6 + 0.35 * p).toFixed(2) + ')';
+      lx.lineWidth = 1.6; lx.lineCap = 'round';
+      lx.shadowColor = 'rgba(' + NEON + ',0.85)';
+      lx.shadowBlur = 5 + (p > 0.999 ? 12 * (0.5 + 0.5 * Math.sin(t * 6)) : 0);
+      lx.stroke(); lx.shadowBlur = 0;
+    }
+    lx.beginPath(); lx.arc(LX, LY, RH, 0, TAU);
+    lx.fillStyle = 'rgba(2,4,7,0.94)'; lx.fill();
+    lx.strokeStyle = 'rgba(255,255,255,0.14)'; lx.lineWidth = 0.8; lx.stroke();
+  }
+
+  var go = document.getElementById('go'), pills = document.getElementById('pills');
+  go.addEventListener('click', function () { if (T && T.event) T.event.emit('pomo:cmd', { a: 'toggle' }); });
+  pills.addEventListener('click', function (e) {
+    var b = e.target.closest('b'); if (!b || !T || !T.event) return;
+    T.event.emit('pomo:cmd', { a: 'dur', v: +b.dataset.d });
+  });
+  function paintLens() {
+    [].forEach.call(pills.querySelectorAll('b'), function (b) {
+      b.classList.toggle('on', +b.dataset.d === st.dur);
+    });
+    // Durations are moot once a session is under way.
+    pills.classList.toggle('hide', st.running);
+    document.getElementById('lens').classList.toggle('idle', !st.running);
+    go.textContent = st.running ? '❚❚' : '▶';
+    go.title = st.running ? 'Pause' : 'Start';
+    document.getElementById('ltask').textContent = (st.title || 'DEEP WORK').toUpperCase();
+  }
+
+  var lastStep = -1;
   if (T && T.event) {
     T.event.listen('tw:data', function (e) { data = e.payload || data; render(); });
+    T.event.listen('pomo:state', function (e) {
+      var q = e.payload || {};
+      st.running = !!q.running; st.endTarget = q.endTarget || 0;
+      st.totalSecs = q.totalSecs || st.totalSecs;
+      st.remainSecs = typeof q.remainSecs === 'number' ? q.remainSecs : st.remainSecs;
+      st.dur = q.dur || st.dur; st.title = q.title || '';
+      lastStep = Math.floor(prog() * 12 + 1e-9);
+      paintLens();
+    });
     T.event.emit('tw:req', {});
+    T.event.emit('pomo:req', {});
   }
+  paintLens();
   render();
+
+  var acc = 0, last = performance.now();
+  (function frame(now) {
+    var dt = (now - last) / 1000; last = now;
+    var p = prog();
+    var step = Math.floor(p * 12 + 1e-9);
+    if (st.running && step !== lastStep) {
+      if (step >= 12) chime(); else if (step > lastStep) tick();
+      lastStep = step;
+    }
+    document.getElementById('ltime').textContent = fmt(remain());
+    // Idle costs ~8fps instead of 60 — this sits on screen all day.
+    acc += dt;
+    if (st.running || acc > 0.12) { acc = 0; drawLens(p, now / 1000); }
+    requestAnimationFrame(frame);
+  })(performance.now());
 })();
 </script>
 </body>

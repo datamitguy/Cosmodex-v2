@@ -13620,18 +13620,6 @@ document.getElementById('dash-add-ms')?.addEventListener('click', () => {
 // Commit → the "one focus that cannot slip" ritual (same as the nav Commit).
 document.getElementById('dash-add-commit')?.addEventListener('click', () => openCommitRitual());
 
-/* Focus lens widget toggle — desktop only, so the pill stays hidden on the web. */
-(function _lensToggle() {
-  const btn = document.getElementById('dash-lens-toggle');
-  const invoke = window.__TAURI__?.core?.invoke;
-  if (!btn || !invoke) return;
-  btn.style.display = '';
-  const paint = open => btn.classList.toggle('active', !!open);
-  invoke('widget_is_open').then(paint).catch(() => {});
-  btn.addEventListener('click', () => {
-    invoke('widget_toggle').then(paint).catch(() => {});
-  });
-})();
 // Day navigation (‹ today ›)
 document.getElementById('dash-cal-prev')?.addEventListener('click', () => _dashShiftDay(-1));
 document.getElementById('dash-cal-next')?.addEventListener('click', () => _dashShiftDay(1));
@@ -16975,7 +16963,7 @@ function _bkTable(headers, rows) {
 function buildBackupMarkdown() {
   const now = new Date();
   const stamp = localDateStr(now);
-  const projName = id => (MILESTONE_PROJECTS.find(p => p.id === id) || {}).name || '';
+  const projName = id => (MILESTONE_PROJECTS.find(p => p.id === id) || {}).title || '';
   const catName = k => (CATEGORIES[k] && (CATEGORIES[k].label || CATEGORIES[k].name)) || k || '';
 
   const tasks = (TASKS || []).map(t => [
@@ -16992,7 +16980,7 @@ function buildBackupMarkdown() {
   const commitments = (MILESTONE_PROJECTS || []).map(p => {
     const linked = (TASKS || []).filter(t => t.projectId === p.id);
     const done = linked.filter(t => t.done).length;
-    return [p.name, _bkDate(p.startDate), _bkDate(p.endDate), p.status,
+    return [p.title, _bkDate(p.startDate), _bkDate(p.endDate), p.isArchived ? 'archived' : 'active',
       linked.length, done, linked.length ? Math.round(done / linked.length * 100) + '%' : '—'];
   });
 
@@ -17149,9 +17137,9 @@ document.getElementById('settings-backup-btn')?.addEventListener('click', functi
         // Streak is derived from the logs, not stored on the habit.
         .map(h => ({ id: h.id, title: h.name, done: !!comp[h.id], streak: _todayStreakDays(h.id) })),
       commit: (MILESTONE_PROJECTS || [])
-        .filter(p => p.status !== 'done' && p.status !== 'archived')
+        .filter(p => !p.isArchived)
         .map(p => ({
-          id: p.id, title: p.name, pct: projPct(p),
+          id: p.id, title: p.title, pct: projPct(p),
           // Carried so an orbit can be expanded to its tasks in place.
           tasks: (TASKS || []).filter(t => t.projectId === p.id).map(row)
         }))
