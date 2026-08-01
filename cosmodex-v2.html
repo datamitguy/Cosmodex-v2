@@ -1822,6 +1822,11 @@
               </div>
             </div>
             <div class="settings-section">
+              <div class="settings-section-title">Backup &amp; Export</div>
+              <div class="settings-desc">Write a full snapshot — tasks, commitments, events, habit log and a daily roll-up — as one markdown file you can read in Obsidian and mine for patterns. Saves to <code style="font-family:var(--font-mono);font-size:11px">060 ▲ Star logs/Cosmodex Backups/</code> on desktop; downloads in the browser.</div>
+              <button class="btn-secondary" id="settings-backup-btn" style="font-size:11px;padding:8px 16px;color:var(--neon);border-color:var(--neon-dim);">◆ Export backup (.md)</button>
+            </div>
+            <div class="settings-section">
               <div class="settings-section-title">Local Cache</div>
               <div class="settings-desc">Clear locally cached settings and preferences (does not affect Firebase data).</div>
               <button class="btn-secondary" style="font-size:11px;padding:8px 16px;color:var(--gold);" onclick="cdxConfirm('Clear local cache? Firebase data is untouched.',{okLabel:'Clear',okColor:'#e05555',okBg:'rgba(224,85,85,0.18)',okBorder:'rgba(224,85,85,0.4)'}).then(ok=>{if(ok){localStorage.clear();showToast('Local cache cleared');}})">Clear Local Cache</button>
