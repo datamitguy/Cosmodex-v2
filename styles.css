@@ -8444,6 +8444,9 @@ select.atk-inline option { background:#141414; color:#fff; }
 /* Commit pill — neon accent to stand out among the add actions */
 .dash-btn-commit { background:rgba(57,255,20,0.08); border-color:var(--neon-dim); color:var(--neon); }
 .dash-btn-commit:hover { background:rgba(57,255,20,0.16); border-color:var(--neon); color:#fff; box-shadow:0 0 12px var(--neon-glow); }
+/* Floating focus-lens toggle (desktop app only) */
+.dash-btn-lens:hover { border-color:var(--neon-dim); color:var(--neon); }
+.dash-btn-lens.active { background:rgba(57,255,20,0.08); border-color:var(--neon-dim); color:var(--neon); }
 /* Day navigation ( ‹ Today › ) */
 .dash-cal-nav { display:flex; align-items:center; gap:2px; margin-right:4px;
   background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:2px; }

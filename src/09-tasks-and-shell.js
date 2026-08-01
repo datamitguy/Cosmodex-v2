@@ -4398,7 +4398,35 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     if (sw) { sw.style.opacity = pomo.running ? '0.4' : '1'; sw.style.pointerEvents = pomo.running ? 'none' : 'auto'; }
     if (!pomo.running) document.getElementById('pomo-lock-msg')?.classList.remove('show');
     drawPomoRing();
+    _pomoBroadcast();
   }
+
+  /* ── Focus lens widget bridge (desktop only) ──────────────────────────────
+     This window stays authoritative; the widget mirrors it. We send the wall-
+     clock end target rather than a ticking count, so the widget can render its
+     own countdown and only hears from us when something actually changes. */
+  let _pomoSig = '';
+  function _pomoBroadcast(force) {
+    const ev = window.__TAURI__?.event; if (!ev) return;
+    const title = _pomoEvent?.title || '';
+    const sig = [pomo.running, pomo._endTarget, pomo.totalSecs, pomo.remainSecs, pomoDur, title].join('|');
+    if (!force && sig === _pomoSig) return;
+    _pomoSig = sig;
+    ev.emit('pomo:state', {
+      running: pomo.running, endTarget: pomo._endTarget, totalSecs: pomo.totalSecs,
+      remainSecs: pomo.remainSecs, dur: pomoDur, title
+    });
+  }
+  (function _pomoWidgetBridge() {
+    const ev = window.__TAURI__?.event; if (!ev) return;
+    ev.listen('pomo:req', () => _pomoBroadcast(true));
+    ev.listen('pomo:cmd', e => {
+      const { a, v } = e.payload || {};
+      if (a === 'toggle') document.getElementById('pomo-start')?.click();
+      else if (a === 'reset') document.getElementById('pomo-reset')?.click();
+      else if (a === 'dur' && !pomo.running) setDuration(v);
+    });
+  })();
 
   function startBreathing() {
     _breathIdx = 0;
@@ -5652,6 +5680,19 @@ document.getElementById('dash-add-ms')?.addEventListener('click', () => {
 });
 // Commit → the "one focus that cannot slip" ritual (same as the nav Commit).
 document.getElementById('dash-add-commit')?.addEventListener('click', () => openCommitRitual());
+
+/* Focus lens widget toggle — desktop only, so the pill stays hidden on the web. */
+(function _lensToggle() {
+  const btn = document.getElementById('dash-lens-toggle');
+  const invoke = window.__TAURI__?.core?.invoke;
+  if (!btn || !invoke) return;
+  btn.style.display = '';
+  const paint = open => btn.classList.toggle('active', !!open);
+  invoke('widget_is_open').then(paint).catch(() => {});
+  btn.addEventListener('click', () => {
+    invoke('widget_toggle').then(paint).catch(() => {});
+  });
+})();
 // Day navigation (‹ today ›)
 document.getElementById('dash-cal-prev')?.addEventListener('click', () => _dashShiftDay(-1));
 document.getElementById('dash-cal-next')?.addEventListener('click', () => _dashShiftDay(1));
