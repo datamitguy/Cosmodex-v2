@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Observation Log</title>
+<style>
+  /* Shaped window — only the slab is painted, the desktop shows through the
+     rest. Everything is a drag region except the controls and the rows. */
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: transparent; overflow: hidden; color: rgba(255,255,255,.86);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9.5px;
+    -webkit-user-select: none; user-select: none; cursor: default;
+  }
+  #slab {
+    width: 264px; height: 100%; box-sizing: border-box;
+    background: rgba(6,9,12,.9); border: 1px solid rgba(255,255,255,.15);
+    border-radius: 6px; padding: 7px 10px 9px; display: flex; flex-direction: column;
+    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+    transition: opacity .25s ease; opacity: .9;
+  }
+  #slab:hover { opacity: 1; }
+
+  #top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  #grip { font-size: 7px; letter-spacing: 1.4px; color: rgba(255,255,255,.30); }
+  #x { font-size: 9px; color: rgba(255,255,255,.35); cursor: pointer; padding: 0 2px; }
+  #x:hover { color: #39ff14; }
+
+  /* View toggle — the four catalogues this log can show. */
+  #tabs { display: flex; gap: 3px; margin-bottom: 6px; }
+  #tabs b {
+    flex: 1; font-weight: 400; font-size: 7.5px; letter-spacing: .6px; text-align: center;
+    padding: 3px 0; border-radius: 3px; cursor: pointer;
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);
+    color: rgba(255,255,255,.5);
+  }
+  #tabs b:hover { color: rgba(255,255,255,.85); }
+  #tabs b.on { background: rgba(57,255,20,.13); border-color: rgba(57,255,20,.45); color: #39ff14; }
+
+  #hdr { font-size: 7px; letter-spacing: 1.5px; color: rgba(57,255,20,.8); margin-bottom: 5px; }
+  #rows { flex: 1; overflow-y: auto; overflow-x: hidden; }
+  #rows::-webkit-scrollbar { width: 3px; }
+  #rows::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 2px; }
+
+  .ent { display: flex; align-items: center; gap: 7px; padding: 3px 0; cursor: pointer; }
+  .ent:hover .tx { color: #fff; }
+  .mag { font-size: 7px; color: rgba(255,255,255,.28); width: 26px; flex: none; letter-spacing: -.2px; }
+  .st { width: 5px; height: 5px; border-radius: 50%; flex: none; }
+  .tx { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .ent.logged .tx { color: rgba(255,255,255,.3); text-decoration: line-through; }
+  .sub { font-size: 7px; color: rgba(255,255,255,.3); flex: none; }
+  .empty { color: rgba(255,255,255,.28); font-size: 8px; padding: 10px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div id="slab" data-tauri-drag-region>
+  <div id="top" data-tauri-drag-region>
+    <span id="grip" data-tauri-drag-region>⋮⋮ OBSERVATION LOG</span>
+    <span id="x" title="Close">✕</span>
+  </div>
+  <div id="tabs">
+    <b data-v="tasks">TODAY</b><b data-v="overdue">SLIPPED</b><b data-v="habits">HABITS</b><b data-v="commit">ORBITS</b>
+  </div>
+  <div id="hdr">—</div>
+  <div id="rows"></div>
+</div>
+
+<script>
+(function () {
+  var T = window.__TAURI__;
+  var view = localStorage.getItem('cdx_chart_view') || 'tasks';
+  var data = { tasks: [], overdue: [], habits: [], commit: [], date: '' };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  /* Apparent magnitude: brighter (more negative) = more important. Priority
+     sets the baseline, overdue brightens, and position dims down the list so
+     the column reads like a real catalogue rather than a repeated constant. */
+  function mag(item, i) {
+    var base = item.pri === 'high' ? -1.4 : item.pri === 'low' ? 3.2 : 0.9;
+    if (item.late) base -= 1.2;
+    if (item.done) base += 3;
+    return base + i * 0.35;
+  }
+  function starOf(m, done, late) {
+    var lum = Math.max(0.14, Math.min(1, 1 - (m + 1.5) / 7));
+    if (done) return { c: 'rgba(255,255,255,' + (lum * 0.3).toFixed(2) + ')', glow: '' };
+    if (late) return { c: 'rgba(255,183,92,' + lum.toFixed(2) + ')', glow: '0 0 5px rgba(255,183,92,.7)' };
+    if (m < -0.6) return { c: '#39ff14', glow: '0 0 6px #39ff14' };
+    return { c: 'rgba(255,255,255,' + lum.toFixed(2) + ')', glow: '' };
+  }
+
+  function render() {
+    [].forEach.call(document.querySelectorAll('#tabs b'), function (b) {
+      b.classList.toggle('on', b.dataset.v === view);
+    });
+    var list = data[view] || [], rows = document.getElementById('rows'), hdr = document.getElementById('hdr');
+    var d = (data.date || '').replace(/-/g, ' ');
+
+    if (view === 'habits') {
+      var done = list.filter(function (h) { return h.done; }).length;
+      hdr.textContent = d + ' · ' + list.length + ' HABITS · ' + done + ' LOGGED';
+    } else if (view === 'commit') {
+      hdr.textContent = d + ' · ' + list.length + ' ACTIVE ORBITS';
+    } else {
+      var lg = list.filter(function (t) { return t.done; }).length;
+      hdr.textContent = d + ' · ' + list.length + ' OBJECTS · ' + lg + ' LOGGED';
+    }
+
+    if (!list.length) {
+      // Nothing due today usually means it all slipped — say so rather than
+      // leaving the panel looking broken.
+      var slipped = (data.overdue || []).length;
+      var msg = view === 'overdue' ? 'no slipped orbits ✓'
+        : view === 'tasks' ? (slipped ? 'nothing due today · ' + slipped + ' slipped →' : 'nothing due today ✓')
+        : 'nothing catalogued';
+      rows.innerHTML = '<div class="empty">' + msg + '</div>';
+      return;
+    }
+
+    rows.innerHTML = list.map(function (it, i) {
+      var m, s, sub = '';
+      if (view === 'habits') {
+        m = it.done ? -1.4 : 1.6 + i * 0.3;
+        s = it.done ? { c: '#39ff14', glow: '0 0 6px #39ff14' } : starOf(m, false, false);
+        sub = it.streak ? it.streak + 'd' : '';
+      } else if (view === 'commit') {
+        m = -1.4 + (1 - it.pct / 100) * 4;
+        s = starOf(m, false, false);
+        sub = it.pct + '%';
+      } else {
+        m = mag(it, i);
+        s = starOf(m, it.done, it.late);
+        sub = it.due || '';
+      }
+      return '<div class="ent' + (it.done ? ' logged' : '') + '" data-id="' + esc(it.id) + '">' +
+        '<span class="mag">m ' + (m >= 0 ? ' ' : '−') + Math.abs(m).toFixed(1) + '</span>' +
+        '<span class="st" style="background:' + s.c + ';box-shadow:' + s.glow + '"></span>' +
+        '<span class="tx">' + esc(it.title) + '</span>' +
+        (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') +
+        '</div>';
+    }).join('');
+  }
+
+  document.getElementById('tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('b'); if (!b) return;
+    view = b.dataset.v; localStorage.setItem('cdx_chart_view', view); render();
+  });
+  document.getElementById('rows').addEventListener('click', function (e) {
+    var r = e.target.closest('.ent'); if (!r || !T || !T.event) return;
+    // Habits toggle in place; anything else hands off to the main window.
+    T.event.emit('tw:cmd', { a: view === 'habits' ? 'habit' : 'open', id: r.dataset.id, view: view });
+  });
+  document.getElementById('x').addEventListener('click', function () {
+    if (T && T.core) T.core.invoke('chart_close').catch(function () {});
+  });
+
+  if (T && T.event) {
+    T.event.listen('tw:data', function (e) { data = e.payload || data; render(); });
+    T.event.emit('tw:req', {});
+  }
+  render();
+})();
+</script>
+</body>
+</html>

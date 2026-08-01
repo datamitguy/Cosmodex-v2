@@ -196,6 +196,7 @@ function initData() {
     if (_mainPanel === "insights") (window.renderInsightsX || renderInsights)();
     window._refreshPlanTaskViews?.();
     window._remindMirrorSchedule?.(); // mirror tasks to Apple Reminders (desktop app)
+    window._chartSchedule?.();        // refresh the observation-log widget
   });
 
   _calEventsUnsub = onSnapshot(query(_uc('calEvents'), orderBy('date', 'asc')), snap => {

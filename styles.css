@@ -8444,7 +8444,7 @@ select.atk-inline option { background:#141414; color:#fff; }
 /* Commit pill — neon accent to stand out among the add actions */
 .dash-btn-commit { background:rgba(57,255,20,0.08); border-color:var(--neon-dim); color:var(--neon); }
 .dash-btn-commit:hover { background:rgba(57,255,20,0.16); border-color:var(--neon); color:#fff; box-shadow:0 0 12px var(--neon-glow); }
-/* Floating focus-lens toggle (desktop app only) */
+/* Floating widget toggles — focus lens and observation log (desktop app only) */
 .dash-btn-lens:hover { border-color:var(--neon-dim); color:var(--neon); }
 .dash-btn-lens.active { background:rgba(57,255,20,0.08); border-color:var(--neon-dim); color:var(--neon); }
 /* Day navigation ( ‹ Today › ) */

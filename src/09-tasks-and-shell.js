@@ -4501,6 +4501,7 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
     });
   }
 
+  window._pomoSelectTask = _pomoSelectTask;
   function _pomoSelectTask(task) {
     _pomoEvent = task ? { taskId: task.id, title: task.title, _taskOnly: true } : null;
     const titleEl = document.getElementById('pomo-ev-title');

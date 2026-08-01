@@ -43,6 +43,7 @@ function habitsSubscribe() {
       if (_habitsTab === 'today') renderToday();
       if (_habitsTab === 'habits') renderHabitsTab();
       if (_habitsTab === 'hinsights') renderHabitsInsights();
+      window._chartSchedule?.();
       if (_habitsTab === 'reflect') renderReflect();
       window.renderDashboardBoard?.(); window._hxAutoRefresh?.();
     }, err => console.warn('habitLogs onSnapshot:', err.message));
