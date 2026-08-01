@@ -37,10 +37,15 @@
         .sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1)).map(row),
       habits: (_habits || [])
         .filter(h => h.status !== 'graduated' && h.status !== 'archived')
-        .map(h => ({ id: h.id, title: h.name, done: !!comp[h.id], streak: h.streak || 0 })),
+        // Streak is derived from the logs, not stored on the habit.
+        .map(h => ({ id: h.id, title: h.name, done: !!comp[h.id], streak: _todayStreakDays(h.id) })),
       commit: (MILESTONE_PROJECTS || [])
         .filter(p => p.status !== 'done' && p.status !== 'archived')
-        .map(p => ({ id: p.id, title: p.name, pct: projPct(p) }))
+        .map(p => ({
+          id: p.id, title: p.name, pct: projPct(p),
+          // Carried so an orbit can be expanded to its tasks in place.
+          tasks: (TASKS || []).filter(t => t.projectId === p.id).map(row)
+        }))
     };
   }
 

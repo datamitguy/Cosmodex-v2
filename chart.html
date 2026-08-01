@@ -50,6 +50,25 @@
   .ent.logged .tx { color: rgba(255,255,255,.3); text-decoration: line-through; }
   .sub { font-size: 7px; color: rgba(255,255,255,.3); flex: none; }
   .empty { color: rgba(255,255,255,.28); font-size: 8px; padding: 10px 0; text-align: center; }
+
+  /* Habit tick box — the one row type you act on directly. */
+  .bx { width: 26px; flex: none; display: flex; justify-content: center; }
+  .bx i {
+    width: 10px; height: 10px; border-radius: 2px; display: grid; place-items: center;
+    border: 1px solid rgba(255,255,255,.34); font-style: normal; font-size: 7px;
+    color: transparent; line-height: 1;
+  }
+  .bx.on i { background: #39ff14; border-color: #39ff14; color: #06090c; box-shadow: 0 0 5px rgba(57,255,20,.6); }
+  .ent:hover .bx i { border-color: #39ff14; }
+
+  /* Orbits expand to the tasks riding on them. */
+  .chev { width: 26px; flex: none; font-size: 9px; color: rgba(255,255,255,.4); text-align: center;
+    transition: transform .15s ease; display: inline-block; }
+  .chev.open { transform: rotate(90deg); }
+  .ent.orb .tx { color: rgba(255,255,255,.9); }
+  .ent.kid { padding-left: 12px; }
+  .ent.kid .tx { font-size: 9px; color: rgba(255,255,255,.72); }
+  .empty.kid { text-align: left; padding: 3px 0 3px 45px; font-size: 7.5px; }
 </style>
 </head>
 <body>
@@ -59,7 +78,7 @@
     <span id="x" title="Close">✕</span>
   </div>
   <div id="tabs">
-    <b data-v="tasks">TODAY</b><b data-v="overdue">SLIPPED</b><b data-v="habits">HABITS</b><b data-v="commit">ORBITS</b>
+    <b data-v="habits">HABITS</b><b data-v="tasks">TODAY</b><b data-v="overdue">SLIPPED</b><b data-v="commit">ORBITS</b>
   </div>
   <div id="hdr">—</div>
   <div id="rows"></div>
@@ -68,7 +87,8 @@
 <script>
 (function () {
   var T = window.__TAURI__;
-  var view = localStorage.getItem('cdx_chart_view') || 'tasks';
+  var view = localStorage.getItem('cdx_chart_view') || 'habits';
+  var open = {};   // expanded orbits, by commitment id
   var data = { tasks: [], overdue: [], habits: [], commit: [], date: '' };
 
   function esc(s) {
@@ -122,26 +142,55 @@
       return;
     }
 
+    function magCell(m) {
+      return '<span class="mag">m ' + (m >= 0 ? ' ' : '−') + Math.abs(m).toFixed(1) + '</span>';
+    }
+    function star(s) {
+      return '<span class="st" style="background:' + s.c + ';box-shadow:' + s.glow + '"></span>';
+    }
+
     rows.innerHTML = list.map(function (it, i) {
-      var m, s, sub = '';
+      // Habits get a real checkbox — the star alone gave no hint it was clickable.
       if (view === 'habits') {
-        m = it.done ? -1.4 : 1.6 + i * 0.3;
-        s = it.done ? { c: '#39ff14', glow: '0 0 6px #39ff14' } : starOf(m, false, false);
-        sub = it.streak ? it.streak + 'd' : '';
-      } else if (view === 'commit') {
-        m = -1.4 + (1 - it.pct / 100) * 4;
-        s = starOf(m, false, false);
-        sub = it.pct + '%';
-      } else {
-        m = mag(it, i);
-        s = starOf(m, it.done, it.late);
-        sub = it.due || '';
+        var m = it.done ? -1.4 : 1.6 + i * 0.3;
+        return '<div class="ent' + (it.done ? ' logged' : '') + '" data-id="' + esc(it.id) + '">' +
+          '<span class="bx' + (it.done ? ' on' : '') + '"><i>✓</i></span>' +
+          star(it.done ? { c: '#39ff14', glow: '0 0 6px #39ff14' } : starOf(m, false, false)) +
+          '<span class="tx">' + esc(it.title) + '</span>' +
+          (it.streak ? '<span class="sub">' + esc(it.streak) + 'd</span>' : '') +
+          '</div>';
       }
+
+      // Orbits expand in place to the tasks riding on them.
+      if (view === 'commit') {
+        var mc = -1.4 + (1 - it.pct / 100) * 4;
+        var kids = it.tasks || [], isOpen = !!open[it.id];
+        var head = '<div class="ent orb" data-orb="' + esc(it.id) + '">' +
+          '<span class="chev' + (isOpen ? ' open' : '') + '">›</span>' +
+          star(starOf(mc, false, false)) +
+          '<span class="tx">' + esc(it.title) + '</span>' +
+          '<span class="sub">' + kids.filter(function (k) { return k.done; }).length +
+            '/' + kids.length + ' · ' + it.pct + '%</span>' +
+          '</div>';
+        if (!isOpen) return head;
+        var body = kids.length
+          ? kids.map(function (k, j) {
+              var mk = mag(k, j);
+              return '<div class="ent kid' + (k.done ? ' logged' : '') + '" data-id="' + esc(k.id) + '">' +
+                magCell(mk) + star(starOf(mk, k.done, k.late)) +
+                '<span class="tx">' + esc(k.title) + '</span>' +
+                (k.due ? '<span class="sub">' + esc(k.due) + '</span>' : '') +
+                '</div>';
+            }).join('')
+          : '<div class="empty kid">no tasks on this orbit</div>';
+        return head + body;
+      }
+
+      var mt = mag(it, i);
       return '<div class="ent' + (it.done ? ' logged' : '') + '" data-id="' + esc(it.id) + '">' +
-        '<span class="mag">m ' + (m >= 0 ? ' ' : '−') + Math.abs(m).toFixed(1) + '</span>' +
-        '<span class="st" style="background:' + s.c + ';box-shadow:' + s.glow + '"></span>' +
+        magCell(mt) + star(starOf(mt, it.done, it.late)) +
         '<span class="tx">' + esc(it.title) + '</span>' +
-        (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') +
+        (it.due ? '<span class="sub">' + esc(it.due) + '</span>' : '') +
         '</div>';
     }).join('');
   }
@@ -151,7 +200,9 @@
     view = b.dataset.v; localStorage.setItem('cdx_chart_view', view); render();
   });
   document.getElementById('rows').addEventListener('click', function (e) {
-    var r = e.target.closest('.ent'); if (!r || !T || !T.event) return;
+    var orb = e.target.closest('.orb');
+    if (orb) { open[orb.dataset.orb] = !open[orb.dataset.orb]; render(); return; }
+    var r = e.target.closest('.ent'); if (!r || !r.dataset.id || !T || !T.event) return;
     // Habits toggle in place; anything else hands off to the main window.
     T.event.emit('tw:cmd', { a: view === 'habits' ? 'habit' : 'open', id: r.dataset.id, view: view });
   });
