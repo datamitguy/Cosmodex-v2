@@ -42,7 +42,7 @@
       commit: (MILESTONE_PROJECTS || [])
         .filter(p => !p.isArchived)
         .map(p => ({
-          id: p.id, title: p.title, pct: projPct(p),
+          id: p.id, title: p.title, pct: projPct(p), end: p.endDate || '',
           // Carried so an orbit can be expanded to its tasks in place.
           tasks: (TASKS || []).filter(t => t.projectId === p.id).map(row)
         }))

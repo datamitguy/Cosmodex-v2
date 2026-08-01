@@ -71,6 +71,28 @@
   .ent.kid .tx { font-size: 9px; color: rgba(255,255,255,.72); }
   .empty.kid { text-align: left; padding: 3px 0 3px 45px; font-size: 7.5px; }
 
+  /* Drift nudge — surfaces after a stretch with no focus session running. */
+  #nudge {
+    margin-top: 6px; padding: 6px 8px 7px; border-radius: 4px; cursor: pointer;
+    background: rgba(57,255,20,.07); border: 1px solid rgba(57,255,20,.4);
+    animation: driftpulse 2.2s ease-in-out infinite;
+  }
+  #nudge.hide { display: none; }
+  #nlabel { font-size: 6.5px; letter-spacing: 1.5px; color: rgba(57,255,20,.85); margin-bottom: 3px; }
+  #ncommit {
+    font-size: 10px; font-weight: 700; color: #39ff14; text-shadow: 0 0 7px rgba(57,255,20,.5);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  #ntask {
+    font-size: 9px; font-weight: 700; color: rgba(255,255,255,.9); margin-top: 1px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  @keyframes driftpulse {
+    0%, 100% { box-shadow: 0 0 0 rgba(57,255,20,0); border-color: rgba(57,255,20,.32); }
+    50%      { box-shadow: 0 0 12px rgba(57,255,20,.28); border-color: rgba(57,255,20,.85); }
+  }
+  @media (prefers-reduced-motion: reduce) { #nudge { animation: none; } }
+
   /* Focus lens, folded into the log as a footer so there is one widget, not two. */
   #lens {
     display: flex; align-items: center; gap: 8px; margin-top: 6px; padding-top: 7px;
@@ -111,6 +133,11 @@
   </div>
   <div id="hdr">—</div>
   <div id="rows"></div>
+  <div id="nudge" class="hide">
+    <div id="nlabel">▲ DRIFTING</div>
+    <div id="ncommit">—</div>
+    <div id="ntask">—</div>
+  </div>
   <div id="lens">
     <canvas id="lc" width="46" height="46"></canvas>
     <div id="lmid">
@@ -270,10 +297,15 @@
   }
 
   var muted = localStorage.getItem('cdx_widget_muted') === '1', ac = null;
+  /* An AudioContext created without user activation starts suspended, and
+     nothing this window plays is ever heard. Resume it on any click in the
+     widget, and again before every sound in case the OS suspended it. */
   function audio() {
     if (ac === null) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { ac = false; } }
+    if (ac && ac.state === 'suspended') { try { ac.resume(); } catch (e) {} }
     return ac || null;
   }
+  document.addEventListener('pointerdown', function () { audio(); }, true);
   function tick() {
     if (muted) return; var a = audio(); if (!a) return;
     var o = a.createOscillator(), g = a.createGain();
@@ -298,6 +330,7 @@
   function paintMute() { mu.style.color = muted ? 'rgba(255,255,255,.2)' : ''; mu.title = muted ? 'Unmute' : 'Mute'; }
   mu.addEventListener('click', function () {
     muted = !muted; localStorage.setItem('cdx_widget_muted', muted ? '1' : '0'); paintMute();
+    if (!muted) tick();   // audible proof the sound works, on the click that unmutes
   });
   paintMute();
 
@@ -355,6 +388,66 @@
     document.getElementById('ltask').textContent = (st.title || 'DEEP WORK').toUpperCase();
   }
 
+  /* ── Drift nudge ────────────────────────────────────────────────────────
+     "Distracted" here means simply: no focus session has been running for a
+     while. Nothing watches your screen. After DRIFT_MIN of no session the log
+     pulses the commitment closest to its deadline and the one task on it to
+     pick up. Starting a session clears it; clicking it opens that task and
+     snoozes for half an hour so it can't badger you. */
+  var DRIFT_MIN = 20, SNOOZE_MIN = 30;
+  var idleSince = Date.now(), snoozeUntil = 0, nudged = false, nudgeTask = null;
+
+  function topCommitment() {
+    var live = (data.commit || []).filter(function (c) { return c.pct < 100; });
+    if (!live.length) return null;
+    live.sort(function (a, b) {
+      var ae = a.end || '9999', be = b.end || '9999';
+      if (ae !== be) return ae < be ? -1 : 1;      // nearest deadline first
+      return a.pct - b.pct;                         // then least progressed
+    });
+    return live[0];
+  }
+  function topTaskOf(c) {
+    var pool = ((c && c.tasks) || []).filter(function (t) { return !t.done; });
+    if (!pool.length) pool = (data.overdue || []).concat(data.tasks || []).filter(function (t) { return !t.done; });
+    if (!pool.length) return null;
+    pool.sort(function (a, b) {
+      if (!!a.late !== !!b.late) return a.late ? -1 : 1;
+      var rank = { high: 0, med: 1, low: 2 };
+      return (rank[a.pri] || 1) - (rank[b.pri] || 1);
+    });
+    return pool[0];
+  }
+
+  function evalNudge() {
+    var el = document.getElementById('nudge');
+    var due = !st.running && idleSince && Date.now() - idleSince > DRIFT_MIN * 60000
+      && Date.now() > snoozeUntil;
+    var c = due ? topCommitment() : null;
+    var t = due ? topTaskOf(c) : null;
+    if (!due || (!c && !t)) {
+      if (nudged) { nudged = false; nudgeTask = null; el.classList.add('hide'); }
+      return;
+    }
+    nudgeTask = t;
+    var mins = Math.floor((Date.now() - idleSince) / 60000);
+    document.getElementById('nlabel').textContent = '▲ DRIFTING · ' + mins + 'M NO SESSION';
+    document.getElementById('ncommit').textContent = c ? c.title : 'Next up';
+    document.getElementById('ntask').textContent = t ? '→ ' + t.title : '';
+    el.classList.remove('hide');
+    if (!nudged) { nudged = true; chime(); }   // sound once, on the way up
+  }
+
+  /* On a timer, not requestAnimationFrame: macOS pauses rAF while the window
+     is occluded, which is exactly when the drift check needs to keep running. */
+  setInterval(evalNudge, 5000);
+
+  document.getElementById('nudge').addEventListener('click', function () {
+    snoozeUntil = Date.now() + SNOOZE_MIN * 60000;
+    if (nudgeTask && T && T.event) T.event.emit('tw:cmd', { a: 'open', id: nudgeTask.id });
+    nudged = false; document.getElementById('nudge').classList.add('hide');
+  });
+
   var lastStep = -1;
   if (T && T.event) {
     T.event.listen('tw:data', function (e) { data = e.payload || data; render(); });
@@ -365,6 +458,9 @@
       st.remainSecs = typeof q.remainSecs === 'number' ? q.remainSecs : st.remainSecs;
       st.dur = q.dur || st.dur; st.title = q.title || '';
       lastStep = Math.floor(prog() * 12 + 1e-9);
+      // A running session is the whole point — it resets the drift clock.
+      if (st.running) { idleSince = null; nudged = false; document.getElementById('nudge').classList.add('hide'); }
+      else if (!idleSince) { idleSince = Date.now(); }
       paintLens();
     });
     T.event.emit('tw:req', {});
