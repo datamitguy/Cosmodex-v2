@@ -1,0 +1,2166 @@
+ <!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="referrer" content="origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com wss://*.firebaseio.com https://*.firebaseapp.com; img-src 'self' data:; frame-src https://cosmodex-fffbe.firebaseapp.com; object-src 'none';" />
+  <title>Cosmodex v2</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23000' stroke='%23fff' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='8' fill='none' stroke='%23fff' stroke-width='0.8' opacity='0.4'/%3E%3Ccircle cx='16' cy='8' r='1.5' fill='%23fff'/%3E%3Cline x1='16' y1='16' x2='16' y2='9' stroke='%23fff' stroke-width='0.8' opacity='0.6'/%3E%3C/svg%3E" />
+  <!-- PWA / iOS home-screen install -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Cosmodex" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Firebase (ESM CDN) — exposed as window.CDX_DB / window.CDX_AUTH / window.CDX_FB -->
+<script type="module">
+  import { initializeApp }
+    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signInWithCredential }
+    from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
+  import {
+    initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+    doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+    onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
+    deleteField, arrayUnion, arrayRemove, runTransaction
+  } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+  import { signOut } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyCg5lL_Xga0ZiSqZovx4V1ccL3WF-8sVqw",
+    authDomain:        "cosmodex-fffbe.firebaseapp.com",
+    projectId:         "cosmodex-fffbe",
+    storageBucket:     "cosmodex-fffbe.firebasestorage.app",
+    messagingSenderId: "756256258932",
+    appId:             "1:756256258932:web:688b03b04009b7d505ca21"
+  };
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  let _firestoreCache;
+  try {
+    _firestoreCache = persistentLocalCache({ tabManager: persistentMultipleTabManager() });
+  } catch(e) {
+    try { _firestoreCache = persistentLocalCache(); } catch(e2) { _firestoreCache = undefined; }
+  }
+  const db = _firestoreCache
+    ? initializeFirestore(app, { localCache: _firestoreCache })
+    : initializeFirestore(app, {});
+
+  window.CDX_DB   = db;
+  window.CDX_AUTH = auth;
+  window.CDX_FB   = {
+    doc, collection, addDoc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+    onSnapshot, writeBatch, serverTimestamp, query, orderBy, where, limit,
+    deleteField, arrayUnion, arrayRemove, runTransaction,
+    GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, signInWithCredential
+  };
+  Object.freeze(window.CDX_FB);
+
+  // Handle redirect sign-in result (new device / popup-blocked fallback)
+  getRedirectResult(auth).then(result => {
+    if (result && result.user) {
+      // onAuthStateChanged will fire and dispatch cdx-auth-ready
+    }
+  }).catch(err => {
+    console.error('Redirect sign-in error:', err);
+    // Surface the error on the login page if it's visible
+    window.__cdxRedirectAuthError = err.message || err.code || 'Redirect sign-in failed';
+    window.dispatchEvent(new CustomEvent('cdx-redirect-auth-error', { detail: err }));
+  });
+
+  // Restore existing Google session automatically on page load
+  onAuthStateChanged(auth, user => {
+    window.CDX_USER = user || null;
+    if (user) {
+      window.dispatchEvent(new Event('cdx-auth-ready'));
+    } else {
+      window.dispatchEvent(new Event('cdx-auth-signout'));
+    }
+  });
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Ambient top glow -->
+<div id="cdx-bg-glow"></div>
+
+<!-- Cursor spotlight -->
+<div id="cursor-spotlight"></div>
+
+<!-- ══ LEFT NAV ══ -->
+<nav id="left-nav">
+
+  <div class="nav-workspace">
+    <div class="nav-avatar" id="nav-avatar">
+      <svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="nav-orb-glow" x="-120%" y="-120%" width="340%" height="340%">
+            <feGaussianBlur stdDeviation="1.4" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="nav-axis-glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="0.8" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g transform="translate(17,17)">
+          <!-- Bottom arcs (bright side) -->
+          <path d="M -13,0 A 13,13 0 0,1 13,0" fill="none" stroke="rgba(255,255,255,0.32)" stroke-width="0.8"/>
+          <path d="M -8.5,0 A 8.5,8.5 0 0,1 8.5,0" fill="none" stroke="rgba(255,255,255,0.50)" stroke-width="0.8"/>
+          <path d="M -4.5,0 A 4.5,4.5 0 0,1 4.5,0" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="0.8"/>
+          <!-- Top arcs (dim side) -->
+          <path d="M 13,0 A 13,13 0 0,1 -13,0" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+          <path d="M 8.5,0 A 8.5,8.5 0 0,1 -8.5,0" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="0.5"/>
+          <path d="M 4.5,0 A 4.5,4.5 0 0,1 -4.5,0" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="0.5"/>
+          <!-- Vertical axis -->
+          <line x1="0" y1="-15" x2="0" y2="15" stroke="rgba(255,255,255,0.65)" stroke-width="0.5" filter="url(#nav-axis-glow)"/>
+          <!-- Tick marks at ring crossings (bottom) -->
+          <line x1="0" y1="12" x2="0" y2="14.5" stroke="rgba(255,255,255,0.85)" stroke-width="1.0"/>
+          <line x1="0" y1="7.5" x2="0" y2="9.5" stroke="rgba(255,255,255,0.65)" stroke-width="0.8"/>
+          <line x1="0" y1="3.5" x2="0" y2="5.5" stroke="rgba(255,255,255,0.45)" stroke-width="0.7"/>
+          <!-- Central orb -->
+          <circle cx="0" cy="0" r="2.2" fill="rgba(255,255,255,0.92)" filter="url(#nav-orb-glow)"/>
+        </g>
+      </svg>
+    </div>
+    <div class="nav-brand-block">
+      <span class="nav-brand-name">COSMODEX</span>
+    </div>
+  </div>
+
+  <div class="nav-sections">
+    <div class="nav-section">
+      <div class="nav-section-label">Workspace</div>
+      <div class="nav-item active" data-panel="today">
+        <span class="nav-item-icon">◈</span>
+        Dashboard
+        <span class="nav-item-count" id="nav-count-today">—</span>
+      </div>
+      <div class="nav-item" data-panel="lists" id="nav-lists">
+        <span class="nav-item-icon">▤</span>
+        Lists
+      </div>
+      <div class="nav-item" data-panel="alltasks" id="nav-alltasks">
+        <span class="nav-item-icon">✓</span>
+        Tasks
+      </div>
+      <div class="nav-item" data-panel="calendarx" id="nav-calendarx">
+        <span class="nav-item-icon">▦</span>
+        Calendar
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Life OS</div>
+      <div class="nav-item" data-panel="planning" id="nav-planning">
+        <span class="nav-item-icon">◉</span>
+        Planning
+      </div>
+      <div class="nav-item" data-panel="habits" id="nav-habits">
+        <span class="nav-item-icon">◎</span>
+        Habits
+      </div>
+      <div class="nav-item" data-panel="insights" id="nav-insights">
+        <span class="nav-item-icon">◈</span>
+        Insights
+      </div>
+      <div class="nav-item" data-panel="drill" id="nav-drill">
+        <span class="nav-item-icon">◆</span>
+        Drill
+      </div>
+      <div class="nav-item" data-panel="timedrift" id="nav-timedrift">
+        <span class="nav-item-icon">◌</span>
+        Timedrift
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-section nav-tools-section" style="padding:0 8px 4px;border-top:1px solid rgba(255,255,255,0.07)">
+    <div class="nav-section-label nav-tools-toggle" id="tools-toggle" title="Toggle tools">Tools <span class="tools-chevron">›</span></div>
+    <div class="nav-tools-items">
+      <div class="nav-item" id="btn-notes">
+        <span class="nav-item-icon">✎</span>
+        Notes
+      </div>
+      <div class="nav-item" id="btn-commit">
+        <span class="nav-item-icon">◈</span>
+        Commit
+      </div>
+      <div class="nav-item" id="btn-focus">
+        <span class="nav-item-icon">◎</span>
+        Focus
+      </div>
+      <div class="nav-item" id="btn-cosmodex-bubble" data-panel="cosmodex-bubble">
+        <span class="nav-item-icon">◉</span>
+        Bubble
+      </div>
+      <!-- Ask Cosmos hidden until a free AI API is wired up; code/overlay kept intact -->
+      <div class="nav-item" id="btn-cosmos" style="display:none">
+        <span class="nav-item-icon">✦</span>
+        Ask Cosmos
+      </div>
+      <div class="nav-item" id="btn-mindmap" data-panel="mindmap">
+        <span class="nav-item-icon">⬡</span>
+        Mind Map
+      </div>
+      <div class="nav-item" id="btn-archived" data-panel="archived">
+        <span class="nav-item-icon">⊡</span>
+        Archived
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-footer">
+    <button class="nav-footer-btn" id="theme-btn" title="Toggle theme">
+      <span id="theme-icon">◑</span>
+    </button>
+    <button class="nav-footer-btn" id="settings-btn" title="Settings">
+      <span>⚙</span>
+    </button>
+    <button class="nav-footer-btn" id="cmd-btn" title="Ctrl+Space">
+      <span style="letter-spacing:0.06em">⌘␣</span>
+    </button>
+    <button class="nav-footer-btn" id="nav-expand-btn" title="Expand nav">☰</button>
+  </div>
+</nav>
+
+<!-- Backdrop for the mobile off-canvas nav drawer -->
+<div id="nav-backdrop"></div>
+
+<!-- ══ APP SHELL ══ -->
+<div id="app-shell">
+
+  <!-- Main Content -->
+  <div id="main-content">
+
+    <!-- Persistent mobile top bar (menu + current page) — hidden on desktop -->
+    <header id="mobile-topbar">
+      <button id="mob-hamburger" type="button" aria-label="Open menu">☰</button>
+      <span id="page-title">Today</span>
+    </header>
+
+    <!-- Hero Summary Strip -->
+    <div id="dashboard-hero" class="dashboard-hero">
+      <div class="hero-time-block">
+        <span class="hero-time" id="hero-time">--:--</span>
+        <span class="hero-date" id="hero-date">Loading…</span>
+      </div>
+      <div class="hero-center">
+        <div class="dash-daynav-inner" id="dash-daynav">
+          <button class="dash-pill" data-dash-day="-1" type="button">Yesterday</button>
+          <button class="dash-pill active" data-dash-day="0" type="button">Today</button>
+          <button class="dash-pill" data-dash-day="1" type="button">Tomorrow</button>
+        </div>
+      </div>
+      <div class="hero-stats" id="hero-stats"></div>
+    </div>
+
+    <!-- Retired from the dashboard (replaced by #dash-board); kept in the DOM,
+         hidden, so the calendar engine's render paths keep working. -->
+    <div id="main-content-panels" style="display:none">
+
+    <!-- Calendar Panel -->
+    <div id="panel-calendar">
+      <div class="panel-toolbar">
+        <div class="view-tabs">
+          <button class="view-tab active" data-view="day">Day</button>
+          <button class="view-tab" data-view="week">Week</button>
+          <button class="view-tab" data-view="month">Month</button>
+        </div>
+        <div class="toolbar-sep"></div>
+        <div class="toolbar-nav">
+          <button class="toolbar-nav-btn" id="cal-prev">‹</button>
+          <span class="toolbar-date-label" id="cal-date-label">Loading…</span>
+          <button class="toolbar-nav-btn" id="cal-next">›</button>
+          <button class="toolbar-nav-btn" id="cal-today" style="width:auto;padding:0 8px;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;">Today</button>
+        </div>
+        <button class="btn-ghost" id="cal-add-milestone" style="margin-left:auto;font-size:10px;padding:5px 11px" title="Add a milestone">⚑ Milestone</button>
+      </div>
+
+      <!-- All-day event strip (fixed above scroll area) -->
+      <div class="cal-allday-row" id="cal-allday-row">
+        <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">All-day</span>
+      </div>
+
+      <!-- Day view (placeholder with hours) -->
+      <div class="cal-day-view" id="cal-day-view">
+        <!-- Current time indicator -->
+        <div class="cal-now-line" id="cal-now-line"></div>
+
+        <!-- Hour rows (5am–midnight) -->
+        <!-- JS will build these; placeholders below for skeleton -->
+        <div id="cal-hours-container">
+          <!-- Populated by buildDayView() -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Separator -->
+    <div class="panel-separator"></div>
+
+    <!-- Tasks Panel -->
+    <div id="panel-tasks">
+      <!-- Always-visible quick-add form -->
+      <div class="task-add-form" id="task-add-form" style="position:relative">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="task-add-input" id="task-add-input" type="text" placeholder="Add a task… (type @ to mention people)" autocomplete="off" style="flex:1" />
+          <button class="task-add-confirm" id="task-add-confirm">Add</button>
+          <button class="task-entropy-btn" id="task-entropy-btn" title="Entropy — let the universe pick (E)" aria-label="Entropy — pick a random task">⚄</button>
+        </div>
+        <!-- @mention dropdown -->
+        <div id="task-mention-dropdown" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--elevated);border:1px solid var(--border);border-radius:8px;min-width:200px;box-shadow:0 8px 24px rgba(0,0,0,0.4);padding:4px 0;max-height:200px;overflow-y:auto"></div>
+        <!-- Selected people pills -->
+        <div id="task-people-pills" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px"></div>
+        <div class="task-add-meta">
+          <select class="task-priority-select" id="task-add-priority">
+            <option value="low">Low</option>
+            <option value="med" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+          <select class="task-priority-select" id="task-add-category">
+            <!-- populated by rebuildCategorySelects() using defaultCategory setting -->
+          </select>
+          <input class="task-add-date" id="task-add-date" type="date" />
+          <div style="position:relative">
+            <button type="button" class="task-recur-btn" id="task-recur-btn" title="Set recurrence">↻ <span id="task-recur-label">One-time</span></button>
+            <div class="task-recur-popover" id="task-recur-popover">
+              <div class="task-recur-option selected" data-recur=""><span class="recur-check">✓</span>Does not repeat</div>
+              <div class="task-recur-option" data-recur="daily"><span class="recur-check"></span>Daily</div>
+              <div class="task-recur-option" data-recur="weekdays"><span class="recur-check"></span>Every weekday (Mon–Fri)</div>
+              <div class="task-recur-option" data-recur="weekly"><span class="recur-check"></span>Weekly</div>
+              <div class="task-recur-option" data-recur="monthly"><span class="recur-check"></span>Monthly</div>
+              <div class="task-recur-option" data-recur="yearly"><span class="recur-check"></span>Yearly</div>
+              <div class="task-recur-option" data-recur="custom"><span class="recur-check"></span>Custom…</div>
+              <div class="task-recur-custom-days" id="task-recur-custom-days" style="display:none">
+                <button type="button" class="task-recur-day-btn" data-day="Mon">M</button>
+                <button type="button" class="task-recur-day-btn" data-day="Tue">T</button>
+                <button type="button" class="task-recur-day-btn" data-day="Wed">W</button>
+                <button type="button" class="task-recur-day-btn" data-day="Thu">T</button>
+                <button type="button" class="task-recur-day-btn" data-day="Fri">F</button>
+                <button type="button" class="task-recur-day-btn" data-day="Sat">S</button>
+                <button type="button" class="task-recur-day-btn" data-day="Sun">S</button>
+              </div>
+            </div>
+          </div>
+          <div class="energy-picker" id="task-energy-picker">
+            <button type="button" class="energy-pill energy-quick"   data-energy="quick">⚡ Quick</button>
+            <button type="button" class="energy-pill energy-deep"    data-energy="deep">Deep</button>
+            <button type="button" class="energy-pill energy-shallow" data-energy="shallow">Shallow</button>
+            <button type="button" class="energy-pill energy-admin"   data-energy="admin">Meeting</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tasks-body" id="tasks-body">
+        <!-- Populated by renderTasks() via Firebase onSnapshot -->
+      </div>
+    </div>
+
+    </div><!-- /main-content-panels -->
+
+    <!-- ══ DASHBOARD (minimalist — replaces calendar+tasks panes) ══ -->
+    <div id="dash-board" class="dash-board">
+      <div class="dash-grid">
+
+        <!-- LEFT: compact today calendar (single spine) -->
+        <div class="dash-cal dash-glass">
+          <div class="dash-cal-head">
+            <div>
+              <div class="dash-eyebrow" id="dash-cal-eyebrow">TODAY</div>
+              <div class="dash-cal-title" id="dash-cal-title">—</div>
+            </div>
+            <div class="dash-cal-actions">
+              <button class="dash-btn" id="dash-add-task" title="Add a task">◈ Task</button>
+              <button class="dash-btn" id="dash-add-event" title="Add an event">＋ Event</button>
+              <button class="dash-btn" id="dash-add-ms" title="Add a milestone">⚑ Milestone</button>
+              <button class="dash-btn dash-btn-commit" id="dash-add-commit" title="Commit to one focus">◆ Commit</button>
+              <button class="dash-btn dash-btn-lens" id="dash-chart-toggle" title="Floating observation log + focus lens" style="display:none">★ Log</button>
+            </div>
+          </div>
+          <div class="dash-quick-add" id="dash-quick-add" style="display:none">
+            <input id="dash-quick-add-input" class="dash-quick-add-input" type="text" placeholder="New task for today…  ·  Enter to add, Esc to cancel" autocomplete="off" />
+          </div>
+          <div class="dash-cal-body" id="dash-cal-body"><!-- built by renderDashboardBoard() --></div>
+        </div>
+
+        <!-- RIGHT: telemetry cards -->
+        <div class="dash-side">
+          <div class="dash-card dash-glass" id="dash-nn"><!-- non-negotiable --></div>
+          <div class="dash-card dash-glass dash-tasks-card" id="dash-tasks"><!-- tasks due today · timebox --></div>
+          <div class="dash-card dash-glass" id="dash-rituals"><!-- today's habits + routines --></div>
+          <!-- merged deep-work + streak card, pinned to the bottom -->
+          <div class="dash-card dash-glass dash-focus-card" id="dash-focus">
+            <div id="dash-commit"><!-- deep work / commit --></div>
+            <div class="dash-focus-sep"></div>
+            <div id="dash-streak"><!-- streak --></div>
+          </div>
+        </div>
+
+      </div>
+      <!-- Valerie — daily note (desktop app writes markdown to the iCloud vault) -->
+      <div class="dash-note-panel dash-glass" id="dash-note-panel"></div>
+    </div>
+
+    <!-- Milestones Panel (shown via Planning nav item) -->
+    <div id="panel-milestones" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000">
+      <!-- Planning hero + 7-tab bar -->
+      <div class="plan-hero">
+        <div class="plan-hero-head">
+          <div class="plan-hero-eyebrow">PLANNING</div>
+          <div class="plan-hero-title">The map above the day</div>
+        </div>
+        <div class="plan-tabs2" id="plan-tabs2">
+          <button class="plan-tab2" data-ptab2="commitments">Commitments</button>
+          <button class="plan-tab2" data-ptab2="buckets">Buckets</button>
+          <span class="plan-tab2-sep"></span>
+          <button class="plan-tab2" data-ptab2="review">Weekly Review</button>
+          <button class="plan-tab2 active" data-ptab2="thisweek">This Week</button>
+          <button class="plan-tab2" data-ptab2="week">Week</button>
+          <button class="plan-tab2" data-ptab2="month">Month</button>
+          <button class="plan-tab2" data-ptab2="quarter">Quarter</button>
+          <button class="plan-tab2" data-ptab2="north">North Star</button>
+        </div>
+      </div>
+
+      <!-- VIEW A: Projects + Context -->
+      <div id="plan-view-projects" style="flex:1;display:flex;overflow:hidden;min-height:0">
+        <!-- Panel 1: Projects list (left) -->
+        <div class="plan-left" id="plan-left-panel">
+          <div class="plan-panel-header">
+            <span class="plan-panel-label">Projects</span>
+            <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
+<button id="ms-add-project-btn" class="btn-primary" style="font-size:10px;padding:5px 11px">+ New</button>
+              <button class="plan-panel-toggle" id="plan-left-toggle" title="Collapse">‹</button>
+            </div>
+          </div>
+          <div id="milestones-body" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <!-- Left collapsed rail -->
+        <div class="plan-left-rail" id="plan-left-rail">
+          <button class="plan-rail-btn" id="plan-left-expand" title="Expand projects">›</button>
+          <span class="plan-rail-label">Projects</span>
+        </div>
+        <!-- Panel 2: Milestone timeline (center, fills remaining space) -->
+        <div id="plan-ms-panel" style="display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border)">
+          <div class="plan-panel-header">
+            <span class="plan-panel-label" id="plan-ctx-title">Milestones</span>
+            <div style="display:flex;gap:6px;align-items:center;margin-left:auto">
+              <button id="plan-tl-add-ms" class="btn-primary" style="font-size:10px;padding:5px 11px;display:none">+ Milestone</button>
+              <button id="plan-edit-proj" class="btn-ghost" title="Edit initiative" style="font-size:10px;padding:5px 10px;display:none">✎ Edit</button>
+              <button id="plan-ms-close" class="plan-panel-toggle" title="Close project view" style="display:none">×</button>
+            </div>
+          </div>
+          <!-- Empty state -->
+          <div id="plan-ctx-empty" style="flex:1;display:flex;align-items:center;justify-content:center">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center;padding:20px">Click a project<br>to view milestones</span>
+          </div>
+          <!-- Content: milestone timeline -->
+          <div id="plan-ctx-content" style="flex:1;min-height:0;flex-direction:column;overflow:hidden;display:none">
+            <div id="plan-tl-body" style="flex:1;overflow-y:auto;padding:12px 14px"></div>
+          </div>
+        </div>
+        <!-- Panel 3: Lists (right, fixed width) -->
+        <div class="plan-right-ctx" id="plan-right-panel">
+          <div class="plan-panel-header">
+            <span class="plan-panel-label">Lists</span>
+            <button class="plan-panel-toggle" id="plan-right-toggle" title="Collapse">›</button>
+          </div>
+          <!-- Empty state -->
+          <div id="plan-lists-empty" style="flex:1;display:flex;align-items:center;justify-content:center">
+            <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;text-align:center;padding:20px">Select a project<br>to view lists</span>
+          </div>
+          <!-- Lists content -->
+          <div id="plan-tl-lists-body" style="flex:1;overflow-y:auto;padding:8px 10px 12px;display:none"></div>
+        </div>
+        <!-- Right collapsed rail -->
+        <div class="plan-right-rail" id="plan-right-rail">
+          <button class="plan-rail-btn" id="plan-right-expand" title="Expand lists">‹</button>
+          <span class="plan-rail-label">Lists</span>
+        </div>
+      </div>
+
+      <!-- VIEW B: Week + Month (full width) -->
+      <div id="plan-view-calendar" style="flex:1;display:none;overflow:hidden;min-height:0">
+        <div class="plan-center" style="flex:1">
+          <!-- Week pane -->
+          <div id="plan-right-week" class="planning-right-body" style="display:none">
+            <div class="plan-week-nav">
+              <button class="plan-nav-btn" id="plan-week-prev">←</button>
+              <span class="plan-nav-label" id="plan-week-label">—</span>
+              <button class="plan-nav-btn" id="plan-week-today">Today</button>
+              <button class="plan-nav-btn" id="plan-week-next">→</button>
+            </div>
+            <div style="display:flex;gap:20px;min-height:0">
+              <div style="width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+                <label class="plan-widget-label">Intention</label>
+                <textarea id="pw-intention" class="plan-widget-textarea" placeholder="What matters most this week?"></textarea>
+                <label class="plan-widget-label">Top 3 Priorities</label>
+                <input id="pw-p1" class="plan-priority-input" placeholder="1.">
+                <input id="pw-p2" class="plan-priority-input" placeholder="2.">
+                <input id="pw-p3" class="plan-priority-input" placeholder="3.">
+                <label class="plan-widget-label">Review — Went Well</label>
+                <textarea id="pw-went-well" class="plan-widget-textarea" placeholder="What went well?"></textarea>
+                <label class="plan-widget-label">Carry Forward</label>
+                <textarea id="pw-carry-fwd" class="plan-widget-textarea" placeholder="What to carry forward?"></textarea>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:12px">
+                <div id="pw-task-grid"></div>
+                <div id="pw-stats"></div>
+                <div id="pw-due-section"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Month pane -->
+          <div id="plan-right-month" class="planning-right-body" style="display:none">
+            <div class="plan-month-nav">
+              <button class="plan-nav-btn" id="plan-month-prev">←</button>
+              <span class="plan-nav-label" id="plan-month-label">—</span>
+              <button class="plan-nav-btn" id="plan-month-today">Today</button>
+              <button class="plan-nav-btn" id="plan-month-next">→</button>
+            </div>
+            <div style="display:flex;gap:20px;flex-wrap:wrap">
+              <div style="width:280px;flex-shrink:0">
+                <div class="plan-month-cal-grid" id="pm-cal-grid"></div>
+              </div>
+              <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:10px">
+                <label class="plan-widget-label">Month Intention</label>
+                <textarea id="pm-intention" class="plan-widget-textarea" placeholder="What do you want to accomplish this month?" style="min-height:72px"></textarea>
+                <label class="plan-widget-label">Milestones</label>
+                <div id="pm-milestones"></div>
+                <button id="plan-add-month-ms">+ Add Milestone</button>
+                <div id="pm-stats"></div>
+                <div id="pm-due-section"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Focus Buckets pane -->
+          <div id="plan-right-focus" class="planning-right-body">
+            <div class="focus-header">
+              <span class="plan-widget-label" style="margin-bottom:0">Focus Buckets</span>
+              <button class="plan-nav-btn" id="focus-add-bucket-btn">+ Bucket</button>
+            </div>
+            <div id="focus-bucket-row" class="focus-bucket-row"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW C: design tabs (This Week / Weekly Review / Quarter / North Star) -->
+      <div id="plan-view-design" style="flex:1;display:none;overflow-y:auto;min-height:0">
+        <div id="plan-design-body" class="plan-design-body"></div>
+      </div>
+    </div>
+
+    <!-- Timedrift Panel -->
+    <div id="panel-timedrift" style="display:none;flex:1;flex-direction:row;overflow:hidden;position:relative;background:#000000">
+      <!-- Right: Timedrift visualization (floating pomo panel lives here) -->
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative">
+        <!-- Focus Timer lives in the #pomo-overlay overlay (opened from the Focus
+             nav item), not in this panel. -->
+        <!-- Top 50%: timedrift visualization -->
+        <div id="td-top" style="position:relative;height:50%;overflow:hidden;flex-shrink:0;">
+          <div id="td-stage" style="position:absolute;left:50%;transform:translateX(-50%);top:0;">
+            <svg id="td-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible"></svg>
+          </div>
+        </div>
+        <!-- Bottom 50%: day timeline -->
+        <div id="td-bottom" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
+          <canvas id="td-tl-cvs" style="display:block;flex:1;width:100%;min-height:0;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Archived Panel (shown via Archived nav item) -->
+    <div id="panel-archived" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000">
+      <div style="padding:20px 28px 16px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:12px">
+        <span style="font-family:var(--font-display);font-size:22px;color:#fff;font-weight:600">Archived Commitments</span>
+        <span id="archived-count-badge" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:2px 8px"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 120px 160px 140px 120px;gap:0;padding:8px 28px;border-bottom:1px solid rgba(255,255,255,0.06)">
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Project</span>
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Category</span>
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Date Range</span>
+        <span style="font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Progress</span>
+        <span></span>
+      </div>
+      <div id="archived-page-body" style="flex:1;overflow-y:auto;padding:8px 0"></div>
+    </div>
+
+    <!-- Tasks Panel (full page — every captured task, opened from the Tasks nav item) -->
+    <div id="panel-alltasks" style="display:none;flex:1;min-height:0;flex-direction:column;overflow:hidden;background:#000000"></div>
+
+    <!-- Calendar Panel (design-system calendar — day/week/month, wired to calEvents + tasks) -->
+    <div id="panel-calendarx" style="display:none;flex:1;min-height:0;flex-direction:column;overflow-y:auto;background:#000000"></div>
+
+    <!-- Focus Panel (design-system commit page — real page, not a modal) -->
+    <div id="panel-focus" style="display:none;flex:1;min-height:0;flex-direction:column;overflow-y:auto;background:#000000">
+      <div class="focus-page">
+        <div class="focus-eyebrow">FOCUS · COMMIT MODE</div>
+        <div class="focus-headline">One focus that cannot slip…</div>
+        <div class="focus-cols">
+          <!-- LEFT: ring + timer + controls -->
+          <div class="focus-card">
+            <div class="focus-ring-wrap">
+              <!-- Design-system timedrift rings: concentric dashed circles, spin/spinRev never in sync -->
+              <svg class="focus-rings" viewBox="0 0 320 320" aria-hidden="true">
+                <circle class="focus-ring" cx="160" cy="160" r="150" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1" stroke-dasharray="2 6"  style="animation:spin 60s linear infinite"/>
+                <circle class="focus-ring" cx="160" cy="160" r="120" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1" stroke-dasharray="1 4"  style="animation:focusSpinRev 40s linear infinite"/>
+                <circle class="focus-ring" cx="160" cy="160" r="90"  fill="none" stroke="rgba(255,255,255,.30)" stroke-width="1" stroke-dasharray="6 10" style="animation:spin 90s linear infinite"/>
+                <circle class="focus-ring" cx="160" cy="160" r="60"  fill="none" stroke="rgba(255,255,255,.50)" stroke-width="1" stroke-dasharray="3 3"  style="animation:focusSpinRev 20s linear infinite"/>
+              </svg>
+              <canvas id="pomo-ring" width="320" height="320"></canvas>
+              <div class="focus-center">
+                <div class="focus-elapsed" id="pomo-phase">Ready</div>
+                <div class="focus-time" id="pomo-time">25:00</div>
+                <div class="focus-focusname" id="pomo-focusname">—</div>
+              </div>
+            </div>
+            <div class="pomo-swipe-section">
+              <div class="pomo-swipe-ctrl">
+                <button class="pomo-swipe-minus" id="pomo-sw-minus">−</button>
+                <div class="pomo-swipe-track" id="pomo-sw-track">
+                  <div class="pomo-swipe-inner">
+                    <div style="position:relative;display:flex;align-items:baseline;justify-content:center;margin-bottom:6px">
+                      <div class="pomo-swipe-val" id="pomo-sw-val">25</div>
+                      <div style="position:absolute;left:calc(50% + 16px);bottom:0;font-family:var(--font-mono);font-size:10px;color:var(--muted)">min</div>
+                    </div>
+                    <div class="pomo-ticks" id="pomo-ticks"></div>
+                  </div>
+                </div>
+                <button class="pomo-swipe-plus" id="pomo-sw-plus">+</button>
+              </div>
+              <div class="pomo-presets" id="pomo-presets">
+                <button type="button" class="pomo-preset" data-preset="30">30 min</button>
+                <button type="button" class="pomo-preset" data-preset="45">45 min</button>
+                <button type="button" class="pomo-preset" data-preset="90">90 min</button>
+              </div>
+            </div>
+            <div class="focus-btns">
+              <button class="focus-liquid focus-primary" id="pomo-start">Start</button>
+              <button class="focus-liquid" id="pomo-reset">Reset</button>
+              <button class="focus-leave" id="pomo-close">Leave</button>
+            </div>
+            <div id="pomo-complete-prompt" style="display:none;margin-top:14px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.25);border-radius:10px;padding:12px 16px;text-align:center">
+              <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;color:#fff;margin-bottom:10px">SESSION COMPLETE — TASK DONE?</div>
+              <div style="display:flex;gap:8px;justify-content:center">
+                <button id="pomo-done-yes" style="background:rgba(255,255,255,0.9);color:#000;border:none;border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer;font-weight:500">✓ Yes, mark done</button>
+                <button id="pomo-done-no" style="background:none;border:1px solid var(--border);color:var(--muted-readable);border-radius:8px;padding:7px 18px;font-family:var(--font-mono);font-size:11px;cursor:pointer">No, keep open</button>
+              </div>
+            </div>
+            <div class="focus-lockline">SESSION LOCKED · ESC TO LEAVE</div>
+          </div>
+          <!-- RIGHT: task selector + session checklist -->
+          <div class="focus-side">
+            <div class="focus-side-head">
+              <div class="focus-side-title">Tasks</div>
+              <div class="focus-eyebrow" id="pomo-tasks-lbl">FOCUS TASK · TODAY</div>
+            </div>
+            <input id="pomo-task-search" class="focus-search" placeholder="⌕ search all tasks…" autocomplete="off">
+            <div class="pomo-task-list focus-task-list" id="pomo-task-list"></div>
+            <div class="focus-checklist">
+              <div class="focus-checklist-lbl">Session checklist</div>
+              <div class="pomo-check-items" id="pomo-check-items"></div>
+              <div class="pomo-check-add">
+                <input type="text" id="pomo-check-input" placeholder="Add item…" autocomplete="off" />
+                <button class="pomo-check-add-btn" id="pomo-check-add-btn">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- hidden helpers kept for the timer JS -->
+      <span id="pomo-ev-title" style="display:none">—</span>
+      <button id="pomo-del-event-btn" style="display:none"></button>
+      <div id="pomo-lock-msg" style="display:none"><span class="pomo-lock-text"></span><button id="pomo-withdraw"></button></div>
+    </div>
+
+    <!-- Lists Panel (full page — design-kit composition) -->
+    <div id="panel-lists" style="display:none;flex:1;flex-direction:column;overflow-y:auto;background:#000000">
+      <div class="lists-page">
+        <!-- Page header -->
+        <div class="lists-page-head">
+          <div class="lists-eyebrow">LISTS</div>
+          <div class="lists-page-title">The not-a-task layer</div>
+          <div class="lists-page-sub">Collections. Wishes. Someday-maybes. Everything that shouldn't be pressured by a due date.</div>
+        </div>
+
+        <div class="lists-grid">
+          <!-- Left column: create + search + list of lists -->
+          <div class="lists-col-left">
+            <div class="lists-create-card">
+              <input id="lists-new-title" class="lists-create-input" placeholder="New list name…" autocomplete="off">
+              <select id="lists-new-type" class="lists-type-select" style="width:100%">
+                <option value="simple">✦ Simple list</option>
+                <option value="task">✓ Task list</option>
+                <option value="rated">★ Rated list</option>
+              </select>
+              <button id="lists-create-btn" class="lists-create-btn">＋ Create list</button>
+            </div>
+            <input id="lists-search" class="lists-search-input" placeholder="Search lists…" autocomplete="off">
+            <div id="lists-sidebar-items" class="lists-sidebar-items"></div>
+          </div>
+
+          <!-- Right column: selected list detail -->
+          <div class="lists-col-right">
+            <div id="lists-empty-state" class="lists-empty">
+              <div style="font-size:32px;opacity:0.3">▤</div>
+              <div class="lists-empty-label">Select a list or create one</div>
+            </div>
+
+            <div id="lists-detail-content" class="lists-detail" style="display:none">
+              <!-- Glass header card -->
+              <div class="lists-headcard">
+                <div class="lists-headcard-glow"></div>
+                <div id="lists-detail-color-strip" class="lists-headcard-icon">✦</div>
+                <div class="lists-headcard-main">
+                  <div class="lists-headcard-eyebrow" id="lists-detail-count"></div>
+                  <div id="lists-detail-name" class="lists-headcard-name" contenteditable="true"></div>
+                </div>
+                <select id="lists-detail-type-select" class="lists-type-select" title="List type">
+                  <option value="simple">✦ Simple</option>
+                  <option value="task">✓ Task</option>
+                  <option value="rated">★ Rated</option>
+                </select>
+                <div id="lists-delete-confirm" class="lists-delete-confirm" style="display:none">
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--gold)">Delete?</span>
+                  <button id="lists-delete-yes" class="btn-ghost" style="color:var(--gold);font-size:10px;padding:4px 10px">Yes</button>
+                  <button id="lists-delete-no" class="btn-ghost" style="font-size:10px;padding:4px 10px">No</button>
+                </div>
+                <button id="lists-delete-btn" class="lists-head-del" title="Delete list">🗑</button>
+              </div>
+
+              <!-- Purpose / notes -->
+              <div id="lists-meta-section" class="lists-meta">
+                <div class="lists-meta-field">
+                  <label>Purpose</label>
+                  <textarea id="lists-detail-why" rows="1" placeholder="Why this list exists…"></textarea>
+                </div>
+                <div class="lists-meta-field">
+                  <label>Notes</label>
+                  <textarea id="lists-detail-notes" rows="1" placeholder="Notes, context, criteria…"></textarea>
+                </div>
+              </div>
+
+              <!-- Items glass card -->
+              <div class="lists-items-card">
+                <div id="lists-detail-items"></div>
+                <div class="lists-additem">
+                  <span class="lists-additem-plus">＋</span>
+                  <input id="lists-item-input" class="lists-additem-input" placeholder="Add to list…" type="text" autocomplete="off">
+                  <button id="lists-item-add-btn" class="lists-additem-btn">Add</button>
+                </div>
+              </div>
+
+              <!-- Completion ribbon (task lists only) -->
+              <div id="lists-completion-ribbon" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Habits Panel (full page) -->
+    <div id="panel-habits" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <!-- Tab bar -->
+      <div style="height:38px;min-height:38px;display:flex;align-items:stretch;padding:0 16px;border-bottom:1px solid var(--border);background:rgba(14,14,14,0.5);gap:4px;overflow-x:auto;scrollbar-width:none">
+        <button class="habits-v2-tab active" data-htab="today">Today</button>
+        <button class="habits-v2-tab" data-htab="habits">Habits</button>
+        <button class="habits-v2-tab" data-htab="hinsights">Insights</button>
+        <button class="habits-v2-tab" data-htab="reflect">Reflect</button>
+      </div>
+
+      <!-- TODAY pane — the daily ritual -->
+      <div id="hpane-today" class="habits-v2-pane">
+        <!-- Hero strip -->
+        <div class="today-hero">
+          <div class="today-hero-left">
+            <div class="today-hero-time" id="today-hero-time">--:--</div>
+            <div class="today-hero-date" id="today-hero-date">—</div>
+          </div>
+          <div class="today-hero-mid">
+            <div class="today-hero-season" id="today-hero-season">—</div>
+            <div class="today-hero-quote" id="today-hero-quote">—</div>
+          </div>
+          <button class="today-rest-btn" id="today-rest-btn" title="Mark today as a rest day">◐ Rest day</button>
+        </div>
+
+        <!-- Mood & Energy check-in -->
+        <div class="today-checkin" id="today-checkin">
+          <div class="today-checkin-row">
+            <span class="today-checkin-label">Mood</span>
+            <div class="today-checkin-chips" data-check="mood">
+              <button class="today-chip" data-v="1">Dire</button>
+              <button class="today-chip" data-v="2">Low</button>
+              <button class="today-chip" data-v="3">OK</button>
+              <button class="today-chip" data-v="4">Good</button>
+              <button class="today-chip" data-v="5">Great</button>
+            </div>
+          </div>
+          <div class="today-checkin-row">
+            <span class="today-checkin-label">Energy</span>
+            <div class="today-checkin-chips" data-check="energy">
+              <button class="today-chip" data-v="1">Drained</button>
+              <button class="today-chip" data-v="2">Low</button>
+              <button class="today-chip" data-v="3">OK</button>
+              <button class="today-chip" data-v="4">Focused</button>
+              <button class="today-chip" data-v="5">Peak</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Non-Negotiable -->
+        <div class="today-nonneg">
+          <div class="today-nonneg-label">Today's Non-Negotiable</div>
+          <div class="today-nonneg-input" id="today-nonneg-input" contenteditable="true" data-placeholder="One focus that cannot slip…"></div>
+        </div>
+
+        <!-- Morning Mode collapsible -->
+        <div class="today-morning-mode" id="today-morning-mode">
+          <div class="today-morning-header" id="today-morning-header">
+            <span class="today-morning-chev">›</span>
+            <span class="today-morning-title">Morning Mode</span>
+            <span class="today-morning-progress" id="today-morning-progress">0/0</span>
+          </div>
+          <div class="today-morning-body" id="today-morning-body" style="display:none">
+            <div id="today-morning-steps" class="today-morning-steps"></div>
+          </div>
+        </div>
+
+        <!-- Anchor-grouped habit list -->
+        <div class="today-habits" id="today-habits"></div>
+
+        <!-- Quick add -->
+        <div class="today-add">
+          <input class="form-input" id="habit-new-inp" placeholder="Quick add a habit… (use Habits tab for full design)" autocomplete="off" style="font-size:13px">
+          <button id="habits-add-btn" class="btn-primary" style="white-space:nowrap;font-size:10px;padding:7px 14px">+ Add</button>
+        </div>
+
+        <!-- Legacy sections (retained until Phase 3/5 moves them to Habits/Reflect tabs) -->
+        <details class="today-legacy-wrap">
+          <summary class="today-legacy-summary">Routines · Identity · Keystones · Notes</summary>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Morning Routine</div>
+            <div id="routines-morning-list" class="routine-list-v2"></div>
+            <div class="habits-add-row-v2">
+              <input class="form-input" id="routine-morning-time" placeholder="06:00" style="width:72px;font-size:12px;padding:7px 8px;flex-shrink:0" autocomplete="off">
+              <input class="form-input" id="routine-morning-inp" placeholder="Add morning step…" autocomplete="off" style="font-size:13px;flex:1">
+              <button class="btn-primary" onclick="routineAdd('morning')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+            </div>
+          </div>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Evening Routine</div>
+            <div id="routines-evening-list" class="routine-list-v2"></div>
+            <div class="habits-add-row-v2">
+              <input class="form-input" id="routine-evening-time" placeholder="21:00" style="width:72px;font-size:12px;padding:7px 8px;flex-shrink:0" autocomplete="off">
+              <input class="form-input" id="routine-evening-inp" placeholder="Add evening step…" autocomplete="off" style="font-size:13px;flex:1">
+              <button class="btn-primary" onclick="routineAdd('evening')" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+            </div>
+          </div>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Identity &amp; Values</div>
+            <textarea class="form-input" id="behav-identity" rows="3" placeholder="I am someone who shows up consistently…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
+          </div>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Keystone Behaviours</div>
+            <div id="behav-keystone-list" class="habits-list-v2"></div>
+            <div class="habits-add-row-v2" style="margin-top:10px">
+              <input class="form-input" id="behav-keystone-inp" placeholder="Add keystone behaviour…" autocomplete="off" style="font-size:13px">
+              <button id="behav-keystone-add-btn" class="btn-primary" style="font-size:10px;padding:7px 12px;white-space:nowrap">+ Add</button>
+            </div>
+          </div>
+          <div class="habits-v2-section">
+            <div class="habits-v2-section-label">Reflection Notes</div>
+            <textarea class="form-input" id="behav-notes" rows="4" placeholder="This week I noticed…" oninput="behavAutoSave()" style="resize:vertical;font-family:var(--font-display);font-size:15px;line-height:1.7"></textarea>
+            <div id="behav-save-indicator" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;margin-top:4px;height:14px;transition:opacity 0.3s"></div>
+          </div>
+        </details>
+      </div>
+
+      <!-- REFLECT pane — weekly & seasonal review (Phase 5) -->
+      <div id="hpane-reflect" class="habits-v2-pane" style="display:none;max-width:960px">
+        <div class="habits-tab-header">
+          <div>
+            <div class="habits-tab-title">Reflect &amp; reset</div>
+            <div class="habits-tab-sub">Weekly review, values balance, and fresh-start rituals. Close the loop so next week starts clean.</div>
+          </div>
+          <div class="reflect-week-label" id="reflect-week-label">—</div>
+        </div>
+
+        <!-- Fresh-start card (shown conditionally) -->
+        <div id="reflect-fresh-start" class="reflect-fresh-start" style="display:none"></div>
+
+        <!-- Season progress -->
+        <div class="hins-section">
+          <div class="habits-section-label">Season</div>
+          <div class="reflect-season-wrap">
+            <div class="reflect-season-name" id="reflect-season-name">—</div>
+            <div class="reflect-season-sub" id="reflect-season-sub">—</div>
+            <div class="reflect-season-identity" id="reflect-season-identity"></div>
+          </div>
+        </div>
+
+        <!-- Weekly headline stats (tasks, focus time, best day) -->
+        <div class="hins-section">
+          <div class="habits-section-label">This Week</div>
+          <div class="reflect-week-stats" id="reflect-week-stats"></div>
+          <div class="reflect-week-grid-wrap">
+            <div class="reflect-week-grid-label">7-day completion</div>
+            <div class="reflect-week-grid" id="reflect-week-grid"></div>
+          </div>
+        </div>
+
+        <!-- Two-column: Wins + Needs love -->
+        <div class="hins-grid-2">
+          <div class="hins-section">
+            <div class="habits-section-label">Wins</div>
+            <div class="hins-desc">Habits at 100% this week.</div>
+            <div id="reflect-wins" class="reflect-list"></div>
+          </div>
+          <div class="hins-section">
+            <div class="habits-section-label">Needs love</div>
+            <div class="hins-desc">Habits under 50% — candidates for re-anchoring.</div>
+            <div id="reflect-needs" class="reflect-list"></div>
+          </div>
+        </div>
+
+        <!-- Values Action Balance -->
+        <div class="hins-section">
+          <div class="habits-section-label">Values Balance</div>
+          <div class="hins-desc">Which values did your habits serve this week? Gaps can be intentional — or worth examining.</div>
+          <div id="reflect-values" class="reflect-values-wrap"></div>
+        </div>
+
+        <!-- Rest days taken -->
+        <div class="hins-section">
+          <div class="habits-section-label">Rest Days</div>
+          <div class="hins-desc">Self-compassion is not giving up. Rest days taken this week.</div>
+          <div id="reflect-rest" class="reflect-rest"></div>
+        </div>
+
+        <!-- Guided weekly review (4 questions, free text) -->
+        <div class="hins-section">
+          <div class="habits-section-label">3-Minute Review</div>
+          <div class="hins-desc">Four prompts. Short answers. Saved automatically to this week's debrief.</div>
+          <div class="reflect-review-form" id="reflect-review-form">
+            <div class="reflect-review-q">
+              <label class="reflect-review-label">What worked?</label>
+              <textarea class="reflect-review-textarea" id="reflect-review-worked" rows="2" placeholder="A habit that felt effortless, a pattern you loved…"></textarea>
+            </div>
+            <div class="reflect-review-q">
+              <label class="reflect-review-label">What didn't?</label>
+              <textarea class="reflect-review-textarea" id="reflect-review-didnt" rows="2" placeholder="A habit that drifted, an anchor that broke…"></textarea>
+            </div>
+            <div class="reflect-review-q">
+              <label class="reflect-review-label">What will you try next week?</label>
+              <textarea class="reflect-review-textarea" id="reflect-review-next" rows="2" placeholder="One small experiment…"></textarea>
+            </div>
+            <div class="reflect-review-q">
+              <label class="reflect-review-label">Any habit that should be re-anchored?</label>
+              <textarea class="reflect-review-textarea" id="reflect-review-reanchor" rows="2" placeholder="Name the habit and its new anchor…"></textarea>
+            </div>
+            <div class="reflect-review-save" id="reflect-review-save">Saved automatically</div>
+          </div>
+        </div>
+
+        <!-- Graduation ledger -->
+        <div class="hins-section">
+          <div class="habits-section-label">Graduation Ledger</div>
+          <div class="hins-desc">Habits you've built into automaticity. Each one is an identity you earned.</div>
+          <div id="reflect-ledger" class="reflect-ledger"></div>
+        </div>
+      </div>
+
+      <!-- HABITS pane — design & edit habits -->
+      <div id="hpane-habits" class="habits-v2-pane" style="display:none;max-width:980px">
+        <!-- Slot limit banner -->
+        <div class="habits-tab-header">
+          <div>
+            <div class="habits-tab-title">Design your habits</div>
+            <div class="habits-tab-sub">Narrow focus beats breadth. Graduate a habit to open a slot.</div>
+          </div>
+          <div class="habits-tab-slots" id="habits-tab-slots">—</div>
+        </div>
+
+        <!-- Active habits list -->
+        <div class="habits-section">
+          <div class="habits-section-label">Active Habits</div>
+          <div id="habits-active-list" class="habits-active-list"></div>
+          <button id="habits-create-btn" class="habits-create-btn">+ Create habit</button>
+        </div>
+
+        <!-- Graduated habits (collapsed) -->
+        <details class="habits-graduated-wrap">
+          <summary class="habits-graduated-summary">Graduated Habits <span id="habits-graduated-count" class="habits-count-pill">0</span></summary>
+          <div id="habits-graduated-list" class="habits-graduated-list"></div>
+        </details>
+
+        <!-- Stacks (simple list view; full builder in Phase 5 if needed) -->
+        <details class="habits-stacks-wrap">
+          <summary class="habits-stacks-summary">Habit Stacks <span id="habits-stacks-count" class="habits-count-pill">0</span></summary>
+          <div id="habits-stacks-list" class="habits-stacks-list"></div>
+        </details>
+
+        <!-- Create/Edit wizard modal -->
+        <div class="habits-wizard-backdrop" id="habits-wizard-backdrop" style="display:none"></div>
+        <div class="habits-wizard" id="habits-wizard" style="display:none">
+          <div class="habits-wizard-header">
+            <span class="habits-wizard-step" id="habits-wizard-step-label">Step 1 of 6</span>
+            <span class="habits-wizard-title" id="habits-wizard-title">Why this habit?</span>
+            <button class="habits-wizard-close" id="habits-wizard-close">✕</button>
+          </div>
+          <div class="habits-wizard-progress"><div class="habits-wizard-progress-fill" id="habits-wizard-progress-fill"></div></div>
+          <div class="habits-wizard-body">
+            <!-- Step 1: Why / Values -->
+            <div class="habits-wstep" data-wstep="1">
+              <div class="habits-wstep-q">I want this habit because I value…</div>
+              <div class="habits-wstep-desc">Pick 1–2 values. Research: values-aligned habits survive mood and motivation dips (Self-Determination Theory).</div>
+              <div class="habits-values-grid" id="habits-wizard-values"></div>
+            </div>
+            <!-- Step 2: Identity -->
+            <div class="habits-wstep" data-wstep="2" style="display:none">
+              <div class="habits-wstep-q">Doing this makes me…</div>
+              <div class="habits-wstep-desc">Identity framing beats outcome framing. "I am a runner" beats "I want to run a marathon." (James Clear, +32% adherence.)</div>
+              <input class="habits-wstep-input" id="habits-wizard-identity" placeholder="a curious reader · a calm person · the builder" maxlength="60">
+            </div>
+            <!-- Step 3: Tiny behavior -->
+            <div class="habits-wstep" data-wstep="3" style="display:none">
+              <div class="habits-wstep-q">What's the 30-second version?</div>
+              <div class="habits-wstep-desc">BJ Fogg: the habit must be doable in 30 seconds on your worst day. You can scale up later.</div>
+              <input class="habits-wstep-input" id="habits-wizard-tiny" placeholder="Read 1 page · Write 1 sentence · Do 1 pushup" maxlength="100">
+              <div class="habits-wstep-q" style="margin-top:14px">The "good day" version (optional):</div>
+              <input class="habits-wstep-input" id="habits-wizard-full" placeholder="Read 15 pages · Write 500 words · 20-min workout" maxlength="100">
+            </div>
+            <!-- Step 4: Anchor -->
+            <div class="habits-wstep" data-wstep="4" style="display:none">
+              <div class="habits-wstep-q">When will you do it?</div>
+              <div class="habits-wstep-desc">Event-based anchors beat time-based reminders for automaticity (Stawarz et al.).</div>
+              <div class="habits-anchor-types">
+                <button class="habits-anchor-type active" data-atype="event">After an event</button>
+                <button class="habits-anchor-type" data-atype="time">At a time</button>
+                <button class="habits-anchor-type" data-atype="location">At a location</button>
+                <button class="habits-anchor-type" data-atype="anytime">Anytime</button>
+              </div>
+              <input class="habits-wstep-input" id="habits-wizard-anchor" placeholder="my morning coffee · 07:00 · the kitchen" maxlength="80">
+              <div class="habits-wstep-hint" id="habits-wizard-anchor-hint">After-event anchors build automaticity faster than clocks.</div>
+            </div>
+            <!-- Step 5: Friction pre-mortem -->
+            <div class="habits-wstep" data-wstep="5" style="display:none">
+              <div class="habits-wstep-q">What could break this habit?</div>
+              <div class="habits-wstep-desc">Naming friction in advance lets the app auto-route to a fallback when friction hits.</div>
+              <div class="habits-friction-grid" id="habits-wizard-friction">
+                <button class="habits-friction-chip" data-friction="travel">✈ Travel</button>
+                <button class="habits-friction-chip" data-friction="low-energy">🔋 Low energy</button>
+                <button class="habits-friction-chip" data-friction="meetings">📞 Meetings</button>
+                <button class="habits-friction-chip" data-friction="weekend">🌙 Weekends</button>
+                <button class="habits-friction-chip" data-friction="late-night">🌃 Late nights</button>
+                <button class="habits-friction-chip" data-friction="illness">🤒 Illness</button>
+              </div>
+            </div>
+            <!-- Step 6: Rest days -->
+            <div class="habits-wstep" data-wstep="6" style="display:none">
+              <div class="habits-wstep-q">Plan your rest days</div>
+              <div class="habits-wstep-desc">Self-compassion research: planned rest preserves identity and prevents shame spirals. Pick days where this habit is OFF.</div>
+              <div class="habits-restday-grid" id="habits-wizard-restdays">
+                <button class="habits-restday-chip" data-dow="0">Sun</button>
+                <button class="habits-restday-chip" data-dow="1">Mon</button>
+                <button class="habits-restday-chip" data-dow="2">Tue</button>
+                <button class="habits-restday-chip" data-dow="3">Wed</button>
+                <button class="habits-restday-chip" data-dow="4">Thu</button>
+                <button class="habits-restday-chip" data-dow="5">Fri</button>
+                <button class="habits-restday-chip" data-dow="6">Sat</button>
+              </div>
+              <div class="habits-wstep-hint">Leave empty for daily habits. Remember: less is more.</div>
+            </div>
+            <!-- Library at bottom of Step 1 (always visible as reference) -->
+            <div class="habits-wlib" id="habits-wlib">
+              <div class="habits-wlib-label">Or start from a template</div>
+              <div class="habits-wlib-items" id="habits-wlib-items"></div>
+            </div>
+          </div>
+          <div class="habits-wizard-footer">
+            <button class="habits-wizard-back" id="habits-wizard-back">← Back</button>
+            <button class="habits-wizard-next" id="habits-wizard-next">Next →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROGRESS pane -->
+      <!-- HABITS INSIGHTS pane — Phase 4: Diagnosis, not vanity -->
+      <div id="hpane-hinsights" class="habits-v2-pane" style="display:none;max-width:1000px">
+        <div class="habits-tab-header">
+          <div>
+            <div class="habits-tab-title">Your automaticity map</div>
+            <div class="habits-tab-sub">Research suggests 18–254 days to automatic (Lally 2010). Every metric here is actionable.</div>
+          </div>
+        </div>
+
+        <!-- Graduation banner (shown only when a habit is eligible) -->
+        <div id="hins-graduation-banner" class="hins-graduation-banner" style="display:none"></div>
+
+        <!-- 13-week heatmap with real data -->
+        <div class="hins-section">
+          <div class="habits-section-label">13-Week Pulse · Real data</div>
+          <div class="hins-heatmap-wrap">
+            <canvas id="hins-heatmap-canvas" class="hins-heatmap-canvas"></canvas>
+            <div class="hins-heatmap-legend">
+              <span class="hins-legend-label">less</span>
+              <div class="hins-legend-cell" style="background:rgba(255,255,255,0.04)"></div>
+              <div class="hins-legend-cell" style="background:rgba(255,255,255,0.14)"></div>
+              <div class="hins-legend-cell" style="background:rgba(255,255,255,0.26)"></div>
+              <div class="hins-legend-cell" style="background:rgba(255,255,255,0.42)"></div>
+              <div class="hins-legend-cell" style="background:rgb(53,249,47);box-shadow:0 0 4px rgba(53,249,47,0.4)"></div>
+              <span class="hins-legend-label">more</span>
+              <span class="hins-heatmap-stat" id="hins-heatmap-stat"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Per-habit automaticity estimates -->
+        <div class="hins-section">
+          <div class="habits-section-label">Automaticity Estimate · per habit</div>
+          <div class="hins-auto-list" id="hins-auto-list"></div>
+        </div>
+
+        <!-- Context Reliability Matrix (habit x day-of-week) -->
+        <div class="hins-section">
+          <div class="habits-section-label">Context Reliability · Day × Habit (30d)</div>
+          <div class="hins-desc">Shows where your habits are bulletproof and where they drift. Weekend collapse? Monday blues? Patterns reveal themselves here.</div>
+          <div class="hins-context-wrap" id="hins-context-wrap"></div>
+        </div>
+
+        <!-- Friction patterns + mood correlation (2-col) -->
+        <div class="hins-grid-2">
+          <div class="hins-section">
+            <div class="habits-section-label">Friction Patterns</div>
+            <div class="hins-desc">Top 3 friction tags with the most skip count.</div>
+            <div id="hins-friction-list" class="hins-friction-list"></div>
+          </div>
+          <div class="hins-section">
+            <div class="habits-section-label">Mood × Completion</div>
+            <div class="hins-desc">On low-mood days, which habits survive?</div>
+            <div id="hins-mood-list" class="hins-mood-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-habits -->
+
+    <!-- Insights full-page panel -->
+    <div id="panel-insights" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div class="ins-page">
+
+        <!-- Design-system top chrome: title + tab bar -->
+        <div class="insx-chrome">
+          <div>
+            <div class="insx-eyebrow">INSIGHTS</div>
+            <div class="insx-headline">The receipt of your attention</div>
+          </div>
+          <div style="flex:1"></div>
+          <div class="insx-tabs" id="insx-tabs">
+            <button class="insx-tab active" data-ins-tab-btn="overview">Overview</button>
+            <button class="insx-tab" data-ins-tab-btn="time">Time</button>
+            <button class="insx-tab" data-ins-tab-btn="focus">Focus</button>
+            <button class="insx-tab" data-ins-tab-btn="patterns">Patterns</button>
+          </div>
+        </div>
+
+        <!-- ROW 1: Ambient Constellation Hero -->
+        <div class="ins-hero" data-ins-tab="overview">
+          <canvas id="ins-hero-bg" class="ins-hero-bg"></canvas>
+          <div class="ins-hero-zone ins-hero-left">
+            <div class="ins-hero-score" id="ins-hero-score">0</div>
+            <div class="ins-hero-label">Momentum</div>
+          </div>
+          <div class="ins-hero-zone ins-hero-center">
+            <canvas id="ins-hero-const" class="ins-hero-const"></canvas>
+          </div>
+          <div class="ins-hero-zone ins-hero-right" id="ins-hero-gauges"></div>
+          <div class="ins-hero-delta" id="ins-hero-delta"></div>
+        </div>
+
+        <!-- ROW 2: Three Key Stat Cards -->
+        <div class="ins-stats-row" data-ins-tab="overview">
+          <div class="ins-stat-card">
+            <div class="ins-stat-number" id="ins-focus-time">—</div>
+            <div class="ins-stat-label">Focus Time This Week</div>
+            <div class="ins-stat-bar-track"><div class="ins-stat-bar-fill" id="ins-focus-bar" style="width:0%"></div></div>
+            <div class="ins-stat-sub" id="ins-focus-sub"></div>
+          </div>
+          <div class="ins-stat-card">
+            <div class="ins-stat-number" id="ins-habit-rate">—</div>
+            <div class="ins-stat-label">Habit Rate (7 day)</div>
+            <div class="ins-habit-dots" id="ins-habit-dots"></div>
+            <div class="ins-stat-sub" id="ins-habit-sub"></div>
+          </div>
+          <div class="ins-stat-card">
+            <div class="ins-stat-number" id="ins-overdue-count">0</div>
+            <div class="ins-stat-label">Overdue Tasks</div>
+            <div class="ins-stat-sub" id="ins-overdue-sub" style="color:var(--muted)"></div>
+          </div>
+        </div>
+
+        <!-- ROW 3: Charts — Completion Trend | Time by Category -->
+        <div class="ins-charts-row" data-ins-tab="overview">
+          <div class="ins-chart-card">
+            <div class="ins-chart-label">Completion Trend — 28 Days</div>
+            <canvas id="ins-trend-canvas" width="600" height="180"></canvas>
+          </div>
+          <div class="ins-chart-card">
+            <div class="ins-chart-label">Time by Category</div>
+            <div id="ins-time-breakdown"></div>
+          </div>
+        </div>
+
+        <!-- ROW 4: Tabbed Visualization Card -->
+        <div class="ins-viz-card" data-ins-tab="time">
+          <div class="ins-viz-header">
+            <div class="ins-viz-tabs">
+              <button class="ins-viz-tab active" data-viz="pulse">Pulse Heatmap</button>
+              <button class="ins-viz-tab" data-viz="matrix">Energy × Priority</button>
+              <button class="ins-viz-tab" data-viz="rhythm">Day Rhythm</button>
+            </div>
+          </div>
+          <div class="ins-viz-body">
+            <canvas id="ins-viz-canvas" class="ins-viz-canvas"></canvas>
+            <div class="ins-viz-empty" id="ins-viz-empty" style="display:none"></div>
+          </div>
+          <div class="ins-viz-stats" id="ins-viz-stats"></div>
+        </div>
+
+        <!-- ROW 5: Week Debrief | Completed Tasks -->
+        <div class="ins-detail-row" data-ins-tab="focus">
+          <div class="ins-detail-card">
+            <div class="ins-chart-label">Week Debrief</div>
+            <div id="ins-week-debrief"></div>
+          </div>
+          <div class="ins-detail-card">
+            <div class="ins-chart-label">Completed Tasks</div>
+            <div class="done-wall-stats" id="done-wall-stats" style="padding:0;border:none;margin-bottom:10px;gap:8px"></div>
+            <div class="done-filter-bar" id="done-filter-bar" style="margin-bottom:10px">
+              <button class="done-filter-btn active" data-filter="all">All</button>
+              <button class="done-filter-btn" data-filter="today">Today</button>
+              <button class="done-filter-btn" data-filter="week">This week</button>
+              <button class="done-filter-btn" data-filter="month">This month</button>
+            </div>
+            <div id="done-grid-wrap" style="max-height:240px;overflow-y:auto">
+              <div class="done-grid" id="done-grid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 6: Friction Detector + Context Patterns (preserved) -->
+        <div class="hb-insight-layout" data-ins-tab="patterns">
+          <div class="hb-insight-card">
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Friction Detector</div>
+            <div class="hb-friction-insight" id="ins-friction-list">
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading habit data…</div>
+            </div>
+            <div class="hb-ai-nudge">
+              <div class="hb-an-label">Cosmodex Pattern Insight</div>
+              <div class="hb-an-text" id="ins-pattern-insight">Analysing your habits…</div>
+            </div>
+          </div>
+          <div class="hb-insight-card">
+            <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;">Habit Success by Context</div>
+            <div class="hb-pattern-wrap" id="ins-context-list">
+              <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:0.08em;padding:20px 0;text-align:center;">Loading…</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /panel-insights -->
+
+    <!-- Daily Business Communication Drill Panel -->
+    <div id="panel-drill" style="display:none;flex:1;flex-direction:column;overflow:hidden"></div><!-- /panel-drill : content rendered by renderDrill() -->
+
+    <!-- Mind Map Panel -->
+    <div id="panel-mindmap" style="display:none;flex:1;flex-direction:column;overflow:hidden;background:#000000;position:relative">
+      <!-- Toolbar -->
+      <div id="mm-toolbar" style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;background:rgba(255,255,255,0.03)">
+        <button class="mm-tool-btn active" id="mm-tool-select" title="Select (V)" data-tool="select">↖</button>
+        <button class="mm-tool-btn" id="mm-tool-connect" title="Connect (C)" data-tool="connect">⌁</button>
+        <div style="width:1px;height:20px;background:rgba(255,255,255,0.12);margin:0 4px"></div>
+        <button class="mm-tool-btn" id="mm-btn-add" title="Add node (A)">＋</button>
+        <button class="mm-tool-btn" id="mm-btn-delete" title="Delete selected (Del)">⌫</button>
+        <div style="width:1px;height:20px;background:rgba(255,255,255,0.12);margin:0 4px"></div>
+        <button class="mm-tool-btn" id="mm-btn-center" title="Center view (Space)">⊕</button>
+        <button class="mm-tool-btn" id="mm-btn-clear" title="Clear all">⊘</button>
+        <div style="flex:1"></div>
+        <span style="font-family:var(--font-mono);font-size:0.68rem;color:rgba(255,255,255,0.28);letter-spacing:0.06em">Double-click canvas to add · Drag to move · Connect mode to link</span>
+      </div>
+      <!-- Canvas -->
+      <canvas id="mm-canvas" style="flex:1;display:block;cursor:default"></canvas>
+    </div>
+
+    <!-- Notes Panel (scribble canvas — its own page) -->
+    <div id="panel-notes" style="display:none;flex:1;flex-direction:column;overflow:hidden;background:#000000">
+      <div class="overlay-header" style="padding:10px 16px;gap:8px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.08)">
+        <span class="overlay-title" style="font-size:15px;flex:none">✎ Notes</span>
+        <div id="notes-pen-bar" style="display:flex;gap:3px;align-items:center"></div>
+        <div id="notes-color-bar" style="display:flex;gap:5px;align-items:center"></div>
+        <button class="scribble-btn" id="notes-eraser-btn">Erase</button>
+        <button class="scribble-btn" id="notes-clear-btn">Clear</button>
+        <button class="scribble-btn" id="notes-save-btn">↓ Save</button>
+      </div>
+      <canvas id="notes-canvas" style="width:100%;flex:1;background:var(--ink)"></canvas>
+    </div>
+
+  </div><!-- /main-content -->
+</div><!-- /app-shell -->
+
+<!-- ══ COSMODEX ORB ══ -->
+<div id="cosmodex-orb" title="Open Cosmodex dial">
+  <canvas id="cosmodex-canvas"></canvas>
+  <div id="orb-header">
+    <span class="orb-time-clock" id="orb-clock">--:--:--</span>
+    <span class="orb-date-line" id="orb-date-line">—</span>
+  </div>
+  <div id="orb-time-display">
+    <span class="orb-cosmodex-label">Cosmodex</span>
+    <span class="orb-next-label">Next</span>
+    <span class="orb-next-event" id="orb-next-event">—</span>
+    <div class="orb-gadgets">
+      <button class="orb-gadget-btn" id="orb-dice-btn" title="Roll the dice">⚄</button>
+      <button class="orb-gadget-btn" id="orb-wheel-btn" title="Spin the wheel">◎</button>
+    </div>
+  </div>
+  <button id="orb-close">✕</button>
+</div>
+<div id="orb-backdrop"></div>
+<!-- Spinning wheel overlay -->
+<div id="orb-wheel-overlay">
+  <div class="orb-wheel-panel">
+    <div class="orb-wheel-header">
+      <span style="font-family:var(--font-display);font-size:14px;font-weight:300;color:var(--gold);letter-spacing:0.06em">Spin the Wheel</span>
+      <button id="orb-wheel-close" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1">✕</button>
+    </div>
+    <canvas id="orb-wheel-canvas" width="280" height="280"></canvas>
+    <div class="orb-wheel-result" id="orb-wheel-result"></div>
+    <button class="orb-wheel-spin-btn" id="orb-wheel-spin">Spin</button>
+  </div>
+</div>
+
+<!-- ══ OVERLAYS ══ -->
+
+<!-- Sign-in -->
+<div id="signin-overlay">
+  <canvas id="signin-crystal-bg"></canvas>
+  <div class="signin-bg-glow"></div>
+  <div class="signin-logo"><strong>Cosmo</strong><em>dex</em></div>
+  <div class="signin-sub">Your intelligent time companion</div>
+  <button class="signin-btn" id="signin-btn" style="background:#fff;color:#1a1a1a;gap:12px">
+    <svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    Continue with Google
+  </button>
+  <div id="signin-error" style="display:none;margin-top:18px;font-family:var(--font-body);font-size:12px;color:var(--gold);text-align:center;max-width:280px;line-height:1.5"></div>
+</div>
+
+<!-- Commit ritual overlay (design: "What is the one thing?") -->
+<div class="overlay commit-ritual-ov" id="commit-ritual-overlay" style="z-index:840">
+  <div class="cr-card">
+    <div class="cr-specular"></div>
+    <button class="cr-close" id="cr-close" title="Leave">×</button>
+    <div class="cr-ring"><span class="cr-glyph">◈</span></div>
+    <div class="cr-eyebrow">COMMIT RITUAL</div>
+    <div class="cr-title">What is the one thing?</div>
+    <input id="cr-intent" class="cr-intent" placeholder="Name the one focus that cannot slip…" autocomplete="off">
+    <div class="cr-suggest-lbl" id="cr-suggest-lbl">TODAY'S TASKS</div>
+    <div class="cr-suggest" id="cr-suggest"></div>
+    <div class="cr-durs" id="cr-durs">
+      <button class="cr-dur" data-dur="25">25m</button>
+      <button class="cr-dur active" data-dur="45">45m</button>
+      <button class="cr-dur" data-dur="90">90m</button>
+    </div>
+    <div class="cr-italic">"One focus that cannot slip…"</div>
+    <div class="cr-actions">
+      <button class="cr-begin" id="cr-begin">Begin</button>
+      <button class="cr-leave" id="cr-leave">Leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ask Cosmos (AI chat) overlay -->
+<div class="overlay" id="claude-panel" style="z-index:860;align-items:flex-end;justify-content:flex-end;padding:0">
+  <div class="overlay-panel" style="width:min(420px,92vw);height:70dvh;border-radius:20px 20px 0 0;position:absolute;right:0;bottom:0;margin:0">
+    <div class="overlay-header">
+      <span class="overlay-title" style="font-size:15px">✦ Ask Cosmos</span>
+      <button class="overlay-close" data-close="claude-panel">✕</button>
+    </div>
+    <div class="overlay-body">
+      <div class="overlay-placeholder">
+        <div class="overlay-placeholder-icon">✦</div>
+        <div class="overlay-placeholder-text">AI assistant — coming soon</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Insights full-page panel (inserted into main content area via showMainPanel) -->
+<template id="insights-panel-tpl"><!-- placeholder; actual panel is in #panel-insights --></template>
+
+<!-- Life OS overlay -->
+<div class="overlay" id="plan-overlay">
+  <div class="overlay-panel" style="width:min(820px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title">Life OS</span>
+      <div class="view-tabs" style="margin-left:auto">
+        <button class="view-tab active" data-plan-tab="week">Week</button>
+        <button class="view-tab" data-plan-tab="month">Month</button>
+      </div>
+      <button class="overlay-close" data-close="plan-overlay">✕</button>
+    </div>
+    <div class="overlay-body">
+      <div class="overlay-placeholder">
+        <div class="overlay-placeholder-icon">◳</div>
+        <div class="overlay-placeholder-text">Weekly intention · Top 3 priorities · Task grid · Monthly milestones</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Milestone: Add/Edit Initiative Modal -->
+<div class="overlay" id="ms-project-modal" style="z-index:860">
+  <div class="overlay-panel" style="width:min(480px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title" id="ms-proj-modal-title">New Commitment</span>
+      <button class="overlay-close" data-close="ms-project-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div class="form-group">
+        <label class="form-label">Commitment Name</label>
+        <input id="ms-proj-title" class="form-input" placeholder="e.g. Ship Cosmodex v2" autocomplete="off">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group">
+          <label class="form-label">Start Date</label>
+          <input id="ms-proj-start" type="date" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Date</label>
+          <input id="ms-proj-end" type="date" class="form-input">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color</label>
+        <div id="ms-proj-color-picker" class="ms-color-picker"></div>
+        <input type="hidden" id="ms-proj-color-val" value="">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select id="ms-proj-category" class="form-input" style="cursor:pointer">
+          <option value="">— None —</option>
+          <!-- populated by openMsProjectModal -->
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end">
+        <div class="form-group">
+          <label class="form-label">Cadence <span style="font-size:10px;color:var(--muted);font-weight:400">(where it shows)</span></label>
+          <select id="ms-proj-cadence" class="form-input" style="cursor:pointer">
+            <option value="weekly">Weekly — This Week</option>
+            <option value="monthly">Monthly — Month</option>
+            <option value="quarterly" selected>Quarterly — Quarter</option>
+          </select>
+        </div>
+        <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding-bottom:10px;white-space:nowrap">
+          <input id="ms-proj-bigrock" type="checkbox" style="cursor:pointer">
+          ◆ Big rock
+        </label>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes / Context</label>
+        <textarea id="ms-proj-notes" class="form-input" rows="3" placeholder="Background context, goals, constraints…"></textarea>
+      </div>
+      <div class="form-group los-narrative-group">
+        <label class="form-label">Mission Brief <span style="font-size:10px;color:var(--muted);font-weight:400">(why this matters)</span></label>
+        <textarea id="ms-proj-mission" class="form-input" rows="2" placeholder="The purpose behind this commitment…"></textarea>
+      </div>
+      <div class="form-group los-narrative-group">
+        <label class="form-label">Anti-Goals <span style="font-size:10px;color:var(--muted);font-weight:400">(what we will NOT do)</span></label>
+        <textarea id="ms-proj-antigoals" class="form-input" rows="2" placeholder="Scope boundaries and explicit non-goals…"></textarea>
+      </div>
+      <div class="form-group" id="ms-proj-tasks-group" style="display:none">
+        <label class="form-label">Tasks <span style="font-size:10px;color:var(--muted);font-weight:400">(work that delivers this commitment)</span></label>
+        <div id="ms-proj-tasks-list" style="margin-bottom:8px;display:flex;flex-direction:column;gap:5px"></div>
+        <div style="display:grid;grid-template-columns:1fr 150px auto;gap:6px;align-items:center">
+          <input id="ms-proj-task-title" class="form-input" placeholder="New or existing task…" autocomplete="off">
+          <input id="ms-proj-task-due" type="date" class="form-input" title="Due date (required)">
+          <button id="ms-proj-task-add" class="btn-ghost" style="flex-shrink:0">Add</button>
+        </div>
+        <div id="ms-proj-task-search" style="display:none;background:var(--elevated);border:1px solid var(--border);border-radius:8px;margin-top:6px;max-height:160px;overflow-y:auto"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:4px">
+        <button id="ms-proj-delete-btn" class="btn-ghost" style="color:#e05555;border-color:rgba(224,85,85,.4);display:none">Delete Commitment</button>
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <button data-close="ms-project-modal" class="btn-ghost">Cancel</button>
+          <button id="ms-proj-confirm" class="btn-primary">Save Commitment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Milestone: Add/Edit Event Modal -->
+<div class="overlay" id="ms-event-modal" style="z-index:860">
+  <div class="overlay-panel" style="width:min(520px,92vw);max-height:90dvh;overflow-y:auto">
+    <div class="overlay-header">
+      <span class="overlay-title" id="ms-event-modal-title">New Milestone</span>
+      <button class="overlay-close" data-close="ms-event-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <input type="hidden" id="ms-event-project-id" value="">
+      <input type="hidden" id="ms-event-id" value="">
+      <div class="form-group">
+        <label class="form-label">Milestone Title</label>
+        <input id="ms-event-title" class="form-input" placeholder="e.g. Beta Launch" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input id="ms-event-date" type="date" class="form-input">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea id="ms-event-desc" class="form-input" rows="2" placeholder="What needs to happen…"></textarea>
+      </div>
+      <!-- Milestones are independent calendar markers now; tasks live on commitments. -->
+      <div class="form-group" style="display:none">
+        <div id="ms-event-activities-list"></div>
+        <input id="ms-activity-input" style="display:none">
+        <button id="ms-activity-add" style="display:none"></button>
+        <div id="ms-activity-search-results" style="display:none"></div>
+      </div>
+      <div class="plan-dsn-sub" style="margin:-4px 0 4px">A milestone is a marker on the calendar. Link tasks to a <b>commitment</b> instead.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px">
+        <button id="ms-event-delete" class="btn-ghost" style="color:#e05555;border-color:rgba(224,85,85,.4);display:none">🗑 Delete milestone</button>
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <button data-close="ms-event-modal" class="btn-ghost">Cancel</button>
+          <button id="ms-event-confirm" class="btn-primary">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Milestone: Event Detail Panel -->
+<div class="overlay" id="ms-event-detail" style="z-index:855">
+  <div class="overlay-panel" style="width:min(480px,92vw);max-height:85dvh;overflow-y:auto">
+    <div class="overlay-header">
+      <span class="overlay-title" id="ms-detail-title">Milestone</span>
+      <button class="overlay-close" data-close="ms-event-detail">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:16px">
+      <div id="ms-detail-meta" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:0.06em"></div>
+      <div id="ms-detail-desc" style="font-size:14px;color:var(--cream);line-height:1.6;font-family:var(--font-body)"></div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Activities</div>
+        <div id="ms-detail-activities"></div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button id="ms-detail-edit-btn" class="btn-ghost">Edit</button>
+        <button id="ms-detail-delete-btn" class="btn-ghost" style="color:var(--gold)">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Orb Petal Quick-Add Modal (z-index 520, inside orb backdrop) -->
+<div class="overlay" id="orb-add-task-modal" style="z-index:520">
+  <div class="overlay-panel" style="width:min(380px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title" id="orb-add-task-title">Add task at 9am</span>
+      <button class="overlay-close" data-close="orb-add-task-modal">✕</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <input id="orb-task-title-input" class="form-input" placeholder="Task name…" autocomplete="off">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group">
+          <label class="form-label">Start time</label>
+          <input type="time" id="orb-task-time" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration (min)</label>
+          <input type="number" id="orb-task-duration" class="form-input" value="60" min="15" step="15">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button data-close="orb-add-task-modal" class="btn-ghost">Cancel</button>
+        <button id="orb-add-task-confirm" class="btn-primary">Add to Calendar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Edit Modal -->
+<div class="overlay drawer-right" id="task-edit-modal" style="z-index:850">
+  <div class="overlay-panel">
+    <div class="overlay-header">
+      <span class="overlay-title">Edit Task</span>
+      <button class="overlay-close" data-close="task-edit-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="sched-label">Title</label>
+        <input id="te-title" type="text" class="sched-input" autocomplete="off" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="sched-label">Due Date</label>
+          <input id="te-date" type="date" class="sched-input" />
+        </div>
+        <div>
+          <label class="sched-label">Priority</label>
+          <select id="te-priority" class="sched-input">
+            <option value="low">Low</option>
+            <option value="med">Med</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="sched-label">Category</label>
+          <select id="te-category" class="sched-input"></select>
+        </div>
+        <div>
+          <label class="sched-label">Recurrence</label>
+          <select id="te-recur" class="sched-input">
+            <option value="">One-time</option>
+            <option value="daily">Daily</option>
+            <option value="weekdays">Weekdays</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="sched-label">Energy Type</label>
+        <div class="energy-picker" id="te-energy-picker" style="flex-wrap:wrap">
+          <button type="button" class="energy-pill" data-energy="">— None</button>
+          <button type="button" class="energy-pill energy-quick"   data-energy="quick">⚡ Quick</button>
+          <button type="button" class="energy-pill energy-deep"    data-energy="deep">🧠 Deep</button>
+          <button type="button" class="energy-pill energy-shallow" data-energy="shallow">💬 Shallow</button>
+          <button type="button" class="energy-pill energy-admin"   data-energy="admin">📅 Meeting</button>
+          <button type="button" class="energy-pill energy-creative" data-energy="creative">🎨 Creative</button>
+        </div>
+      </div>
+      <div>
+        <label class="sched-label">Notes</label>
+        <textarea id="te-notes" class="sched-input" rows="3" style="resize:vertical;min-height:64px;font-family:var(--font-body);font-size:13px" placeholder="Optional notes…"></textarea>
+      </div>
+      <button class="sched-confirm-btn" id="te-save-btn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Schedule Modal (z-index 850) -->
+<div class="overlay" id="schedule-modal" style="z-index:850">
+  <div class="overlay-panel" style="width:min(420px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title">Schedule</span>
+      <button class="overlay-close" data-close="schedule-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px">
+      <div class="sched-row" style="margin-top:0">
+        <label class="sched-label">Title</label>
+        <input id="sched-title" type="text" class="sched-input" placeholder="Event title" autocomplete="off" />
+      </div>
+      <div class="sched-grid-2">
+        <div>
+          <label class="sched-label">Date</label>
+          <input id="sched-date" type="date" class="sched-input" />
+        </div>
+        <div>
+          <label class="sched-label">Start time</label>
+          <input id="sched-time" type="time" class="sched-input" />
+        </div>
+      </div>
+      <div class="sched-row">
+        <label class="sched-label">Duration (minutes)</label>
+        <input id="sched-duration" type="number" class="sched-input" value="30" min="15" step="15" />
+      </div>
+      <div class="sched-row" id="sched-commitment-row">
+        <label class="sched-label">Link to commitment</label>
+        <select id="sched-commitment" class="sched-input"></select>
+      </div>
+      <div id="sched-subtasks-section" style="margin-top:14px;display:none">
+        <label class="sched-label">Subtasks (will also be added after main task)</label>
+        <div id="sched-subtasks-list" style="margin-top:6px"></div>
+      </div>
+      <button class="sched-confirm-btn" id="sched-confirm-btn">Add to Calendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Overlay (z-index 850) -->
+<div class="overlay" id="settings-overlay" style="z-index:850">
+  <div class="overlay-panel" style="width:min(780px,96vw)">
+    <div class="overlay-header">
+      <span class="overlay-title">Settings</span>
+      <button class="overlay-close" data-close="settings-overlay">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:0">
+      <div class="settings-layout">
+
+        <!-- Left nav -->
+        <div class="settings-nav">
+          <div class="settings-nav-item active" data-settings-tab="appearance">
+            <span class="settings-nav-icon">◐</span> Appearance
+          </div>
+          <div class="settings-nav-item" data-settings-tab="categories">
+            <span class="settings-nav-icon">◈</span> Categories
+          </div>
+          <div class="settings-nav-item" data-settings-tab="calendar">
+            <span class="settings-nav-icon">◻</span> Calendar
+          </div>
+          <div class="settings-nav-item" data-settings-tab="data">
+            <span class="settings-nav-icon">◇</span> Data & Sync
+          </div>
+          <div class="settings-nav-item" data-settings-tab="people">
+            <span class="settings-nav-icon">◎</span> People
+          </div>
+        </div>
+
+        <!-- Right content -->
+        <div class="settings-right">
+
+          <!-- ── Appearance ───────────────────── -->
+          <div class="settings-content-panel active" id="st-pane-appearance">
+            <div class="settings-section">
+              <div class="settings-section-title">Theme</div>
+              <div class="settings-desc">Toggle between dark and light mode.</div>
+              <button id="settings-theme-btn" class="btn-secondary" style="font-size:12px;padding:8px 18px;" onclick="document.getElementById('theme-btn')?.click(); this.textContent = document.documentElement.dataset.theme === 'light' ? '☀ Light mode active' : '◐ Dark mode active';">◐ Dark mode active</button>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Firebase Status</div>
+              <div class="settings-desc">Real-time sync connection state.</div>
+              <div id="settings-firebase-status" style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
+                <span id="settings-fb-dot" style="width:8px;height:8px;border-radius:50%;background:var(--neon);display:inline-block;"></span>
+                <span id="settings-fb-label">Connected</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Categories ──────────────────── -->
+          <div class="settings-content-panel" id="st-pane-categories">
+            <div class="settings-section" id="settings-manage-cats-section">
+              <div class="settings-section-title">Manage Categories</div>
+              <div class="settings-desc">Add or remove task and planning categories.</div>
+              <div id="settings-cat-list" style="margin-bottom:14px"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px;align-items:center">
+                <input id="new-cat-label" class="sched-input" placeholder="Category name" autocomplete="off">
+                <div id="new-cat-color-picker" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+                <button class="task-add-confirm" id="new-cat-add-btn">Add</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Default Category</div>
+              <div class="settings-desc">Pre-selected category when creating new tasks anywhere in the app.</div>
+              <select id="settings-default-category" class="form-input" style="width:100%;cursor:pointer"></select>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Visible Categories</div>
+              <div class="settings-desc">Toggle which categories appear in your task list. To change a task's category, click its coloured badge directly on the task row — it cycles through all categories.</div>
+              <div class="settings-cat-grid" id="settings-cat-filters"></div>
+            </div>
+          </div>
+
+          <!-- ── Calendar ────────────────────── -->
+          <div class="settings-content-panel" id="st-pane-calendar">
+            <div class="settings-section">
+              <div class="settings-section-title">Holidays</div>
+              <div class="settings-desc">HK public holidays are pre-loaded. Add your own personal holidays below — they appear highlighted on the calendar.</div>
+              <div id="settings-holidays-list" style="max-height:260px;overflow-y:auto;margin-bottom:14px"></div>
+              <div style="display:grid;grid-template-columns:auto 1fr auto 1fr auto auto;gap:6px;align-items:center">
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">From</span>
+                <input id="holiday-date" type="date" class="sched-input" />
+                <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted)">To</span>
+                <input id="holiday-date-end" type="date" class="sched-input" placeholder="optional" />
+                <select id="holiday-type" class="task-priority-select">
+                  <option value="personal">Personal</option>
+                  <option value="public">Public</option>
+                </select>
+                <span></span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;margin-top:6px">
+                <input id="holiday-name" type="text" class="sched-input" placeholder="Holiday name" />
+                <button class="task-add-confirm" id="holiday-add-btn">Add</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Data & Sync ─────────────────── -->
+          <div class="settings-content-panel" id="st-pane-data">
+            <div class="settings-section">
+              <div class="settings-section-title">Firebase Account</div>
+              <div class="settings-desc">Your data is stored anonymously in Firebase Firestore under this user ID.</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <code id="settings-uid-display" style="font-family:var(--font-mono);font-size:11px;color:var(--muted);background:var(--bg);padding:6px 10px;border-radius:var(--r-sm);flex:1;overflow:hidden;text-overflow:ellipsis;">—</code>
+                <button class="btn-secondary" style="font-size:11px;padding:6px 12px;flex-shrink:0" onclick="navigator.clipboard.writeText(window.CDX_USER?.uid||'').then(()=>showToast('UID copied'))">Copy</button>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Sync Status</div>
+              <div class="settings-desc">Live connection to Firebase Firestore.</div>
+              <div style="display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);">
+                <span id="settings-fb-dot2" style="width:8px;height:8px;border-radius:50%;background:var(--neon);display:inline-block;"></span>
+                <span id="settings-fb-label2">Connected — real-time sync active</span>
+              </div>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Backup &amp; Export</div>
+              <div class="settings-desc">Write a full snapshot — tasks, commitments, events, habit log and a daily roll-up — as one markdown file you can read in Obsidian and mine for patterns. Saves to <code style="font-family:var(--font-mono);font-size:11px">060 ▲ Star logs/Cosmodex Backups/</code> on desktop; downloads in the browser.</div>
+              <button class="btn-secondary" id="settings-backup-btn" style="font-size:11px;padding:8px 16px;color:var(--neon);border-color:var(--neon-dim);">◆ Export backup (.md)</button>
+            </div>
+            <div class="settings-section">
+              <div class="settings-section-title">Local Cache</div>
+              <div class="settings-desc">Clear locally cached settings and preferences (does not affect Firebase data).</div>
+              <button class="btn-secondary" style="font-size:11px;padding:8px 16px;color:var(--gold);" onclick="cdxConfirm('Clear local cache? Firebase data is untouched.',{okLabel:'Clear',okColor:'#e05555',okBg:'rgba(224,85,85,0.18)',okBorder:'rgba(224,85,85,0.4)'}).then(ok=>{if(ok){localStorage.clear();showToast('Local cache cleared');}})">Clear Local Cache</button>
+            </div>
+          </div>
+
+          <!-- ── People ──────────────────────── -->
+          <div class="settings-content-panel" id="st-pane-people">
+            <div class="settings-section">
+              <div class="settings-section-title">People</div>
+              <div class="settings-desc">Add teammates, collaborators, or contacts. Type <code style="font-family:var(--font-mono);font-size:11px;background:var(--elevated);padding:1px 5px;border-radius:3px">@</code> in the task input to link them to tasks.</div>
+              <div id="settings-people-list" style="margin-bottom:14px"></div>
+              <div style="display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center">
+                <input id="people-name-input" type="text" class="sched-input" placeholder="Full name (e.g. Sarah Chen)" autocomplete="off" />
+                <button class="task-add-confirm" id="people-add-btn">Add</button>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /settings-right -->
+      </div><!-- /settings-layout -->
+    </div>
+  </div>
+</div>
+
+<!-- Time-to-complete popover (shown when ticking a task done) -->
+<div id="task-time-popover" style="display:none;position:fixed;z-index:950;background:#151515;border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,0.7);min-width:230px;backdrop-filter:var(--glass-blur-panel);-webkit-backdrop-filter:var(--glass-blur-panel)">
+  <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Time to complete</div>
+  <div id="task-time-options" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+    <button class="time-opt-btn" data-mins="5">5m</button>
+    <button class="time-opt-btn" data-mins="15">15m</button>
+    <button class="time-opt-btn" data-mins="30">30m</button>
+    <button class="time-opt-btn" data-mins="60">1h</button>
+    <button class="time-opt-btn" data-mins="90">1h 30m</button>
+    <button class="time-opt-btn" data-mins="120">2h</button>
+    <button class="time-opt-btn" data-mins="180">3h</button>
+  </div>
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:12px">
+    <input id="task-time-custom" type="number" min="1" max="999" placeholder="Custom (min)" class="form-input" style="font-size:12px;padding:5px 8px;width:100%;flex:1">
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);white-space:nowrap">min</span>
+  </div>
+  <div id="task-time-theme-wrap" style="margin-bottom:12px">
+    <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Theme</div>
+    <div id="task-time-cats" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+  <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center">
+    <span id="task-time-warn" style="flex:1;font-family:var(--font-mono);font-size:9px;color:var(--danger,#e05555);display:none">Pick a theme</span>
+    <button id="task-time-skip" class="btn-ghost" style="font-size:11px;padding:6px 12px">Skip time</button>
+    <button id="task-time-confirm" class="btn-primary" style="font-size:11px;padding:6px 14px">Done</button>
+  </div>
+</div>
+
+<!-- Person Tasks Overlay -->
+<div class="overlay" id="person-tasks-overlay" style="z-index:900">
+  <div class="overlay-box" style="max-width:520px;width:90vw">
+    <div class="overlay-header">
+      <span class="overlay-title" id="person-tasks-title">Tasks</span>
+      <button class="overlay-close" data-close="person-tasks-overlay">✕</button>
+    </div>
+    <div id="person-tasks-list" style="max-height:420px;overflow-y:auto;padding:4px 0"></div>
+  </div>
+</div>
+
+<!-- Command Palette -->
+<div id="cmd-palette">
+  <div class="cmd-box">
+    <div class="cmd-input-wrap">
+      <span class="cmd-icon">⌘</span>
+      <input class="cmd-input" id="cmd-input" type="text" placeholder="Type a command or search…" autocomplete="off" />
+      <span class="cmd-shortcut-hint">ESC</span>
+    </div>
+    <div class="cmd-results" id="cmd-results">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ══ MOBILE BOTTOM NAV ══ -->
+<nav id="mobile-nav">
+  <button class="mob-nav-btn active" data-mob="calendar">
+    <span class="mob-nav-icon">◻</span>
+    <span class="mob-nav-label">Calendar</span>
+  </button>
+  <button class="mob-nav-btn" data-mob="tasks">
+    <span class="mob-nav-icon">◇</span>
+    <span class="mob-nav-label">Tasks</span>
+  </button>
+  <button class="mob-nav-btn" data-mob="orb">
+    <span class="mob-nav-icon">◉</span>
+    <span class="mob-nav-label">Cosmodex</span>
+  </button>
+  <button class="mob-nav-btn" data-mob="more">
+    <span class="mob-nav-icon">⋯</span>
+    <span class="mob-nav-label">More</span>
+  </button>
+</nav>
+
+<button id="mob-fab" title="Add">+</button>
+
+<!-- Milestone date tooltip -->
+<div id="ms-date-tooltip"></div>
+
+<!-- Mobile drawer -->
+<div id="mob-more-drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-grid">
+    <div class="drawer-item" data-mob-panel="habits">
+      <span class="drawer-item-icon">◎</span>
+      Habits
+    </div>
+    <div class="drawer-item" data-panel-nav="insights">
+      <span class="drawer-item-icon">◈</span>
+      Insights
+    </div>
+    <div class="drawer-item" data-open="plan-overlay">
+      <span class="drawer-item-icon">◉</span>
+      Life OS
+    </div>
+    <div class="drawer-item" data-mob-panel="focus">
+      <span class="drawer-item-icon">◎</span>
+      Focus
+    </div>
+    <div class="drawer-item" data-panel-nav="notes">
+      <span class="drawer-item-icon">✎</span>
+      Notes
+    </div>
+    <div class="drawer-item" data-open="claude-panel">
+      <span class="drawer-item-icon">✦</span>
+      Cosmos
+    </div>
+    <div class="drawer-item" data-mob-panel="lists">
+      <span class="drawer-item-icon">▤</span>
+      Lists
+    </div>
+    <div class="drawer-item" id="mob-theme-btn">
+      <span class="drawer-item-icon">◑</span>
+      Theme
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SKELETON JS
+     — UI interactions only (no data/auth logic yet)
+     ═══════════════════════════════════════════════════════ -->
+<script src="app.js"></script>
+<!-- Audit 5.3: register service worker for offline shell load (relative path → /Cosmodex-v2/ scope) -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+</script>
+
+<!-- ── Toast notification container ─────────────────── -->
+<div id="cdx-toast-container"></div>
+
+<!-- ── Daily Ritual Overlay ──────────────────────────── -->
+<div id="ritual-overlay">
+  <div class="ritual-card">
+    <div class="ritual-header">
+      <div class="ritual-icon">◎</div>
+      <div class="ritual-title">Good morning</div>
+      <div class="ritual-subtitle" id="ritual-date-label"></div>
+    </div>
+    <div class="ritual-body">
+      <div class="ritual-section-label">What's your single focus for today?</div>
+      <input class="ritual-focus-input" id="ritual-focus-input" type="text" placeholder="e.g. Finish the proposal draft…" autocomplete="off" maxlength="120">
+      <div class="ritual-section-label" style="margin-top:20px">How are your energy levels right now?</div>
+      <div class="ritual-energy-row" id="ritual-energy-row">
+        <button class="ritual-energy-btn" data-energy="high">⚡ High</button>
+        <button class="ritual-energy-btn" data-energy="med">◎ Medium</button>
+        <button class="ritual-energy-btn" data-energy="low">◌ Low</button>
+      </div>
+      <div class="ritual-momentum" id="ritual-momentum-wrap" style="display:none">
+        <div class="ritual-momentum-label">Momentum score</div>
+        <div class="ritual-momentum-score" id="ritual-momentum-score">0</div>
+        <div class="ritual-momentum-sub" id="ritual-momentum-sub"></div>
+      </div>
+    </div>
+    <div class="ritual-footer">
+      <button class="ritual-skip-btn" id="ritual-skip-btn">Skip for today</button>
+      <button class="ritual-start-btn" id="ritual-start-btn">Start my day →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Re-entry Snapshot Modal ────────────────────────── -->
+<div id="reentry-modal">
+  <div class="reentry-card">
+    <div class="reentry-header">
+      <div class="reentry-title">Pausing — capture where you are</div>
+      <button class="reentry-close-btn" id="reentry-close-btn">✕</button>
+    </div>
+    <div class="reentry-body">
+      <div class="reentry-task-label" id="reentry-task-label"></div>
+      <textarea class="reentry-textarea" id="reentry-snapshot-input" placeholder="Where did you leave off? What's the next action?…" rows="4"></textarea>
+    </div>
+    <div class="reentry-footer">
+      <button class="btn-ghost" id="reentry-skip-btn">Skip</button>
+      <button class="btn-primary" id="reentry-save-btn">Save snapshot</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Commit Mode Overlay ────────────────────────────── -->
+<div id="commit-overlay">
+  <div class="commit-card">
+    <div class="commit-header">
+      <div class="commit-mode-label">COMMIT MODE</div>
+      <button class="commit-exit-btn" id="commit-exit-btn">✕ Exit</button>
+    </div>
+    <div class="commit-task-title" id="commit-task-title">Task</div>
+    <div class="commit-timer" id="commit-timer">00:00</div>
+    <div class="commit-timer-label">elapsed</div>
+    <div class="commit-actions">
+      <button class="commit-action-btn" id="commit-pause-btn">⏸ Pause &amp; snapshot</button>
+      <button class="commit-action-btn done" id="commit-done-btn">✓ Mark done</button>
+    </div>
+    <div class="commit-snapshot-prompt" id="commit-snapshot-prompt" style="display:none">
+      <div class="commit-snapshot-label">10 minutes in — quick snapshot:</div>
+      <textarea class="commit-snapshot-input" id="commit-snapshot-input" placeholder="What have you done so far? Any blockers?…" rows="3"></textarea>
+      <button class="btn-primary" id="commit-snapshot-save-btn" style="margin-top:8px;width:100%">Save &amp; continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Confirm Dialog ──────────────────────────────────── -->
+<div id="cdx-confirm-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);backdrop-filter:var(--glass-blur-overlay);-webkit-backdrop-filter:var(--glass-blur-overlay);display:none;align-items:center;justify-content:center">
+  <div style="background:rgba(18,18,18,0.92);border:1px solid rgba(255,255,255,0.14);border-top:1px solid rgba(255,255,255,0.26);border-radius:20px;padding:28px 28px 22px;max-width:360px;width:calc(100% - 48px);box-shadow:0 8px 40px rgba(0,0,0,0.7),inset 0 1px 0 rgba(255,255,255,0.08);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6)">
+    <div id="cdx-confirm-msg" style="font-family:var(--font-body);font-size:13px;color:var(--cream);line-height:1.55;margin-bottom:22px"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px">
+      <button id="cdx-confirm-cancel" style="padding:7px 18px;border-radius:100px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7);font-family:var(--font-body);font-size:12px;cursor:pointer;transition:background 0.15s">Cancel</button>
+      <button id="cdx-confirm-ok" style="padding:7px 18px;border-radius:100px;border:1px solid rgba(224,85,85,0.4);background:rgba(224,85,85,0.18);color:#e05555;font-family:var(--font-body);font-size:12px;cursor:pointer;font-weight:600;transition:background 0.15s">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Friction Tagging Modal ─────────────────────────── -->
+<div id="friction-modal">
+  <div class="friction-card">
+    <div class="friction-header">
+      <div class="friction-title">This task keeps getting deferred</div>
+      <button class="friction-close-btn" id="friction-close-btn">✕</button>
+    </div>
+    <div class="friction-task-label" id="friction-task-label"></div>
+    <div class="friction-body">
+      <div class="friction-section-label">What's causing the friction?</div>
+      <div class="friction-reasons" id="friction-reasons">
+        <button class="friction-reason-btn" data-reason="unclear">? Unclear next action</button>
+        <button class="friction-reason-btn" data-reason="blocked">⛔ Waiting / blocked</button>
+        <button class="friction-reason-btn" data-reason="energy">⚡ Wrong energy level</button>
+        <button class="friction-reason-btn" data-reason="scary">😬 Feels scary / big</button>
+        <button class="friction-reason-btn" data-reason="boring">😶 Just boring</button>
+        <button class="friction-reason-btn" data-reason="notnow">⏳ Not relevant now</button>
+      </div>
+      <div class="friction-actions">
+        <button class="friction-action-btn kill" id="friction-kill-btn">✕ Delete task</button>
+        <button class="friction-action-btn someday" id="friction-someday-btn">→ Move to Someday</button>
+        <button class="friction-action-btn keep" id="friction-keep-btn">Keep it — I'll do it</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick Calendar Event Modal ──────────────────────── -->
+<div class="overlay" id="quick-cal-modal" style="z-index:860">
+  <div class="overlay-panel" style="width:min(380px,92vw)">
+    <div class="overlay-header">
+      <span class="overlay-title">New Event</span>
+      <button class="overlay-close" data-close="quick-cal-modal">✕</button>
+    </div>
+    <div class="overlay-body" style="padding:20px;display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label class="sched-label">Title</label>
+        <input id="qcal-title" type="text" class="sched-input" placeholder="Event / task title" autocomplete="off" />
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+        <input type="checkbox" id="qcal-allday" style="accent-color:var(--gold);width:14px;height:14px" />
+        <label for="qcal-allday" class="sched-label" style="margin:0;cursor:pointer">All-day event</label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="sched-label">Date</label>
+          <input id="qcal-date" type="date" class="sched-input" />
+        </div>
+        <div id="qcal-time-wrap">
+          <label class="sched-label">Time</label>
+          <input id="qcal-time" type="time" class="sched-input" />
+        </div>
+      </div>
+      <div id="qcal-dur-wrap">
+        <label class="sched-label">Duration (min)</label>
+        <input id="qcal-duration" type="number" class="sched-input" value="30" min="5" step="5" />
+      </div>
+      <div>
+        <label class="sched-label">Category</label>
+        <select id="qcal-category" class="sched-input"></select>
+      </div>
+      <div>
+        <label class="sched-label">Link to commitment</label>
+        <select id="qcal-commitment" class="sched-input"></select>
+      </div>
+      <button class="sched-confirm-btn" id="qcal-confirm-btn">Create Event + Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Event Action Modal ──────────────────────────────── -->
+<div id="event-action-modal" style="position:fixed">
+  <button class="eam-close" id="eam-close">✕</button>
+  <div class="eam-title" id="eam-title">—</div>
+  <div>
+    <div class="eam-section-label">Edit Time</div>
+    <div class="eam-time-row">
+      <input type="time" class="eam-time-input" id="eam-start" />
+      <input type="number" class="eam-dur-input" id="eam-dur" min="5" max="480" step="5" />
+      <span class="eam-dur-label">min</span>
+      <button class="eam-save-btn" id="eam-save">Save</button>
+    </div>
+  </div>
+  <div id="eam-task-section" style="display:none;margin-top:14px">
+    <div class="eam-section-label">Theme</div>
+    <div class="eam-cat-row" id="eam-cats"></div>
+    <div class="eam-section-label" style="margin-top:12px">Commitment</div>
+    <select id="eam-commitment" class="eam-time-input" style="width:100%;box-sizing:border-box"></select>
+  </div>
+  <div class="eam-actions">
+    <button class="eam-play-btn" id="eam-complete" style="display:none">✓ Complete task</button>
+    <button class="eam-play-btn" id="eam-play">▶ Focus</button>
+    <button class="eam-delete-btn" id="eam-delete">✕ Delete</button>
+    <button class="eam-delete-btn" id="eam-delete-task" style="display:none">✕ Delete event &amp; task</button>
+  </div>
+</div>
+</body>
+</html>

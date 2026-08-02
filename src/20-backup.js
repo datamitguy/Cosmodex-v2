@@ -42,6 +42,9 @@ function buildBackupMarkdown() {
     t.title, t.done ? 'done' : 'open', _bkDate(t.doneDate), t.doneAt || '',
     _bkDate(t.dueDate), _bkDate(t.createdAt), catName(t.category), projName(t.projectId),
     t.timeSpentMinutes || '', t.priority, t.energyType, t.recurrence,
+    // A recurring task carries its whole history in one row: how many cycles
+    // were logged and on which days — the raw material for adherence questions.
+    (t.doneDates || []).length || '', (t.doneDates || []).join(' '),
     (t.subtasks || []).length || '', (t.people || []).join(' ')
   ]);
 
@@ -120,7 +123,8 @@ ${_bkTable(['date', 'day', 'tasks done', 'minutes logged', 'top category', 'habi
 ## Tasks
 
 ${_bkTable(['title', 'state', 'done', 'done at', 'due', 'created', 'category',
-    'commitment', 'minutes', 'priority', 'energy', 'recurrence', 'subtasks', 'people'], tasks)}
+    'commitment', 'minutes', 'priority', 'energy', 'recurrence', 'cycles', 'logged days',
+    'subtasks', 'people'], tasks)}
 ## Commitments
 
 ${_bkTable(['name', 'start', 'end', 'status', 'linked tasks', 'done', 'progress'], commitments)}

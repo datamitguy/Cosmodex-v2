@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Cosmodex mirrors your scheduled items into a dedicated “Cosmodex” calendar so you can view them in Apple Calendar.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Cosmodex creates and updates events in its own “Cosmodex” calendar to mirror your dashboard schedule.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Cosmodex mirrors your tasks into a dedicated “Cosmodex” list in Apple Reminders so you can see them on your phone.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Cosmodex creates and updates reminders in its own “Cosmodex” list to mirror your tasks (name, due date, subtasks).</string>
+</dict>
+</plist>

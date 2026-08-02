@@ -221,7 +221,8 @@ function buildTaskRow(task, idx) {
       : task.recurrence === 'yearly' ? '↻ Yearly'
       : task.recurrence.startsWith('custom:') ? `↻ ${task.recurrence.replace('custom:','')}`
       : `↻ ${task.recurrence}`;
-    recurBadge = `<span class="task-recur-badge">${rl}</span>`;
+    const n = (task.doneDates || []).length;
+    recurBadge = `<span class="task-recur-badge">${rl}${n ? ` · ${n}×` : ''}</span>`;
   }
 
   // Decay bar
@@ -677,9 +678,79 @@ async function updateTask(taskId, data) {
   }
 }
 
+/* ── Recurring tasks ──────────────────────────────────────
+   A recurring task is a series carried by ONE document, not a stack of
+   generated copies. Completing it stamps the day into `doneDates` and moves
+   the same doc's dueDate to its next occurrence; it never accumulates
+   duplicates, so a day you skip simply leaves the single row overdue until
+   you get to it. `recurUntil` (optional) closes the series for good.
+
+   Custom free-text recurrences (`custom:every other Tuesday`) can't be parsed,
+   so they keep the old one-shot behaviour rather than guessing. */
+function _recurAdvance(ds, rule) {
+  const d = new Date(ds + 'T12:00:00');
+  if (isNaN(d)) return null;
+  if (rule === 'daily')        d.setDate(d.getDate() + 1);
+  else if (rule === 'weekdays') { do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6); }
+  else if (rule === 'weekly')  d.setDate(d.getDate() + 7);
+  else if (rule === 'monthly') {
+    // Anchor to day 1 first so a 31st never spills into the following month.
+    const dom = d.getDate();
+    d.setDate(1); d.setMonth(d.getMonth() + 1);
+    d.setDate(Math.min(dom, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+  }
+  else if (rule === 'yearly')  d.setFullYear(d.getFullYear() + 1);
+  else return null;
+  return localDateStr(d);
+}
+
+// The first occurrence strictly after today. Advancing from the task's own
+// dueDate (not from today) is what keeps a weekly task on its weekday and a
+// monthly one on its date, even after a run of missed cycles.
+function _recurNextDate(task, today) {
+  let ds = task.dueDate || today;
+  for (let i = 0; i < 500; i++) {
+    const nx = _recurAdvance(ds, task.recurrence);
+    if (!nx) return null;
+    ds = nx;
+    if (ds > today) return ds;
+  }
+  return null;
+}
+
 async function toggleTask(taskId, timeSpentMinutes = null, category = null) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task) return;
+
+  // Completing a live recurring task rolls it forward instead of closing it.
+  if (!task.done && task.recurrence) {
+    const today = localDateStr(new Date());
+    const next = _recurNextDate(task, today);
+    if (next && (!task.recurUntil || next <= task.recurUntil)) {
+      const prev = { dueDate: task.dueDate || null, doneDates: task.doneDates || [] };
+      const roll = {
+        dueDate: next,
+        // Capped so a years-old daily habit can't grow the doc without bound.
+        doneDates: [...(task.doneDates || []), today].slice(-180),
+        done: false,
+        // doneDate/doneAt still record the latest completion, so this occurrence
+        // counts in the insights and the backup roll-up like any other task.
+        doneDate: today,
+        doneAt: new Date().toISOString(),
+        subtasks: (task.subtasks || []).map(s => ({ ...s, done: false }))
+      };
+      if (timeSpentMinutes != null) roll.timeSpentMinutes = (task.timeSpentMinutes || 0) + timeSpentMinutes;
+      if (category) roll.category = category;
+      _taskFireCelebration(taskId, task);
+      await updateTask(taskId, roll);
+      const short = task.title.length > 26 ? task.title.slice(0, 26) + '…' : task.title;
+      showUndoToast(`logged: ${short} · next ${fmtDate(next)}`, () => updateTask(taskId, prev));
+      return;
+    }
+    // No parsable next date, or the series has run past recurUntil — fall
+    // through and close it permanently.
+  }
+
   const updates = { done: !task.done };
   if (!task.done) {
     updates.doneDate = localDateStr(new Date());
@@ -4720,6 +4791,8 @@ const SCRIB_SIZES  = [1, 2, 4, 8, 16];
 let _atkFilter = 'all';
 let _atkSort   = 'smart';
 let _atkQuery  = '';
+// Commitment narrowing: 'all', 'none' (unlinked only), or a project id.
+let _atkCommit = 'all';
 
 const _ATK_FILTERS = [
   { id:'all',     label:'All',       match: (t) => !t.done },
@@ -4795,6 +4868,10 @@ function renderTasksPage() {
                 <span class="atk-shown" id="atk-shown"></span>
               </div>
               <div class="atk-sortwrap">
+                <span class="atk-eyebrow">ORBIT</span>
+                <select class="atk-commit-sel" id="atk-commit-sel"></select>
+              </div>
+              <div class="atk-sortwrap">
                 <span class="atk-eyebrow">SORT</span>
                 <div class="atk-sort" id="atk-sort"></div>
               </div>
@@ -4821,6 +4898,11 @@ function renderTasksPage() {
     document.getElementById('atk-sort').addEventListener('click', e => {
       const b = e.target.closest('[data-atk-sort]'); if (!b) return;
       _atkSort = b.dataset.atkSort; renderAllTasksList();
+    });
+    // Commitment narrowing — options are rebuilt on every render so newly
+    // created commitments show up without a page switch.
+    document.getElementById('atk-commit-sel').addEventListener('change', e => {
+      _atkCommit = e.target.value; renderAllTasksList();
     });
     // Filter pills (delegated)
     document.getElementById('atk-filters').addEventListener('click', e => {
@@ -4864,8 +4946,31 @@ function renderAllTasksList() {
   document.querySelectorAll('#atk-sort .atk-sort-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.atkSort === _atkSort));
 
+  // Commitment dropdown. Filtering goes through the same task→project map that
+  // fills the List column, so it catches milestone-activity links too, not just
+  // a direct projectId.
+  const projMap = _buildTaskToProjectMap();
+  const commitSel = document.getElementById('atk-commit-sel');
+  if (commitSel) {
+    const live = (typeof MILESTONE_PROJECTS !== 'undefined' ? MILESTONE_PROJECTS : [])
+      .filter(p => !p.isArchived)
+      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    // A stale selection (commitment archived or deleted) must not silently hide
+    // every task — fall back to showing everything.
+    if (_atkCommit !== 'all' && _atkCommit !== 'none' && !live.some(p => p.id === _atkCommit)) _atkCommit = 'all';
+    commitSel.innerHTML =
+      `<option value="all">All commitments</option><option value="none">No commitment</option>` +
+      live.map(p => {
+        const n = TASKS.filter(t => !t.done && projMap[t.id]?.projectId === p.id).length;
+        return `<option value="${escAttr(p.id)}">${escHtml(p.title || 'Untitled')} (${n})</option>`;
+      }).join('');
+    commitSel.value = _atkCommit;
+  }
+
   // Apply filter + search
   let rows = TASKS.filter(t => _atkMatch(_atkFilter, t, today, wk));
+  if (_atkCommit === 'none')     rows = rows.filter(t => !projMap[t.id]);
+  else if (_atkCommit !== 'all') rows = rows.filter(t => projMap[t.id]?.projectId === _atkCommit);
   if (q) rows = rows.filter(t =>
     (t.title || '').toLowerCase().includes(q) ||
     (t.category ? (CATEGORIES[t.category]?.label || t.category) : '').toLowerCase().includes(q));
@@ -4886,7 +4991,6 @@ function renderAllTasksList() {
   if (shownEl) shownEl.textContent = `${rows.length} SHOWN`;
 
   // Render design-kit tabular rows (checkbox · dot · title · list · due · cat · prio)
-  const projMap = _buildTaskToProjectMap();
   body.innerHTML = '';
   if (!rows.length) {
     body.innerHTML = `<div class="atk-empty">— None —<br><span>Nothing matches this filter</span></div>`;
@@ -4896,7 +5000,7 @@ function renderAllTasksList() {
   // Grouped view only on the default "All" tab with no search — that's where a
   // large backlog gets unwieldy. Any explicit filter/search stays a flat list so
   // narrowing always shows every match (never hidden inside a collapsed group).
-  if (_atkFilter === 'all' && !q) {
+  if (_atkFilter === 'all' && !q && _atkCommit === 'all') {
     _ATK_GROUPS.forEach(g => {
       const groupRows = rows.filter(t => g.test(t, today));
       if (!groupRows.length) return;
@@ -4964,7 +5068,9 @@ function buildAtkRow(task, projMap, today) {
   const proj      = projMap[task.id];
   const isOverdue = task.dueDate && task.dueDate < today && !task.done;
 
-  const recur   = task.recurrence ? `<span class="atk-tel">↻ ${escHtml(_recurLabel(task.recurrence).toUpperCase())}</span>` : '';
+  const logged  = (task.doneDates || []).length;
+  const recur   = task.recurrence
+    ? `<span class="atk-tel">↻ ${escHtml(_recurLabel(task.recurrence).toUpperCase())}${logged ? ` · ${logged}×` : ''}</span>` : '';
   const note    = task.notes ? `<span class="atk-tel">✎ NOTE</span>` : '';
   const created = _atkCreatedMs(task) ? `<span class="atk-tel dim">${escHtml(_atkRelTime(task).toUpperCase())}</span>` : '';
 
@@ -5024,7 +5130,8 @@ function renderAtkDetail() {
   const subsHtml = subs.length
     ? subs.map(s => `<div class="atk-sub-item">
         <div class="atk-subcheck${s.done ? ' done' : ''}" data-atk-subcheck="${escAttr(s.id)}">${s.done ? '✓' : ''}</div>
-        <span class="${s.done ? 'done' : ''}">${escHtml(s.title)}</span></div>`).join('')
+        <span class="${s.done ? 'done' : ''}">${escHtml(s.title)}</span>
+        <button class="atk-sub-del" data-atk-subdel="${escAttr(s.id)}" title="Delete subtask">✕</button></div>`).join('')
     : `<div class="atk-subs-empty">— None —</div>`;
 
   const eyebrow = `${cat ? escHtml(cat.label.toUpperCase()) : 'NO CATEGORY'}${proj ? ' · ' + escHtml(proj.projectTitle.toUpperCase()) : ''}`;
@@ -5070,6 +5177,9 @@ function renderAtkDetail() {
         <div><div class="atk-eyebrow">RECURRENCE</div><select class="atk-inline" data-atk-recur>${recurOptions}</select></div>
         <div><div class="atk-eyebrow">ENERGY</div><select class="atk-inline" data-atk-energy>${energyOptions}</select></div>
         <div><div class="atk-eyebrow">CREATED</div><div class="atk-detail-val">${escHtml(created)}</div></div>
+        ${task.recurrence ? `
+        <div><div class="atk-eyebrow">REPEAT UNTIL</div><input type="date" class="atk-inline atk-inline-date" data-atk-until value="${escAttr(task.recurUntil || '')}"></div>
+        <div><div class="atk-eyebrow">LOGGED</div><div class="atk-detail-val">${(task.doneDates || []).length}× · last ${escHtml((task.doneDates || []).slice(-1)[0] || '—')}</div></div>` : ''}
       </div>
       <div>
         <div class="atk-eyebrow" style="margin-bottom:8px">COMMITMENT</div>
@@ -5114,6 +5224,7 @@ function renderAtkDetail() {
   el.querySelector('[data-atk-cat]').addEventListener('change', e => updateTask(task.id, { category: e.target.value || null }));
   el.querySelector('[data-atk-commit]').addEventListener('change', e => updateTask(task.id, { projectId: e.target.value || null }));
   el.querySelector('[data-atk-recur]').addEventListener('change', e => updateTask(task.id, { recurrence: e.target.value || null }));
+  el.querySelector('[data-atk-until]')?.addEventListener('change', e => updateTask(task.id, { recurUntil: e.target.value || null }));
   el.querySelector('[data-atk-energy]').addEventListener('change', e => updateTask(task.id, { energyType: e.target.value || null }));
   el.querySelector('[data-atk-toggle]').onclick = (e) => {
     // Reopening skips the prompt; completing routes through the theme/time popover
@@ -5130,6 +5241,8 @@ function renderAtkDetail() {
   });
   el.querySelectorAll('[data-atk-subcheck]').forEach(c =>
     c.onclick = () => toggleSubtask(task.id, c.dataset.atkSubcheck));
+  el.querySelectorAll('[data-atk-subdel]').forEach(b =>
+    b.onclick = () => deleteSubtask(task.id, b.dataset.atkSubdel));
   const subAdd = el.querySelector('[data-atk-subadd]');
   subAdd.addEventListener('keydown', e => {
     if (e.key === 'Enter' && subAdd.value.trim()) { addSubtask(task.id, subAdd.value.trim()); subAdd.value = ''; }
